@@ -1,0 +1,40 @@
+{
+  "name": "console",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "db:pull": "dotenv -e .env --  npx drizzle-kit introspect",
+    "db:generate": "dotenv -e .env -- npx drizzle-kit generate",
+    "db:migrate": "dotenv -e .env -- npx drizzle-kit migrate"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^3.2.0",
+    "@nuxtjs/supabase": "^1.5.3",
+    "@nuxtjs/tailwindcss": "^7.0.0-beta.0",
+    "@pinia/colada": "^0.17.1",
+    "@pinia/nuxt": "^0.11.1",
+    "@polar-sh/nuxt": "^0.3.3",
+    "@trpc/client": "^11.4.3",
+    "@trpc/server": "^11.4.3",
+    "drizzle-cuid2": "^2.1.0",
+    "drizzle-orm": "^0.44.2",
+    "nuxt": "^3.17.6",
+    "pg": "^8.16.3",
+    "pinia": "^3.0.3",
+    "superjson": "^2.2.2",
+    "trpc-nuxt": "^1.2.0",
+    "vue": "^3.5.17",
+    "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.4",
+    "dotenv": "^17.0.1",
+    "dotenv-cli": "^8.0.0",
+    "drizzle-kit": "^0.31.4"
+  }
+}

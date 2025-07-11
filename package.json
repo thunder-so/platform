@@ -1,0 +1,24 @@
+{
+  "name": "@thunderso/thunder",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "deploy": "turbo run deploy",
+    "build:console": "turbo run build --filter=console",
+    "build:services": "turbo run build --filter=services",
+    "deploy:services": "turbo run deploy --filter=services"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.4"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services",
+    "services/*"
+  ],
+  "packageManager": "bun@1.2.18"
+}

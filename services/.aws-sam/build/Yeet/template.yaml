@@ -1,0 +1,240 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'yeet-service  Destroy CDK stack and resources on customer account
+
+  '
+Parameters:
+  Environment:
+    Type: String
+Resources:
+  YeetBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Fn::Sub: thunder-yeet-${Environment}
+      LifecycleConfiguration:
+        Rules:
+        - ExpirationInDays: 30
+          Status: Enabled
+  YeetQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName:
+        Fn::Sub: YeetQueue-${Environment}.fifo
+      FifoQueue: true
+  YeetRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Fn::Sub: YeetRole-${Environment}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+            - codebuild.amazonaws.com
+            - s3.amazonaws.com
+            - sqs.amazonaws.com
+            - cloudformation.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess
+      - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      - arn:aws:iam::aws:policy/AmazonSQSFullAccess
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+      - PolicyName: AssumeRolePolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - sts:AssumeRole
+            Resource: arn:aws:iam::*:role/*
+      - PolicyName: CDKDeploymentPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - iam:CreateRole
+            - iam:DeleteRole
+            - iam:PutRolePolicy
+            - iam:DeleteRolePolicy
+            - iam:GetRole
+            - iam:GetRolePolicy
+            - iam:PassRole
+            - iam:CreateInstanceProfile
+            - iam:DeleteInstanceProfile
+            - iam:AddRoleToInstanceProfile
+            - iam:RemoveRoleFromInstanceProfile
+            Resource: '*'
+  YeetBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name:
+        Fn::Sub: YeetBuild-${Environment}
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: "version: 0.2\nphases:\n  install:\n    runtime-versions:\n   \
+          \   nodejs: 20 \n    commands: \n      - \n"
+      Artifacts:
+        Type: S3
+        Location:
+          Ref: YeetBucket
+        Packaging: NONE
+        Path: artifacts/
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:7.0
+        Type: LINUX_CONTAINER
+      ServiceRole:
+        Fn::GetAtt:
+        - YeetRole
+        - Arn
+  YeetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: YeetFunction-${Environment}
+      CodeUri: YeetFunction
+      Handler: event.handler
+      Role:
+        Fn::GetAtt:
+        - YeetRole
+        - Arn
+      Architectures:
+      - x86_64
+      Runtime: nodejs20.x
+      MemorySize: 1536
+      Timeout: 10
+      Environment:
+        Variables:
+          NODE_OPTIONS: --enable-source-maps false
+          REGION:
+            Ref: AWS::Region
+          YEET_BUCKET:
+            Ref: YeetBucket
+          YEET_BUILD:
+            Ref: YeetBuild
+      Policies:
+      - AWSLambdaBasicExecutionRole
+      Events:
+        YeetQueueEvent:
+          Type: SQS
+          Properties:
+            Queue:
+              Fn::GetAtt:
+              - YeetQueue
+              - Arn
+            BatchSize: 1
+            Enabled: true
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+        - src/event.ts
+        External:
+        - '@aws-sdk/*'
+        - '@supabase/supabase-js'
+        Minify: true
+        Sourcemap: false
+        Target: ESNext
+      SamResourceId: YeetFunction
+  YeetCleanupFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: YeetCleanupFunction-${Environment}
+      CodeUri: YeetCleanupFunction
+      Handler: cleanup.handler
+      Role:
+        Fn::GetAtt:
+        - YeetRole
+        - Arn
+      Runtime: nodejs20.x
+      MemorySize: 1536
+      Timeout: 5
+      Environment:
+        Variables:
+          NODE_OPTIONS: --enable-source-maps false
+          REGION:
+            Ref: AWS::Region
+      Policies:
+      - AWSLambdaBasicExecutionRole
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+        - src/cleanup.ts
+        External:
+        - '@aws-sdk/*'
+        - '@supabase/supabase-js'
+        Minify: true
+        Sourcemap: false
+        Target: ESNext
+      SamResourceId: YeetCleanupFunction
+  YeetCleanupRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source:
+        - aws.codebuild
+        detail-type:
+        - CodeBuild Build State Change
+        detail:
+          project-name:
+          - Fn::Sub: YeetBuild-${Environment}
+          build-status:
+          - SUCCEEDED
+          - FAILED
+          - STOPPED
+      Targets:
+      - Arn:
+          Fn::GetAtt:
+          - YeetCleanupFunction
+          - Arn
+        Id: YeetCleanupFunction
+      State: ENABLED
+  PermissionForEventsToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Fn::GetAtt:
+        - YeetCleanupFunction
+        - Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+        - YeetCleanupRule
+        - Arn
+Outputs:
+  YeetQueueUrl:
+    Description: URL of the SQS queue for Yeet
+    Value:
+      Ref: YeetQueue
+  YeetRoleArn:
+    Description: ARN of the IAM Role for Yeet
+    Value:
+      Fn::GetAtt:
+      - YeetRole
+      - Arn
+  YeetBuildProjectArn:
+    Description: ARN of the CodeBuild project for Yeet
+    Value:
+      Fn::Sub: arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/YeetBuild-${Environment}
+  YeetFunctionArn:
+    Description: ARN of the Yeet Function
+    Value:
+      Fn::GetAtt:
+      - YeetFunction
+      - Arn
+  YeetCleanupFunctionArn:
+    Description: ARN of the Yeet Cleanup Function
+    Value:
+      Fn::GetAtt:
+      - YeetCleanupFunction
+      - Arn

@@ -1,0 +1,37 @@
+# More information about the configuration file can be found here:
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-config.html
+version = 0.1
+
+[sandbox]
+[sandbox.package.parameters]
+s3_bucket = "thunder-functions-sandbox"
+s3_prefix = "package"
+
+[sandbox.deploy.parameters]
+stack_name = "thunder-functions-sandbox"
+s3_bucket = "thunder-functions-sandbox"
+s3_prefix = ""
+parameter_overrides = "Environment=\"sandbox\""
+disable_rollback = false
+resolve_image_repos = true
+region = "us-east-1"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND"
+resolve_s3 = false
+
+[production]
+[production.package.parameters]
+s3_bucket = "thunder-functions-production"
+s3_prefix = "package"
+
+[production.deploy.parameters]
+stack_name = "thunder-functions-production"
+s3_bucket = "thunder-functions-production"
+s3_prefix = ""
+parameter_overrides = "Environment=\"production\""
+disable_rollback = false
+resolve_image_repos = true
+region = "us-east-1"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND"
+resolve_s3 = false

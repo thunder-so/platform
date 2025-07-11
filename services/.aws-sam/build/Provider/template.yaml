@@ -1,0 +1,91 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'provider-service This function is invoked from the customer account
+  When customer installs ThunderProviderStack
+
+  '
+Parameters:
+  Environment:
+    Type: String
+Resources:
+  ProviderFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Fn::Sub: ProviderFunctionRole-${Environment}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AdministratorAccess
+      Policies:
+      - PolicyName: AllowInvokeFromCustomers
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - lambda:InvokeFunction
+            Resource: '*'
+  ProviderFunctionInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+        - ProviderFunction
+        - Arn
+      Principal: '*'
+  ProviderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: ProviderFunction-${Environment}
+      CodeUri: ProviderFunction
+      Handler: status.handler
+      Role:
+        Fn::GetAtt:
+        - ProviderFunctionRole
+        - Arn
+      Architectures:
+      - x86_64
+      Runtime: nodejs20.x
+      MemorySize: 128
+      Timeout: 180
+      Environment:
+        Variables:
+          NODE_OPTIONS: --enable-source-maps false
+          REGION:
+            Ref: AWS::Region
+      Policies:
+      - AWSLambdaBasicExecutionRole
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+        - src/status.ts
+        External:
+        - '@aws-sdk/*'
+        - '@supabase/supabase-js'
+        - aws-cloudformation-custom-resource
+        Minify: true
+        Sourcemap: false
+        Target: es2020
+      SamResourceId: ProviderFunction
+Outputs:
+  ProviderFunctionRoleArn:
+    Description: ARN of the Role created for Provider Function
+    Value:
+      Fn::GetAtt:
+      - ProviderFunctionRole
+      - Arn
+  ProviderFunctionArn:
+    Description: ARN of the Provider Function
+    Value:
+      Fn::GetAtt:
+      - ProviderFunction
+      - Arn

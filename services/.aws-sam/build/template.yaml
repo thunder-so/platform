@@ -1,0 +1,51 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: "Console Functions The core of Thunder Console  \n"
+Globals:
+  Function:
+    Timeout: 180
+Parameters:
+  Environment:
+    Type: String
+    Description: The environment name (sandbox, production)
+Resources:
+  Provider:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: Provider\template.yaml
+      Parameters:
+        Environment:
+          Ref: Environment
+    Metadata:
+      SamResourceId: Provider
+  Ping:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: Ping\template.yaml
+      Parameters:
+        Environment:
+          Ref: Environment
+    Metadata:
+      SamResourceId: Ping
+  Runner:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: Runner\template.yaml
+      Parameters:
+        Environment:
+          Ref: Environment
+        PingEventBusArn:
+          Fn::GetAtt:
+          - Ping
+          - Outputs.PingEventBusArn
+    Metadata:
+      SamResourceId: Runner
+  Yeet:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: Yeet\template.yaml
+      Parameters:
+        Environment:
+          Ref: Environment
+    Metadata:
+      SamResourceId: Yeet
