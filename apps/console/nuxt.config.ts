@@ -8,6 +8,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-05-15',
   devtools: { enabled: true },
   runtimeConfig: {
+    siteUrl: process.env.SITE_URL || 'http://localhost:3000',
     private: {
       polarAccessToken: process.env.POLAR_ACCESS_TOKEN,
       polarCheckoutSuccessUrl: process.env.POLAR_CHECKOUT_SUCCESS_URL,

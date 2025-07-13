@@ -16,18 +16,25 @@
           Applications
         </NuxtLink>
         <NuxtLink
-          :to="`/org/${orgId}/settings`"
-          class="px-3 py-2 font-medium text-sm rounded-t-lg text-gray-500 dark:text-gray-400"
-          active-class="text-primary-500 dark:text-primary-400 border-b-2 border-primary-500 dark:border-primary-400"
-        >
-          Settings
-        </NuxtLink>
-        <NuxtLink
           :to="`/org/${orgId}/members`"
           class="px-3 py-2 font-medium text-sm rounded-t-lg text-gray-500 dark:text-gray-400"
           active-class="text-primary-500 dark:text-primary-400 border-b-2 border-primary-500 dark:border-primary-400"
         >
           Members
+        </NuxtLink>
+        <NuxtLink
+          :to="`/org/${orgId}/billing`"
+          class="px-3 py-2 font-medium text-sm rounded-t-lg text-gray-500 dark:text-gray-400"
+          active-class="text-primary-500 dark:text-primary-400 border-b-2 border-primary-500 dark:border-primary-400"
+        >
+          Billing
+        </NuxtLink>
+        <NuxtLink
+          :to="`/org/${orgId}/settings`"
+          class="px-3 py-2 font-medium text-sm rounded-t-lg text-gray-500 dark:text-gray-400"
+          active-class="text-primary-500 dark:text-primary-400 border-b-2 border-primary-500 dark:border-primary-400"
+        >
+          Settings
         </NuxtLink>
       </nav>
       <div class="py-4">

@@ -47,7 +47,6 @@ const { $client } = useNuxtApp()
 
 definePageMeta({
   layout: 'org',
-  // middleware: 'auth' 
 })
 
 const orgId = route.params.slug

@@ -20,5 +20,8 @@
     "services",
     "services/*"
   ],
-  "packageManager": "bun@1.2.18"
+  "packageManager": "bun@1.2.18",
+  "dependencies": {
+    "supabase": "^2.30.4"
+  }
 }

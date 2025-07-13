@@ -1,10 +1,10 @@
 <template>
   <div>
-    <Header />
+    <!-- <Header /> -->
 
     <h3>Settings</h3>
     <form @submit.prevent="updateOrganization" class="space-y-4 max-w-sm">
-       <UFormField label="Display Name" name="displayName">
+      <UFormField label="Display Name" name="displayName">
         <UInput v-model="displayName" />
       </UFormField>
 
@@ -17,7 +17,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, inject } from 'vue'
 
 definePageMeta({
   layout: 'org'
@@ -31,6 +31,7 @@ const error = ref(null)
 const success = ref(false)
 const displayName = ref('')
 
+const organization = inject('organization');
 const orgId = route.params.slug
 
 onMounted(async () => {
@@ -52,10 +53,16 @@ const updateOrganization = async () => {
   success.value = false
   error.value = null
   try {
-    const { error: updateError } = await supabase
+    const { data, error: updateError } = await supabase
       .from('organizations')
       .update({ name: displayName.value })
       .eq('id', orgId)
+      .select('name')
+      .single()
+
+    if (data && organization) {
+      organization.value.name = data.name;
+    }
 
     if (updateError) throw updateError
     success.value = true

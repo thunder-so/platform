@@ -17,3 +17,9 @@ logs
 
 # CDK
 cdk.out
+
+# Supabase
+.temp
+
+# Turborepo
+.turbo

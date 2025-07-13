@@ -1,16 +1,18 @@
-import { pgTable, pgEnum, uuid, serial, varchar, text, timestamp, jsonb, integer, boolean, unique, index } from 'drizzle-orm/pg-core';
+import { pgTable, pgEnum, uuid, text, timestamp, jsonb, integer, boolean, unique, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { cuid2 } from 'drizzle-cuid2/postgres';
-// import { createId } from '@paralleldrive/cuid2';
 
 // Enums
 export const applicationStatusEnum = pgEnum('APPLICATION_STATUS', ['PENDING', 'CONFIGURED', 'READY']);
-export const accountAccessEnum = pgEnum('ACCOUNT_ACCESS', ['READ_ONLY', 'READ_WRITE', 'ADMIN', 'OWNER']);
 export const stackTypeEnum = pgEnum('STACK_TYPE', ['SPA', 'LAMBDA', 'ECS', 'CRON', 'THIRD_PARTY']);
 export const buildStatusEnum = pgEnum('BUILD_STATUS', ['NULL', 'IN_PROGRESS', 'SUCCEEDED', 'FAILED', 'FAULT', 'TIMED_OUT', 'STOPPED']);
 export const pipelineStatusEnum = pgEnum('PIPELINE_STATUS', ['NULL', 'STARTED', 'SUCCEEDED', 'RESUMED', 'FAILED', 'CANCELED', 'SUPERSEDED']);
 
-// Tables
+/**
+ * User, Organization, and Membership tables
+ */
+export const accountAccessEnum = pgEnum('ACCOUNT_ACCESS', ['READ_ONLY', 'READ_WRITE', 'ADMIN', 'OWNER']);
+
 export const users = pgTable('users', {
   id: uuid('id').primaryKey(),
   updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }),
@@ -20,23 +22,18 @@ export const users = pgTable('users', {
   website: text('website'),
 });
 
-export const plans = pgTable('plans', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  name: text('name').notNull(),
-  maxProviders: integer('max_providers').notNull(),
-  price: text('price'),
-  priceId: text('price_id'),
-  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
-  deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
-});
-
 export const organizations = pgTable('organizations', {
-	// id: text().$defaultFn(() => createId()),
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
   name: text('name').notNull(),
   metadata: jsonb('metadata'),
-  planId: integer('plan_id').notNull().references(() => plans.id),
+  // planId: integer('plan_id').notNull().references(() => plans.id),
+  // planId: text('plan_id').notNull(),
+  // polarCustomerId: text('polar_customer_id').unique(),
+  // polarSubscriptionId: text('polar_subscription_id').unique(),
+  // subscriptionStatus: text('subscription_status'),
+  // subscriptionPeriodStart: timestamp('subscription_period_start', { withTimezone: true }),
+  // subscriptionPeriodEnd: timestamp('subscription_period_end', { withTimezone: true }),
+  // subscriptionCancelAtPeriodEnd: boolean('subscription_cancel_at_period_end').default(false).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
   deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
@@ -55,12 +52,95 @@ export const memberships = pgTable('memberships', {
   userOrgUnique: unique().on(table.userId, table.organizationId)
 }));
 
-export const payments = pgTable('payments', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  metadata: jsonb('metadata').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+export const usersRelations = relations(users, ({ many }) => ({
+  installations: many(installations),
+  memberships: many(memberships),
+  userAccessTokens: many(userAccessTokens),
+}));
+
+export const organizationsRelations = relations(organizations, ({ many }) => ({
+  applications: many(applications),
+  members: many(memberships),
+  providers: many(providers),
+  subscriptions: many(subscriptions),
+}));
+
+export const membershipsRelations = relations(memberships, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [memberships.organizationId],
+    references: [organizations.id],
+  }),
+  user: one(users, {
+    fields: [memberships.userId],
+    references: [users.id],
+  }),
+}));
+
+
+/**
+ * Polar Payment Integration
+ */
+export const pricingTypeEnum = pgEnum('PRICING_TYPE', ['one_time', 'recurring']);
+export const pricingPlanIntervalEnum = pgEnum('PRICING_PLAN_INTERVAL', ['month', 'year']);
+export const subscriptionStatusEnum = pgEnum('SUBSCRIPTION_STATUS', ['trialing', 'active', 'canceled', 'incomplete', 'incomplete_expired', 'past_due', 'unpaid', 'paused']);
+
+export const customers = pgTable('customers', {
+  userId: uuid('user_id').primaryKey().references(() => users.id),
   organizationId: text('organization_id').notNull().references(() => organizations.id),
+  polarCustomerId: text('polar_customer_id').unique().notNull(),
+}, (table) => ({
+  organizationIdIdx: index('customers_organization_id_idx').on(table.organizationId),
+  polarCustomerIdIdx: index('customers_polar_customer_id_idx').on(table.polarCustomerId),
+}));
+
+export const products = pgTable('products', {
+  id: text('id').primaryKey(), // Polar product ID, e.g., prod_1234
+  active: boolean('active').notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }),
 });
+
+export const subscriptions = pgTable('subscriptions', {
+  id: text('id').primaryKey(), // Polar subscription ID, e.g., sub_1234
+  userId: uuid('user_id').notNull().references(() => users.id),
+  organizationId: text('organization_id').notNull().references(() => organizations.id),
+  polarCustomerId: text('polar_customer_id').notNull().references(() => customers.polarCustomerId),
+  status: subscriptionStatusEnum('status').notNull(),
+  productId: text('product_id').references(() => products.id),
+  cancelAtPeriodEnd: boolean('cancel_at_period_end').default(false).notNull(),
+  created: timestamp('created', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  currentPeriodStart: timestamp('current_period_start', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  currentPeriodEnd: timestamp('current_period_end', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  endedAt: timestamp('ended_at', { withTimezone: true, precision: 6 }),
+  cancelAt: timestamp('cancel_at', { withTimezone: true, precision: 6 }),
+  canceledAt: timestamp('canceled_at', { withTimezone: true, precision: 6 }),
+  metadata: jsonb('metadata'),
+}, (table) => ({
+  userIdIdx: index('subscriptions_user_id_idx').on(table.userId),
+  organizationIdIdx: index('subscriptions_organization_id_idx').on(table.organizationId),
+  polarCustomerIdIdx: index('subscriptions_polar_customer_id_idx').on(table.polarCustomerId),
+}));
+
+// export const plans = pgTable('plans', {
+//   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+//   name: text('name').notNull(),
+//   maxProviders: integer('max_providers').notNull(),
+//   price: text('price'),
+//   priceId: text('price_id'),
+//   createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+//   updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
+//   deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
+// });
+
+// export const payments = pgTable('payments', {
+//   id: uuid('id').primaryKey().defaultRandom(),
+//   metadata: jsonb('metadata').notNull(),
+//   createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+//   organizationId: text('organization_id').notNull().references(() => organizations.id),
+// });
 
 export const providers = pgTable('providers', {
 //   id: text('id').primaryKey().$defaultFn(() => cuid2()),
@@ -211,44 +291,12 @@ export const events = pgTable('events', {
 });
 
 // Relations
-export const usersRelations = relations(users, ({ many }) => ({
-  installations: many(installations),
-  memberships: many(memberships),
-  userAccessTokens: many(userAccessTokens),
-}));
-
-export const organizationsRelations = relations(organizations, ({ one, many }) => ({
-  plan: one(plans, {
-    fields: [organizations.planId],
-    references: [plans.id],
-  }),
-  applications: many(applications),
-  members: many(memberships),
-  providers: many(providers),
-  payments: many(payments),
-}));
-
-export const plansRelations = relations(plans, ({ many }) => ({
-  organizations: many(organizations),
-}));
-
-export const membershipsRelations = relations(memberships, ({ one }) => ({
-  organization: one(organizations, {
-    fields: [memberships.organizationId],
-    references: [organizations.id],
-  }),
-  user: one(users, {
-    fields: [memberships.userId],
-    references: [users.id],
-  }),
-}));
-
-export const paymentsRelations = relations(payments, ({ one }) => ({
-  organization: one(organizations, {
-    fields: [payments.organizationId],
-    references: [organizations.id],
-  }),
-}));
+// export const paymentsRelations = relations(payments, ({ one }) => ({
+//   organization: one(organizations, {
+//     fields: [payments.organizationId],
+//     references: [organizations.id],
+//   }),
+// }));
 
 export const providersRelations = relations(providers, ({ one, many }) => ({
   organization: one(organizations, {

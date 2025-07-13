@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Header />
+    <!-- <Header /> -->
     
     <h3>Applications</h3>
     <div v-if="loading">Loading applications...</div>

@@ -1,0 +1,2 @@
+[functions.polar_webhook]
+verify_jwt = false
