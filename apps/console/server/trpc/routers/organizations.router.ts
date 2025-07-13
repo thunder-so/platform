@@ -18,7 +18,7 @@ export const organizationsRouter = router({
       const { user } = ctx
       const { name, planId } = input
       const {
-        siteUrl,
+        public: { siteUrl },
         private: { polarAccessToken, polarServer, polarCheckoutSuccessUrl },
       } = useRuntimeConfig()
 
@@ -143,7 +143,7 @@ export const organizationsRouter = router({
       const { organizationId, productId } = input;
       const { user } = ctx;
       const {
-        siteUrl,
+        public: { siteUrl },
         private: { polarAccessToken, polarServer, polarCheckoutSuccessUrl },
       } = useRuntimeConfig();
 
@@ -180,7 +180,10 @@ export const organizationsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const { organizationId } = input
-      const { siteUrl, private: { polarAccessToken, polarServer } } = useRuntimeConfig()
+      const { 
+        public: { siteUrl }, 
+        private: { polarAccessToken, polarServer } 
+      } = useRuntimeConfig()
 
       const customer = await db.query.customers.findFirst({
         where: eq(customers.organizationId, organizationId),

@@ -42,19 +42,18 @@ function Create(resource: CustomResource<ResourceProperties>, logger: Logger): P
         try {
             const supabase = createClient(SUPABASE_URL as string, SUPABASE_KEY as string);
 
-            // Update Supabase DB
+            // Insert provider into Supabase DB
             const { data, error } = await supabase
                 .from('providers')
-                .update({
+                .upsert({
                     alias: Alias,
                     role_arn: RoleArn,
                     account_id: AccountId,
                     region: Region,
                     stack_id: StackId,
                     stack_name: StackName,
-                    updated_at: new Date().toISOString(),
                 })
-                .eq('id', ProviderId)
+                // .eq('id', ProviderId)
                 .select();
 
             if (error) {
