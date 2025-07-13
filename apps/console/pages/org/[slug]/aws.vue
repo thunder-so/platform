@@ -22,6 +22,24 @@
     <div v-else>
       <p>No AWS accounts connected yet.</p>
     </div>
+
+    <UCard class="mb-4">
+      <template #header>
+        <h3>Manually Add AWS Account</h3>
+      </template>
+      <UForm :state="manualFormState" @submit="submitManualForm" class="space-y-4">
+        <UFormField label="Alias" name="alias">
+          <UInput v-model="manualFormState.alias" />
+        </UFormField>
+        <UFormField label="Access Key ID" name="accessKeyId">
+          <UInput v-model="manualFormState.accessKeyId" />
+        </UFormField>
+        <UFormField label="Secret Access Key" name="secretAccessKey">
+          <UInput v-model="manualFormState.secretAccessKey" type="password" />
+        </UFormField>
+        <UButton type="submit" :loading="manualFormLoading">Add Account</UButton>
+      </UForm>
+    </UCard>
   </div>
 </template>
 
@@ -30,6 +48,7 @@ definePageMeta({
   layout: 'org'
 })
 
+const { $client } = useNuxtApp()
 const route = useRoute()
 const supabase = useSupabaseClient()
 const organization = inject('organization')
@@ -63,6 +82,31 @@ const fetchProviders = async () => {
     loading.value = false
   }
 }
+
+const manualFormState = ref({
+  alias: '',
+  accessKeyId: '',
+  secretAccessKey: '',
+});
+const manualFormLoading = ref(false);
+
+const submitManualForm = async () => {
+  manualFormLoading.value = true;
+  try {
+    await $client.providers.addManualProvider.mutate({
+      organizationId: organization.value.id,
+      ...manualFormState.value,
+    });
+    alert('AWS Account added successfully!');
+    manualFormState.value = { alias: '', accessKeyId: '', secretAccessKey: '' }; // Clear form
+    fetchProviders(); // Re-fetch providers to update the list
+  } catch (e) {
+    console.error('Error adding manual provider:', e);
+    alert(`Failed to add AWS Account: ${e.message}`);
+  } finally {
+    manualFormLoading.value = false;
+  }
+};
 
 onMounted(() => {
   if (organization.value) {

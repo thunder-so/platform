@@ -97,7 +97,7 @@ const deleteOrganization = async () => {
   deleting.value = true
   try {
     const { $client } = useNuxtApp()
-    await $client.organizationsRouter.delete.mutate({ orgId })
+    await $client.organizations.delete.mutate({ orgId })
     confirmDelete.value = false
     // Redirect to home page after successful deletion
     await navigateTo('/')

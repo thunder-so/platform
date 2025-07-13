@@ -52,7 +52,7 @@ const subscribeToPlan = async (planId) => {
   }
 
   try {
-    const { checkoutUrl } = await $client.organizationsRouter.createCheckoutSession.mutate({
+    const { checkoutUrl } = await $client.organizations.createCheckoutSession.mutate({
       organizationId: orgId,
       productId: selected.productId,
     });
@@ -102,7 +102,7 @@ const manageSubscription = async () => {
     // } else {
     //   throw new Error(data.message || 'Failed to get portal URL')
     // }
-    const { url } = await $client.organizationsRouter.createPortalSession.mutate({ organizationId: orgId })
+    const { url } = await $client.organizations.createPortalSession.mutate({ organizationId: orgId })
     window.location.href = url
 
   } catch (e) {

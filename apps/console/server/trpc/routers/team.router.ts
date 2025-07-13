@@ -43,7 +43,7 @@ export const teamRouter = router({
 
       const supabaseAdmin = createClient(
         process.env.SUPABASE_URL!,
-        process.env.SUPABASE_SECRET_KEY!
+        process.env.SUPABASE_SERVICE_KEY!
       );
 
       // Generate magic link for the user

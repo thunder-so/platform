@@ -41,7 +41,7 @@ onMounted(async () => {
   }
 
   try {
-    const org = await $client.organizationsRouter.verifyCheckout.query({ checkoutId })
+    const org = await $client.organizations.verifyCheckout.query({ checkoutId })
     organizationId.value = org.organizationId
   } catch (e) {
     console.error('Error fetching organization by checkout ID:', e)

@@ -45,7 +45,7 @@ const createOrganization = async () => {
   error.value = null;
 
   try {
-    const newOrg = await $client.organizationsRouter.create.mutate({
+    const newOrg = await $client.organizations.create.mutate({
       name: orgName.value,
       planId: selectedPlan.value,
     });

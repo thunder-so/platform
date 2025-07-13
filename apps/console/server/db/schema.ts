@@ -125,6 +125,7 @@ export const providers = pgTable('providers', {
   region: text('region'),
   stackId: text('stack_id'),
   stackName: text('stack_name'),
+  accessKeyId: text('access_key_id'),
   createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }),
   deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
