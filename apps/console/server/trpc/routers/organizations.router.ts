@@ -1,10 +1,10 @@
 import { z } from 'zod'
 import { protectedProcedure, router } from '~/server/trpc/init'
 import { db } from '~/server/db/db'
-import { organizations, memberships, subscriptions, customers } from '~/server/db/schema'
+import { organizations, memberships, subscriptions, customers, applications } from '~/server/db/schema'
 import { Polar } from '@polar-sh/sdk'
 import { TRPCError } from '@trpc/server'
-import { eq } from 'drizzle-orm'
+import { eq, and, inArray } from 'drizzle-orm'
 
 export const organizationsRouter = router({
   create: protectedProcedure
@@ -210,5 +210,49 @@ export const organizationsRouter = router({
           message: 'Failed to create portal session.',
         })
       }
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ orgId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { orgId } = input
+      const { user } = ctx
+
+      // 1. Verify user is an ADMIN of the organization
+      const membership = await db.query.memberships.findFirst({
+        where: and(
+          eq(memberships.organizationId, orgId),
+          eq(memberships.userId, user.id),
+          eq(memberships.access, 'ADMIN')
+        ),
+      })
+
+      if (!membership) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You do not have permission to delete this organization.',
+        })
+      }
+
+      // 2. Check for existing non-deleted applications
+      const existingApplications = await db.query.applications.findMany({
+        where: and(
+          eq(applications.organizationId, orgId),
+          eq(applications.deletedAt, null),
+        ),
+      })
+
+      if (existingApplications.length > 0) {
+        throw new TRPCError({
+          code: 'PRECONDITION_FAILED',
+          message: 'Organization cannot be deleted as it still has active applications.',
+        })
+      }
+
+      // 3. Soft delete the organization
+      const now = new Date()
+      await db.update(organizations).set({ deletedAt: now }).where(eq(organizations.id, orgId))
+
+      return { success: true }
     }),
 })

@@ -13,6 +13,32 @@
       </UButton>
       <p v-if="success" class="text-green-500">Settings saved!</p>
     </form>
+
+    <h3 class="mt-8">Danger Zone</h3>
+    <div class="border border-red-500 p-4 rounded-md">
+      <p class="text-red-500 mb-4">
+        Deleting your organization is a permanent action and cannot be undone.
+      </p>
+      <div v-if="hasApplications" class="text-red-500">
+        <p>You cannot delete this organization because it still has applications associated with it.</p>
+        <p>Please delete all applications before attempting to delete the organization.</p>
+      </div>
+      <UButton v-else color="red" @click="confirmDelete = true">
+        Delete Organization
+      </UButton>
+
+      <UModal v-model="confirmDelete">
+        <div class="p-4">
+          <h3 class="text-lg font-bold mb-4">Confirm Deletion</h3>
+          <p class="mb-4">Are you sure you want to delete "{{ displayName }}"?</p>
+          <p class="mb-4 text-red-500">This action cannot be undone.</p>
+          <div class="flex justify-end space-x-2">
+            <UButton color="gray" @click="confirmDelete = false">Cancel</UButton>
+            <UButton color="red" @click="deleteOrganization" :loading="deleting">Delete</UButton>
+          </div>
+        </div>
+      </UModal>
+    </div>
   </div>
 </template>
 
@@ -30,6 +56,9 @@ const loading = ref(false)
 const error = ref(null)
 const success = ref(false)
 const displayName = ref('')
+const hasApplications = ref(false)
+const confirmDelete = ref(false)
+const deleting = ref(false)
 
 const organization = inject('organization');
 const orgId = route.params.slug
@@ -46,7 +75,40 @@ onMounted(async () => {
   } else if (data) {
     displayName.value = data.name || ''
   }
+  await checkApplications()
 })
+
+const checkApplications = async () => {
+  try {
+    const { count, error: fetchError } = await supabase
+      .from('applications')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+
+    if (fetchError) throw fetchError
+    hasApplications.value = count > 0
+  } catch (e) {
+    console.error("Error checking applications:", e.message)
+    // Optionally, handle error display to the user
+  }
+}
+
+const deleteOrganization = async () => {
+  deleting.value = true
+  try {
+    const { $client } = useNuxtApp()
+    await $client.organizationsRouter.delete.mutate({ orgId })
+    confirmDelete.value = false
+    // Redirect to home page after successful deletion
+    await navigateTo('/')
+  } catch (e) {
+    console.error("Error deleting organization:", e)
+    // Optionally, display error to the user
+    alert("Failed to delete organization: " + e.message)
+  } finally {
+    deleting.value = false
+  }
+}
 
 const updateOrganization = async () => {
   loading.value = true
