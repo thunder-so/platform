@@ -4,5 +4,16 @@
   "deno.enablePaths": [
     "back" // <-- Deno will be used in "back", but not in "front"
     // additional paths can be added as well
+  ],
+
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "editor.quickSuggestions": {
+    "strings": "on"
+  },
+  "tailwindCSS.classAttributes": ["class", "ui"],
+  "tailwindCSS.experimental.classRegex": [
+    ["ui:\\s*{([^)]*)\\s*}", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
   ]
 }

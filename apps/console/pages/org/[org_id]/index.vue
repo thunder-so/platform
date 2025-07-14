@@ -28,7 +28,7 @@ const applications = ref([])
 const loading = ref(false)
 const error = ref(null)
 
-const orgId = route.params.slug
+const orgId = route.params.org_id
 
 onMounted(async () => {
   loading.value = true

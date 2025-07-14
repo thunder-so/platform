@@ -2,10 +2,12 @@
   <div>
     <div class="mb-4">
       <h3 class="text-lg font-medium">Invite Member</h3>
-      <form @submit.prevent="inviteMember" class="flex items-center space-x-2 mt-2">
-        <UInput v-model="emailToInvite" placeholder="member@example.com" class="flex-grow" />
+      <UForm :schema="schema" :state="state" @submit.prevent="inviteMember" class="flex items-center space-x-2 mt-2">
+        <UFormField name="emailToInvite" class="flex-grow">
+          <UInput v-model="state.emailToInvite" placeholder="member@example.com" />
+        </UFormField>
         <UButton type="submit" :loading="inviting">Invite</UButton>
-      </form>
+      </UForm>
       <p v-if="inviteError" class="text-red-500 mt-2">{{ inviteError.message }}</p>
     </div>
 
@@ -40,28 +42,37 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-const route = useRoute()
-const supabase = useSupabaseClient()
-const { $client } = useNuxtApp()
+import { ref, reactive, onMounted } from 'vue';
+import { z } from 'zod';
+
+const route = useRoute();
+const supabase = useSupabaseClient();
+const { $client } = useNuxtApp();
 
 definePageMeta({
   layout: 'org',
-})
+});
 
-const orgId = route.params.slug
-const emailToInvite = ref('')
-const inviting = ref(false)
-const inviteError = ref(null)
-const removingMemberId = ref(null)
+const orgId = route.params.org_id;
+const inviting = ref(false);
+const inviteError = ref(null);
+const removingMemberId = ref(null);
 
-const members = ref([])
-const isLoading = ref(false)
-const error = ref(null)
+const members = ref([]);
+const isLoading = ref(false);
+const error = ref(null);
+
+const schema = z.object({
+  emailToInvite: z.string().email('Invalid email address'),
+});
+
+const state = reactive({
+  emailToInvite: ''
+});
 
 const fetchMembers = async () => {
-  isLoading.value = true
-  error.value = null
+  isLoading.value = true;
+  error.value = null;
   try {
     const { data, error: fetchError } = await supabase
       .from('memberships')
@@ -71,45 +82,45 @@ const fetchMembers = async () => {
         pending,
         user:users (id, email, full_name, avatar_url)
       `)
-      .eq('organization_id', orgId)
+      .eq('organization_id', orgId);
 
-    if (fetchError) throw fetchError
-    members.value = data
+    if (fetchError) throw fetchError;
+    members.value = data;
   } catch (e) {
-    error.value = e
+    error.value = e;
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 onMounted(() => {
-  fetchMembers()
-})
+  fetchMembers();
+});
 
 const inviteMember = async () => {
-  inviting.value = true
-  inviteError.value = null
+  inviting.value = true;
+  inviteError.value = null;
   try {
-    await $client.team.inviteMember.mutate({ organizationId: orgId, email: emailToInvite.value })
-    emailToInvite.value = ''
-    await fetchMembers()
+    await $client.team.inviteMember.mutate({ organizationId: orgId, email: state.emailToInvite });
+    state.emailToInvite = '';
+    await fetchMembers();
   } catch (e) {
-    inviteError.value = e
+    inviteError.value = e;
   } finally {
-    inviting.value = false
+    inviting.value = false;
   }
-}
+};
 
 const removeMember = async (membershipId) => {
   removingMemberId.value = membershipId;
   try {
-    await $client.team.removeMember.mutate({ membershipId })
-    await fetchMembers()
+    await $client.team.removeMember.mutate({ membershipId });
+    await fetchMembers();
   } catch (e) {
-    console.error('Failed to remove member:', e)
-    alert('Failed to remove member. See console for details.')
+    console.error('Failed to remove member:', e);
+    alert('Failed to remove member. See console for details.');
   } finally {
     removingMemberId.value = null;
   }
-}
+};
 </script>

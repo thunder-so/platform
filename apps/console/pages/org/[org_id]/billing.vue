@@ -37,7 +37,7 @@ definePageMeta({
   layout: 'org',
 })
 
-const orgId = route.params.slug
+const orgId = route.params.org_id
 const subscription = ref(null)
 const isLoading = ref(false)
 const error = ref(null)

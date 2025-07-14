@@ -2,13 +2,11 @@
   <div>
     <Header />
 
-    <div v-if="loading">Loading organization...</div>
-    <div v-else-if="error">Error loading organization: {{ error.message }}</div>
-    <div v-else-if="organization">
-      <h1>{{ organization.name }}</h1>
+    <div v-if="selectedOrganization">
+      <h1>{{ selectedOrganization.name }}</h1>
       <nav class="flex space-x-2 border-b border-gray-200 dark:border-gray-800 mb-4">
         <NuxtLink
-          :to="`/org/${orgId}`"
+          :to="`/org/${selectedOrganization.id}`"
           exact
           class="px-3 py-2 font-medium text-sm rounded-t-lg text-gray-500 dark:text-gray-400"
           active-class="text-primary-500 dark:text-primary-400 border-b-2 border-primary-500 dark:border-primary-400"
@@ -16,28 +14,28 @@
           Applications
         </NuxtLink>
         <NuxtLink
-          :to="`/org/${orgId}/aws`"
+          :to="`/org/${selectedOrganization.id}/aws`"
           class="px-3 py-2 font-medium text-sm rounded-t-lg text-gray-500 dark:text-gray-400"
           active-class="text-primary-500 dark:text-primary-400 border-b-2 border-primary-500 dark:border-primary-400"
         >
           AWS Accounts
         </NuxtLink>
         <NuxtLink
-          :to="`/org/${orgId}/members`"
+          :to="`/org/${selectedOrganization.id}/members`"
           class="px-3 py-2 font-medium text-sm rounded-t-lg text-gray-500 dark:text-gray-400"
           active-class="text-primary-500 dark:text-primary-400 border-b-2 border-primary-500 dark:border-primary-400"
         >
           Members
         </NuxtLink>
         <NuxtLink
-          :to="`/org/${orgId}/billing`"
+          :to="`/org/${selectedOrganization.id}/billing`"
           class="px-3 py-2 font-medium text-sm rounded-t-lg text-gray-500 dark:text-gray-400"
           active-class="text-primary-500 dark:text-primary-400 border-b-2 border-primary-500 dark:border-primary-400"
         >
           Billing
         </NuxtLink>
         <NuxtLink
-          :to="`/org/${orgId}/settings`"
+          :to="`/org/${selectedOrganization.id}/settings`"
           class="px-3 py-2 font-medium text-sm rounded-t-lg text-gray-500 dark:text-gray-400"
           active-class="text-primary-500 dark:text-primary-400 border-b-2 border-primary-500 dark:border-primary-400"
         >
@@ -55,34 +53,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, provide } from 'vue'
-const route = useRoute()
-const supabase = useSupabaseClient()
+const route = useRoute();
+const { setSelectedOrganization, selectedOrganization } = useMemberships();
+console.log('layouts/org selectedOrganization', selectedOrganization.value)  
 
-const organization = ref(null)
-const loading = ref(false)
-const error = ref(null)
-
-const orgId = route.params.slug
-
-// provide organization data to child pages
-provide('organization', organization)
-
-onMounted(async () => {
-  loading.value = true
-  try {
-    const { data: orgData, error: orgError } = await supabase
-      .from('organizations')
-      .select('id, name')
-      .eq('id', orgId)
-      .single()
-
-    if (orgError) throw orgError
-    organization.value = orgData
-  } catch (e) {
-    error.value = e
-  } finally {
-    loading.value = false
+watch(() => route.params.org_id, (newOrgId) => {
+  if (newOrgId) {
+    setSelectedOrganization(newOrgId);
   }
-})
+}, { immediate: true });
 </script>

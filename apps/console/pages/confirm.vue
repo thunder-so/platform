@@ -17,12 +17,20 @@
 </template>
 
 <script setup>
-import { or } from 'drizzle-orm';
-
 const supabase = useSupabaseClient();
 const user = useSupabaseUser();
 const route = useRoute();
+const { selectedOrganization, initializeSession } = useMemberships()
 const error = ref(null);
+
+const setupAndRedirect = async () => {
+  await initializeSession();
+  console.log('confirm selectedOrganization', selectedOrganization.value)
+  navigateTo({ 
+    path: `/org/${selectedOrganization.value.id}`, 
+    replace: true 
+  });
+}
 
 onMounted(async () => {
   try {
@@ -63,13 +71,9 @@ onMounted(async () => {
     // Handle PKCE flow (normal magic link and GitHub)
     const code = queryParams.code;
     if (code) {
-      watch(user, async (newUser) => {
+      watch(user, (newUser) => {
         if (newUser) {
-          // Standard login/signup, send to dashboard
-          navigateTo({
-              path: '/',
-              replace: true
-          }) 
+          setupAndRedirect();
         } 
       }, { immediate: true })
     }

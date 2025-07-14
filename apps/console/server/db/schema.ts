@@ -113,6 +113,25 @@ export const subscriptions = pgTable('subscriptions', {
   polarCustomerIdIdx: index('subscriptions_polar_customer_id_idx').on(table.polarCustomerId),
 }));
 
+export const subscriptionsRelations = relations(subscriptions, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [subscriptions.organizationId],
+    references: [organizations.id],
+  }),
+  user: one(users, {
+    fields: [subscriptions.userId],
+    references: [users.id],
+  }),
+  customer: one(customers, {
+    fields: [subscriptions.polarCustomerId],
+    references: [customers.polarCustomerId],
+  }),
+  product: one(products, {
+    fields: [subscriptions.productId],
+    references: [products.id],
+  }),
+}));
+
 /**
  * AWS Account Providers
  */
@@ -182,7 +201,6 @@ export const installations = pgTable('installations', {
 });
 
 export const services = pgTable('services', {
-//   id: text('id').primaryKey().$defaultFn(() => cuid2()),
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
   name: text('name').notNull(),
   displayName: text('display_name').notNull(),
@@ -202,12 +220,31 @@ export const services = pgTable('services', {
   installationId: integer('installation_id').references(() => installations.installationId),
 });
 
+// export const services2 = pgTable('services2', {
+//   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
+//   name: text('name').notNull(),
+//   displayName: text('display_name').notNull(),
+//   stackType: stackTypeEnum('stack_type').default('SPA'),
+//   stackVersion: text('stack_version'),
+//   resources: jsonb('resources'), // store stack output
+//   metadata: jsonb('metadata'), // service specific: LambdaProps, ServiceProps, etc.
+//   appProps: jsonb('app_props'), // rootdir, outputdir
+//   cdnProps: jsonb('cdn_props'), // cloudfront
+//   edgeProps: jsonb('edge_props'), // headers, redirects, rewrites
+//   domainProps: jsonb('domain_props'), // route53, domains, certificates
+//   pipelineProps: jsonb('pipeline_props'), // pipeline, event bus
+//   createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+//   updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
+//   deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
+//   environmentId: text('environment_id').notNull().references(() => environments.id),
+//   installationId: integer('installation_id').references(() => installations.installationId),
+// });
+
 export const environmentVariables = pgTable('environment_variables', {
-//   id: text('id').primaryKey().$defaultFn(() => cuid2()),
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
   key: text('key').notNull(),
-  value: text('value').notNull(),
-  resource: text('resource'), // ARN
+  value: text('value').notNull(), // populated when string env variable
+  resource: text('resource'), // ARN 
   environmentId: text('environment_id').notNull().references(() => environments.id),
   createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),

@@ -258,4 +258,28 @@ export const organizationsRouter = router({
 
       return { success: true }
     }),
+
+  getUserMemberships: protectedProcedure
+    .query(async ({ ctx }) => {
+      const { user } = ctx;
+      const userMemberships = await db.query.memberships.findMany({
+        where: eq(memberships.userId, user.id),
+        with: {
+          organization: {
+            with: {
+              subscriptions: {
+                where: and(
+                  eq(subscriptions.status, 'active'),
+                ),
+              },
+            },
+          },
+        },
+      });
+
+      return userMemberships.map((m) => ({
+        ...m.organization,
+        subscription: m.organization.subscriptions.length > 0 ? 'Pro' : 'Free',
+      }));
+    }),
 })

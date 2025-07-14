@@ -44,6 +44,8 @@
 </template>
 
 <script setup>
+const { memberships, selectedOrganization, isLoading, refreshMemberships } = useMemberships()
+
 definePageMeta({
   layout: 'org'
 })
@@ -51,13 +53,13 @@ definePageMeta({
 const { $client } = useNuxtApp()
 const route = useRoute()
 const supabase = useSupabaseClient()
-const organization = inject('organization')
+// const organization = inject('organization')
 const config = useRuntimeConfig()
 const providers = ref([])
 const loading = ref(false)
 const error = ref(null)
 
-const orgId = route.params.slug
+const orgId = route.params.org_id
 
 const addNewAccount = () => {
   const roleTemplateUrl = useRuntimeConfig().public.PROVIDER_STACK;
@@ -72,7 +74,8 @@ const fetchProviders = async () => {
     const { data, error: fetchError } = await supabase
       .from('providers')
       .select('*')
-      .eq('organization_id', organization.value.id)
+      .eq('organization_id', orgId)
+      .is('deleted_at', null)
 
     if (fetchError) throw fetchError
     providers.value = data
@@ -94,7 +97,7 @@ const submitManualForm = async () => {
   manualFormLoading.value = true;
   try {
     await $client.providers.addManualProvider.mutate({
-      organizationId: organization.value.id,
+      organizationId: selectedOrganization.value.id,
       ...manualFormState.value,
     });
     alert('AWS Account added successfully!');
@@ -109,7 +112,7 @@ const submitManualForm = async () => {
 };
 
 onMounted(() => {
-  if (organization.value) {
+  if (selectedOrganization.value) {
     fetchProviders()
 
     // Realtime subscription
@@ -129,9 +132,9 @@ onUnmounted(() => {
 })
 
 // Watch for organization data to be available
-watch(organization, (newOrg) => {
-  if (newOrg) {
-    fetchProviders()
-  }
-})
+// watch(organization, (newOrg) => {
+//   if (newOrg) {
+//     fetchProviders()
+//   }
+// })
 </script>

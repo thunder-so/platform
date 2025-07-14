@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const route = useRoute();
 const title: any = ref(route.meta.title || 'console.thunder.so');
+const { memberships, isLoading, refreshMemberships } = useMemberships()
 
 useHead({
   title: title,
@@ -14,7 +15,6 @@ useHead({
     { 
       rel: 'icon',
       type: 'image/svg+xml',
-      // href: "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>" 
       href: "https://thunder.so/images/thunder.svg" 
     },
     {
@@ -27,14 +27,18 @@ useHead({
       crossorigin: ''    
     } 
   ]
-});
+})
 
 watch(
   () => route.meta.title,
   (newTitle) => {
     title.value = newTitle;
   }
-);
+)
+
+onMounted(async () => {
+  refreshMemberships()
+})
 </script>
 
 <template>
@@ -44,7 +48,9 @@ watch(
     :height="2" 
     color="repeating-linear-gradient(to right,yellow 0%,red 50%,blue 100%)" 
   />
-  <NuxtLayout>
-    <NuxtPage />
-  </NuxtLayout>
+  <UApp>
+    <NuxtLayout>
+      <NuxtPage />
+    </NuxtLayout>
+  </UApp>
 </template>

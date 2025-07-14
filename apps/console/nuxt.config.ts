@@ -23,17 +23,18 @@ export default defineNuxtConfig({
     transpile: ['trpc-nuxt', '@trpc/client', '@trpc/server'],
   },
   modules: [
-    '@nuxt/ui', 
-    '@nuxtjs/tailwindcss', 
-    '@nuxtjs/supabase', 
+    '@nuxtjs/tailwindcss',
+    '@nuxt/ui',
+    '@nuxtjs/supabase',
     '@polar-sh/nuxt',
-    '@pinia/nuxt'
+    '@pinia/nuxt',
+    '@nuxt/icon'
   ],
+  css: ['~/assets/css/main.css'],
   modulesDir: [
     join(currentDir, '../../node_modules'), 
     join(currentDir, './node_modules')
   ],
-
   supabase: {
     url: process.env.SUPABASE_URL,
     key: process.env.SUPABASE_KEY,
@@ -60,10 +61,14 @@ export default defineNuxtConfig({
       path: '/'
     }
   },
-  // trpc: {
-  //   baseUrl: '/api/trpc',
-  //   transformer: 'superjson',
-  // },
+  icon: {
+    customCollections: [
+      {
+        prefix: 'thunder',
+        dir: './assets/icons'
+      },
+    ],
+  },
   nitro: {
     preset: 'aws-lambda',
     esbuild: {
