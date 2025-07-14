@@ -21,7 +21,7 @@
             <p class="font-semibold">{{ member.user.fullName || member.user.email }}</p>
             <p class="text-sm text-gray-500">{{ member.access }}</p>
           </div>
-          <UButton color="red" variant="soft" @click="removeMember(member.id)" :loading="removingMemberId === member.id">Remove</UButton>
+          <UButton color="warning" variant="soft" @click="removeMember(member.id)" :loading="removingMemberId === member.id">Remove</UButton>
         </li>
       </ul>
       <div v-else class="text-gray-500">No active members.</div>
@@ -33,7 +33,7 @@
             <p class="font-semibold">{{ member.user.email }}</p>
             <p class="text-sm text-gray-500">{{ member.access }} (Pending)</p>
           </div>
-          <UButton color="red" variant="soft" @click="removeMember(member.id)" :loading="removingMemberId === member.id">Cancel Invite</UButton>
+          <UButton color="warning" variant="soft" @click="removeMember(member.id)" :loading="removingMemberId === member.id">Cancel Invite</UButton>
         </li>
       </ul>
       <div v-else class="text-gray-500">No pending invitations.</div>
@@ -41,7 +41,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { z } from 'zod';
 
@@ -104,14 +104,14 @@ const inviteMember = async () => {
     await $client.team.inviteMember.mutate({ organizationId: orgId, email: state.emailToInvite });
     state.emailToInvite = '';
     await fetchMembers();
-  } catch (e) {
+  } catch (e: any) {
     inviteError.value = e;
   } finally {
     inviting.value = false;
   }
 };
 
-const removeMember = async (membershipId) => {
+const removeMember = async (membershipId: any) => {
   removingMemberId.value = membershipId;
   try {
     await $client.team.removeMember.mutate({ membershipId });

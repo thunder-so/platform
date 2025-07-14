@@ -2,64 +2,75 @@
   <div>
     <Header />
 
-    <div v-if="selectedOrganization">
-      <h1>{{ selectedOrganization.name }}</h1>
-      <nav class="flex space-x-2 border-b border-gray-200 dark:border-gray-800 mb-4">
-        <NuxtLink
-          :to="`/org/${selectedOrganization.id}`"
-          exact
-          class="px-3 py-2 font-medium text-sm rounded-t-lg text-gray-500 dark:text-gray-400"
-          active-class="text-primary-500 dark:text-primary-400 border-b-2 border-primary-500 dark:border-primary-400"
-        >
-          Applications
-        </NuxtLink>
-        <NuxtLink
-          :to="`/org/${selectedOrganization.id}/aws`"
-          class="px-3 py-2 font-medium text-sm rounded-t-lg text-gray-500 dark:text-gray-400"
-          active-class="text-primary-500 dark:text-primary-400 border-b-2 border-primary-500 dark:border-primary-400"
-        >
-          AWS Accounts
-        </NuxtLink>
-        <NuxtLink
-          :to="`/org/${selectedOrganization.id}/members`"
-          class="px-3 py-2 font-medium text-sm rounded-t-lg text-gray-500 dark:text-gray-400"
-          active-class="text-primary-500 dark:text-primary-400 border-b-2 border-primary-500 dark:border-primary-400"
-        >
-          Members
-        </NuxtLink>
-        <NuxtLink
-          :to="`/org/${selectedOrganization.id}/billing`"
-          class="px-3 py-2 font-medium text-sm rounded-t-lg text-gray-500 dark:text-gray-400"
-          active-class="text-primary-500 dark:text-primary-400 border-b-2 border-primary-500 dark:border-primary-400"
-        >
-          Billing
-        </NuxtLink>
-        <NuxtLink
-          :to="`/org/${selectedOrganization.id}/settings`"
-          class="px-3 py-2 font-medium text-sm rounded-t-lg text-gray-500 dark:text-gray-400"
-          active-class="text-primary-500 dark:text-primary-400 border-b-2 border-primary-500 dark:border-primary-400"
-        >
-          Settings
-        </NuxtLink>
-      </nav>
-      <div class="py-4">
+    <div class="app-container">
+      <aside class="sidebar bg-elevated border-r border-muted">
+        <UNavigationMenu 
+          v-if="selectedOrganization"
+          :items="links"
+          orientation="vertical" 
+          class="mb-4"
+        />
+      </aside>
+      <main class="main-content"> 
         <slot />
-      </div>
-    </div>
-    <div v-else>
-        Organization not found.
+      </main>
     </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 const route = useRoute();
 const { setSelectedOrganization, selectedOrganization } = useMemberships();
+import type { NavigationMenuItem } from '@nuxt/ui'
+
+const links = computed<NavigationMenuItem[]>(() => {
+  const orgId = selectedOrganization.value?.id;
+  if (!orgId) return [];
+  return [
+    {
+      label: 'Applications',
+      to: `/org/${orgId}`,
+    },
+    {
+      label: 'AWS Accounts',
+      to: `/org/${orgId}/aws`,
+    },
+    {
+      label: 'Members',
+      to: `/org/${orgId}/members`,
+    },
+    {
+      label: 'Billing',
+      to: `/org/${orgId}/billing`,
+    },
+    {
+      label: 'Settings',
+      to: `/org/${orgId}/settings`,
+    },
+  ];
+});
 console.log('layouts/org selectedOrganization', selectedOrganization.value)  
 
 watch(() => route.params.org_id, (newOrgId) => {
   if (newOrgId) {
-    setSelectedOrganization(newOrgId);
+    setSelectedOrganization(newOrgId as string);
   }
 }, { immediate: true });
 </script>
+
+<style scoped>
+.app-container {
+  display: flex;
+  height: 100vh;
+  color: #fff;
+}
+
+.sidebar {
+  width: 310px;
+  padding: 20px;
+}
+.main-content {
+  flex-grow: 1;
+  padding: 20px;
+}
+</style>

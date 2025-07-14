@@ -1,17 +1,18 @@
 <template>
   <div>
-    <Header />
-
     <div v-if="user">
       <h1>Welcome, {{ user.email }}</h1>
-      memberships: <pre>{{ memberships }}</pre>
-
+      memberships: {{ memberships.length }}
       selectedOrganization: {{ selectedOrganization }}
     </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 const user = useSupabaseUser();
 const { memberships, selectedOrganization, refreshMemberships } = useMemberships()
+
+definePageMeta({
+  layout: 'org'
+});
 </script>

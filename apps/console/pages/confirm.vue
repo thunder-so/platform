@@ -16,7 +16,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 const supabase = useSupabaseClient();
 const user = useSupabaseUser();
 const route = useRoute();
@@ -27,7 +27,7 @@ const setupAndRedirect = async () => {
   await initializeSession();
   console.log('confirm selectedOrganization', selectedOrganization.value)
   navigateTo({ 
-    path: `/org/${selectedOrganization.value.id}`, 
+    path: `/org/${selectedOrganization.value?.id}`, 
     replace: true 
   });
 }

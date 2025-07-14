@@ -43,7 +43,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 const { memberships, selectedOrganization, isLoading, refreshMemberships } = useMemberships()
 
 definePageMeta({
@@ -79,7 +79,7 @@ const fetchProviders = async () => {
 
     if (fetchError) throw fetchError
     providers.value = data
-  } catch (e) {
+  } catch (e: any) {
     error.value = e
   } finally {
     loading.value = false
@@ -97,7 +97,7 @@ const submitManualForm = async () => {
   manualFormLoading.value = true;
   try {
     await $client.providers.addManualProvider.mutate({
-      organizationId: selectedOrganization.value.id,
+      organizationId: selectedOrganization.value?.id as string,
       ...manualFormState.value,
     });
     alert('AWS Account added successfully!');
@@ -128,7 +128,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   // Unsubscribe from realtime channel when component is unmounted
-  supabase.removeChannel(`organization_providers:${orgId}`)
+  supabase.removeAllChannels()
 })
 
 // Watch for organization data to be available

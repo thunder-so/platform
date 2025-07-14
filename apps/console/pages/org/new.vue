@@ -18,7 +18,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 const { $client } = useNuxtApp();
 const router = useRouter();
 import PricingTable from '~/components/PricingTable.vue';

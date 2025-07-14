@@ -28,7 +28,7 @@
   </fieldset>
 </template>
 
-<script setup>
+<script setup lang="ts">
 const props = defineProps({
   plans: {
     type: Array,

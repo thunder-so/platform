@@ -20,29 +20,33 @@
         <p>You cannot delete this organization because it still has applications associated with it.</p>
         <p>Please delete all applications before attempting to delete the organization.</p>
       </div>
-      <UButton v-else color="red" @click="confirmDelete = true">
-        Delete Organization
-      </UButton>
+      <div v-else-if="hasActiveSubscription" class="text-red-500">
+        <p>You cannot delete this organization because it has an active subscription.</p>
+        <p>Please cancel your subscription before attempting to delete the organization.</p>
+      </div>
 
-      <UModal v-model="confirmDelete">
-        <div class="p-4">
-          <h3 class="text-lg font-bold mb-4">Confirm Deletion</h3>
-          <p class="mb-4">Are you sure you want to delete "{{ selectedOrganization.name }}"?</p>
-          <p class="mb-4 text-red-500">This action cannot be undone.</p>
-          <div class="flex justify-end space-x-2">
-            <UButton color="gray" @click="confirmDelete = false">Cancel</UButton>
-            <UButton color="red" @click="deleteOrganization" :loading="deleting">Delete</UButton>
+      <UModal v-else title="Confirm" description="Are you sure you want to delete this workspace?">
+        <UButton label="Delete workspace" color="neutral" variant="subtle" />
+
+        <template #body>
+          <p class="mb-4">Your workspace <code>{{ selectedOrganization.name }}</code> will be deleted along with all settings.</p>
+          <p class="mb-4 text-red-700">This action cannot be undone.</p>
+        </template>
+        <template #footer>
+          <div class="flex gap-2">
+            <UButton color="neutral" label="Dismiss" @click="emit('close', false)" />
+            <UButton color="warning" label="Confirm" @click="deleteOrganization" :loading="deleting" />
           </div>
-        </div>
+        </template>
       </UModal>
     </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, onMounted, inject } from 'vue';
 import { z } from 'zod';
-const { memberships, selectedOrganization, refreshMemberships } = useMemberships()
+const { memberships, selectedOrganization, refreshMemberships, initializeSession } = useMemberships()
 
 definePageMeta({
   layout: 'org'
@@ -57,30 +61,25 @@ const success = ref(false);
 const hasApplications = ref(false);
 const confirmDelete = ref(false);
 const deleting = ref(false);
+const hasActiveSubscription = computed(() => {
+  const currentOrgMembership = memberships.value.find(
+    (m) => m.id === orgId
+  );
+  return currentOrgMembership?.status === "active";
+});
 
 // const organization = inject('organization');
-const orgId = route.params.org_id;
+const orgId = route.params.org_id as string;
 
 const schema = z.object({
   displayName: z.string().min(3, 'Must be at least 3 characters'),
 });
 
 const state = reactive({
-  displayName: selectedOrganization.value.name,
+  displayName: selectedOrganization.value?.name,
 });
 
 onMounted(async () => {
-  // const { data, error: fetchError } = await supabase
-  //   .from('organizations')
-  //   .select('name')
-  //   .eq('id', orgId)
-  //   .single();
-
-  // if (fetchError) {
-  //   error.value = fetchError;
-  // } else if (data) {
-  //   state.displayName = data.name || '';
-  // }
   await checkApplications();
 });
 
@@ -93,7 +92,7 @@ const checkApplications = async () => {
 
     if (fetchError) throw fetchError;
     hasApplications.value = count > 0;
-  } catch (e) {
+  } catch (e: any) {
     console.error("Error checking applications:", e.message);
   }
 };
@@ -104,8 +103,9 @@ const deleteOrganization = async () => {
     const { $client } = useNuxtApp();
     await $client.organizations.delete.mutate({ orgId });
     confirmDelete.value = false;
+    await initializeSession();
     await navigateTo('/');
-  } catch (e) {
+  } catch (e: any) {
     console.error("Error deleting organization:", e);
     alert("Failed to delete organization: " + e.message);
   } finally {
@@ -122,7 +122,7 @@ const updateOrganization = async () => {
       .from('organizations')
       .update({ name: state.displayName })
       .eq('id', orgId)
-      .select('name')
+      .select('id, name')
       .single();
 
     if (data && selectedOrganization) {
@@ -134,7 +134,7 @@ const updateOrganization = async () => {
     if (updateError) throw updateError;
     success.value = true;
     setTimeout(() => success.value = false, 3000);
-  } catch (e) {
+  } catch (e: any) {
     error.value = e;
   } finally {
     loading.value = false;

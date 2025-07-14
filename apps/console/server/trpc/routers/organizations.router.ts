@@ -252,9 +252,12 @@ export const organizationsRouter = router({
         })
       }
 
-      // 3. Soft delete the organization
+      // 3. Soft delete the organization and its memberships in a transaction
       const now = new Date()
-      await db.update(organizations).set({ deletedAt: now }).where(eq(organizations.id, orgId))
+      await db.transaction(async (tx) => {
+        await tx.update(organizations).set({ deletedAt: now }).where(eq(organizations.id, orgId));
+        await tx.update(memberships).set({ deletedAt: now }).where(eq(memberships.organizationId, orgId));
+      });
 
       return { success: true }
     }),

@@ -1,13 +1,13 @@
 <template>
-  <header class="flex justify-between items-center py-2 px-2 border-b">
+  <header class="flex justify-between items-center py-2 px-2 border-b border-muted">
     <div class="flex items-center space-x-4">
       <NuxtLink to="/" class="text-xl font-bold">
         <UButton icon="thunder:thunderso" size="md" color="neutral" variant="ghost"></UButton>
       </NuxtLink>
       <div class="relative" v-if="selectedOrganization">
-        <button @click="dropdownOpen = !dropdownOpen" class="flex justify-between items-center space-x-2 w-64 border-1 px-3 py-2">
+        <button @click="dropdownOpen = !dropdownOpen" class="flex cursor-pointer justify-between items-center space-x-2 w-64 border border-muted hover:border-neutral-600 px-3 py-2">
           <div class="flex items-center space-x-2">
-            <UAvatar :alt="selectedOrganization.name" size="sm" />
+            <UAvatar :alt="selectedOrganization.name" size="xs" />
             <span>{{ selectedOrganization.name }}</span>
           </div>
           <div class="flex items-center space-x-2">
@@ -38,7 +38,7 @@
     </div>
     <div class="flex items-center space-x-4">
       <div class="relative">
-        <button @click="newMenuOpen = !newMenuOpen" class="flex items-center space-x-1 border-1 px-3 py-2">
+        <button @click="newMenuOpen = !newMenuOpen" class="flex cursor-pointer items-center space-x-1 border border-muted  hover:border-neutral-600 px-3 py-2">
           <Icon name="i-heroicons-plus-20-solid" />
           <span>New</span>
         </button>
@@ -54,8 +54,8 @@
         </div>
       </div>
       <div class="relative">
-        <button @click="userMenuOpen = !userMenuOpen" class="border-1 px-3 py-2">
-          <UAvatar src="https://avatars.githubusercontent.com/u/739984?v=4" alt="Avatar" />
+        <button @click="userMenuOpen = !userMenuOpen" class="flex cursor-pointer border border-muted  hover:border-neutral-600 px-3 py-2">
+          <UAvatar :src="user?.user_metadata.avatar_url" :alt="user?.user_metadata.full_name" size="xs" />
         </button>
         <div v-if="userMenuOpen" class="absolute right-0 mt-2 w-48 bg-default border rounded-md shadow-lg z-10">
           <ul>

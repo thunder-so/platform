@@ -27,6 +27,7 @@ export const useMemberships = () => {
             subscriptions(status)
           )
         `)
+        .is('organizations.deleted_at', null)
         .eq('user_id', user.value.id)
         .eq('pending', false)
         .is('deleted_at', null)
