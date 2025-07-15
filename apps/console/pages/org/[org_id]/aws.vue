@@ -98,19 +98,20 @@ const addNewAccount = () => {
   window.open(url, '_blank');
 };
 
-const editProviderModal = resolveComponent('useEditProviderModal')
+const providerEditModal = resolveComponent('useProviderEditModal')
+const providerDeleteModal = resolveComponent('useProviderDeleteModal')
 
 function getDropdownActions(provider: Provider): DropdownMenuItem[][] {
   return [
     [
       {
-        label: 'Copy user Id',
+        label: 'Copy stack ID',
         icon: 'i-lucide-copy',
         onSelect: () => {
           copy(provider.stack_id.toString())
 
           toast.add({
-            title: 'URL copied to clipboard!',
+            title: 'ID copied to clipboard!',
             color: 'success',
             icon: 'i-lucide-circle-check'
           })
@@ -122,7 +123,7 @@ function getDropdownActions(provider: Provider): DropdownMenuItem[][] {
         label: 'Edit',
         icon: 'i-lucide-edit',
         onSelect: async () => {
-          const modal = overlay.create(editProviderModal, {
+          const modal = overlay.create(providerEditModal, {
             props: { provider }
           })
           
@@ -136,7 +137,18 @@ function getDropdownActions(provider: Provider): DropdownMenuItem[][] {
       {
         label: 'Delete',
         icon: 'i-lucide-trash',
-        color: 'error'
+        color: 'error',
+        onSelect: async () => {
+          const modal = overlay.create(providerDeleteModal, {
+            props: { provider }
+          })
+          
+          const result = await modal.open().result
+          
+          if (result) {
+            await deleteProvider(provider.id)
+          }
+        }
       }
     ]
   ]
@@ -207,6 +219,28 @@ const updateProvider = async (providerId: string, newAlias: string) => {
     })
   }
 }
+
+const deleteProvider = async (providerId: string) => {
+  // try {
+  //   // Call the tRPC mutation to soft-delete the provider.
+  //   await $client.providers.delete.mutate({
+  //     providerId: providerId,
+  //   });
+    
+  //   toast.add({
+  //     title: 'Account deleted successfully!',
+  //     color: 'success'
+  //   })
+    
+  //   fetchProviders() // Refresh the list
+  // } catch (e: any) {
+  //   toast.add({
+  //     title: 'Failed to delete account',
+  //     color: 'error'
+  //   })
+  // }
+  console.log('deleted')
+};
 
 const manualFormState = ref({
   alias: '',

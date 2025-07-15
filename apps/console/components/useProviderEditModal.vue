@@ -27,11 +27,5 @@ onMounted(() => {
       <UButton label="Cancel" color="neutral" variant="outline" @click="close" />
       <UButton color="neutral" @click="emit('close', alias)">Save</UButton>
     </template>
-    <!-- <template #footer>
-      <div class="flex justify-end gap-2">
-        <UButton color="neutral" variant="outline" @click="emit('close', null)">Cancel</UButton>
-        <UButton color="neutral" @click="emit('close', alias)">Save</UButton>
-      </div>
-    </template> -->
   </UModal>
 </template>

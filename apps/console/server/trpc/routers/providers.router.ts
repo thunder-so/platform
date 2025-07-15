@@ -62,4 +62,38 @@ export const providersRouter = router({
         });
       }
     }),
+  delete: publicProcedure
+    .input(
+      z.object({
+        providerId: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { providerId } = input;
+
+      try {
+        const [data] = await db
+          .update(providers)
+          .set({
+            deletedAt: new Date(),
+          })
+          .where(sql`${providers.id} = ${providerId}`)
+          .returning({ id: providers.id });
+
+        if (!data) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Provider not found.',
+          });
+        }
+
+        return data;
+      } catch (error) {
+        console.error('Error in deleteProvider:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'An unexpected error occurred.',
+        });
+      }
+    }),
 });
