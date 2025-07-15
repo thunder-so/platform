@@ -64,6 +64,7 @@ import { useClipboard } from '@vueuse/core'
 const { memberships, selectedOrganization, isLoading } = useMemberships()
 const toast = useToast()
 const { copy } = useClipboard()
+const overlay = useOverlay()
 
 definePageMeta({
   layout: 'org'
@@ -97,6 +98,8 @@ const addNewAccount = () => {
   window.open(url, '_blank');
 };
 
+const editProviderModal = resolveComponent('useEditProviderModal')
+
 function getDropdownActions(provider: Provider): DropdownMenuItem[][] {
   return [
     [
@@ -117,7 +120,18 @@ function getDropdownActions(provider: Provider): DropdownMenuItem[][] {
     [
       {
         label: 'Edit',
-        icon: 'i-lucide-edit'
+        icon: 'i-lucide-edit',
+        onSelect: async () => {
+          const modal = overlay.create(editProviderModal, {
+            props: { provider }
+          })
+          
+          const result = await modal.open().result
+          
+          if (result) {
+            await updateProvider(provider.id, result)
+          }
+        }
       },
       {
         label: 'Delete',
@@ -157,6 +171,7 @@ const fetchProviders = async () => {
       .select('*')
       .eq('organization_id', orgId)
       .is('deleted_at', null)
+      .order('updated_at', { ascending: false })
 
     if (fetchError) throw fetchError
     providers.value = data
@@ -164,6 +179,32 @@ const fetchProviders = async () => {
     error.value = e
   } finally {
     loading.value = false
+  }
+}
+
+const updateProvider = async (providerId: string, newAlias: string) => {
+  try {
+    const { error } = await supabase
+      .from('providers')
+      .update({ 
+        alias: newAlias,
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', providerId)
+
+    if (error) throw error
+    
+    toast.add({
+      title: 'Account alias updated successfully!',
+      color: 'success'
+    })
+    
+    fetchProviders() // Refresh the list
+  } catch (e: any) {
+    toast.add({
+      title: 'Failed to update account alias',
+      color: 'error'
+    })
   }
 }
 
@@ -184,7 +225,7 @@ const submitManualForm = async () => {
     alert('AWS Account added successfully!');
     manualFormState.value = { alias: '', accessKeyId: '', secretAccessKey: '' }; // Clear form
     fetchProviders(); // Re-fetch providers to update the list
-  } catch (e) {
+  } catch (e: any) {
     console.error('Error adding manual provider:', e);
     alert(`Failed to add AWS Account: ${e.message}`);
   } finally {
