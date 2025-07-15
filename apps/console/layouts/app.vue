@@ -5,7 +5,7 @@
     <div class="app-container">
       <aside class="sidebar bg-elevated border-r border-muted">
         <UNavigationMenu 
-          v-if="selectedOrganization"
+          v-if="selectedApplication"
           :items="links"
           orientation="vertical" 
           class="mb-4"
@@ -19,41 +19,35 @@
 </template>
 
 <script setup lang="ts">
-const route = useRoute();
-const { setSelectedOrganization, selectedOrganization } = useMemberships();
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { useApplications } from '~/composables/useApplications';
+import Header from '~/components/Header.vue';
+
+const route = useRoute();
+const { selectedApplication, setSelectedApplication } = useApplications();
 
 const links = computed<NavigationMenuItem[]>(() => {
-  const orgId = selectedOrganization.value?.id;
-  if (!orgId) return [];
+  const appId = selectedApplication.value?.id;
+  if (!appId) return [];
   return [
     {
-      label: 'Applications',
-      to: `/org/${orgId}`,
+      label: 'Overview',
+      to: `/app/${appId}`,
     },
     {
-      label: 'AWS Accounts',
-      to: `/org/${orgId}/aws`,
-    },
-    {
-      label: 'Members',
-      to: `/org/${orgId}/members`,
-    },
-    {
-      label: 'Billing',
-      to: `/org/${orgId}/billing`,
+      label: 'Environments',
+      to: `/app/${appId}/environments`,
     },
     {
       label: 'Settings',
-      to: `/org/${orgId}/settings`,
+      to: `/app/${appId}/settings`,
     },
   ];
 });
-console.log('layouts/org selectedOrganization', selectedOrganization.value)  
 
-watch(() => route.params.org_id, (newOrgId) => {
-  if (newOrgId) {
-    setSelectedOrganization(newOrgId as string);
+watch(() => route.params.app_id, (newAppId) => {
+  if (newAppId) {
+    setSelectedApplication(newAppId as string);
   }
 }, { immediate: true });
 </script>

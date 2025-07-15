@@ -1,6 +1,6 @@
 <template>
   <header class="flex justify-between items-center py-2 px-2 border-b border-muted">
-    <div class="flex items-center space-x-4">
+    <div class="flex items-center space-x-2">
       <NuxtLink to="/" class="text-xl font-bold">
         <UButton icon="thunder:thunderso" size="md" color="neutral" variant="ghost"></UButton>
       </NuxtLink>
@@ -16,7 +16,7 @@
           </div>
         </button>
         <div v-if="dropdownOpen" class="absolute mt-2 w-64 bg-default border rounded-md shadow-lg z-10">
-          <ul>
+          <ul class="pt-1 pb-1">
             <li v-for="org in memberships" :key="org.id" @click="selectOrganization(org)"
               class="flex justify-between items-center px-3 py-2 space-x-2 cursor-pointer hover:bg-gray-800">
               <div class="flex items-center space-x-2">
@@ -25,6 +25,7 @@
               </div>
               <UBadge v-if="org.status === 'active'" icon="i-lucide-rocket" size="md" color="warning" variant="outline">Pro</UBadge>
             </li>
+            <hr class="border-gray-700" />
             <li>
               <NuxtLink to="/org/new"
                 class="flex items-center px-4 py-3 space-x-2 cursor-pointer hover:bg-gray-800">
@@ -36,14 +37,14 @@
         </div>
       </div>
     </div>
-    <div class="flex items-center space-x-4">
+    <div class="flex items-center space-x-2">
       <div class="relative">
-        <button @click="newMenuOpen = !newMenuOpen" class="flex cursor-pointer items-center space-x-1 border border-muted  hover:border-neutral-600 px-3 py-2">
+        <button @click="newMenuOpen = !newMenuOpen" class="flex cursor-pointer items-center space-x-1 border border-muted hover:border-neutral-600 px-3 py-2">
           <Icon name="i-heroicons-plus-20-solid" />
           <span>New</span>
         </button>
         <div v-if="newMenuOpen" class="absolute right-0 mt-2 w-48 bg-default border rounded-md shadow-lg z-10">
-          <ul>
+          <ul class="pt-1 pb-1">
             <template v-for="(group, index) in newItems" :key="index">
               <li v-for="item in group" :key="item.to">
                 <NuxtLink :to="item.to" class="block px-4 py-2 text-sm hover:bg-gray-800">{{ item.label }}</NuxtLink>
@@ -54,11 +55,20 @@
         </div>
       </div>
       <div class="relative">
-        <button @click="userMenuOpen = !userMenuOpen" class="flex cursor-pointer border border-muted  hover:border-neutral-600 px-3 py-2">
+        <button @click="userMenuOpen = !userMenuOpen" class="flex border border-transparent cursor-pointer px-3 py-2">
           <UAvatar :src="user?.user_metadata.avatar_url" :alt="user?.user_metadata.full_name" size="xs" />
         </button>
         <div v-if="userMenuOpen" class="absolute right-0 mt-2 w-48 bg-default border rounded-md shadow-lg z-10">
-          <ul>
+          <ul class="pb-1">
+            <li>
+              <div class="flex items-center px-4 py-3 space-x-3">
+                <UAvatar :src="user?.user_metadata.avatar_url" :alt="user?.user_metadata.full_name" size="sm" />
+                <div class="flex flex-col">
+                  <span>{{ user?.user_metadata.full_name }}</span>
+                  <span class="text-xs text-gray-400">{{ user?.email }}</span>
+                </div>
+              </div>
+            </li>
             <template v-for="(group, index) in userMenuItems" :key="index">
               <li v-for="item in group" :key="item.label" :class="{ 'cursor-pointer hover:bg-gray-800': !item.disabled, 'opacity-50 px-4 py-2 text-sm': item.disabled }">
                 <NuxtLink v-if="item.to" :to="item.to" class="block px-4 py-2 text-sm">{{ item.label }}</NuxtLink>
@@ -103,13 +113,6 @@ const newItems = [
 ];
 
 const userMenuItems = [
-  [
-    {
-      label: user.value?.user_metadata.full_name || 'User',
-      slot: 'account',
-      disabled: true
-    }
-  ],
   [
     { label: 'Account Settings', to: '/profile' },
     { label: 'Logout', click: async () => { 

@@ -7,7 +7,7 @@
 
     <div v-if="loading">Loading AWS accounts...</div>
     <div v-else-if="error">Error loading AWS accounts: {{ error.message }}</div>
-    <div v-else-if="providers.length">
+    <!-- <div v-else-if="providers.length">
       <UCard v-for="provider in providers" :key="provider.id" class="mb-4">
         <template #header>
           <h3>{{ provider.alias }}</h3>
@@ -18,6 +18,13 @@
         <p><strong>Status:</strong> {{ provider.status }}</p>
         <p><strong>Last Updated:</strong> {{ new Date(provider.updated_at).toLocaleString() }}</p>
       </UCard>
+    </div> -->
+    <div v-else-if="providers.length">
+      <UTable :data="providers" :columns="columns">
+        <template #updated_at-data="{ row }">
+          {{ new Date(row.updated_at).toLocaleString() }}
+        </template>
+      </UTable>
     </div>
     <div v-else>
       <p>No AWS accounts connected yet.</p>
@@ -53,8 +60,7 @@ definePageMeta({
 const { $client } = useNuxtApp()
 const route = useRoute()
 const supabase = useSupabaseClient()
-// const organization = inject('organization')
-const config = useRuntimeConfig()
+// const config = useRuntimeConfig()
 const providers = ref([])
 const loading = ref(false)
 const error = ref(null)
@@ -67,6 +73,24 @@ const addNewAccount = () => {
 
   window.open(url, '_blank');
 };
+
+const columns = [
+  { accessorKey: 'alias', header: 'Alias' },
+  { accessorKey: 'account_id', header: 'Account ID' },
+  { 
+    accessorKey: 'updated_at', 
+    header: 'Last Updated',
+    cell: ({ row }) => {
+      return new Date(row.getValue('updated_at')).toLocaleString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      })
+    }
+  }
+];
 
 const fetchProviders = async () => {
   loading.value = true
