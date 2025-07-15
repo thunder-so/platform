@@ -10,7 +10,7 @@
 
 <script setup lang="ts">
 const user = useSupabaseUser();
-const { memberships, selectedOrganization, refreshMemberships } = useMemberships()
+const { memberships, selectedOrganization } = useMemberships()
 
 definePageMeta({
   layout: 'org'

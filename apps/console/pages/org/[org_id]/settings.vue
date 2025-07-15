@@ -128,7 +128,8 @@ const updateOrganization = async () => {
     if (data && selectedOrganization) {
       // organization.value.name = data.name;
       selectedOrganization.value = data;
-      refreshMemberships();
+      // refreshMemberships();
+      await initializeSession();
     }
 
     if (updateError) throw updateError;

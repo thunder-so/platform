@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const route = useRoute();
 const title: any = ref(route.meta.title || 'console.thunder.so');
-const { memberships, isLoading, refreshMemberships } = useMemberships()
+// const { memberships, isLoading, refreshMemberships } = useMemberships()
 
 useHead({
   title: title,
@@ -37,7 +37,7 @@ watch(
 )
 
 onMounted(async () => {
-  refreshMemberships()
+  // refreshMemberships()
 })
 </script>
 

@@ -21,8 +21,15 @@
     </div> -->
     <div v-else-if="providers.length">
       <UTable :data="providers" :columns="columns">
-        <template #updated_at-data="{ row }">
-          {{ new Date(row.updated_at).toLocaleString() }}
+        <template #action-cell="{ row }">
+          <UDropdownMenu :items="getDropdownActions(row.original)">
+            <UButton
+              icon="i-lucide-ellipsis-vertical"
+              color="neutral"
+              variant="ghost"
+              aria-label="Actions"
+            />
+          </UDropdownMenu>
         </template>
       </UTable>
     </div>
@@ -51,7 +58,12 @@
 </template>
 
 <script setup lang="ts">
-const { memberships, selectedOrganization, isLoading, refreshMemberships } = useMemberships()
+import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
+import { useClipboard } from '@vueuse/core'
+
+const { memberships, selectedOrganization, isLoading } = useMemberships()
+const toast = useToast()
+const { copy } = useClipboard()
 
 definePageMeta({
   layout: 'org'
@@ -64,8 +76,19 @@ const supabase = useSupabaseClient()
 const providers = ref([])
 const loading = ref(false)
 const error = ref(null)
-
 const orgId = route.params.org_id
+
+export type Provider = {
+  id: string,
+  alias: string,
+  account_id: string,
+  region: string,
+  stack_id: string,
+  stack_name: string,
+  access_key_id: string,
+  updated_at: string,
+  created_at: string,
+}
 
 const addNewAccount = () => {
   const roleTemplateUrl = useRuntimeConfig().public.PROVIDER_STACK;
@@ -73,6 +96,37 @@ const addNewAccount = () => {
 
   window.open(url, '_blank');
 };
+
+function getDropdownActions(provider: Provider): DropdownMenuItem[][] {
+  return [
+    [
+      {
+        label: 'Copy user Id',
+        icon: 'i-lucide-copy',
+        onSelect: () => {
+          copy(provider.stack_id.toString())
+
+          toast.add({
+            title: 'URL copied to clipboard!',
+            color: 'success',
+            icon: 'i-lucide-circle-check'
+          })
+        }
+      }
+    ],
+    [
+      {
+        label: 'Edit',
+        icon: 'i-lucide-edit'
+      },
+      {
+        label: 'Delete',
+        icon: 'i-lucide-trash',
+        color: 'error'
+      }
+    ]
+  ]
+}
 
 const columns = [
   { accessorKey: 'alias', header: 'Alias' },
@@ -89,6 +143,9 @@ const columns = [
         hour12: false
       })
     }
+  },
+  {
+    id: 'action'
   }
 ];
 
