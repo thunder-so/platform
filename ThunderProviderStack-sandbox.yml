@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: > 
+  Connect your AWS account to access the Thunder Console. 
+  This stack creates an IAM role that can be used by Thunder for use in deployments. 
+  Must be deployed to us-east-1
+Parameters:
+  Alias:
+    Description: This is the short name you have selected for your provider.
+    Type: String
+Outputs: {}
+Resources:
+  ThunderRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      RoleName: !Join
+        - "-"
+        - - "thunder"
+          - !Ref Alias
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: '665186350589'
+            Action: sts:AssumeRole
+            # Condition:
+            #   StringEquals:
+            #     'sts:ExternalId': !Ref ProviderId
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+  ThunderProvider:
+    Type: 'Custom::ThunderProvider'
+    DependsOn: ThunderRole
+    Properties:
+      ServiceToken: 'arn:aws:lambda:us-east-1:665186350589:function:ProviderFunction-sandbox'
+      Alias: !Ref Alias
+      AccountId: !Ref 'AWS::AccountId'
+      Region: !Ref 'AWS::Region'
+      StackName: !Ref 'AWS::StackName'
+      RoleArn: !GetAtt ThunderRole.Arn
+Rules:
+  CheckRegion:
+    Assertions:
+      - Assert:
+          Fn::Equals:
+            - Ref: AWS::Region
+            - 'us-east-1'
+        AssertDescription: This stack needs to be deployed to us-east-1

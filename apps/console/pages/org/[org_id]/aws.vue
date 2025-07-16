@@ -64,6 +64,7 @@ import { z } from 'zod'
 import type { FormSubmitEvent } from '#ui/types'
 import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
 import { useClipboard } from '@vueuse/core'
+import { ProviderCreateModal } from '#components'
 
 const { memberships, selectedOrganization, isLoading } = useMemberships()
 const toast = useToast()
@@ -90,6 +91,17 @@ const manualSchema = z.object({
   secretAccessKey: z.string().min(1, 'Secret Access Key is required')
 })
 
+const UBadge = resolveComponent('UBadge')
+// const providerCreateModal = resolveComponent('ProviderCreateModal')
+const providerCreateModal = overlay.create(ProviderCreateModal);
+
+const providerEditModal = resolveComponent('ProviderUpdateModal')
+const providerDeleteModal = resolveComponent('ProviderDeleteModal')
+
+const addNewAccount = () => {
+  providerCreateModal.open()
+};
+
 type Schema = z.output<typeof manualSchema>
 
 export type Provider = {
@@ -103,17 +115,6 @@ export type Provider = {
   updated_at: string,
   created_at: string,
 }
-
-const addNewAccount = () => {
-  const roleTemplateUrl = useRuntimeConfig().public.PROVIDER_STACK;
-  const url = `https://us-east-1.console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?templateURL=${encodeURIComponent(roleTemplateUrl)}&stackName=thunder-provider-${encodeURIComponent()}&param_Alias=${encodeURIComponent()}&param_ProviderId=${encodeURIComponent()}`;
-
-  window.open(url, '_blank');
-};
-
-const UBadge = resolveComponent('UBadge')
-const providerEditModal = resolveComponent('useProviderEditModal')
-const providerDeleteModal = resolveComponent('useProviderDeleteModal')
 
 function getDropdownActions(provider: Provider): DropdownMenuItem[][] {
   return [

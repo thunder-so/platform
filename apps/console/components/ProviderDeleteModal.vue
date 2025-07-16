@@ -34,7 +34,7 @@ const isDeleteEnabled = computed(() => confirmationInput.value === 'delete')
       </div>
       <div v-else class="flex gap-2">
         <UButton label="Cancel" color="neutral" variant="outline" @click="close" />
-        <UButton :disabled="!isDeleteEnabled" color="red" @click="emit('close', props.provider.id)">Delete</UButton>
+        <UButton :disabled="!isDeleteEnabled" color="error" @click="emit('close', props.provider.id)">Delete</UButton>
       </div>
     </template>
   </UModal>
