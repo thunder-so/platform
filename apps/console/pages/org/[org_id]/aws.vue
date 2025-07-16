@@ -139,14 +139,29 @@ function getDropdownActions(provider: Provider): DropdownMenuItem[][] {
         icon: 'i-lucide-trash',
         color: 'error',
         onSelect: async () => {
+          // Check for associated environments
+          const { data: environments, error } = await supabase
+            .from('environments')
+            .select('id')
+            .eq('provider_id', provider.id)
+            .is('deleted_at', null)
+            .limit(1);
+
+          if (error) {
+            toast.add({ title: 'Error checking for environments', color: 'error' });
+            return;
+          }
+
+          const mode = (environments && environments.length > 0) ? 'cannotDelete' : 'confirmDelete';
+
           const modal = overlay.create(providerDeleteModal, {
-            props: { provider }
-          })
-          
-          const result = await modal.open().result
-          
+            props: { provider, mode },
+          });
+
+          const result = await modal.open().result;
+
           if (result) {
-            await deleteProvider(provider.id)
+            await deleteProvider(provider.id);
           }
         }
       }
@@ -221,25 +236,24 @@ const updateProvider = async (providerId: string, newAlias: string) => {
 }
 
 const deleteProvider = async (providerId: string) => {
-  // try {
-  //   // Call the tRPC mutation to soft-delete the provider.
-  //   await $client.providers.delete.mutate({
-  //     providerId: providerId,
-  //   });
+  try {
+    // Call the tRPC mutation to soft-delete the provider.
+    await $client.providers.delete.mutate({
+      providerId: providerId,
+    });
     
-  //   toast.add({
-  //     title: 'Account deleted successfully!',
-  //     color: 'success'
-  //   })
+    toast.add({
+      title: 'Account deleted successfully!',
+      color: 'success'
+    })
     
-  //   fetchProviders() // Refresh the list
-  // } catch (e: any) {
-  //   toast.add({
-  //     title: 'Failed to delete account',
-  //     color: 'error'
-  //   })
-  // }
-  console.log('deleted')
+    fetchProviders() // Refresh the list
+  } catch (e: any) {
+    toast.add({
+      title: 'Failed to delete account',
+      color: 'error'
+    })
+  }
 };
 
 const manualFormState = ref({
