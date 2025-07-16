@@ -4,6 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { db } from '~/server/db/db';
 import { providers } from '~/server/db/schema';
 import { sql } from 'drizzle-orm';
+import { STSClient, GetCallerIdentityCommand } from '@aws-sdk/client-sts';
 
 export const providersRouter = router({
   addManualProvider: publicProcedure
@@ -17,6 +18,29 @@ export const providersRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const { organizationId, alias, accessKeyId, secretAccessKey } = input;
+
+      const stsClient = new STSClient({
+        credentials: {
+          accessKeyId: accessKeyId,
+          secretAccessKey: secretAccessKey,
+        },
+      });
+
+      let callerIdentity;
+      try {
+        callerIdentity = await stsClient.send(new GetCallerIdentityCommand({}));
+      } catch (error: any) {
+        if (error.name === 'InvalidClientTokenId' || error.name === 'SignatureDoesNotMatch') {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid AWS credentials provided.',
+          });
+        }
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'An unexpected error occurred during credential validation.',
+        });
+      }
 
       try {
         // Store secret access key in Supabase Vault using Drizzle raw query
@@ -40,6 +64,7 @@ export const providersRouter = router({
             organizationId: organizationId,
             alias: alias,
             accessKeyId: accessKeyId,
+            accountId: callerIdentity.Account,
             createdAt: new Date(),
             updatedAt: new Date(),
           })

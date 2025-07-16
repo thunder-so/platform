@@ -7,18 +7,6 @@
 
     <div v-if="loading">Loading AWS accounts...</div>
     <div v-else-if="error">Error loading AWS accounts: {{ error.message }}</div>
-    <!-- <div v-else-if="providers.length">
-      <UCard v-for="provider in providers" :key="provider.id" class="mb-4">
-        <template #header>
-          <h3>{{ provider.alias }}</h3>
-        </template>
-        <p><strong>Account ID:</strong> {{ provider.account_id }}</p>
-        <p><strong>Region:</strong> {{ provider.region }}</p>
-        <p><strong>Stack Name:</strong> {{ provider.stack_name }}</p>
-        <p><strong>Status:</strong> {{ provider.status }}</p>
-        <p><strong>Last Updated:</strong> {{ new Date(provider.updated_at).toLocaleString() }}</p>
-      </UCard>
-    </div> -->
     <div v-else-if="providers.length">
       <UTable :data="providers" :columns="columns">
         <template #action-cell="{ row }">
@@ -39,18 +27,32 @@
 
     <UCard class="mb-4">
       <template #header>
-        <h3>Manually Add AWS Account</h3>
+        <h3>Add AWS account credentials</h3>
       </template>
-      <UForm :state="manualFormState" @submit="submitManualForm" class="space-y-4">
+      <UAlert
+        v-if="manualFormError"
+        :title="manualFormError"
+        color="error"
+        variant="outline"
+        icon="i-lucide-alert-triangle"
+        class="mb-4"
+      />
+      <UForm :schema="manualSchema" :state="manualFormState" @submit="submitManualForm" class="space-y-4">
         <UFormField label="Alias" name="alias">
           <UInput v-model="manualFormState.alias" />
         </UFormField>
-        <UFormField label="Access Key ID" name="accessKeyId">
-          <UInput v-model="manualFormState.accessKeyId" />
-        </UFormField>
-        <UFormField label="Secret Access Key" name="secretAccessKey">
-          <UInput v-model="manualFormState.secretAccessKey" type="password" />
-        </UFormField>
+        <div class="flex gap-4">
+          <div>
+            <UFormField label="Access Key ID" name="accessKeyId">
+              <UInput v-model="manualFormState.accessKeyId" />
+            </UFormField>
+          </div>
+          <div>
+            <UFormField label="Secret Access Key" name="secretAccessKey">
+              <UInput v-model="manualFormState.secretAccessKey" type="password" />
+            </UFormField>
+          </div>
+        </div>
         <UButton type="submit" :loading="manualFormLoading">Add Account</UButton>
       </UForm>
     </UCard>
@@ -58,6 +60,8 @@
 </template>
 
 <script setup lang="ts">
+import { z } from 'zod'
+import type { FormSubmitEvent } from '#ui/types'
 import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
 import { useClipboard } from '@vueuse/core'
 
@@ -78,6 +82,15 @@ const providers = ref([])
 const loading = ref(false)
 const error = ref(null)
 const orgId = route.params.org_id
+const manualFormError = ref<string | null>(null);
+
+const manualSchema = z.object({
+  alias: z.string().min(1, 'Alias is required'),
+  accessKeyId: z.string().min(1, 'Access Key ID is required'),
+  secretAccessKey: z.string().min(1, 'Secret Access Key is required')
+})
+
+type Schema = z.output<typeof manualSchema>
 
 export type Provider = {
   id: string,
@@ -98,6 +111,7 @@ const addNewAccount = () => {
   window.open(url, '_blank');
 };
 
+const UBadge = resolveComponent('UBadge')
 const providerEditModal = resolveComponent('useProviderEditModal')
 const providerDeleteModal = resolveComponent('useProviderDeleteModal')
 
@@ -171,6 +185,17 @@ function getDropdownActions(provider: Provider): DropdownMenuItem[][] {
 
 const columns = [
   { accessorKey: 'alias', header: 'Alias' },
+  {
+    accessorKey: 'access_key_id',
+    header: 'Type',
+    cell: ({ row }) => {
+      if (row.original.stack_name) {
+        return h(UBadge, { color: 'primary', variant: 'subtle' }, () => 'CLOUDFORMATION')
+      } else if (row.original.access_key_id) {
+        return h(UBadge, { color: 'secondary', variant: 'subtle' }, () => 'ACCESS KEY')
+      }
+    }
+  },
   { accessorKey: 'account_id', header: 'Account ID' },
   { 
     accessorKey: 'updated_at', 
@@ -196,7 +221,7 @@ const fetchProviders = async () => {
     const { data, error: fetchError } = await supabase
       .from('providers')
       .select('*')
-      .eq('organization_id', orgId)
+      .eq('organization_id', orgId as string)
       .is('deleted_at', null)
       .order('updated_at', { ascending: false })
 
@@ -263,23 +288,24 @@ const manualFormState = ref({
 });
 const manualFormLoading = ref(false);
 
-const submitManualForm = async () => {
+async function submitManualForm(event: FormSubmitEvent<Schema>) {
   manualFormLoading.value = true;
+  manualFormError.value = null;
   try {
     await $client.providers.addManualProvider.mutate({
       organizationId: selectedOrganization.value?.id as string,
-      ...manualFormState.value,
+      ...event.data,
     });
-    alert('AWS Account added successfully!');
+    toast.add({ title: 'AWS Account added successfully!', color: 'success' });
     manualFormState.value = { alias: '', accessKeyId: '', secretAccessKey: '' }; // Clear form
     fetchProviders(); // Re-fetch providers to update the list
   } catch (e: any) {
     console.error('Error adding manual provider:', e);
-    alert(`Failed to add AWS Account: ${e.message}`);
+    manualFormError.value = e.message;
   } finally {
     manualFormLoading.value = false;
   }
-};
+}
 
 onMounted(() => {
   if (selectedOrganization.value) {
@@ -300,11 +326,4 @@ onUnmounted(() => {
   // Unsubscribe from realtime channel when component is unmounted
   supabase.removeAllChannels()
 })
-
-// Watch for organization data to be available
-// watch(organization, (newOrg) => {
-//   if (newOrg) {
-//     fetchProviders()
-//   }
-// })
 </script>
