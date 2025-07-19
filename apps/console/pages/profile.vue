@@ -142,8 +142,8 @@ onMounted(async () => {
     const { data, error } = await supabase
       .from('installations')
       .select('*')
-      .eq('user_id', user.value.id)
-      // .eq('deleted_at', null)
+      .eq('user_id', user.value.id) 
+      .is('deleted_at', null)
 
     if (error) {
       console.error('Error fetching installations:', error)

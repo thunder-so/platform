@@ -1,10 +1,14 @@
-
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'npm:@supabase/supabase-js'
+import { Webhooks } from 'npm:@octokit/webhooks'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const githubWebhookSecret = Deno.env.get('GITHUB_WEBHOOK_SECRET')!
+
+const webhooks = new Webhooks({
+    secret: githubWebhookSecret,
+});
 
 const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
   auth: { persistSession: false },
@@ -12,35 +16,15 @@ const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
 
 console.log('🚀 GitHub Webhook Edge Function initialized!')
 
-async function verifySignature(request: Request, body: string): Promise<boolean> {
-    const signature = request.headers.get('X-Hub-Signature-256');
-    if (!signature) {
-        return false;
-    }
-
-    const encoder = new TextEncoder();
-    const key = await crypto.subtle.importKey(
-        'raw',
-        encoder.encode(githubWebhookSecret),
-        { name: 'HMAC', hash: 'SHA-256' },
-        false,
-        ['sign']
-    );
-
-    const signed = await crypto.subtle.sign('HMAC', key, encoder.encode(body));
-    const expectedSignature = `sha256=${Array.from(new Uint8Array(signed)).map(b => b.toString(16).padStart(2, '0')).join('')}`;
-
-    return signature === expectedSignature;
-}
-
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return new Response('Method Not Allowed', { status: 405 })
   }
 
   const body = await req.text()
+  const signature = req.headers.get('X-Hub-Signature-256');
 
-  if (!await verifySignature(req, body)) {
+  if (!signature || !await webhooks.verify(body, signature)) {
       return new Response('Unauthorized', { status: 401 });
   }
 
@@ -120,33 +104,61 @@ async function handleInstallationRepositoriesEvent(payload: any) {
     const { action, installation, repositories_added, repositories_removed } = payload;
     const installationId = installation.id;
 
+    // 1. Fetch the current installation metadata from the database
     const { data: installationData, error: fetchError } = await supabase
         .from('installations')
         .select('metadata')
         .eq('installation_id', installationId)
         .single();
 
-    if (fetchError) throw fetchError;
-
-    const metadata = installationData.metadata || {};
-
-    switch (action) {
-        case 'added':
-            metadata.repositories = [...(metadata.repositories || []), ...repositories_added];
-            break;
-        case 'removed':
-            const removedIds = new Set(repositories_removed.map((r: any) => r.id));
-            metadata.repositories = (metadata.repositories || []).filter((r: any) => !removedIds.has(r.id));
-            break;
+    if (fetchError) {
+        console.error(`Failed to fetch installation ${installationId}:`, fetchError);
+        throw fetchError;
     }
 
+    // 2. Ensure we have a metadata object and a repositories array to work with.
+    const metadata = installationData?.metadata || {};
+    if (!Array.isArray(metadata.repositories)) {
+        metadata.repositories = [];
+    }
+
+    // 3. Process based on the action
+    switch (action) {
+        case 'added': {
+            console.log(`Adding ${repositories_added.length} repositories to installation ${installationId}.`);
+            // Create a Set of existing repository IDs for quick lookups to avoid duplicates.
+            const existingRepoIds = new Set(metadata.repositories.map((r: any) => r.id));
+            
+            // Filter repositories_added to only include ones not already in the list.
+            const newRepos = repositories_added.filter((r: any) => !existingRepoIds.has(r.id));
+            
+            // Append the new, unique repositories to the existing array.
+            metadata.repositories.push(...newRepos);
+            break;
+        }
+        case 'removed': {
+            console.log(`Removing ${repositories_removed.length} repositories from installation ${installationId}.`);
+            // Create a Set of repository IDs to remove for efficient filtering.
+            const removedRepoIds = new Set(repositories_removed.map((r: any) => r.id));
+            
+            // Filter the existing repositories, keeping only those whose ID is not in the removal set.
+            metadata.repositories = metadata.repositories.filter((r: any) => !removedRepoIds.has(r.id));
+            break;
+        }
+    }
+
+    // 4. Update the database with the modified metadata
     const { error: updateError } = await supabase
         .from('installations')
         .update({ metadata })
         .eq('installation_id', installationId);
 
-    if (updateError) throw updateError;
-    console.log(`✅ Successfully updated installation repositories: ${installationId}`)
+    if (updateError) {
+        console.error(`Failed to update installation ${installationId}:`, updateError);
+        throw updateError;
+    }
+
+    console.log(`✅ Successfully updated installation repositories for installation: ${installationId}`);
 }
 
 async function handleInstallationTargetEvent(payload: any) {
