@@ -2,6 +2,7 @@ import { router, publicProcedure, protectedProcedure } from '~/server/trpc/init'
 import { organizationsRouter } from './organizations.router'
 import { teamRouter } from './team.router'
 import { providersRouter } from './providers.router'
+import { githubRouter } from './github.router'
 
 export const appRouter = router({
   hello: publicProcedure
@@ -15,6 +16,7 @@ export const appRouter = router({
   organizations: organizationsRouter,
   team: teamRouter,
   providers: providersRouter,
+  github: githubRouter
 })
 
 export type AppRouter = typeof appRouter

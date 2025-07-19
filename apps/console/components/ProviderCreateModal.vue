@@ -9,7 +9,7 @@
         
         <UForm :schema="schema" :state="state">
           <UFormField label="Alias" name="alias" required>
-            <UInput v-model="state.alias" placeholder="Production Account" size="xl" />
+            <UInput v-model="state.alias" placeholder="Production Account" size="lg" />
           </UFormField>
         </UForm>
 
@@ -61,7 +61,7 @@ const emit = defineEmits<{ close: [boolean] }>()
 const schema = z.object({
   alias: z.string()
     .min(3, 'Must be at least 3 characters')
-    .regex(/^[a-zA-Z\s]*$/, 'Must only contain letters and spaces')
+    .regex(/^[a-zA-Z]*$/, 'May only contain letters')
 })
 
 const state = ref({
@@ -80,7 +80,7 @@ const cloudformationUrl = computed(() => {
   if (!isAliasValid.value) {
     return ''
   }
-  const roleTemplateUrl = runtimeConfig.public.PROVIDER_STACK;
+  const roleTemplateUrl = runtimeConfig.public.providerStack;
   const stackName = `thunder-provider-${state.value.alias.replace(/\s+/g, '-').toLowerCase()}`;
   
   const url = new URL('https://us-east-1.console.aws.amazon.com/cloudformation/home#/stacks/quickcreate');

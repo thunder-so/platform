@@ -25,7 +25,7 @@
       <p>No AWS accounts connected yet.</p>
     </div>
 
-    <UCard class="mb-4">
+    <UCard class="mt-4">
       <template #header>
         <h3>Add AWS account credentials</h3>
       </template>
@@ -86,15 +86,15 @@ const orgId = route.params.org_id
 const manualFormError = ref<string | null>(null);
 
 const manualSchema = z.object({
-  alias: z.string().min(1, 'Alias is required'),
+  alias: z.string()
+    .min(3, 'Must be at least 3 characters')
+    .regex(/^[a-zA-Z]*$/, 'May only contain letters'),
   accessKeyId: z.string().min(1, 'Access Key ID is required'),
   secretAccessKey: z.string().min(1, 'Secret Access Key is required')
 })
 
 const UBadge = resolveComponent('UBadge')
-// const providerCreateModal = resolveComponent('ProviderCreateModal')
 const providerCreateModal = overlay.create(ProviderCreateModal);
-
 const providerEditModal = resolveComponent('ProviderUpdateModal')
 const providerDeleteModal = resolveComponent('ProviderDeleteModal')
 
@@ -109,6 +109,7 @@ export type Provider = {
   alias: string,
   account_id: string,
   region: string,
+  role_arn: string,
   stack_id: string,
   stack_name: string,
   access_key_id: string,
@@ -117,22 +118,25 @@ export type Provider = {
 }
 
 function getDropdownActions(provider: Provider): DropdownMenuItem[][] {
-  return [
-    [
-      {
-        label: 'Copy stack ID',
-        icon: 'i-lucide-copy',
-        onSelect: () => {
-          copy(provider.stack_id.toString())
-
-          toast.add({
-            title: 'ID copied to clipboard!',
-            color: 'success',
-            icon: 'i-lucide-circle-check'
-          })
-        }
+  const linkToStack = []
+  if (provider.stack_id) {
+    linkToStack.push({
+      label: 'View stack in CloudFormation',
+      icon: 'mdi:aws',
+      onSelect: () => {
+        window.open(`https://console.aws.amazon.com/go/view?arn=${provider.stack_id}`, '_blank')
       }
-    ],
+    }, {
+      label: 'Edit IAM Role',
+      icon: 'mdi:aws',
+      onSelect: () => {
+        window.open(`https://console.aws.amazon.com/go/view?arn=${provider.role_arn}`, '_blank')
+      }
+    })
+  }
+
+  return [
+    ... (linkToStack.length ? [linkToStack] : []),
     [
       {
         label: 'Edit',

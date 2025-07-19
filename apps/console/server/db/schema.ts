@@ -190,16 +190,6 @@ export const environments = pgTable('environments', {
   applicationId: text('application_id').notNull().references(() => applications.id),
 });
 
-export const installations = pgTable('installations', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  installationId: integer('installation_id').unique().notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
-  deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
-  userId: uuid('user_id').notNull().references(() => users.id),
-  metadata: jsonb('metadata').notNull(),
-});
-
 export const services = pgTable('services', {
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
   name: text('name').notNull(),
@@ -240,6 +230,31 @@ export const services = pgTable('services', {
 //   installationId: integer('installation_id').references(() => installations.installationId),
 // });
 
+/**
+ * Installations and related tables
+ */
+export const installations = pgTable('installations', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  installationId: integer('installation_id').unique().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
+  deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  metadata: jsonb('metadata').notNull(),
+});
+
+export const installationsRelations = relations(installations, ({ one, many }) => ({
+  user: one(users, {
+    fields: [installations.userId],
+    references: [users.id],
+  }),
+  services: many(services),
+}));
+
+
+/**
+ * Env Vars.
+ */
 export const environmentVariables = pgTable('environment_variables', {
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
   key: text('key').notNull(),
@@ -306,7 +321,7 @@ export const events = pgTable('events', {
   pipelineStart: timestamp('pipeline_start', { withTimezone: true, precision: 6 }),
   pipelineEnd: timestamp('pipeline_end', { withTimezone: true, precision: 6 }),
   pipelineState: pipelineStatusEnum('pipeline_state').default('NULL'),
-  pipelinemetadata: jsonb('pipeline_metadata'),
+  pipelineMetadata: jsonb('pipeline_metadata'),
   pipelineLog: jsonb('pipeline_log'),
   createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }),
@@ -348,13 +363,7 @@ export const environmentsRelations = relations(environments, ({ one, many }) => 
   userAccessTokens: many(userAccessTokens),
 }));
 
-export const installationsRelations = relations(installations, ({ one, many }) => ({
-  user: one(users, {
-    fields: [installations.userId],
-    references: [users.id],
-  }),
-  services: many(services),
-}));
+
 
 export const servicesRelations = relations(services, ({ one, many }) => ({
   environment: one(environments, {
