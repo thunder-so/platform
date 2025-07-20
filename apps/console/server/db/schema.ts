@@ -190,45 +190,45 @@ export const environments = pgTable('environments', {
   applicationId: text('application_id').notNull().references(() => applications.id),
 });
 
-export const services = pgTable('services', {
-  id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
-  name: text('name').notNull(),
-  displayName: text('display_name').notNull(),
-  stackType: stackTypeEnum('stack_type').default('SPA'),
-  stackVersion: text('stack_version'),
-  runtime: text('runtime'),
-  runtimeVersion: text('runtime_version'),
-  metadata: jsonb('metadata'),
-  resources: jsonb('resources'),
-  redirects: jsonb('redirects'),
-  rewrites: jsonb('rewrites'),
-  headers: jsonb('headers'),
-  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
-  deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
-  environmentId: text('environment_id').notNull().references(() => environments.id),
-  installationId: integer('installation_id').references(() => installations.installationId),
-});
-
-// export const services2 = pgTable('services2', {
+// export const services = pgTable('services', {
 //   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
 //   name: text('name').notNull(),
 //   displayName: text('display_name').notNull(),
 //   stackType: stackTypeEnum('stack_type').default('SPA'),
 //   stackVersion: text('stack_version'),
-//   resources: jsonb('resources'), // store stack output
-//   metadata: jsonb('metadata'), // service specific: LambdaProps, ServiceProps, etc.
-//   appProps: jsonb('app_props'), // rootdir, outputdir
-//   cdnProps: jsonb('cdn_props'), // cloudfront
-//   edgeProps: jsonb('edge_props'), // headers, redirects, rewrites
-//   domainProps: jsonb('domain_props'), // route53, domains, certificates
-//   pipelineProps: jsonb('pipeline_props'), // pipeline, event bus
+//   runtime: text('runtime'),
+//   runtimeVersion: text('runtime_version'),
+//   metadata: jsonb('metadata'),
+//   resources: jsonb('resources'),
+//   redirects: jsonb('redirects'),
+//   rewrites: jsonb('rewrites'),
+//   headers: jsonb('headers'),
 //   createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
 //   updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
 //   deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
 //   environmentId: text('environment_id').notNull().references(() => environments.id),
 //   installationId: integer('installation_id').references(() => installations.installationId),
 // });
+
+export const services = pgTable('services', {
+  id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  displayName: text('display_name').notNull(),
+  stackType: stackTypeEnum('stack_type').default('SPA'),
+  stackVersion: text('stack_version'),
+  resources: jsonb('resources'), // store stack output
+  metadata: jsonb('metadata'), // service specific: LambdaProps, ServiceProps, etc.
+  appProps: jsonb('app_props'), // rootdir, outputdir
+  cdnProps: jsonb('cdn_props'), // cloudfront
+  edgeProps: jsonb('edge_props'), // headers, redirects, rewrites
+  domainProps: jsonb('domain_props'), // route53, domains, certificates
+  pipelineProps: jsonb('pipeline_props'), // sourceprops, buildprops, event bus
+  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
+  deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
+  environmentId: text('environment_id').notNull().references(() => environments.id),
+  installationId: integer('installation_id').references(() => installations.installationId),
+});
 
 /**
  * Installations and related tables

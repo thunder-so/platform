@@ -31,8 +31,8 @@ export type ApplicationSchema = {
 export const useApplications = () => {
   const supabase = useSupabaseClient();
 
-  const applicationSchema = ref<ApplicationSchema | null>(null);
-  const isLoading = ref(false);
+  const applicationSchema = useState<ApplicationSchema | null>('applicationSchema', () => null);
+  const isLoading = useState('applications.loading', () => false);
 
   const fetchApplicationSchema = async (appId: string) => {
     isLoading.value = true;
@@ -73,13 +73,14 @@ export const useApplications = () => {
       console.error('Error fetching application schema:', e);
     } finally {
       isLoading.value = false;
+      console.log('Application schema fetched:', applicationSchema.value);
     }
   };
 
-  const setSelectedApplication = (appId: string) => {
+  const setSelectedApplication = async (appId: string) => {
     if (appId) {
       console.log('Setting selected application:', appId);
-      fetchApplicationSchema(appId);
+      await fetchApplicationSchema(appId);
     }
   };
 

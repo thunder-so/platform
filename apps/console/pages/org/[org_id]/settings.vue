@@ -29,7 +29,7 @@
         <UButton label="Delete workspace" color="neutral" variant="subtle" />
 
         <template #body>
-          <p class="mb-4">Your workspace <code>{{ selectedOrganization.name }}</code> will be deleted along with all settings.</p>
+          <p class="mb-4">Your workspace <code>{{ selectedOrganization?.name }}</code> will be deleted along with all settings.</p>
           <p class="mb-4 text-red-700">This action cannot be undone.</p>
         </template>
         <template #footer>

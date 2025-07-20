@@ -99,12 +99,13 @@ const manageLinks = computed<NavigationMenuItem[]>(() => {
   return links;
 });
 
+console.log('layouts/app applicationSchema', applicationSchema.value)
 
-watch(() => route.params.app_id, (newAppId) => {
-  if (newAppId) {
-    setSelectedApplication(newAppId as string);
-  }
-}, { immediate: true });
+// watch(() => route.params.app_id, (newAppId) => {
+//   if (newAppId) {
+//     setSelectedApplication(newAppId as string);
+//   }
+// }, { immediate: true });
 </script>
 
 <style scoped>

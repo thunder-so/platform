@@ -18,7 +18,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted, h, resolveComponent } from 'vue'
-import { environments } from '~/server/db/schema'
 
 definePageMeta({
   layout: 'org'

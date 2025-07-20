@@ -57,6 +57,13 @@
       "when": 1752376799871,
       "tag": "0007_lucky_edwin_jarvis",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1753018727507,
+      "tag": "0008_cheerful_puppet_master",
+      "breakpoints": true
     }
   ]
 }
