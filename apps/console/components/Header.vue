@@ -89,12 +89,12 @@ const { $client } = useNuxtApp();
 const user = useSupabaseUser();
 const supabase = useSupabaseClient();
 const { memberships, selectedOrganization } = useMemberships()
-// const { applicationSchema } = useApplications();
+const { applicationSchema } = useApplications();
 const dropdownOpen = ref(false);
 const newMenuOpen = ref(false);
 const userMenuOpen = ref(false);
 
-console.log('components/Header selectedOrganization', selectedOrganization.value)
+// console.log('components/Header selectedOrganization', selectedOrganization.value)
 // console.log('components/Header applicationSchema', applicationSchema.value)
 
 function selectOrganization(org: any) {

@@ -320,7 +320,7 @@ onMounted(() => {
     supabase
       .channel(`organization_providers:${orgId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'providers', filter: `organization_id=eq.${orgId}` }, payload => {
-        console.log('Change received!', payload)
+        console.info('Change received!', payload)
         fetchProviders() // Re-fetch providers on any change
       })
       .subscribe()

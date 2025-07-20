@@ -25,7 +25,7 @@ const error = ref(null);
 
 const setupAndRedirect = async () => {
   await initializeSession();
-  console.log('confirm selectedOrganization', selectedOrganization.value)
+  // console.log('confirm selectedOrganization', selectedOrganization.value)
   navigateTo({ 
     path: `/org/${selectedOrganization.value?.id}`, 
     replace: true 

@@ -55,7 +55,7 @@ const signInWithGithub = async() => {
             redirectTo: `${base.value}/confirm`
         }
     })
-    if (error) console.log(error)
+    if (error) console.error(error)
 }
 
 </script>

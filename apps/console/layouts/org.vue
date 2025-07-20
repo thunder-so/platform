@@ -49,7 +49,7 @@ const links = computed<NavigationMenuItem[]>(() => {
     },
   ];
 });
-console.log('layouts/org selectedOrganization', selectedOrganization.value)  
+// console.log('layouts/org selectedOrganization', selectedOrganization.value)  
 
 watch(() => route.params.org_id, (newOrgId) => {
   if (newOrgId) {

@@ -73,19 +73,19 @@ export const useApplications = () => {
       console.error('Error fetching application schema:', e);
     } finally {
       isLoading.value = false;
-      console.log('Application schema fetched:', applicationSchema.value);
+      // console.log('useApplications schema fetched:', applicationSchema.value);
     }
   };
 
-  const setSelectedApplication = async (appId: string) => {
+  const setSelectedApplication = async (appId: string, force: boolean = false) => {
     if (appId) {
-      console.log('Setting selected application:', appId);
+      // console.log(`Fetching application (force: ${force}):`, appId);
       await fetchApplicationSchema(appId);
     }
   };
 
   return {
-    applicationSchema: readonly(applicationSchema),
+    applicationSchema: applicationSchema,
     isLoading: readonly(isLoading),
     setSelectedApplication,
   };

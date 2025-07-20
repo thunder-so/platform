@@ -12,7 +12,7 @@ export const useMemberships = () => {
   const selectedOrgIdCookie = useCookie('selected-org-id');
   
   const memberships = useState<Membership[]>('memberships', () => [])
-  const selectedOrganization = useState<Membership | null>('selectedOrganization', () => null)
+  const selectedOrganization = useState<Membership | undefined>('selectedOrganization', () => undefined)
   const isLoading = useState('memberships.loading', () => false)
 
   const refreshMemberships = async () => {
@@ -68,14 +68,14 @@ export const useMemberships = () => {
     if (selectedOrgIdCookie.value) {
         const orgFromCookie = memberships.value.find(m => m.id === selectedOrgIdCookie.value)
         if (orgFromCookie) {
-            selectedOrganization.value = orgFromCookie
+            selectedOrganization.value = orgFromCookie;
             return;
         }
     }
 
     if (memberships.value.length > 0) {
       selectedOrganization.value = memberships.value[0];
-      selectedOrgIdCookie.value = memberships.value[0].id;
+      selectedOrgIdCookie.value = memberships.value[0]?.id;
     }
   }
 

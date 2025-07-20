@@ -14,13 +14,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, h, resolveComponent } from 'vue'
+import { ref, onMounted, h, resolveComponent, watch } from 'vue'
 
 definePageMeta({
   layout: 'app',
 });
 
-const route = useRoute()
 const supabase = useSupabaseClient()
 const { applicationSchema } = useApplications();
 
@@ -86,8 +85,8 @@ const fetchEvents = async (envId: string) => {
       .from('events')
       .select('*')
       .eq('environment_id', envId as string)
-      // .is('deleted_at', null)
-      // .order('pipeline_start', { ascending: false })
+      .is('deleted_at', null)
+      .order('pipeline_start', { ascending: false })
 
     if (eventError) throw eventError
 
@@ -99,17 +98,18 @@ const fetchEvents = async (envId: string) => {
   }
 }
 
-onMounted(async () => {
-  console.log("app/index.vue applicationSchema", applicationSchema.value)
-
-  if (applicationSchema.value) {
-    const appId = applicationSchema.value?.id;
-    const envId = applicationSchema.value?.environments[0]?.id;
-    console.log("app/index.vue", envId)
-
+watch(applicationSchema, (newSchema) => {
+  // console.log("app/index.vue applicationSchema changed", newSchema)
+  if (newSchema) {
+    const envId = newSchema.environments[0]?.id;
+    // console.log("app/index.vue watching", envId)
     if (envId) {
-      await fetchEvents(envId)
+      fetchEvents(envId)
     }
   }
+}, { immediate: true })
+
+onUnmounted(() => {
+  events.value = []
 })
 </script>
