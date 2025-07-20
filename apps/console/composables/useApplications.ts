@@ -1,72 +1,91 @@
-import { ref, computed, watch, readonly } from 'vue';
-import { useRoute } from 'vue-router';
-import { useSupabaseClient } from '#imports';
-import { useMemberships } from './useMemberships';
+export type Service = {
+  id: string;
+  name: string;
+  display_name: string;
+  stack_type: 'SPA' | 'LAMBDA' | 'ECS';
+};
 
-export type Application = {
+export type Provider = {
+  id: string;
+  alias: string;
+  account_id: string;
+}
+
+export type Environment = {
+  id: string;
+  name: string;
+  display_name: string;
+  region: string;
+  services: Service[];
+  provider: Provider;
+};
+
+export type ApplicationSchema = {
   id: string;
   name: string;
   display_name: string;
   organization_id: string;
+  environments: Environment[];
 };
 
 export const useApplications = () => {
   const supabase = useSupabaseClient();
-  const route = useRoute();
-  const { selectedOrganization } = useMemberships();
 
-  const applications = ref<Application[]>([]);
-  const selectedApplication = ref<Application | null>(null);
+  const applicationSchema = ref<ApplicationSchema | null>(null);
   const isLoading = ref(false);
 
-  const fetchApplications = async (orgId: string) => {
+  const fetchApplicationSchema = async (appId: string) => {
     isLoading.value = true;
     try {
       const { data, error } = await supabase
         .from('applications')
-        .select('id, name, display_name, organization_id')
-        .eq('organization_id', orgId);
+        .select(`
+          id,
+          name,
+          display_name,
+          organization_id,
+          environments (
+            id,
+            name,
+            display_name,
+            region,
+            services (
+              id,
+              name,
+              display_name,
+              stack_type
+            ),
+            providers (
+              id,
+              alias,
+              account_id
+            )
+          )
+        `)
+        .eq('id', appId)
+        .is('deleted_at', null)
+        .is('environments.deleted_at', null)
+        .is('environments.services.deleted_at', null)
 
       if (error) throw error;
-      applications.value = data || [];
+      applicationSchema.value = data[0] || null;
     } catch (e) {
-      console.error('Error fetching applications:', e);
+      console.error('Error fetching application schema:', e);
     } finally {
       isLoading.value = false;
     }
   };
 
   const setSelectedApplication = (appId: string) => {
-    const app = applications.value.find(a => a.id === appId);
-    if (app) {
-      selectedApplication.value = app;
+    if (appId) {
+      console.log('Setting selected application:', appId);
+      fetchApplicationSchema(appId);
     }
   };
 
-  watch(selectedOrganization, async (newOrg) => {
-    if (newOrg?.id) {
-      await fetchApplications(newOrg.id);
-      const appIdFromRoute = route.params.app_id as string;
-      if (appIdFromRoute) {
-        setSelectedApplication(appIdFromRoute);
-      }
-    } else {
-      applications.value = [];
-      selectedApplication.value = null;
-    }
-  }, { immediate: true });
-
-  watch(() => route.params.app_id, (newAppId) => {
-    if (newAppId && applications.value.length > 0) {
-      setSelectedApplication(newAppId as string);
-    }
-  });
-
   return {
-    applications: readonly(applications),
-    selectedApplication: readonly(selectedApplication),
+    applicationSchema: readonly(applicationSchema),
     isLoading: readonly(isLoading),
-    fetchApplications,
     setSelectedApplication,
   };
 };

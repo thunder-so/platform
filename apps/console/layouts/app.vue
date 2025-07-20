@@ -4,9 +4,26 @@
 
     <div class="app-container">
       <aside class="sidebar bg-elevated border-r border-muted">
+        <div class="pb-2 border-b border-muted mb-4">
+          <NuxtLink :to="`/org/${applicationSchema?.organization_id}`" class="text-sm button flex items-center gap-1">
+            <UIcon name="i-lucide-arrow-left" />
+            Dashboard
+          </NuxtLink>
+
+          <h2 class="pt-2 text-xl font-medium">{{ applicationSchema?.name }}</h2>
+        </div>
+
         <UNavigationMenu 
-          v-if="selectedApplication"
-          :items="links"
+          v-if="applicationSchema"
+          :items="primaryLinks"
+          orientation="vertical" 
+          class="mb-4"
+        />
+
+        <h3>Manage</h3>
+        <UNavigationMenu 
+          v-if="applicationSchema"
+          :items="manageLinks"
           orientation="vertical" 
           class="mb-4"
         />
@@ -24,26 +41,64 @@ import { useApplications } from '~/composables/useApplications';
 import Header from '~/components/Header.vue';
 
 const route = useRoute();
-const { selectedApplication, setSelectedApplication } = useApplications();
+const { applicationSchema, setSelectedApplication } = useApplications();
 
-const links = computed<NavigationMenuItem[]>(() => {
-  const appId = selectedApplication.value?.id;
-  if (!appId) return [];
+const primaryLinks = computed<NavigationMenuItem[]>(() => {
+  if (!applicationSchema) return [];
+
+  const orgId = applicationSchema.value?.organization_id;
+  const appId = applicationSchema.value?.id;
+  const envId = applicationSchema.value?.environments[0]?.id;
+  const serviceType = applicationSchema.value?.environments[0]?.services[0]?.stack_type;
+
   return [
     {
-      label: 'Overview',
+      label: 'Deployments',
       to: `/app/${appId}`,
     },
     {
-      label: 'Environments',
-      to: `/app/${appId}/environments`,
-    },
-    {
       label: 'Settings',
-      to: `/app/${appId}/settings`,
+      to: `/app/${appId}/env/${envId}/settings`,
     },
   ];
 });
+
+const manageLinks = computed<NavigationMenuItem[]>(() => {
+  if (!applicationSchema) return [];
+
+  const orgId = applicationSchema.value?.organization_id;
+  const appId = applicationSchema.value?.id;
+  const envId = applicationSchema.value?.environments[0]?.id;
+  const serviceType = applicationSchema.value?.environments[0]?.services[0]?.stack_type;
+
+  const links = [
+    {
+      label: 'Environment',
+      to: `/app/${appId}/env/${envId}/variables`,
+    },
+    {
+      label: 'Domains',
+      to: `/app/${appId}/env/${envId}/domains`,
+    }
+  ];
+  
+  // Only add Headers and Redirects for SPA stack type
+  if (serviceType === 'SPA') {
+    links.push(
+      {
+        label: 'Headers',
+        to: `/app/${appId}/env/${envId}/headers`,
+      },
+      {
+        label: 'Redirects',
+        to: `/app/${appId}/env/${envId}/redirects`,
+      }
+    );
+  }
+  
+  return links;
+});
+
 
 watch(() => route.params.app_id, (newAppId) => {
   if (newAppId) {

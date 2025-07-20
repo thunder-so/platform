@@ -147,6 +147,7 @@ onMounted(async () => {
         )
       `)
       .eq('organization_id', orgId)
+      .is('deleted_at', null)
 
     if (appError) throw appError
 
