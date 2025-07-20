@@ -73,13 +73,13 @@ export const useApplications = () => {
       console.error('Error fetching application schema:', e);
     } finally {
       isLoading.value = false;
-      // console.log('useApplications schema fetched:', applicationSchema.value);
+      // console.log('useApplications fetchApplicationSchema:', applicationSchema.value);
     }
   };
 
   const setSelectedApplication = async (appId: string, force: boolean = false) => {
     if (appId) {
-      // console.log(`Fetching application (force: ${force}):`, appId);
+      // console.log(`useApplications setSelectedApplication:`, appId);
       await fetchApplicationSchema(appId);
     }
   };

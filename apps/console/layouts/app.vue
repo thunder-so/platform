@@ -27,6 +27,8 @@
           orientation="vertical" 
           class="mb-4"
         />
+
+        <!-- {{ applicationSchema }} -->
       </aside>
       <main class="main-content"> 
         <slot />
@@ -103,7 +105,7 @@ const manageLinks = computed<NavigationMenuItem[]>(() => {
 
 watch(() => route.params.app_id, (newAppId) => {
   if (newAppId) {
-    // console.log("layouts/app newAppId", newAppId)
+    // console.log("layouts/app setSelectedApplication:", newAppId)
     setSelectedApplication(newAppId as string);
   }
 }, { immediate: true });

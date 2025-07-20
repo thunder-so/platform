@@ -1,5 +1,7 @@
 <template>
   <div>
+    <!-- {{ applicationSchema }} -->
+
     <h3>Events</h3>
     <div v-if="loading">Loading events...</div>
     <div v-else-if="error">Error fetching events: {{ error.message }}</div>
@@ -99,17 +101,35 @@ const fetchEvents = async (envId: string) => {
 }
 
 watch(applicationSchema, (newSchema) => {
-  // console.log("app/index.vue applicationSchema changed", newSchema)
+  // console.log("app/index.vue applicationSchema watch:", newSchema)
   if (newSchema) {
     const envId = newSchema.environments[0]?.id;
-    // console.log("app/index.vue watching", envId)
+    // console.log("app/index watch", envId)
     if (envId) {
       fetchEvents(envId)
     }
   }
-}, { immediate: true })
-
-onUnmounted(() => {
-  events.value = []
 })
+
+// onMounted(() => {
+//   if (applicationSchema.value) {
+//     const envId = applicationSchema.value.environments[0]?.id;
+//     console.log("app/index onMounted", envId)
+//     if (envId) {
+//       fetchEvents(envId);
+//     }
+//   }
+// });
+
+// onMounted(() => {
+//  watch(applicationSchema, (newSchema) => {
+//   if (newSchema) {
+//     const envId = newSchema.environments[0]?.id;
+//     console.log("app/index onMounted watch", envId)
+//     if (envId) {
+//       fetchEvents(envId)
+//     }
+//   }
+//  }, { immediate: true })
+// });
 </script>
