@@ -1,12 +1,158 @@
 <template>
   <div>
-    <h1>Environment Redirects</h1>
-    <p>Redirect settings for environment {{ $route.params.env_id }}</p>
+    <UCard class="mt-4">
+      <template #header>
+        <h2 class="text-xl font-semibold">Redirect Settings</h2>
+      </template>
+
+      <UForm :state="formState" @submit="saveSettings">
+        <div class="grid grid-cols-2 gap-4">
+          <template v-for="(redirect, index) in formState.redirects" :key="`redirect-${index}`">
+            <UFormField :label="`Source ${index + 1}`" :name="`redirect-source-${index}`">
+              <UInput v-model="redirect.source" />
+            </UFormField>
+            <UFormField :label="`Destination ${index + 1}`" :name="`redirect-destination-${index}`">
+              <UInput v-model="redirect.destination" />
+            </UFormField>
+            <!-- <UFormField :label="`Type ${index + 1}`" :name="`redirect-type-${index}`">
+              <UInput v-model="redirect.type" type="number" />
+            </UFormField> -->
+            <div class="col-span-2">
+              <UButton icon="i-heroicons-minus" color="info" @click="removeRedirect(index)">Remove Redirect</UButton>
+            </div>
+          </template>
+          <div class="col-span-2">
+            <UButton icon="i-heroicons-plus" @click="addRedirect">Add Redirect</UButton>
+          </div>
+        </div>
+
+        <h2 class="text-xl font-semibold mb-4">Rewrite Settings</h2>
+
+        <div class="grid grid-cols-2 gap-4">
+          <template v-for="(rewrite, index) in formState.rewrites" :key="`rewrite-${index}`">
+            <UFormField :label="`Source ${index + 1}`" :name="`rewrite-source-${index}`">
+              <UInput v-model="rewrite.source" />
+            </UFormField>
+            <UFormField :label="`Destination ${index + 1}`" :name="`rewrite-destination-${index}`">
+              <UInput v-model="rewrite.destination" />
+            </UFormField>
+            <div class="col-span-2">
+              <UButton icon="i-heroicons-minus" color="red" @click="removeRewrite(index)">Remove Rewrite</UButton>
+            </div>
+          </template>
+          <div class="col-span-2">
+            <UButton icon="i-heroicons-plus" @click="addRewrite">Add Rewrite</UButton>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <UButton type="submit" :loading="isSaving">Save Settings</UButton>
+        </div>
+      </UForm>
+    </UCard>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, watch, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+import { useApplications } from '~/composables/useApplications';
+import { useSupabaseClient } from '#imports';
+
 definePageMeta({
   layout: 'app',
 });
+
+const route = useRoute();
+const supabase = useSupabaseClient();
+const { applicationSchema } = useApplications();
+const { $client } = useNuxtApp();
+
+const formState = ref({
+  redirects: [] as { source: string; destination: string; type: number }[],
+  rewrites: [] as { source: string; destination: string }[],
+});
+
+const isSaving = ref(false);
+
+const fetchEdgeSettings = async (serviceId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('services')
+      .select('edge_props')
+      .eq('id', serviceId)
+      .single();
+
+    if (error) throw error;
+
+    if (data?.edge_props) {
+      formState.value.redirects = data.edge_props.redirects || [];
+      formState.value.rewrites = data.edge_props.rewrites || [];
+    } else {
+      formState.value.redirects = [];
+      formState.value.rewrites = [];
+    }
+  } catch (e: any) {
+    console.error('Error fetching edge settings:', e.message);
+  }
+};
+
+const addRedirect = () => {
+  formState.value.redirects.push({ source: '', destination: '', type: 301 });
+};
+
+const removeRedirect = (index: number) => {
+  formState.value.redirects.splice(index, 1);
+};
+
+const addRewrite = () => {
+  formState.value.rewrites.push({ source: '', destination: '', });
+};
+
+const removeRewrite = (index: number) => {
+  formState.value.rewrites.splice(index, 1);
+};
+
+const saveSettings = async () => {
+  isSaving.value = true;
+  try {
+    const serviceId = applicationSchema.value?.environments[0]?.services[0]?.id;
+    if (!serviceId) {
+      console.error('Service ID not found.');
+      return;
+    }
+
+    await $client.services.updateEdgeProps.mutate({
+      serviceId: serviceId,
+      edgeProps: {
+        headers: formState.value.headers,
+        redirects: formState.value.redirects,
+        rewrites: formState.value.rewrites,
+      },
+    });
+    console.log('Edge settings saved successfully!');
+  } catch (e: any) {
+    console.error('Error saving edge settings:', e.message);
+  } finally {
+    isSaving.value = false;
+  }
+};
+
+watch(applicationSchema, (newSchema) => {
+  if (newSchema) {
+    const serviceId = newSchema.environments[0]?.services[0]?.id;
+    if (serviceId) {
+      fetchEdgeSettings(serviceId);
+    }
+  }
+}, { immediate: true });
+
+// onMounted(() => {
+//   if (applicationSchema.value) {
+//     const serviceId = applicationSchema.value.environments[0]?.services[0]?.id;
+//     if (serviceId) {
+//       fetchEdgeSettings(serviceId);
+//     }
+//   }
+// });
 </script>

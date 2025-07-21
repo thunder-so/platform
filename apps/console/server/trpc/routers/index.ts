@@ -3,6 +3,8 @@ import { organizationsRouter } from './organizations.router'
 import { teamRouter } from './team.router'
 import { providersRouter } from './providers.router'
 import { githubRouter } from './github.router'
+import { servicesRouter } from './services.router'
+import { environmentsRouter } from './environments.router'
 
 export const appRouter = router({
   hello: publicProcedure
@@ -16,7 +18,9 @@ export const appRouter = router({
   organizations: organizationsRouter,
   team: teamRouter,
   providers: providersRouter,
-  github: githubRouter
+  github: githubRouter,
+  services: servicesRouter,
+  environments: environmentsRouter,
 })
 
 export type AppRouter = typeof appRouter
