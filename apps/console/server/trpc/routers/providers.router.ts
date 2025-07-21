@@ -87,6 +87,15 @@ export const providersRouter = router({
         });
       }
     }),
+  // getProvidersByOrganizationId: publicProcedure
+  //   .input(z.object({
+  //     organizationId: z.string(),
+  //   }))
+  //   .query(async ({ input }) => {
+  //     const { organizationId } = input;
+  //     const result = await db.select().from(providers).where(sql`${providers.organizationId} = ${organizationId}`);
+  //     return result;
+  //   }),
   delete: publicProcedure
     .input(
       z.object({

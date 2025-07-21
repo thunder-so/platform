@@ -5,6 +5,7 @@ import { providersRouter } from './providers.router'
 import { githubRouter } from './github.router'
 import { servicesRouter } from './services.router'
 import { environmentsRouter } from './environments.router'
+import { applicationsRouter } from './applications.router'
 
 export const appRouter = router({
   hello: publicProcedure
@@ -21,6 +22,7 @@ export const appRouter = router({
   github: githubRouter,
   services: servicesRouter,
   environments: environmentsRouter,
+  applications: applicationsRouter,
 })
 
 export type AppRouter = typeof appRouter

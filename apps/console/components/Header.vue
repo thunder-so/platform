@@ -5,7 +5,7 @@
         <UButton icon="thunder:thunderso" size="md" color="neutral" variant="ghost"></UButton>
       </NuxtLink>
       <div class="relative" v-if="selectedOrganization">
-        <button @click="dropdownOpen = !dropdownOpen" class="flex cursor-pointer justify-between items-center space-x-2 w-64 border border-muted hover:border-neutral-600 px-3 py-2">
+        <button @click="dropdownOpen = !dropdownOpen" class="flex cursor-pointer justify-between items-center space-x-2 w-64 border rounded border-muted hover:border-neutral-600 px-3 py-2">
           <div class="flex items-center space-x-2">
             <UAvatar :alt="selectedOrganization.name" size="xs" />
             <span>{{ selectedOrganization.name }}</span>
@@ -15,7 +15,7 @@
             <Icon name="i-heroicons-chevron-down-20-solid" />
           </div>
         </button>
-        <div v-if="dropdownOpen" class="absolute mt-2 w-64 bg-default border rounded-md shadow-lg z-10">
+        <div v-if="dropdownOpen" class="absolute mt-2 w-64 bg-default border border-accented shadow-lg z-10">
           <ul class="pt-1 pb-1">
             <li v-for="org in memberships" :key="org.id" @click="selectOrganization(org)"
               class="flex justify-between items-center px-3 py-2 space-x-2 cursor-pointer hover:bg-gray-800">
@@ -39,11 +39,11 @@
     </div>
     <div class="flex items-center space-x-2">
       <div class="relative">
-        <button @click="newMenuOpen = !newMenuOpen" class="flex cursor-pointer items-center space-x-1 border border-muted hover:border-neutral-600 px-3 py-2">
+        <button @click="newMenuOpen = !newMenuOpen" class="flex cursor-pointer items-center space-x-1 border rounded border-muted hover:border-neutral-600 px-3 py-2">
           <Icon name="i-heroicons-plus-20-solid" />
           <span>New</span>
         </button>
-        <div v-if="newMenuOpen" class="absolute right-0 mt-2 w-48 bg-default border rounded-md shadow-lg z-10">
+        <div v-if="newMenuOpen" class="absolute right-0 mt-2 w-48 bg-default border border-accented shadow-lg z-10">
           <ul class="pt-1 pb-1">
             <template v-for="(group, index) in newItems" :key="index">
               <li v-for="item in group" :key="item.to">
@@ -58,7 +58,7 @@
         <button @click="userMenuOpen = !userMenuOpen" class="flex border border-transparent cursor-pointer px-3 py-2">
           <UAvatar :src="user?.user_metadata.avatar_url" :alt="user?.user_metadata.full_name" size="xs" />
         </button>
-        <div v-if="userMenuOpen" class="absolute right-0 mt-2 w-48 bg-default border rounded-md shadow-lg z-10">
+        <div v-if="userMenuOpen" class="absolute right-0 mt-2 w-48 bg-default border border-accented shadow-lg z-10">
           <ul class="pb-1">
             <li>
               <div class="flex items-center px-4 py-3 space-x-3">
@@ -105,13 +105,13 @@ function selectOrganization(org: any) {
 
 const newItems = [
   [
-    { label: 'Empty application', to: '/app/new' },
+    { label: 'New application', to: '/new' },
   ],
-  [
-    { label: 'Static Site', to: '/static/new' },
-    { label: 'Function', to: '/function/new' },
-    { label: 'Web Service', to: '/web/new' },
-  ]
+  // [
+  //   { label: 'Static Site', to: '/static/new' },
+  //   { label: 'Function', to: '/function/new' },
+  //   { label: 'Web Service', to: '/web/new' },
+  // ]
 ];
 
 const userMenuItems = [
