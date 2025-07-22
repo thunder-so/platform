@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2>Create new application</h2>
+    <h2>Select a repository</h2>
     <div v-if="pendingInstallations">Loading installations...</div>
     <div v-else-if="installations.length === 0">
       <p>No GitHub installations found. Please connect your GitHub account.</p>
@@ -56,6 +56,7 @@
             <UButton
               variant="subtle"
               icon="i-uil-github"
+              size="lg"
               :to="githubInstallUrl"
               label="Import repositories"
               external
@@ -76,7 +77,7 @@ import { UPinInput } from '#components';
 
 const { $client } = useNuxtApp();
 const config = useRuntimeConfig();
-const { selectedRepo, setRepo, organizationId } = useNewApplicationFlow();
+const { selectedRepo, setRepo } = useNewApplicationFlow();
 
 const githubApp = computed(() => config.public.GITHUB_APP);
 const base = ref('');
@@ -154,8 +155,11 @@ const filteredRepositories = computed(() => {
   });
 });
 
+const emit = defineEmits(['selected']);
+
 const selectRepository = (repo: any, installationId: number) => {
   setRepo({ ...repo, installationId });
+  emit('selected');
 };
 
 const redirectToGitHubAuth = () => {

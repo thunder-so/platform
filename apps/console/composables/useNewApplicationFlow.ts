@@ -1,63 +1,76 @@
-import { ref } from 'vue';
+import { watch, computed } from 'vue';
+import type { Organization, Application, Environment, Service, Provider } from '~/server/db/schema';
 
 export const useNewApplicationFlow = () => {
-  const selectedRepo = ref<any>(null);
-  const githubUserAccessToken = ref<string | null>(null);
-  const appName = ref<string>('');
-  const serviceType = ref<string>('');
-  const serviceConfig = ref<any>({});
-  const selectedProviderId = ref<string | null>(null);
-  const deploymentStatus = ref<string>('idle');
-  const organizationId = ref<string | null>(null); // Added organizationId
+  const route = useRoute();
+  const selectedRepo = useState<any>('selectedRepo', () => null);
+  const githubUserAccessToken = useState<string | null>('githubUserAccessToken', () => null);
+  const organization = useState<Organization | null>('organization', () => null);
+  const application = useState<Partial<Application>>('application', () => ({}));
+  const environment = useState<Partial<Environment>>('environment', () => ({}));
+  const service = useState<Partial<Service>>('service', () => ({}));
+  const deploymentStatus = useState<string>('deploymentStatus', () => 'idle');
+
+  const currentStep = computed(() => {
+    const path = route.path;
+    if (path.includes('/new/deploy')) {
+      return 3;
+    }
+    if (path.includes('/new/configure')) {
+      return 2;
+    }
+    return 1;
+  });
 
   const setRepo = (repo: any) => {
     selectedRepo.value = repo;
+    if (repo) {
+      application.value.name = repo.name;
+      application.value.displayName = repo.name;
+    }
   };
 
   const setGithubToken = (token: string) => {
     githubUserAccessToken.value = token;
   };
 
-  const setAppName = (name: string) => {
-    appName.value = name;
+  const setOrganization = (org: Organization) => {
+    organization.value = org;
   };
 
-  const setServiceType = (type: string) => {
-    serviceType.value = type;
-  };
-
-  const setServiceConfig = (config: any) => {
-    serviceConfig.value = config;
-  };
-
-  const setProviderId = (providerId: string) => {
-    selectedProviderId.value = providerId;
+  const setProvider = (provider: Provider) => {
+    if (environment.value) {
+      environment.value.providerId = provider.id;
+      environment.value.region = provider.region;
+    }
   };
 
   const setDeploymentStatus = (status: string) => {
     deploymentStatus.value = status;
   };
 
-  const setOrganizationId = (id: string) => { // Added setter for organizationId
-    organizationId.value = id;
-  };
+  watch(selectedRepo, (repo) => {
+    if(repo) {
+      application.value.name = repo.name;
+      application.value.displayName = repo.name;
+      environment.value.name = 'preview';
+      environment.value.displayName = 'preview';
+    }
+  }, { deep: true });
 
   return {
     selectedRepo,
     githubUserAccessToken,
-    appName,
-    serviceType,
-    serviceConfig,
-    selectedProviderId,
+    organization,
+    application,
+    environment,
+    service,
     deploymentStatus,
-    organizationId, // Export organizationId
+    currentStep,
     setRepo,
     setGithubToken,
-    setAppName,
-    setServiceType,
-    setServiceConfig,
-    setProviderId,
+    setOrganization,
+    setProvider,
     setDeploymentStatus,
-    setOrganizationId, // Export setter
   };
 };

@@ -7,10 +7,8 @@
       <UAlert color="error" variant="soft" :title="`Error loading installations: ${error.message}`" />
     </div>
     <div v-else-if="installations.length > 0">
-      <h1 class="text-2xl font-bold mb-4">Select a Repository</h1>
-      <p class="text-gray-500 mb-4">Select a repository to create a new application.</p>
       <ClientOnly>
-        <GithubRepoSelector />
+        <GithubRepoSelector @selected="navigateTo('/new/configure')" />
       </ClientOnly>
     </div>
     <div v-else class="flex justify-center items-center" style="height: 50vh;">
@@ -22,6 +20,7 @@
           <p class="mb-4">You need to install the Thunder GitHub App to see your repositories.</p>
           <UButton
             icon="i-uil-github"
+            size="lg"
             :to="githubInstallUrl"
             label="Install GitHub App"
             external

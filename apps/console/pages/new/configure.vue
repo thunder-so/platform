@@ -1,68 +1,129 @@
 <template>
   <div>
-    <h1>Configure & Deploy Application</h1>
+    <UCard>
+      <template #header>
+        <h1>Configure application</h1>
+      </template>
 
-    <div>
-      <label for="app-name">Application Name:</label>
-      <input type="text" id="app-name" v-model="appName" />
-    </div>
+      <div class="space-y-4">
+        <UForm :state="application">
+          <UFormField label="Application Name">
+            <UInput v-model="application.displayName" size="lg" class="w-96" />
+          </UFormField>
+        </UForm>
 
-    <ProviderSelector />
-    <ServiceConfiguration />
-    <DeploymentProgress />
+        <UForm :state="environment" class="space-y-4">
+          <UFormField label="Environment Name" description="Your default environment">
+            <UInput v-model="environment.displayName" size="lg" class="w-96" />
+          </UFormField>
 
-    <button @click="deployApplication" :disabled="isDeploying">
-      {{ isDeploying ? 'Deploying...' : 'Deploy Application' }}
-    </button>
+          <div class="flex space-x-4">
+            <UFormField label="AWS Account">
+              <USelect 
+                v-model="environment.providerId" 
+                :items="providerItems" 
+                class="w-96" size="lg"
+              />
+            </UFormField>
 
-    <div v-if="deploymentError" style="color: red;">{{ deploymentError }}</div>
+            <UFormField label="Region">
+              <USelect 
+                v-model="environment.region" 
+                :items="awsRegions" 
+                value-key="name" 
+                option-attribute="label" 
+                class="w-96" size="lg"
+              />
+            </UFormField>
+          </div>
+        </UForm>
+      </div>
+
+      <hr />
+
+      <!-- <ServiceConfiguration /> -->
+      <!-- <DeploymentProgress /> -->
+
+      <div v-if="deploymentError" style="color: red;">{{ deploymentError }}</div>
+    </UCard>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
-import ProviderSelector from '~/components/application/ProviderSelector.vue';
 import ServiceConfiguration from '~/components/application/ServiceConfiguration.vue';
 import DeploymentProgress from '~/components/application/DeploymentProgress.vue';
+import regionsData from '~/assets/regions.json';
 
 definePageMeta({
   layout: 'new'
-})
+});
+
+type Provider = {
+  id: string;
+  alias: string;
+  role_arn: string | null;
+  account_id: string | null;
+  region: string | null;
+  stack_id: string | null;
+  stack_name: string | null;
+  access_key_id: string | null;
+  created_at: string;
+  updated_at: string | null;
+  deleted_at: string | null;
+  organization_id: string;
+};
 
 const { 
   selectedRepo,
-  appName,
-  serviceType,
-  serviceConfig,
-  selectedProviderId,
+  application,
+  environment,
+  service,
   deploymentStatus,
-  organizationId,
-  setAppName,
   setDeploymentStatus,
-  setOrganizationId,
+  setProvider
 } = useNewApplicationFlow();
 
+const { $client } = useNuxtApp();
+const { selectedOrganization } = useMemberships();
+const supabase = useSupabaseClient();
+const providers = ref<Provider[]>([]);
+const awsRegions = ref(regionsData.regions);
 const deploymentError = ref<string | null>(null);
 const isDeploying = computed(() => deploymentStatus.value === 'in_progress');
 
-// Placeholder for organizationId - in a real app, this would come from route params or user context
-onMounted(() => {
-  // For demonstration, setting a dummy organization ID
-  setOrganizationId('org_placeholder_id'); 
+const providerItems = computed(() => providers.value.map(p => ({ value: p.id, label: p.alias })));
+
+onMounted(async () => {
+  if (selectedOrganization.value?.id) {
+    const { data: supabaseProviders, error: supabaseError } = await supabase
+      .from('providers')
+      .select('*')
+      .eq('organization_id', selectedOrganization.value.id)
+      .is('deleted_at', null);
+
+    if (supabaseError) {
+      throw supabaseError;
+    }
+    providers.value = supabaseProviders || [];
+    if (providers.value.length > 0) {
+      setProvider(providers.value[0]);
+    }
+  }
 });
 
 const deployApplication = async () => {
   deploymentError.value = null;
   setDeploymentStatus('in_progress');
 
-  if (!organizationId.value) {
+  if (!selectedOrganization.value?.id) {
     deploymentError.value = 'Organization ID is missing.';
     setDeploymentStatus('failed');
     return;
   }
 
-  if (!appName.value) {
+  if (!application.value.name) {
     deploymentError.value = 'Application name is required.';
     setDeploymentStatus('failed');
     return;
@@ -74,33 +135,28 @@ const deployApplication = async () => {
     return;
   }
 
-  if (!serviceType.value) {
-    deploymentError.value = 'Service type not selected.';
-    setDeploymentStatus('failed');
-    return;
-  }
-
-  if (!selectedProviderId.value) {
+  if (!environment.value.providerId) {
     deploymentError.value = 'AWS Provider not selected.';
     setDeploymentStatus('failed');
     return;
   }
 
   try {
-    const newApp = await $client.applications.createApplication.mutate({
-      name: appName.value,
-      organizationId: organizationId.value,
-      githubRepositoryId: selectedRepo.value.id,
-      githubRepositoryName: selectedRepo.value.full_name,
-      githubOwner: selectedRepo.value.owner.login,
-      githubInstallationId: selectedRepo.value.installationId,
-      serviceType: serviceType.value,
-      providerId: selectedProviderId.value,
-      serviceConfig: serviceConfig.value,
-    });
+    // const newApp = await $client.applications.create.mutate({
+    //   organizationId: selectedOrganization.value.id,
+    //   application: application.value,
+    //   environment: environment.value,
+    //   service: service.value,
+    //   github: {
+    //     repositoryId: selectedRepo.value.id,
+    //     repositoryName: selectedRepo.value.full_name,
+    //     owner: selectedRepo.value.owner.login,
+    //     installationId: selectedRepo.value.installationId,
+    //   }
+    // });
 
     setDeploymentStatus('succeeded');
-    console.log('Application deployed successfully:', newApp);
+    // console.log('Application deployed successfully:', newApp);
     // TODO: Redirect to the new application's dashboard page
   } catch (error: any) {
     deploymentError.value = error.message || 'Failed to deploy application.';
