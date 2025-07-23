@@ -49,6 +49,12 @@ export const useNewApplicationFlow = () => {
     deploymentStatus.value = status;
   };
 
+  const setServiceType = (type: Service['stackType']) => {
+    if (service.value) {
+      service.value.stackType = type;
+    }
+  };
+
   watch(selectedRepo, (repo) => {
     if(repo) {
       application.value.name = repo.name;
@@ -72,5 +78,6 @@ export const useNewApplicationFlow = () => {
     setOrganization,
     setProvider,
     setDeploymentStatus,
+    setServiceType,
   };
 };

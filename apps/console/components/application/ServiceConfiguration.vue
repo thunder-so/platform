@@ -1,50 +1,31 @@
 <template>
   <div>
-    <h2>Service Configuration</h2>
-    <div>
-      <label>
-        <input type="radio" value="static" v-model="selectedServiceType" /> Static
-      </label>
-      <label>
-        <input type="radio" value="function" v-model="selectedServiceType" /> Function
-      </label>
-      <label>
-        <input type="radio" value="web" v-model="selectedServiceType" /> Web
-      </label>
-    </div>
+    <h2 class="text-md font-semibold mt-6 mb-4 pb-4 border-b border-muted">Service Configuration</h2>
+    <URadioGroup v-model="service.stackType" :items="serviceTypes" orientation="horizontal" variant="card" />
 
-    <div v-if="selectedServiceType === 'static'">
-      <ServiceConfigStatic @update:config="updateServiceConfig" />
-    </div>
-    <div v-else-if="selectedServiceType === 'function'">
-      <ServiceConfigFunction @update:config="updateServiceConfig" />
-    </div>
-    <div v-else-if="selectedServiceType === 'web'">
-      <ServiceConfigWeb @update:config="updateServiceConfig" />
+    <div class="mt-4">
+      <ServiceConfigStatic v-if="service.stackType === 'SPA'" />
+      <ServiceConfigFunction v-else-if="service.stackType === 'LAMBDA'" />
+      <ServiceConfigWeb v-else-if="service.stackType === 'ECS'" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
 import ServiceConfigStatic from './ServiceConfigStatic.vue';
 import ServiceConfigFunction from './ServiceConfigFunction.vue';
 import ServiceConfigWeb from './ServiceConfigWeb.vue';
 
-const { serviceType, setServiceType, serviceConfig, setServiceConfig } = useNewApplicationFlow();
+const { service, setServiceType } = useNewApplicationFlow();
 
-const selectedServiceType = ref(serviceType.value);
+const serviceTypes = [
+  { label: 'Static', value: 'SPA', description: 'Hosted on S3 and CloudFront' },
+  { label: 'Function', value: 'LAMBDA', description: 'Serverless Lambda function' },
+  { label: 'Web Service', value: 'ECS', description: 'Container deployed on ECS Fargate' },
+];
 
-watch(selectedServiceType, (newType) => {
-  setServiceType(newType);
-  // Reset serviceConfig when service type changes
-  setServiceConfig({});
-});
-
-const updateServiceConfig = (config: any) => {
-  setServiceConfig(config);
-};
+if (!service.value.stackType) {
+  setServiceType('SPA');
+}
 </script>
-
-<style scoped></style>

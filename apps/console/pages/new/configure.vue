@@ -39,12 +39,23 @@
         </UForm>
       </div>
 
-      <hr />
-
-      <!-- <ServiceConfiguration /> -->
-      <!-- <DeploymentProgress /> -->
+      <ServiceConfiguration />
 
       <div v-if="deploymentError" style="color: red;">{{ deploymentError }}</div>
+
+      <template #footer>
+        <div class="flex justify-start">
+          <UButton 
+            type="submit" 
+            size="lg" 
+            :loading="isDeploying" 
+            @click="deployApplication"
+            :disabled="isDeploying"
+          >
+            {{ isDeploying ? 'Saving ...' : 'Save and continue' }}
+          </UButton>
+        </div>
+      </template>
     </UCard>
   </div>
 </template>
@@ -53,27 +64,11 @@
 import { ref, computed, onMounted } from 'vue';
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
 import ServiceConfiguration from '~/components/application/ServiceConfiguration.vue';
-import DeploymentProgress from '~/components/application/DeploymentProgress.vue';
-import regionsData from '~/assets/regions.json';
+import type { Provider } from '~/server/db/schema';
 
 definePageMeta({
   layout: 'new'
 });
-
-type Provider = {
-  id: string;
-  alias: string;
-  role_arn: string | null;
-  account_id: string | null;
-  region: string | null;
-  stack_id: string | null;
-  stack_name: string | null;
-  access_key_id: string | null;
-  created_at: string;
-  updated_at: string | null;
-  deleted_at: string | null;
-  organization_id: string;
-};
 
 const { 
   selectedRepo,
@@ -85,11 +80,12 @@ const {
   setProvider
 } = useNewApplicationFlow();
 
+const appConfig = useAppConfig();
 const { $client } = useNuxtApp();
 const { selectedOrganization } = useMemberships();
 const supabase = useSupabaseClient();
 const providers = ref<Provider[]>([]);
-const awsRegions = ref(regionsData.regions);
+const awsRegions = ref(appConfig.regions);
 const deploymentError = ref<string | null>(null);
 const isDeploying = computed(() => deploymentStatus.value === 'in_progress');
 
