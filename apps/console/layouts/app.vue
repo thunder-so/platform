@@ -27,8 +27,6 @@
           orientation="vertical" 
           class="mb-4"
         />
-
-        <!-- {{ applicationSchema }} -->
       </aside>
       <main class="main-content"> 
         <slot />
@@ -44,12 +42,16 @@ import Header from '~/components/Header.vue';
 
 const { applicationSchema } = useApplications();
 
+if (!applicationSchema.value) {
+  throw Error('Application schema not found.')
+}
+const environment = applicationSchema.value?.environments?.[0];
+const service = environment?.services?.[0];
+const appId = applicationSchema.value?.id;
+const envId = environment?.id;
+const serviceType = service?.stack_type;
+
 const primaryLinks = computed<NavigationMenuItem[]>(() => {
-  if (!applicationSchema) return [];
-
-  const appId = applicationSchema.value?.id;
-  const envId = applicationSchema.value?.environments[0]?.id;
-
   return [
     {
       label: 'Deployments',
@@ -63,15 +65,6 @@ const primaryLinks = computed<NavigationMenuItem[]>(() => {
 });
 
 const manageLinks = computed<NavigationMenuItem[]>(() => {
-  if (!applicationSchema) return [];
-
-  const orgId = applicationSchema.value?.organization_id;
-  const appId = applicationSchema.value?.id;
-  const envId = applicationSchema.value?.environments[0]?.id;
-  const serviceType = applicationSchema.value?.environments[0]?.services[0]?.stack_type;
-  // console.log('layouts/app applicationSchema', applicationSchema.value?.environments[0]?.services)
-
-
   const links = [
     {
       label: 'Environment',
@@ -99,14 +92,6 @@ const manageLinks = computed<NavigationMenuItem[]>(() => {
   
   return links;
 });
-
-// console.log('layouts/app applicationSchema', applicationSchema.value)
-
-// watch(() => route.params.app_id, (newAppId) => {
-//   if (newAppId) {
-//     setApplicationSchemaById(newAppId as string);
-//   }
-// }, { immediate: true });
 </script>
 
 <style scoped>
