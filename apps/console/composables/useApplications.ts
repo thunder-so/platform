@@ -1,37 +1,8 @@
-export type Service = {
-  id: string;
-  name: string;
-  display_name: string;
-  stack_type: 'SPA' | 'LAMBDA' | 'ECS';
-};
-
-export type Provider = {
-  id: string;
-  alias: string;
-  account_id: string;
-}
-
-export type Environment = {
-  id: string;
-  name: string;
-  display_name: string;
-  region: string;
-  services: Service[];
-  provider: Provider;
-};
-
-export type ApplicationSchema = {
-  id: string;
-  name: string;
-  display_name: string;
-  organization_id: string;
-  environments: Environment[];
-};
+import type { ApplicationSchema } from '~/server/db/schema';
 
 export const useApplications = () => {
   const supabase = useSupabaseClient();
-
-  const applicationSchema = useState<ApplicationSchema | null>('applicationSchema', () => null);
+  const applicationSchema = useState<ApplicationSchema>('applicationSchema');
   const isLoading = useState('applications.loading', () => false);
 
   const fetchApplicationSchema = async (appId: string) => {
@@ -49,16 +20,28 @@ export const useApplications = () => {
             name,
             display_name,
             region,
+            provider:providers!inner (
+              id,
+              alias,
+              account_id
+            ),
             services (
               id,
               name,
               display_name,
-              stack_type
-            ),
-            providers (
-              id,
-              alias,
-              account_id
+              stack_type,
+              stack_version,
+              resources,
+              metadata,
+              app_props,
+              cdn_props,
+              edge_props,
+              domain_props,
+              pipeline_props,
+              created_at,
+              updated_at,
+              environment_id,
+              installation_id
             )
           )
         `)
@@ -66,27 +49,32 @@ export const useApplications = () => {
         .is('deleted_at', null)
         .is('environments.deleted_at', null)
         .is('environments.services.deleted_at', null)
+        .single();
 
       if (error) throw error;
-      applicationSchema.value = data[0] || null;
+      applicationSchema.value = data;
     } catch (e) {
       console.error('Error fetching application schema:', e);
     } finally {
       isLoading.value = false;
-      // console.log('useApplications fetchApplicationSchema:', applicationSchema.value);
     }
   };
 
-  const setSelectedApplication = async (appId: string, force: boolean = false) => {
-    if (appId) {
-      // console.log(`useApplications setSelectedApplication:`, appId);
-      await fetchApplicationSchema(appId);
+  const refreshApplicationSchema = async () => {
+    if (applicationSchema.value?.id) {
+      await fetchApplicationSchema(applicationSchema.value.id);
     }
+  };
+
+  const setApplicationSchemaById = async (appId: string) => {
+    await fetchApplicationSchema(appId);
   };
 
   return {
-    applicationSchema: applicationSchema,
+    applicationSchema,
     isLoading: readonly(isLoading),
-    setSelectedApplication,
+    fetchApplicationSchema,
+    refreshApplicationSchema,
+    setApplicationSchemaById,
   };
 };

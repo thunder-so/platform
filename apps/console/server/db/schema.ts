@@ -13,10 +13,10 @@ export const accountAccessEnum = pgEnum('ACCOUNT_ACCESS', ['READ_ONLY', 'READ_WR
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }),
+  updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }),
   email: text('email'),
-  fullName: text('full_name'),
-  avatarUrl: text('avatar_url'),
+  full_name: text('full_name'),
+  avatar_url: text('avatar_url'),
   website: text('website'),
 });
 
@@ -24,22 +24,22 @@ export const organizations = pgTable('organizations', {
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
   name: text('name').notNull(),
   metadata: jsonb('metadata'),
-  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
-  deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
+  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
+  deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
 });
 
 export const memberships = pgTable('memberships', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  organizationId: text('organization_id').notNull().references(() => organizations.id),
-  userId: uuid('user_id').notNull().references(() => users.id),
+  organization_id: text('organization_id').notNull().references(() => organizations.id),
+  user_id: uuid('user_id').notNull().references(() => users.id),
   access: accountAccessEnum('access').default('READ_ONLY').notNull(),
   pending: boolean('pending').default(false).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
-  deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
+  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
+  deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
 }, (table) => ({
-  userOrgUnique: unique().on(table.userId, table.organizationId)
+  userOrgUnique: unique().on(table.user_id, table.organization_id)
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -57,11 +57,11 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
 
 export const membershipsRelations = relations(memberships, ({ one }) => ({
   organization: one(organizations, {
-    fields: [memberships.organizationId],
+    fields: [memberships.organization_id],
     references: [organizations.id],
   }),
   user: one(users, {
-    fields: [memberships.userId],
+    fields: [memberships.user_id],
     references: [users.id],
   }),
 }));
@@ -74,12 +74,12 @@ export const pricingPlanIntervalEnum = pgEnum('PRICING_PLAN_INTERVAL', ['month',
 export const subscriptionStatusEnum = pgEnum('SUBSCRIPTION_STATUS', ['trialing', 'active', 'canceled', 'incomplete', 'incomplete_expired', 'past_due', 'unpaid', 'paused']);
 
 export const customers = pgTable('customers', {
-  userId: uuid('user_id').primaryKey().references(() => users.id),
-  organizationId: text('organization_id').notNull().references(() => organizations.id),
-  polarCustomerId: text('polar_customer_id').unique().notNull(),
+  user_id: uuid('user_id').primaryKey().references(() => users.id),
+  organization_id: text('organization_id').notNull().references(() => organizations.id),
+  polar_customer_id: text('polar_customer_id').unique().notNull(),
 }, (table) => ({
-  organizationIdIdx: index('customers_organization_id_idx').on(table.organizationId),
-  polarCustomerIdIdx: index('customers_polar_customer_id_idx').on(table.polarCustomerId),
+  organization_idIdx: index('customers_organization_id_idx').on(table.organization_id),
+  polarCustomerIdIdx: index('customers_polar_customer_id_idx').on(table.polar_customer_id),
 }));
 
 export const products = pgTable('products', {
@@ -88,46 +88,46 @@ export const products = pgTable('products', {
   name: text('name').notNull(),
   description: text('description'),
   metadata: jsonb('metadata'),
-  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }),
+  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }),
 });
 
 export const subscriptions = pgTable('subscriptions', {
   id: text('id').primaryKey(), // Polar subscription ID, e.g., sub_1234
-  userId: uuid('user_id').notNull().references(() => users.id),
-  organizationId: text('organization_id').notNull().references(() => organizations.id),
-  polarCustomerId: text('polar_customer_id').notNull().references(() => customers.polarCustomerId),
+  user_id: uuid('user_id').notNull().references(() => users.id),
+  organization_id: text('organization_id').notNull().references(() => organizations.id),
+  polar_customer_id: text('polar_customer_id').notNull().references(() => customers.polar_customer_id),
   status: subscriptionStatusEnum('status').notNull(),
-  productId: text('product_id').references(() => products.id),
-  cancelAtPeriodEnd: boolean('cancel_at_period_end').default(false).notNull(),
+  product_id: text('product_id').references(() => products.id),
+  cancel_at_period_end: boolean('cancel_at_period_end').default(false).notNull(),
   created: timestamp('created', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  currentPeriodStart: timestamp('current_period_start', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  currentPeriodEnd: timestamp('current_period_end', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  endedAt: timestamp('ended_at', { withTimezone: true, precision: 6 }),
-  cancelAt: timestamp('cancel_at', { withTimezone: true, precision: 6 }),
-  canceledAt: timestamp('canceled_at', { withTimezone: true, precision: 6 }),
+  current_period_start: timestamp('current_period_start', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  current_period_end: timestamp('current_period_end', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  ended_at: timestamp('ended_at', { withTimezone: true, precision: 6 }),
+  cancel_at: timestamp('cancel_at', { withTimezone: true, precision: 6 }),
+  canceled_at: timestamp('canceled_at', { withTimezone: true, precision: 6 }),
   metadata: jsonb('metadata'),
 }, (table) => ({
-  userIdIdx: index('subscriptions_user_id_idx').on(table.userId),
-  organizationIdIdx: index('subscriptions_organization_id_idx').on(table.organizationId),
-  polarCustomerIdIdx: index('subscriptions_polar_customer_id_idx').on(table.polarCustomerId),
+  user_idIdx: index('subscriptions_user_id_idx').on(table.user_id),
+  organization_idIdx: index('subscriptions_organization_id_idx').on(table.organization_id),
+  polarCustomerIdIdx: index('subscriptions_polar_customer_id_idx').on(table.polar_customer_id),
 }));
 
 export const subscriptionsRelations = relations(subscriptions, ({ one }) => ({
   organization: one(organizations, {
-    fields: [subscriptions.organizationId],
+    fields: [subscriptions.organization_id],
     references: [organizations.id],
   }),
   user: one(users, {
-    fields: [subscriptions.userId],
+    fields: [subscriptions.user_id],
     references: [users.id],
   }),
   customer: one(customers, {
-    fields: [subscriptions.polarCustomerId],
-    references: [customers.polarCustomerId],
+    fields: [subscriptions.polar_customer_id],
+    references: [customers.polar_customer_id],
   }),
   product: one(products, {
-    fields: [subscriptions.productId],
+    fields: [subscriptions.product_id],
     references: [products.id],
   }),
 }));
@@ -139,21 +139,21 @@ export const providers = pgTable('providers', {
 //   id: text('id').primaryKey().$defaultFn(() => cuid2()),
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
   alias: text('alias'),
-  roleArn: text('role_arn'),
-  accountId: text('account_id'),
+  role_arn: text('role_arn'),
+  account_id: text('account_id'),
   region: text('region'),
-  stackId: text('stack_id'),
-  stackName: text('stack_name'),
-  accessKeyId: text('access_key_id'),
-  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }),
-  deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
-  organizationId: text('organization_id').notNull().references(() => organizations.id),
+  stack_id: text('stack_id'),
+  stack_name: text('stack_name'),
+  access_key_id: text('access_key_id'),
+  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }),
+  deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
+  organization_id: text('organization_id').notNull().references(() => organizations.id),
 });
 
 export const providersRelations = relations(providers, ({ one, many }) => ({
   organization: one(organizations, {
-    fields: [providers.organizationId],
+    fields: [providers.organization_id],
     references: [organizations.id],
   }),
   environments: many(environments),
@@ -168,26 +168,25 @@ export const stackTypeEnum = pgEnum('STACK_TYPE', ['SPA', 'LAMBDA', 'ECS', 'CRON
 export const applications = pgTable('applications', {
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
   name: text('name').notNull(),
-  displayName: text('display_name').notNull(),
-  organizationId: text('organization_id').notNull().references(() => organizations.id),
-  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
+  display_name: text('display_name').notNull(),
+  organization_id: text('organization_id').notNull().references(() => organizations.id),
+  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
   metadata: jsonb('metadata'),
   status: applicationStatusEnum('status').default('PENDING').notNull(),
 });
 
 export const environments = pgTable('environments', {
-//   id: text('id').primaryKey().$defaultFn(() => cuid2()),
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
   name: text('name').notNull(),
-  displayName: text('display_name').notNull(),
+  display_name: text('display_name').notNull(),
   metadata: jsonb('metadata'),
   region: text('region'),
-  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
-  deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
-  providerId: text('provider_id').references(() => providers.id),
-  applicationId: text('application_id').notNull().references(() => applications.id),
+  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
+  deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
+  provider_id: text('provider_id').references(() => providers.id),
+  application_id: text('application_id').notNull().references(() => applications.id),
 });
 
 // export const services = pgTable('services', {
@@ -206,28 +205,28 @@ export const environments = pgTable('environments', {
 //   createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
 //   updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
 //   deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
-//   environmentId: text('environment_id').notNull().references(() => environments.id),
-//   installationId: integer('installation_id').references(() => installations.installationId),
+//   environment_id: text('environment_id').notNull().references(() => environments.id),
+//   installation_id: integer('installation_id').references(() => installations.installation_id),
 // });
 
 export const services = pgTable('services', {
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
   name: text('name').notNull(),
-  displayName: text('display_name').notNull(),
-  stackType: stackTypeEnum('stack_type').default('SPA'),
-  stackVersion: text('stack_version'),
+  display_name: text('display_name').notNull(),
+  stack_type: stackTypeEnum('stack_type').default('SPA'),
+  stack_version: text('stack_version'),
   resources: jsonb('resources'), // store stack output
   metadata: jsonb('metadata'), // service specific: LambdaProps, ServiceProps, etc.
-  appProps: jsonb('app_props'), // rootdir, outputdir
-  cdnProps: jsonb('cdn_props'), // cloudfront
-  edgeProps: jsonb('edge_props'), // headers, redirects, rewrites
-  domainProps: jsonb('domain_props'), // route53, domains, certificates
-  pipelineProps: jsonb('pipeline_props'), // sourceprops, buildprops, event bus
-  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
-  deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
-  environmentId: text('environment_id').notNull().references(() => environments.id),
-  installationId: integer('installation_id').references(() => installations.installationId),
+  app_props: jsonb('app_props'), // rootdir, outputdir
+  cdn_props: jsonb('cdn_props'), // cloudfront
+  edge_props: jsonb('edge_props'), // headers, redirects, rewrites
+  domain_props: jsonb('domain_props'), // route53, domains, certificates
+  pipeline_props: jsonb('pipeline_props'), // sourceprops, buildprops, event bus
+  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
+  deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
+  environment_id: text('environment_id').notNull().references(() => environments.id),
+  installation_id: integer('installation_id').references(() => installations.installation_id),
 });
 
 /**
@@ -235,17 +234,17 @@ export const services = pgTable('services', {
  */
 export const installations = pgTable('installations', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  installationId: integer('installation_id').unique().notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
-  deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
-  userId: uuid('user_id').notNull().references(() => users.id),
+  installation_id: integer('installation_id').unique().notNull(),
+  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
+  deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
+  user_id: uuid('user_id').notNull().references(() => users.id),
   metadata: jsonb('metadata').notNull(),
 });
 
 export const installationsRelations = relations(installations, ({ one, many }) => ({
   user: one(users, {
-    fields: [installations.userId],
+    fields: [installations.user_id],
     references: [users.id],
   }),
   services: many(services),
@@ -260,20 +259,20 @@ export const environmentVariables = pgTable('environment_variables', {
   key: text('key').notNull(),
   value: text('value').notNull(), // populated when string env variable
   resource: text('resource'), // ARN 
-  environmentId: text('environment_id').notNull().references(() => environments.id),
-  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
-  deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
+  environment_id: text('environment_id').notNull().references(() => environments.id),
+  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
+  deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
 });
 
 export const userAccessTokens = pgTable('user_access_tokens', {
-  secretId: uuid('secret_id').primaryKey().defaultRandom(),
+  secret_id: uuid('secret_id').primaryKey().defaultRandom(),
   resource: text('resource'), // ARN
-  userId: uuid('user_id').notNull().references(() => users.id),
-  environmentId: text('environment_id').notNull().references(() => environments.id),
-  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
-  deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
+  user_id: uuid('user_id').notNull().references(() => users.id),
+  environment_id: text('environment_id').notNull().references(() => environments.id),
+  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
+  deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
 });
 
 export const domains = pgTable('domains', {
@@ -282,65 +281,65 @@ export const domains = pgTable('domains', {
   hostedZoneId: text('hostedZoneId').notNull(),
   globalCertificateArn: text('globalCertificateArn').notNull(),
   regionalCertificateArn: text('regionalCertificateArn'),
-  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
-  deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
-  serviceId: text('service_id').notNull().references(() => services.id),
+  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
+  deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
+  service_id: text('service_id').notNull().references(() => services.id),
 });
 
 export const builds = pgTable('builds', {
   id: uuid('id').primaryKey().defaultRandom(),
-  buildId: text('build_id').unique(),
-  buildStart: timestamp('build_start', { withTimezone: true, precision: 6 }),
-  buildEnd: timestamp('build_end', { withTimezone: true, precision: 6 }),
-  buildLog: jsonb('build_log'),
-  buildStatus: buildStatusEnum('build_status').default('NULL'),
-  buildContext: jsonb('build_context'),
-  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }),
-  deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
-  serviceId: text('service_id').notNull().references(() => services.id),
-  environmentId: text('environment_id').notNull().references(() => environments.id),
+  build_id: text('build_id').unique(),
+  build_start: timestamp('build_start', { withTimezone: true, precision: 6 }),
+  build_end: timestamp('build_end', { withTimezone: true, precision: 6 }),
+  build_log: jsonb('build_log'),
+  build_status: buildStatusEnum('build_status').default('NULL'),
+  build_context: jsonb('build_context'),
+  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
+  deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
+  service_id: text('service_id').notNull().references(() => services.id),
+  environment_id: text('environment_id').notNull().references(() => environments.id),
 }, (table) => ({
-  buildIdIdx: index('builds_build_id_idx').on(table.buildId),
+  buildIdIdx: index('builds_build_id_idx').on(table.build_id),
 }));
 
 export const destroys = pgTable('destroys', {
-  destroyId: text('destroy_id').primaryKey().unique(),
-  destroyStatus: buildStatusEnum('destroy_status').default('NULL'),
-  destroyContext: jsonb('destroy_context'),
-  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }),
-  deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
-  serviceId: text('service_id').notNull().references(() => services.id),
-  environmentId: text('environment_id').notNull().references(() => environments.id),
+  destroy_id: text('destroy_id').primaryKey().unique(),
+  destroy_status: buildStatusEnum('destroy_status').default('NULL'),
+  destroy_context: jsonb('destroy_context'),
+  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
+  deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
+  service_id: text('service_id').notNull().references(() => services.id),
+  environment_id: text('environment_id').notNull().references(() => environments.id),
 });
 
 export const events = pgTable('events', {
-  pipelineExecutionId: text('pipeline_execution_id').primaryKey().unique(),
-  pipelineStart: timestamp('pipeline_start', { withTimezone: true, precision: 6 }),
-  pipelineEnd: timestamp('pipeline_end', { withTimezone: true, precision: 6 }),
-  pipelineState: pipelineStatusEnum('pipeline_state').default('NULL'),
-  pipelineMetadata: jsonb('pipeline_metadata'),
-  pipelineLog: jsonb('pipeline_log'),
-  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }),
-  deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
-  serviceId: text('service_id').notNull().references(() => services.id),
-  environmentId: text('environment_id').notNull().references(() => environments.id),
+  pipeline_execution_id: text('pipeline_execution_id').primaryKey().unique(),
+  pipeline_start: timestamp('pipeline_start', { withTimezone: true, precision: 6 }),
+  pipeline_end: timestamp('pipeline_end', { withTimezone: true, precision: 6 }),
+  pipeline_state: pipelineStatusEnum('pipeline_state').default('NULL'),
+  pipeline_metadata: jsonb('pipeline_metadata'),
+  pipeline_log: jsonb('pipeline_log'),
+  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
+  deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
+  service_id: text('service_id').notNull().references(() => services.id),
+  environment_id: text('environment_id').notNull().references(() => environments.id),
 });
 
 // Relations
 // export const paymentsRelations = relations(payments, ({ one }) => ({
 //   organization: one(organizations, {
-//     fields: [payments.organizationId],
+//     fields: [payments.organization_id],
 //     references: [organizations.id],
 //   }),
 // }));
 
 export const applicationsRelations = relations(applications, ({ one, many }) => ({
   organization: one(organizations, {
-    fields: [applications.organizationId],
+    fields: [applications.organization_id],
     references: [organizations.id],
   }),
   environments: many(environments),
@@ -348,11 +347,11 @@ export const applicationsRelations = relations(applications, ({ one, many }) => 
 
 export const environmentsRelations = relations(environments, ({ one, many }) => ({
   provider: one(providers, {
-    fields: [environments.providerId],
+    fields: [environments.provider_id],
     references: [providers.id],
   }),
   application: one(applications, {
-    fields: [environments.applicationId],
+    fields: [environments.application_id],
     references: [applications.id],
   }),
   environmentVariables: many(environmentVariables),
@@ -367,12 +366,12 @@ export const environmentsRelations = relations(environments, ({ one, many }) => 
 
 export const servicesRelations = relations(services, ({ one, many }) => ({
   environment: one(environments, {
-    fields: [services.environmentId],
+    fields: [services.environment_id],
     references: [environments.id],
   }),
   installation: one(installations, {
-    fields: [services.installationId],
-    references: [installations.installationId],
+    fields: [services.installation_id],
+    references: [installations.installation_id],
   }),
   domains: many(domains),
   events: many(events),
@@ -382,58 +381,58 @@ export const servicesRelations = relations(services, ({ one, many }) => ({
 
 export const environmentVariablesRelations = relations(environmentVariables, ({ one }) => ({
   environment: one(environments, {
-    fields: [environmentVariables.environmentId],
+    fields: [environmentVariables.environment_id],
     references: [environments.id],
   }),
 }));
 
 export const userAccessTokensRelations = relations(userAccessTokens, ({ one }) => ({
   user: one(users, {
-    fields: [userAccessTokens.userId],
+    fields: [userAccessTokens.user_id],
     references: [users.id],
   }),
   environment: one(environments, {
-    fields: [userAccessTokens.environmentId],
+    fields: [userAccessTokens.environment_id],
     references: [environments.id],
   }),
 }));
 
 export const domainsRelations = relations(domains, ({ one }) => ({
   service: one(services, {
-    fields: [domains.serviceId],
+    fields: [domains.service_id],
     references: [services.id],
   }),
 }));
 
 export const buildsRelations = relations(builds, ({ one }) => ({
   service: one(services, {
-    fields: [builds.serviceId],
+    fields: [builds.service_id],
     references: [services.id],
   }),
   environment: one(environments, {
-    fields: [builds.environmentId],
+    fields: [builds.environment_id],
     references: [environments.id],
   }),
 }));
 
 export const destroysRelations = relations(destroys, ({ one }) => ({
   service: one(services, {
-    fields: [destroys.serviceId],
+    fields: [destroys.service_id],
     references: [services.id],
   }),
   environment: one(environments, {
-    fields: [destroys.environmentId],
+    fields: [destroys.environment_id],
     references: [environments.id],
   }),
 }));
 
 export const eventsRelations = relations(events, ({ one }) => ({
   service: one(services, {
-    fields: [events.serviceId],
+    fields: [events.service_id],
     references: [services.id],
   }),
   environment: one(environments, {
-    fields: [events.environmentId],
+    fields: [events.environment_id],
     references: [environments.id],
   }),
 }));
@@ -455,3 +454,76 @@ export type Build = typeof builds.$inferSelect;
 export type NewBuild = typeof builds.$inferInsert;
 export type Event = typeof events.$inferSelect;
 export type NewEvent = typeof events.$inferInsert;
+
+export type EnvironmentVariable = typeof environmentVariables.$inferSelect;
+export type EnvironmentVariables = Partial<EnvironmentVariable>[];
+export type NewEnvironmentVariable = typeof environmentVariables.$inferInsert;
+
+export interface AppProps {
+  rootDir: string;
+  outputDir: string;
+}
+
+export interface CdnProps {
+  
+}
+
+export interface EdgeProps {
+  headers?: Array<{
+    path: string; 
+    name: string; 
+    value: string
+  }>;
+  redirects?: Array<{
+    source: string;
+    destination: string;
+  }>;
+  rewrites?: Array<{
+    source: string;
+    destination: string;
+  }>;
+}
+
+export interface DomainProps {
+  domain?: string;
+  globalCertificateArn?: string;
+  regionalCertificateArn?: string;
+  hostedZoneId?: string;
+}
+
+export interface PipelineProps {
+  sourceProps?: {
+    repository?: string;
+    branch?: string;
+  };
+  buildProps?: {
+    installcmd?: string;
+    buildcmd?: string;
+    environment?: Record<string, string>;
+  };
+  eventBus?: string;
+}
+
+// Enhance the Service type to include typed JSONB columns
+export type ServiceSchema = Service & {
+  app_props: AppProps | null;
+  cdn_props: CdnProps | null;
+  edge_props: EdgeProps | null;
+  domain_props: DomainProps | null;
+  pipeline_props: PipelineProps | null;
+  resources: Record<string, any> | null;
+  metadata: Record<string, any> | null;
+};
+
+// export type ServiceSchema = Partial<Service>;
+export type ProviderSchema = Partial<Provider>;
+
+export type EnvironmentSchema = Partial<Environment> & {
+  environment_variables?: EnvironmentVariables[];
+  provider?: ProviderSchema;
+  services?: ServiceSchema[];
+};
+
+export type ApplicationSchema = Partial<Application> & {
+  environments?: EnvironmentSchema[];
+};

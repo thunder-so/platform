@@ -1,7 +1,5 @@
 <template>
   <div>
-    <!-- {{ applicationSchema }} -->
-
     <h3>Events</h3>
     <div v-if="loading">Loading events...</div>
     <div v-else-if="error">Error fetching events: {{ error.message }}</div>
@@ -16,14 +14,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, h, resolveComponent, watch } from 'vue'
-
 definePageMeta({
   layout: 'app',
 });
 
 const supabase = useSupabaseClient()
 const { applicationSchema } = useApplications();
+
+if (!applicationSchema.value) {
+  throw Error('Application schema not found.')
+}
+const environment = applicationSchema.value?.environments?.[0];
+const service = environment?.services?.[0];
 
 const events = ref([])
 const loading = ref(false)
@@ -100,36 +102,11 @@ const fetchEvents = async (envId: string) => {
   }
 }
 
-watch(applicationSchema, (newSchema) => {
-  // console.log("app/index.vue applicationSchema watch:", newSchema)
-  if (newSchema) {
-    const envId = newSchema.environments[0]?.id;
-    // console.log("app/index watch", envId)
-    if (envId) {
-      fetchEvents(envId)
+onMounted(() => {
+  if (applicationSchema.value) {
+    if (environment?.id) {
+      fetchEvents(environment?.id);
     }
   }
-})
-
-// onMounted(() => {
-//   if (applicationSchema.value) {
-//     const envId = applicationSchema.value.environments[0]?.id;
-//     console.log("app/index onMounted", envId)
-//     if (envId) {
-//       fetchEvents(envId);
-//     }
-//   }
-// });
-
-// onMounted(() => {
-//  watch(applicationSchema, (newSchema) => {
-//   if (newSchema) {
-//     const envId = newSchema.environments[0]?.id;
-//     console.log("app/index onMounted watch", envId)
-//     if (envId) {
-//       fetchEvents(envId)
-//     }
-//   }
-//  }, { immediate: true })
-// });
+});
 </script>

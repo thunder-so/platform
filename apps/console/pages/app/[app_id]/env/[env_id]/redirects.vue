@@ -14,9 +14,6 @@
             <UFormField :label="`Destination ${index + 1}`" :name="`redirect-destination-${index}`">
               <UInput v-model="redirect.destination" />
             </UFormField>
-            <!-- <UFormField :label="`Type ${index + 1}`" :name="`redirect-type-${index}`">
-              <UInput v-model="redirect.type" type="number" />
-            </UFormField> -->
             <div class="col-span-2">
               <UButton icon="i-heroicons-minus" color="info" @click="removeRedirect(index)">Remove Redirect</UButton>
             </div>
@@ -37,7 +34,7 @@
               <UInput v-model="rewrite.destination" />
             </UFormField>
             <div class="col-span-2">
-              <UButton icon="i-heroicons-minus" color="red" @click="removeRewrite(index)">Remove Rewrite</UButton>
+              <UButton icon="i-heroicons-minus" color="info" @click="removeRewrite(index)">Remove Rewrite</UButton>
             </div>
           </template>
           <div class="col-span-2">
@@ -54,51 +51,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
-import { useApplications } from '~/composables/useApplications';
-import { useSupabaseClient } from '#imports';
-
 definePageMeta({
   layout: 'app',
 });
 
-const route = useRoute();
-const supabase = useSupabaseClient();
-const { applicationSchema } = useApplications();
+const { applicationSchema, refreshApplicationSchema } = useApplications();
 const { $client } = useNuxtApp();
 
+if (!applicationSchema.value) {
+  throw Error('Application schema not found.')
+}
+
+const environment = applicationSchema.value?.environments?.[0];
+const service = environment?.services?.[0];
+
 const formState = ref({
-  redirects: [] as { source: string; destination: string; type: number }[],
-  rewrites: [] as { source: string; destination: string }[],
+  redirects: service?.edge_props?.redirects || [],
+  rewrites: service?.edge_props?.rewrites || [],
 });
 
 const isSaving = ref(false);
 
-const fetchEdgeSettings = async (serviceId: string) => {
-  try {
-    const { data, error } = await supabase
-      .from('services')
-      .select('edge_props')
-      .eq('id', serviceId)
-      .single();
-
-    if (error) throw error;
-
-    if (data?.edge_props) {
-      formState.value.redirects = data.edge_props.redirects || [];
-      formState.value.rewrites = data.edge_props.rewrites || [];
-    } else {
-      formState.value.redirects = [];
-      formState.value.rewrites = [];
-    }
-  } catch (e: any) {
-    console.error('Error fetching edge settings:', e.message);
-  }
-};
-
 const addRedirect = () => {
-  formState.value.redirects.push({ source: '', destination: '', type: 301 });
+  formState.value.redirects.push({ source: '', destination: '' });
 };
 
 const removeRedirect = (index: number) => {
@@ -116,16 +91,15 @@ const removeRewrite = (index: number) => {
 const saveSettings = async () => {
   isSaving.value = true;
   try {
-    const serviceId = applicationSchema.value?.environments[0]?.services[0]?.id;
+    const serviceId = service?.id;
     if (!serviceId) {
       console.error('Service ID not found.');
       return;
     }
 
-    await $client.services.updateEdgeProps.mutate({
+    await $client.services.updateServiceProps.mutate({
       serviceId: serviceId,
-      edgeProps: {
-        headers: formState.value.headers,
+      edge_props: {
         redirects: formState.value.redirects,
         rewrites: formState.value.rewrites,
       },
@@ -134,25 +108,8 @@ const saveSettings = async () => {
   } catch (e: any) {
     console.error('Error saving edge settings:', e.message);
   } finally {
+    refreshApplicationSchema();
     isSaving.value = false;
   }
 };
-
-watch(applicationSchema, (newSchema) => {
-  if (newSchema) {
-    const serviceId = newSchema.environments[0]?.services[0]?.id;
-    if (serviceId) {
-      fetchEdgeSettings(serviceId);
-    }
-  }
-}, { immediate: true });
-
-// onMounted(() => {
-//   if (applicationSchema.value) {
-//     const serviceId = applicationSchema.value.environments[0]?.services[0]?.id;
-//     if (serviceId) {
-//       fetchEdgeSettings(serviceId);
-//     }
-//   }
-// });
 </script>

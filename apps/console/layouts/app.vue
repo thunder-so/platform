@@ -42,16 +42,13 @@ import type { NavigationMenuItem } from '@nuxt/ui'
 import { useApplications } from '~/composables/useApplications';
 import Header from '~/components/Header.vue';
 
-const route = useRoute();
-const { applicationSchema, setSelectedApplication } = useApplications();
+const { applicationSchema } = useApplications();
 
 const primaryLinks = computed<NavigationMenuItem[]>(() => {
   if (!applicationSchema) return [];
 
-  const orgId = applicationSchema.value?.organization_id;
   const appId = applicationSchema.value?.id;
   const envId = applicationSchema.value?.environments[0]?.id;
-  const serviceType = applicationSchema.value?.environments[0]?.services[0]?.stack_type;
 
   return [
     {
@@ -72,6 +69,8 @@ const manageLinks = computed<NavigationMenuItem[]>(() => {
   const appId = applicationSchema.value?.id;
   const envId = applicationSchema.value?.environments[0]?.id;
   const serviceType = applicationSchema.value?.environments[0]?.services[0]?.stack_type;
+  // console.log('layouts/app applicationSchema', applicationSchema.value?.environments[0]?.services)
+
 
   const links = [
     {
@@ -103,12 +102,11 @@ const manageLinks = computed<NavigationMenuItem[]>(() => {
 
 // console.log('layouts/app applicationSchema', applicationSchema.value)
 
-watch(() => route.params.app_id, (newAppId) => {
-  if (newAppId) {
-    // console.log("layouts/app setSelectedApplication:", newAppId)
-    setSelectedApplication(newAppId as string);
-  }
-}, { immediate: true });
+// watch(() => route.params.app_id, (newAppId) => {
+//   if (newAppId) {
+//     setApplicationSchemaById(newAppId as string);
+//   }
+// }, { immediate: true });
 </script>
 
 <style scoped>

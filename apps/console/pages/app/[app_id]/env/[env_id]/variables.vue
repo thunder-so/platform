@@ -1,11 +1,8 @@
 <template>
   <div>
-    <h1>Environment Variables</h1>
-    <p>Variables for environment {{ $route.params.env_id }}</p>
-
     <UCard class="mt-4">
       <template #header>
-        <h2 class="text-xl font-semibold">Plaintext Variables</h2>
+        <h2 class="text-xl font-semibold">Environment Variables</h2>
       </template>
 
       <UForm :state="formState" @submit="saveVariable">
@@ -35,19 +32,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
-import { useApplications } from '~/composables/useApplications';
-import { useSupabaseClient } from '#imports';
-
 definePageMeta({
   layout: 'app',
 });
 
-const route = useRoute();
 const supabase = useSupabaseClient();
 const { applicationSchema } = useApplications();
 const { $client } = useNuxtApp();
+
+if (!applicationSchema.value) {
+  throw Error('Application schema not found.')
+}
+
+const environment = applicationSchema.value?.environments?.[0];
 
 const formState = ref({
   variables: [] as { id?: string; key: string; value: string }[],
@@ -76,7 +73,7 @@ const addVariable = () => {
 
 const removeVariable = async (index: number) => {
   const variable = formState.value.variables[index];
-  if (variable.id) {
+  if (variable?.id) {
     await $client.environments.deleteEnvironmentVariable.mutate({ id: variable?.id as string });
   }
   formState.value.variables.splice(index, 1);
@@ -85,11 +82,10 @@ const removeVariable = async (index: number) => {
 const saveVariable = async () => {
   isSaving.value = true;
   try {
-    const envId = route.params.env_id as string;
     for (const variable of formState.value.variables) {
       await $client.environments.upsertEnvironmentVariable.mutate({
         id: variable.id,
-        environmentId: envId,
+        environment_id: environment?.id as string,
         key: variable.key,
         value: variable.value,
       });
@@ -100,20 +96,16 @@ const saveVariable = async () => {
   } finally {
     isSaving.value = false;
     // Re-fetch to ensure IDs are populated for newly added variables
-    fetchVariables(route.params.env_id as string);
+    fetchVariables(environment?.id as string);
   }
 };
 
-watch(() => route.params.env_id, (newEnvId) => {
-  if (newEnvId) {
-    fetchVariables(newEnvId as string);
+onMounted(() => {
+  if (!applicationSchema) {
+    return
   }
-}, { immediate: true });
-
-// Initial fetch on component mount
-// onMounted(() => {
-//   if (route.params.env_id) {
-//     fetchVariables(route.params.env_id as string);
-//   }
-// });
+  if (environment?.id) {
+    fetchVariables(environment.id);
+  }
+});
 </script>

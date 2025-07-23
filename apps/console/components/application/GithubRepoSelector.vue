@@ -119,7 +119,7 @@ const selectedAvatar = computed(() => {
 
 const fetchAllRepositories = async () => {
   if (!installations.value || installations.value.length === 0) return;
-  console.log('Fetching all repositories...', installations.value);
+  // console.log('Fetching all repositories...', installations.value);
   try {
     pendingRepositories.value = true;
     const installationIds = installations.value.map((inst: any) => inst.installation_id);

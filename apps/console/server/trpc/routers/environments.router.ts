@@ -9,27 +9,26 @@ export const environmentsRouter = router({
   upsertEnvironmentVariable: publicProcedure
     .input(z.object({
       id: z.string().optional(), // Optional for new variables
-      environmentId: z.string(),
+      environment_id: z.string(),
       key: z.string(),
       value: z.string(),
     }))
     .mutation(async ({ input }) => {
-      const { id, environmentId, key, value } = input;
+      const { id, environment_id, key, value } = input;
 
       if (id) {
         // Update existing variable
         await db.update(environmentVariables)
-          .set({ key, value, updatedAt: new Date() })
+          .set({ key, value, updated_at: new Date() })
           .where(eq(environmentVariables.id, id));
       } else {
         // Insert new variable
         await db.insert(environmentVariables).values({
-          // id: cuid2(), // Generate new ID for new variable
-          environmentId,
+          environment_id,
           key,
           value,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          created_at: new Date(),
+          updated_at: new Date(),
         });
       }
       return { success: true };
@@ -42,7 +41,7 @@ export const environmentsRouter = router({
     .mutation(async ({ input }) => {
       const { id } = input;
       await db.update(environmentVariables)
-        .set({ deletedAt: new Date() })
+        .set({ deleted_at: new Date() })
         .where(eq(environmentVariables.id, id));
       return { success: true };
     }),

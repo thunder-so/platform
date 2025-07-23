@@ -33,88 +33,48 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
-import { useApplications } from '~/composables/useApplications';
-import { useSupabaseClient } from '#imports';
-
 definePageMeta({
   layout: 'app',
 });
 
-const route = useRoute();
-const supabase = useSupabaseClient();
-const { applicationSchema } = useApplications();
+const { applicationSchema, refreshApplicationSchema } = useApplications();
 const { $client } = useNuxtApp();
 
+if (!applicationSchema.value) {
+  throw Error('Application schema not found.')
+}
+
+const environment = applicationSchema.value?.environments?.[0];
+const service = environment?.services?.[0];
+
 const formState = ref({
-  domain: '',
-  globalCertificateArn: '',
-  regionalCertificateArn: '',
-  hostedZoneId: '',
+  domain: service?.domain_props?.domain,
+  globalCertificateArn: service?.domain_props?.globalCertificateArn,
+  regionalCertificateArn: service?.domain_props?.regionalCertificateArn,
+  hostedZoneId: service?.domain_props?.hostedZoneId,
 });
 
 const isSaving = ref(false);
 
-const fetchDomainSettings = async (serviceId: string) => {
-  try {
-    const { data, error } = await supabase
-      .from('services')
-      .select('domain_props')
-      .eq('id', serviceId)
-      .single();
-
-    if (error) throw error;
-
-    if (data?.domain_props) {
-      formState.value = {
-        domain: data.domain_props.domain || '',
-        globalCertificateArn: data.domain_props.globalCertificateArn || '',
-        regionalCertificateArn: data.domain_props.regionalCertificateArn || '',
-        hostedZoneId: data.domain_props.hostedZoneId || '',
-      };
-    }
-  } catch (e: any) {
-    console.error('Error fetching domain settings:', e.message);
-  }
-};
-
 const saveSettings = async () => {
   isSaving.value = true;
   try {
-    const serviceId = applicationSchema.value?.environments[0]?.services[0]?.id;
+    const serviceId = service?.id;
     if (!serviceId) {
       console.error('Service ID not found.');
       return;
     }
 
-    await $client.services.updateDomainProps.mutate({
+    await $client.services.updateServiceProps.mutate({
       serviceId: serviceId,
-      domainProps: formState.value,
+      domain_props: formState.value,
     });
     console.log('Domain settings saved successfully!');
   } catch (e: any) {
     console.error('Error saving domain settings:', e.message);
   } finally {
+    refreshApplicationSchema();
     isSaving.value = false;
   }
 };
-
-watch(applicationSchema, (newSchema) => {
-  if (newSchema) {
-    const serviceId = newSchema.environments[0]?.services[0]?.id;
-    if (serviceId) {
-      fetchDomainSettings(serviceId);
-    }
-  }
-}, { immediate: true });
-
-// onMounted(() => {
-//   if (applicationSchema.value) {
-//     const serviceId = applicationSchema.value.environments[0]?.services[0]?.id;
-//     if (serviceId) {
-//       fetchDomainSettings(serviceId);
-//     }
-//   }
-// });
 </script>

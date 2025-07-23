@@ -4,103 +4,45 @@ import { db } from '~/server/db/db';
 import { services } from '~/server/db/schema';
 import { eq } from 'drizzle-orm';
 
+// Helper function to deep merge objects
+function deepMerge(target: any, source: any): any {
+  if (!source) return target;
+  if (!target) return source;
+  
+  const result = { ...target };
+  
+  Object.keys(source).forEach(key => {
+    if (source[key] !== undefined) {
+      if (
+        typeof source[key] === 'object' && 
+        source[key] !== null && 
+        !Array.isArray(source[key]) &&
+        typeof result[key] === 'object' && 
+        result[key] !== null && 
+        !Array.isArray(result[key])
+      ) {
+        // Deep merge nested objects
+        result[key] = deepMerge(result[key], source[key]);
+      } else {
+        // Replace or add the property
+        result[key] = source[key];
+      }
+    }
+  });
+  
+  return result;
+}
+
 export const servicesRouter = router({
-  updatePipelineProps: publicProcedure
+  updateServiceProps: publicProcedure
     .input(z.object({
       serviceId: z.string(),
-      appProps: z.object({
+      app_props: z.object({
         rootDir: z.string().optional(),
         outputDir: z.string().optional(),
       }).optional(),
-      pipelineProps: z.object({
-        sourceProps: z.object({
-          owner: z.string().optional(),
-          repo: z.string().optional(),
-          branch: z.string().optional(),
-        }).optional(),
-        buildProps: z.object({
-          runtime: z.string().optional(),
-          runtime_version: z.union([z.string(), z.number()]).optional(),
-          installcmd: z.string().optional(),
-          buildcmd: z.string().optional(),
-        }).optional(),
-      }).optional(),
-    }))
-    .mutation(async ({ input }) => {
-      const { serviceId, appProps, pipelineProps } = input;
-
-      const existingService = await db.query.services.findFirst({
-        where: eq(services.id, serviceId),
-        columns: { appProps: true, pipelineProps: true },
-      });
-
-      const mergedAppProps = {
-        ...(existingService?.appProps as object || {}),
-        ...appProps,
-      };
-
-      const currentPipelineProps = (existingService?.pipelineProps || {}) as {
-        sourceProps?: { owner?: string; repo?: string; branch?: string };
-        buildProps?: { runtime?: string; runtime_version?: string | number; installcmd?: string; buildcmd?: string };
-      };
-
-      const mergedPipelineProps = {
-        sourceProps: pipelineProps?.sourceProps !== undefined
-          ? { ...(currentPipelineProps.sourceProps || {}), ...pipelineProps.sourceProps }
-          : currentPipelineProps.sourceProps,
-        buildProps: pipelineProps?.buildProps !== undefined
-          ? { ...(currentPipelineProps.buildProps || {}), ...pipelineProps.buildProps }
-          : currentPipelineProps.buildProps,
-      };
-
-      await db.update(services)
-        .set({ 
-          appProps: mergedAppProps, 
-          pipelineProps: mergedPipelineProps 
-        })
-        .where(eq(services.id, serviceId));
-
-      return {
-        success: true,
-      };
-    }),
-    
-  updateDomainProps: publicProcedure
-    .input(z.object({
-      serviceId: z.string(),
-      domainProps: z.object({
-        domain: z.string().optional(),
-        globalCertificateArn: z.string().optional(),
-        regionalCertificateArn: z.string().optional(),
-        hostedZoneId: z.string().optional(),
-      }),
-    }))
-    .mutation(async ({ input }) => {
-      const { serviceId, domainProps } = input;
-
-      // const existingService = await db.query.services.findFirst({
-      //   where: eq(services.id, serviceId),
-      //   columns: { domainProps: true },
-      // });
-
-      // const mergedDomainProps = {
-      //   ...(existingService?.domainProps as object || {}),
-      //   ...domainProps,
-      // };
-
-      await db.update(services)
-        .set({ domainProps: domainProps })
-        .where(eq(services.id, serviceId));
-
-      return {
-        success: true,
-      };
-    }),
-
-  updateEdgeProps: publicProcedure
-    .input(z.object({
-      serviceId: z.string(),
-      edgeProps: z.object({
+      cdn_props: z.record(z.any()).optional(),
+      edge_props: z.object({
         headers: z.array(z.object({
           path: z.string(),
           name: z.string(),
@@ -109,37 +51,65 @@ export const servicesRouter = router({
         redirects: z.array(z.object({
           source: z.string(),
           destination: z.string(),
-          type: z.number(),
+          statusCode: z.number().optional(),
         })).optional(),
         rewrites: z.array(z.object({
           source: z.string(),
           destination: z.string(),
         })).optional(),
-      }),
+      }).optional(),
+      domain_props: z.object({
+        domain: z.string().optional(),
+        globalCertificateArn: z.string().optional(),
+        regionalCertificateArn: z.string().optional(),
+        hostedZoneId: z.string().optional(),
+      }).optional(),
+      pipeline_props: z.object({
+        sourceProps: z.object({
+          repository: z.string().optional(),
+          branch: z.string().optional(),
+        }).optional(),
+        buildProps: z.object({
+          installcmd: z.string().optional(),
+          buildcmd: z.string().optional(),
+          environment: z.record(z.string()).optional(),
+        }).optional(),
+        eventBus: z.string().optional(),
+      }).optional(),
     }))
     .mutation(async ({ input }) => {
-      const { serviceId, edgeProps } = input;
+      const { serviceId, ...propsToUpdate } = input;
+      console.log('Updating service props for serviceId:', serviceId, 'with data:', propsToUpdate);
 
+      // Get existing service data
       const existingService = await db.query.services.findFirst({
         where: eq(services.id, serviceId),
-        columns: { edgeProps: true },
       });
 
-      const currentEdgeProps = (existingService?.edgeProps || {}) as {
-        headers?: { path: string; name: string; value: string }[];
-        redirects?: { source: string; destination: string; type: number }[];
-        rewrites?: { source: string; destination: string }[];
-      };
+      if (!existingService) {
+        throw new Error(`Service with ID ${serviceId} not found`);
+      }
 
-      const mergedEdgeProps = {
-        headers: edgeProps.headers !== undefined ? edgeProps.headers : currentEdgeProps.headers,
-        redirects: edgeProps.redirects !== undefined ? edgeProps.redirects : currentEdgeProps.redirects,
-        rewrites: edgeProps.rewrites !== undefined ? edgeProps.rewrites : currentEdgeProps.rewrites,
-      };
+      // Create update object
+      const updateData: Record<string, any> = {};
 
-      await db.update(services)
-        .set({ edgeProps: mergedEdgeProps })
-        .where(eq(services.id, serviceId));
+      // Process each property type
+      for (const propKey of Object.keys(propsToUpdate) as Array<keyof typeof propsToUpdate>) {
+        if (propsToUpdate[propKey]) {
+          // Get existing props (or empty object if none)
+          const existingProps = existingService[propKey] || {};
+          
+          // Deep merge the props
+          updateData[propKey] = deepMerge(existingProps, propsToUpdate[propKey]);
+        }
+      }
+
+      // Only update if we have properties to update
+      if (Object.keys(updateData).length > 0) {
+        await db.update(services)
+          .set(updateData)
+          .where(eq(services.id, serviceId));
+      }
 
       return {
         success: true,
