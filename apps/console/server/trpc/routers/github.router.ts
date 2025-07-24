@@ -79,32 +79,6 @@ export default class GithubLibrary {
         throw error as Error;
       }
     }
-
-    /**
-     * Get list of repositories using Github App installation
-     * @description https://github.com/octokit/auth-app.js?tab=readme-ov-file#usage-with-octokit
-     * @param installation_id 
-     * @returns octokit.response [total_count, repositories]
-     */
-    // async getRepositories(installation_id: number): Promise<GetInstallationRepositoriesResponse['data']> {
-    //   try {
-    //     const octokit = new Octokit({
-    //       authStrategy: createAppAuth,
-    //       auth: {
-    //         appId: this.appId,
-    //         privateKey: this.privateKey,
-    //         installationId: installation_id
-    //       }
-    //     });
-
-    //     const response: OctokitResponse<GetInstallationRepositoriesResponse['data'], number> = await octokit.request("GET /installation/repositories", {})
-
-    //     return response.data;
-    //   } 
-    //   catch (error) {
-    //     throw error as Error;
-    //   } 
-    // }
 }
 
 export const githubRouter = router({
@@ -125,7 +99,7 @@ export const githubRouter = router({
 
         const [installation] = await db.insert(installations).values({
           user_id: ctx.user.id,
-          installationId: input.installation_id,
+          installation_id: input.installation_id,
           metadata: metadata,
         }).returning();
 
@@ -138,12 +112,6 @@ export const githubRouter = router({
 
         return installation
     }),
-
-    // getInstallations: protectedProcedure
-    //   .query(async ({ ctx }) => {
-    //     const userInstallations = await db.select().from(installations).where(sql`${installations.userId} = ${ctx.user.id}`);
-    //     return userInstallations;
-    //   }),
 
     getInstallationRepositories: protectedProcedure
       .input(z.object({
