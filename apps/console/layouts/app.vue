@@ -1,7 +1,7 @@
 <template>
   <div>
     <Header />
-
+    
     <div class="app-container">
       <aside class="sidebar bg-elevated border-r border-muted">
         <div class="pb-2 border-b border-muted mb-4">
@@ -29,7 +29,9 @@
         />
       </aside>
       <main class="main-content"> 
-        <slot />
+        <UContainer>
+          <slot />
+        </UContainer>
       </main>
     </div>
   </div>
@@ -107,6 +109,6 @@ const manageLinks = computed<NavigationMenuItem[]>(() => {
 }
 .main-content {
   flex-grow: 1;
-  padding: 30px 60px;
+  padding: 30px 0;
 }
 </style>

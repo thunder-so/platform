@@ -76,6 +76,6 @@ watch(() => route.params.org_id, (newOrgId) => {
 }
 .main-content {
   flex-grow: 1;
-  padding: 30px 60px;
+  padding: 30px 0;
 }
 </style>
