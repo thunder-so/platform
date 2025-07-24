@@ -123,7 +123,7 @@ const updateOrganization = async () => {
   try {
     const { data, error: updateError } = await supabase
       .from('organizations')
-      .update({ display_name: state.displayName })
+      .update({ name: state.displayName })
       .eq('id', orgId)
       .select('id, name')
       .single();

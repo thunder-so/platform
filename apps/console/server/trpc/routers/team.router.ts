@@ -68,11 +68,11 @@ export const teamRouter = router({
       // This handles both new users and existing users not yet in the organization
       await db.insert(memberships).values({
         organization_id: input.organizationId,
-        userId: magicLinkData.user.id, // Use the user ID from generateLink
+        user_id: magicLinkData.user.id, // Use the user ID from generateLink
         access: 'ADMIN',
         pending: true,
-        updatedAt: undefined,
-        deletedAt: null,
+        updated_at: undefined,
+        deleted_at: null,
       })
 
       // Construct email content for the Edge Function

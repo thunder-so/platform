@@ -63,10 +63,10 @@ export const providersRouter = router({
           .values({
             organization_id: organizationId,
             alias: alias,
-            accessKeyId: accessKeyId,
-            accountId: callerIdentity.Account,
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            access_key_id: accessKeyId,
+            account_id: callerIdentity.Account,
+            created_at: new Date(),
+            updated_at: new Date(),
           })
           .returning();
 

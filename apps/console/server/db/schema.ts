@@ -189,26 +189,6 @@ export const environments = pgTable('environments', {
   application_id: text('application_id').notNull().references(() => applications.id),
 });
 
-// export const services = pgTable('services', {
-//   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
-//   name: text('name').notNull(),
-//   displayName: text('display_name').notNull(),
-//   stackType: stackTypeEnum('stack_type').default('SPA'),
-//   stackVersion: text('stack_version'),
-//   runtime: text('runtime'),
-//   runtimeVersion: text('runtime_version'),
-//   metadata: jsonb('metadata'),
-//   resources: jsonb('resources'),
-//   redirects: jsonb('redirects'),
-//   rewrites: jsonb('rewrites'),
-//   headers: jsonb('headers'),
-//   createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-//   updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
-//   deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
-//   environment_id: text('environment_id').notNull().references(() => environments.id),
-//   installation_id: integer('installation_id').references(() => installations.installation_id),
-// });
-
 export const services = pgTable('services', {
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
   name: text('name').notNull(),
