@@ -43,7 +43,7 @@ import Header from '~/components/Header.vue';
 const { applicationSchema } = useApplications();
 
 if (!applicationSchema.value) {
-  throw Error('Application schema not found.')
+  navigateTo('/404');
 }
 const environment = applicationSchema.value?.environments?.[0];
 const service = environment?.services?.[0];

@@ -17,18 +17,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, h, resolveComponent } from 'vue'
-
 definePageMeta({
   layout: 'org'
 })
 
-const route = useRoute()
 const supabase = useSupabaseClient()
+const { selectedOrganization } = useMemberships()
 
 const applications = ref([])
 const loading = ref(false)
 const error = ref(null)
+const orgId = selectedOrganization?.value?.id as string
 
 const UBadge = resolveComponent('UBadge')
 const UButton = resolveComponent('UButton')
@@ -132,8 +131,6 @@ const columns = [
 const columnVisibility = ref({
   id: false
 })
-
-const orgId = route.params.org_id
 
 onMounted(async () => {
   loading.value = true

@@ -12,16 +12,19 @@
         />
       </aside>
       <main class="main-content"> 
-        <slot />
+        <UContainer>
+          <slot />
+        </UContainer>
       </main>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import type { NavigationMenuItem } from '@nuxt/ui'
+
 const route = useRoute();
 const { setSelectedOrganization, selectedOrganization } = useMemberships();
-import type { NavigationMenuItem } from '@nuxt/ui'
 
 const links = computed<NavigationMenuItem[]>(() => {
   const orgId = selectedOrganization.value?.id;
@@ -49,11 +52,13 @@ const links = computed<NavigationMenuItem[]>(() => {
     },
   ];
 });
-// console.log('layouts/org selectedOrganization', selectedOrganization.value)  
 
 watch(() => route.params.org_id, (newOrgId) => {
   if (newOrgId) {
-    setSelectedOrganization(newOrgId as string);
+    const found = setSelectedOrganization(newOrgId as string);
+    if (!found) {
+      navigateTo('/404');
+    }
   }
 }, { immediate: true });
 </script>

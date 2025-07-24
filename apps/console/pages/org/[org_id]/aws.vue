@@ -66,23 +66,22 @@ import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
 import { useClipboard } from '@vueuse/core'
 import { ProviderCreateModal } from '#components'
 
-const { memberships, selectedOrganization, isLoading } = useMemberships()
-const toast = useToast()
-const { copy } = useClipboard()
-const overlay = useOverlay()
-
 definePageMeta({
   layout: 'org'
 })
 
-const { $client } = useNuxtApp()
-const route = useRoute()
 const supabase = useSupabaseClient()
-// const config = useRuntimeConfig()
+const { selectedOrganization } = useMemberships()
+const { $client } = useNuxtApp()
+const toast = useToast()
+const { copy } = useClipboard()
+const overlay = useOverlay()
+
 const providers = ref([])
 const loading = ref(false)
 const error = ref(null)
-const orgId = route.params.org_id
+
+const orgId = selectedOrganization.value?.id as string;
 const manualFormError = ref<string | null>(null);
 
 const manualSchema = z.object({

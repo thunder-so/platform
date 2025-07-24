@@ -31,20 +31,21 @@ import PricingTable from '~/components/PricingTable.vue';
 const appConfig = useAppConfig();
 const route = useRoute()
 const supabase = useSupabaseClient()
+const { selectedOrganization } = useMemberships()
 const { $client } = useNuxtApp()
 
 definePageMeta({
   layout: 'org',
 })
 
-const orgId = route.params.org_id
+const orgId = selectedOrganization.value?.id as string;
 const subscription = ref(null)
 const isLoading = ref(false)
 const error = ref(null)
 const plans = ref(appConfig.plans);
-const selectedPlan = ref(appConfig.plans.find(p => p.productId === null)?.id || null);
+const selectedPlan = ref(appConfig.plans.find(p => p.productId === undefined)?.id || undefined);
 
-const subscribeToPlan = async (planId) => {
+const subscribeToPlan = async (planId: string) => {
   const selected = plans.value.find(p => p.id === planId);
   if (!selected || !selected.productId) {
     console.error('Invalid plan selected or no product ID for the selected plan.');
@@ -53,7 +54,7 @@ const subscribeToPlan = async (planId) => {
 
   try {
     const { checkoutUrl } = await $client.organizations.createCheckoutSession.mutate({
-      organizationId: orgId,
+      organizationId: orgId as string,
       productId: selected.productId,
     });
     window.location.href = checkoutUrl;

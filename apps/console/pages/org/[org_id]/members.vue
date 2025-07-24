@@ -55,13 +55,14 @@ import { z } from 'zod';
 
 const route = useRoute();
 const supabase = useSupabaseClient();
+const { selectedOrganization } = useMemberships()
 const { $client } = useNuxtApp();
 
 definePageMeta({
   layout: 'org',
 });
 
-const orgId = route.params.org_id;
+const orgId = selectedOrganization?.value?.id as string;
 const inviting = ref(false);
 const inviteError = ref(null);
 const removingMemberId = ref(null);

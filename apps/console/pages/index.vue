@@ -1,10 +1,10 @@
 <template>
   <div>
-    <div v-if="user">
+    <!-- <div v-if="user">
       <h1>Welcome, {{ user.email }}</h1>
       memberships: {{ memberships.length }}
       selectedOrganization: {{ selectedOrganization }}
-    </div>
+    </div> -->
   </div>
 </template>
 
@@ -15,4 +15,8 @@ const { memberships, selectedOrganization } = useMemberships()
 definePageMeta({
   layout: 'org'
 });
+
+if (selectedOrganization) {
+  navigateTo(`/org/${selectedOrganization.value?.id}`)
+}
 </script>

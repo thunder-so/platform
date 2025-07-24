@@ -8,19 +8,19 @@
       <div class="space-y-4">
         <UForm :state="application">
           <UFormField label="Application Name">
-            <UInput v-model="application.displayName" size="lg" class="w-96" />
+            <UInput v-model="application.display_name" size="lg" class="w-96" />
           </UFormField>
         </UForm>
 
         <UForm :state="environment" class="space-y-4">
           <UFormField label="Environment Name" description="Your default environment">
-            <UInput v-model="environment.displayName" size="lg" class="w-96" />
+            <UInput v-model="environment.display_name" size="lg" class="w-96" />
           </UFormField>
 
           <div class="flex space-x-4">
             <UFormField label="AWS Account">
               <USelect 
-                v-model="environment.providerId" 
+                v-model="environment.provider_id" 
                 :items="providerItems" 
                 class="w-96" size="lg"
               />
@@ -104,7 +104,7 @@ onMounted(async () => {
     }
     providers.value = supabaseProviders || [];
     if (providers.value.length > 0) {
-      setProvider(providers.value[0]);
+      setProvider(providers.value[0]!);
     }
   }
 });
@@ -131,7 +131,7 @@ const deployApplication = async () => {
     return;
   }
 
-  if (!environment.value.providerId) {
+  if (!environment.value.provider_id) {
     deploymentError.value = 'AWS Provider not selected.';
     setDeploymentStatus('failed');
     return;

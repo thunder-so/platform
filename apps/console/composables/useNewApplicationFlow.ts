@@ -26,7 +26,7 @@ export const useNewApplicationFlow = () => {
     selectedRepo.value = repo;
     if (repo) {
       application.value.name = repo.name;
-      application.value.displayName = repo.name;
+      application.value.display_name = repo.name;
     }
   };
 
@@ -40,7 +40,7 @@ export const useNewApplicationFlow = () => {
 
   const setProvider = (provider: Provider) => {
     if (environment.value) {
-      environment.value.providerId = provider.id;
+      environment.value.provider_id = provider.id;
       environment.value.region = provider.region;
     }
   };
@@ -49,18 +49,18 @@ export const useNewApplicationFlow = () => {
     deploymentStatus.value = status;
   };
 
-  const setServiceType = (type: Service['stackType']) => {
+  const setServiceType = (type: Service['stack_type']) => {
     if (service.value) {
-      service.value.stackType = type;
+      service.value.stack_type = type;
     }
   };
 
   watch(selectedRepo, (repo) => {
     if(repo) {
       application.value.name = repo.name;
-      application.value.displayName = repo.name;
+      application.value.display_name = repo.name;
       environment.value.name = 'preview';
-      environment.value.displayName = 'preview';
+      environment.value.display_name = 'preview';
     }
   }, { deep: true });
 

@@ -50,12 +50,11 @@ const steps = [
 }
 
 .step.active {
-  @apply bg-accented text-highlighted;
+  @apply bg-inverted text-inverted;
 }
 
 .step.completed {
   @apply ring ring-inset ring-primary/25 bg-primary/10 text-primary;
-  /* background-color: var(--ui-success); */
 }
 
 .separator {

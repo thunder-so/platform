@@ -49,7 +49,7 @@ export const organizationsRouter = router({
 
       // 3. Create the membership for the user
       await db.insert(memberships).values({
-        organizationId: newOrg.id,
+        organization_id: newOrg.id,
         userId: user.id,
         access: 'ADMIN',
       })
@@ -186,10 +186,10 @@ export const organizationsRouter = router({
       } = useRuntimeConfig()
 
       const customer = await db.query.customers.findFirst({
-        where: eq(customers.organizationId, organizationId),
+        where: eq(customers.organization_id, organizationId),
       })
 
-      if (!customer || !customer.polarCustomerId) {
+      if (!customer || !customer.polar_customer_id) {
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Customer not found.',
@@ -203,7 +203,7 @@ export const organizationsRouter = router({
 
       try {
         const portal = await polar.customerSessions.create({
-          customerId: customer.polarCustomerId
+          customerId: customer.polar_customer_id
         })
         return { url: portal.customerPortalUrl }
       } catch (error) {
@@ -224,8 +224,8 @@ export const organizationsRouter = router({
       // 1. Verify user is an ADMIN of the organization
       const membership = await db.query.memberships.findFirst({
         where: and(
-          eq(memberships.organizationId, orgId),
-          eq(memberships.userId, user.id),
+          eq(memberships.organization_id, orgId),
+          eq(memberships.user_id, user.id),
           eq(memberships.access, 'ADMIN')
         ),
       })
@@ -240,8 +240,8 @@ export const organizationsRouter = router({
       // 2. Check for existing non-deleted applications
       const existingApplications = await db.query.applications.findMany({
         where: and(
-          eq(applications.organizationId, orgId),
-          eq(applications.deletedAt, null),
+          eq(applications.organization_id, orgId),
+          eq(applications.deleted_at, null),
         ),
       })
 
@@ -255,8 +255,8 @@ export const organizationsRouter = router({
       // 3. Soft delete the organization and its memberships in a transaction
       const now = new Date()
       await db.transaction(async (tx) => {
-        await tx.update(organizations).set({ deletedAt: now }).where(eq(organizations.id, orgId));
-        await tx.update(memberships).set({ deletedAt: now }).where(eq(memberships.organizationId, orgId));
+        await tx.update(organizations).set({ deleted_at: now }).where(eq(organizations.id, orgId));
+        await tx.update(memberships).set({ deleted_at: now }).where(eq(memberships.organization_id, orgId));
       });
 
       return { success: true }
@@ -266,7 +266,7 @@ export const organizationsRouter = router({
     .query(async ({ ctx }) => {
       const { user } = ctx;
       const userMemberships = await db.query.memberships.findMany({
-        where: eq(memberships.userId, user.id),
+        where: eq(memberships.user_id, user.id),
         with: {
           organization: {
             with: {

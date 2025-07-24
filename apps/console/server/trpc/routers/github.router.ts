@@ -124,7 +124,7 @@ export const githubRouter = router({
         }
 
         const [installation] = await db.insert(installations).values({
-          userId: ctx.user.id,
+          user_id: ctx.user.id,
           installationId: input.installation_id,
           metadata: metadata,
         }).returning();

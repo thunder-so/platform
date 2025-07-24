@@ -61,7 +61,7 @@ export const providersRouter = router({
         const [data] = await db
           .insert(providers)
           .values({
-            organizationId: organizationId,
+            organization_id: organizationId,
             alias: alias,
             accessKeyId: accessKeyId,
             accountId: callerIdentity.Account,
@@ -109,7 +109,7 @@ export const providersRouter = router({
         const [data] = await db
           .update(providers)
           .set({
-            deletedAt: new Date(),
+            deleted_at: new Date(),
           })
           .where(sql`${providers.id} = ${providerId}`)
           .returning({ id: providers.id });

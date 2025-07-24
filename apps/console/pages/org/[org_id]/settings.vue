@@ -14,7 +14,7 @@
     <h3 class="mt-8">Danger Zone</h3>
     <div class="border border-red-500 p-4 rounded-md">
       <p class="text-red-500 mb-4">
-        Deleting your organization is a permanent action and cannot be undone.
+        Deleting your workspace is a permanent action and cannot be undone.
       </p>
       <div v-if="hasApplications" class="text-red-500">
         <p>You cannot delete this organization because it still has applications associated with it.</p>
@@ -24,21 +24,11 @@
         <p>You cannot delete this organization because it has an active subscription.</p>
         <p>Please cancel your subscription before attempting to delete the organization.</p>
       </div>
-
-      <UModal v-else title="Confirm" description="Are you sure you want to delete this workspace?">
-        <UButton label="Delete workspace" color="neutral" variant="subtle" />
-
-        <template #body>
-          <p class="mb-4">Your workspace <code>{{ selectedOrganization?.name }}</code> will be deleted along with all settings.</p>
-          <p class="mb-4 text-red-700">This action cannot be undone.</p>
-        </template>
-        <template #footer>
-          <div class="flex gap-2">
-            <UButton color="neutral" label="Dismiss" @click="emit('close', false)" />
-            <UButton color="warning" label="Confirm" @click="deleteOrganization" :loading="deleting" />
-          </div>
-        </template>
-      </UModal>
+      <div v-else>
+        <UButton @click="deleteOrganizationModal()" variant="outline" color="error">
+          Delete Workspace
+        </UButton>
+      </div>
     </div>
   </div>
 </template>
@@ -46,13 +36,14 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, inject } from 'vue';
 import { z } from 'zod';
-const { memberships, selectedOrganization, refreshMemberships, initializeSession } = useMemberships()
+import { OrganizationDeleteModal } from '#components'
+
+const { memberships, selectedOrganization, initializeSession } = useMemberships()
 
 definePageMeta({
   layout: 'org'
 });
 
-const route = useRoute();
 const supabase = useSupabaseClient();
 
 const loading = ref(false);
@@ -68,8 +59,20 @@ const hasActiveSubscription = computed(() => {
   return currentOrgMembership?.status === "active";
 });
 
-// const organization = inject('organization');
-const orgId = route.params.org_id as string;
+const orgId = selectedOrganization.value?.id as string;
+
+const overlay = useOverlay()
+const organizationDeleteModal = overlay.create(OrganizationDeleteModal, {
+  props: {org: selectedOrganization.value}
+});
+
+async function deleteOrganizationModal() {
+  const result = await organizationDeleteModal.open().result;
+
+  if (result === orgId) {
+    await deleteOrganization();
+  }
+}
 
 const schema = z.object({
   displayName: z.string().min(3, 'Must be at least 3 characters'),
@@ -120,7 +123,7 @@ const updateOrganization = async () => {
   try {
     const { data, error: updateError } = await supabase
       .from('organizations')
-      .update({ name: state.displayName })
+      .update({ display_name: state.displayName })
       .eq('id', orgId)
       .select('id, name')
       .single();

@@ -17,13 +17,13 @@ export const teamRouter = router({
           user: {
             id: users.id,
             email: users.email,
-            fullName: users.fullName,
-            avatarUrl: users.avatarUrl,
+            fullName: users.full_name,
+            avatarUrl: users.avatar_url,
           },
         })
         .from(memberships)
-        .leftJoin(users, eq(memberships.userId, users.id))
-        .where(eq(memberships.organizationId, input.organizationId))
+        .leftJoin(users, eq(memberships.user_id, users.id))
+        .where(eq(memberships.organization_id, input.organizationId))
 
       return memberData
     }),
@@ -67,7 +67,7 @@ export const teamRouter = router({
       // Create or update the membership record
       // This handles both new users and existing users not yet in the organization
       await db.insert(memberships).values({
-        organizationId: input.organizationId,
+        organization_id: input.organizationId,
         userId: magicLinkData.user.id, // Use the user ID from generateLink
         access: 'ADMIN',
         pending: true,
@@ -112,13 +112,13 @@ export const teamRouter = router({
         throw new Error('Membership not found.');
       }
 
-      const [removerMembership] = await db.select().from(memberships).where(and(eq(memberships.organizationId, membershipToRemove.organizationId), eq(memberships.userId, user.id)));
+      const [removerMembership] = await db.select().from(memberships).where(and(eq(memberships.organization_id, membershipToRemove.organization_id), eq(memberships.user_id, user.id)));
 
       if (!removerMembership || removerMembership.access !== 'ADMIN') {
         throw new Error('Only admins can remove members.');
       }
 
-      await db.update(memberships).set({ deletedAt: new Date() }).where(eq(memberships.id, input.membershipId));
+      await db.update(memberships).set({ deleted_at: new Date() }).where(eq(memberships.id, input.membershipId));
 
       return { success: true };
     }),
@@ -139,11 +139,11 @@ export const teamRouter = router({
         },
       })
       .from(memberships)
-      .leftJoin(organizations, eq(memberships.organizationId, organizations.id))
+      .leftJoin(organizations, eq(memberships.organization_id, organizations.id))
       .where(
         and(
-          eq(memberships.userId, user.id),
-          eq(memberships.organizationId, input.organizationId),
+          eq(memberships.user_id, user.id),
+          eq(memberships.organization_id, input.organizationId),
           eq(memberships.pending, true),
         ),
       )
@@ -160,8 +160,8 @@ export const teamRouter = router({
         .from(memberships)
         .where(
           and(
-            eq(memberships.userId, user.id),
-            eq(memberships.organizationId, input.organizationId),
+            eq(memberships.user_id, user.id),
+            eq(memberships.organization_id, input.organizationId),
             eq(memberships.pending, true),
           ),
         )
@@ -172,7 +172,7 @@ export const teamRouter = router({
 
       await db
         .update(memberships)
-        .set({ pending: false, updatedAt: new Date() })
+        .set({ pending: false, updated_at: new Date() })
         .where(eq(memberships.id, membership.id))
 
       return { id: input.organizationId }

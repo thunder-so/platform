@@ -79,11 +79,14 @@ export const useMemberships = () => {
     }
   }
 
-  const setSelectedOrganization = (orgId: string) => {
+  const setSelectedOrganization = (orgId: string): boolean => {
     const org = memberships.value.find(m => m.id === orgId);
     if (org) {
       selectedOrganization.value = org;
       selectedOrgIdCookie.value = org.id;
+      return true
+    } else {
+      return false
     }
   }
 
