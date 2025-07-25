@@ -1,9 +1,9 @@
-import { watch, computed } from 'vue';
 import type { UserAccessToken, Service, Provider, ApplicationSchema, EnvironmentSchema, ServiceSchema, FunctionProps, WebServiceProps } from '~/server/db/schema';
 
 export const useNewApplicationFlow = () => {
   const route = useRoute();
-  const applicationSchema = useState<Partial<ApplicationSchema>>('newApplicationSchema', () => ({}));
+  const applicationSchema = useCookie<Partial<ApplicationSchema>>('newApplicationSchema', { default: () => ({}) });
+  const oAuthError = useCookie<boolean>('newApplicationOAuthError', { default: () => false });
 
   const currentStep = computed(() => {
     const path = route.path;
@@ -17,7 +17,6 @@ export const useNewApplicationFlow = () => {
   });
 
   const getMetadataForStackType = (type: Service['stack_type']): FunctionProps | WebServiceProps | null => {
-    console.log('getMetadataForStackType', type);
     if (type === 'LAMBDA') {
       return {
         dockerFile: 'Dockerfile',
@@ -38,7 +37,6 @@ export const useNewApplicationFlow = () => {
   };
 
   const setServiceType = (type: Service['stack_type']) => {
-    console.log('setServiceType', type);
     const service = applicationSchema.value.environments?.[0]?.services?.[0];
     if (service) {
       applicationSchema.value.environments![0]!.services![0] = {
@@ -101,18 +99,24 @@ export const useNewApplicationFlow = () => {
     }
   };
 
-  const setUat = (uat: UserAccessToken) => {
+  const setUat = (uat: UserAccessToken | undefined) => {
     if (applicationSchema.value.environments?.[0]) {
       applicationSchema.value.environments[0].user_access_token = uat;
     }
   };
 
+  const setOAuthError = (error: boolean) => {
+    oAuthError.value = error;
+  };
+
   return {
     currentStep,
     applicationSchema,
+    oAuthError,
     setServiceType,
     setApplicationSchema,
     setProvider,
     setUat,
+    setOAuthError,
   };
-};
+};""

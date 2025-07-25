@@ -5,64 +5,76 @@
         <h1>Deploy Application</h1>
       </template>
 
-      {{ applicationSchema }}
+      <ClientOnly>
+        <div v-if="oAuthError" class="space-y-4 mb-6">
+          <UAlert
+            color="neutral"
+            variant="subtle"
+            title="Authorization failed!"
+            description="Failed to generate a user access token from your Github account."
+            icon="i-lucide-terminal"
+          />
+        </div>
 
-      <div v-if="authFailed" class="space-y-4">
-        <h2>Authorization failed</h2>
-        <p class="text-sm text-muted-foreground mt-1">Failed to generate a user access token from your Github account.</p>
-        <UButton @click="authorizeGithub">Try Again</UButton>
-      </div>
-      <div v-else-if="!hasUat" class="space-y-4">
-        <h2>Authorize Github</h2>
-        <p class="text-sm text-muted-foreground mt-1">Authorization on GitHub involves granting permissions to Thunder to issue a User Access Token (UAT). The encrypted token will be used by CodePipeline to watch for changes in your repository.</p>
-        <UButton @click="authorizeGithub" :loading="authorizing" :disabled="authorizing">Authorize with GitHub</UButton>
-      </div>
-      <div v-else class="space-y-4">
-        <h2>Authorization Successful!</h2>
-        <p class="text-sm text-muted-foreground mt-1">You have successfully authorized Thunder to access your GitHub repository.</p>
-      </div>
+        <div v-if="!hasUat" class="space-y-4">
+          <h2>Authorize Github</h2>
+          <p class="text-sm text-muted-foreground mt-1">Authorization on GitHub involves granting permissions to Thunder to issue a User Access Token (UAT). The encrypted token will be used by CodePipeline to watch for changes in your repository.</p>
+          <UButton @click="authorizeGithub" :loading="authorizing" :disabled="authorizing">Authorize with GitHub</UButton>
+        </div>
+        <div v-else class="space-y-4">
+          <UAlert
+            color="neutral"
+            variant="outline"
+            title="Authorization Successful!"
+            description="You have successfully generated a User Access Token (UAT) from your Github account. Now we can proceed with the deployment."
+            icon="i-lucide-github"
+          />
+        </div>
+      </ClientOnly>
 
       <template #footer>
-        <div class="flex justify-start">
-          <UButton
-            size="lg"
-            :disabled="!hasUat || isDeploying"
-            :loading="isDeploying"
-            @click="installApplication"
-          >
-            {{ isDeploying ? 'Installing...' : 'Install Application' }}
-          </UButton>
-        </div>
+        <ClientOnly>
+          <div class="flex justify-start">
+            <UButton
+              size="lg"
+              :disabled="!hasUat || isDeploying"
+              :loading="isDeploying"
+              @click="installApplication"
+            >
+              {{ isDeploying ? 'Installing...' : 'Install Application' }}
+            </UButton>
+          </div>
+        </ClientOnly>
       </template>
     </UCard>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
-import { useRouter, useRoute } from 'vue-router';
 
 definePageMeta({
   layout: 'new',
   middleware: ['github-middleware-client']
 });
 
-const { applicationSchema } = useNewApplicationFlow();
-const router = useRouter();
-const route = useRoute();
+const { applicationSchema, oAuthError, setOAuthError } = useNewApplicationFlow();
 const config = useRuntimeConfig();
 const user = useSupabaseUser();
 
+if (!applicationSchema.value.name) {
+  navigateTo('/new');
+}
+
 const isDeploying = ref(false);
 const authorizing = ref(false);
-const authFailed = ref(false);
 
 const hasUat = computed(() => {
   return !!applicationSchema.value.environments?.[0]?.user_access_token;
 });
 
 const authorizeGithub = () => {
+  setOAuthError(false);
   authorizing.value = true;
   const githubClientId = config.public.GITHUB_CLIENT_ID;
   const redirectUri = `${window.location.origin}/new/deploy`;
@@ -86,14 +98,4 @@ const installApplication = async () => {
   // This assumes the backend returns the new app's ID.
   // router.push(`/app/new-app-id`);
 };
-
-onMounted(() => {
-  if (route.query.error) {
-    authFailed.value = true;
-    // Clean the URL
-    const newUrl = new URL(window.location.href);
-    newUrl.searchParams.delete('error');
-    window.history.replaceState({}, document.title, newUrl.toString());
-  }
-});
 </script>

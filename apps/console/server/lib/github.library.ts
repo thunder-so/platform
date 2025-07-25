@@ -101,8 +101,7 @@ export default class GithubLibrary {
                   "User-Agent": "thunder-so"
               }
           });
-
-          console.log('OAuth Response:', response);
+          
           const data = response.data;
           if (data.error) {
               throw new Error(data.error);
