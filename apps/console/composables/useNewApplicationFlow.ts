@@ -1,15 +1,9 @@
 import { watch, computed } from 'vue';
-import type { Organization, Application, Environment, Service, Provider } from '~/server/db/schema';
+import type { Service, Provider, ApplicationSchema, EnvironmentSchema, ServiceSchema, FunctionProps, WebServiceProps } from '~/server/db/schema';
 
 export const useNewApplicationFlow = () => {
   const route = useRoute();
-  const selectedRepo = useState<any>('selectedRepo', () => null);
-  const githubUserAccessToken = useState<string | null>('githubUserAccessToken', () => null);
-  const organization = useState<Organization | null>('organization', () => null);
-  const application = useState<Partial<Application>>('application', () => ({}));
-  const environment = useState<Partial<Environment>>('environment', () => ({}));
-  const service = useState<Partial<Service>>('service', () => ({}));
-  const deploymentStatus = useState<string>('deploymentStatus', () => 'idle');
+  const applicationSchema = useState<Partial<ApplicationSchema>>('newApplicationSchema', () => ({}));
 
   const currentStep = computed(() => {
     const path = route.path;
@@ -22,62 +16,96 @@ export const useNewApplicationFlow = () => {
     return 1;
   });
 
-  const setRepo = (repo: any) => {
-    selectedRepo.value = repo;
-    if (repo) {
-      application.value.name = repo.name;
-      application.value.display_name = repo.name;
+  const getMetadataForStackType = (type: Service['stack_type']): FunctionProps | WebServiceProps | null => {
+    console.log('getMetadataForStackType', type);
+    if (type === 'LAMBDA') {
+      return {
+        dockerFile: 'Dockerfile',
+        memorySize: 1792,
+        keepWarm: true,
+      };
     }
-  };
-
-  const setGithubToken = (token: string) => {
-    githubUserAccessToken.value = token;
-  };
-
-  const setOrganization = (org: Organization) => {
-    organization.value = org;
-  };
-
-  const setProvider = (provider: Provider) => {
-    if (environment.value) {
-      environment.value.provider_id = provider.id;
-      environment.value.region = provider.region;
+    if (type === 'ECS') {
+      return {
+        dockerFile: 'Dockerfile',
+        desiredCount: 1,
+        cpu: 0.25,
+        memorySize: 1792,
+        port: 3000,
+      };
     }
-  };
-
-  const setDeploymentStatus = (status: string) => {
-    deploymentStatus.value = status;
+    return null;
   };
 
   const setServiceType = (type: Service['stack_type']) => {
-    if (service.value) {
-      service.value.stack_type = type;
+    console.log('setServiceType', type);
+    const service = applicationSchema.value.environments?.[0]?.services?.[0];
+    if (service) {
+      applicationSchema.value.environments![0]!.services![0] = {
+        ...service,
+        stack_type: type,
+        metadata: getMetadataForStackType(type),
+      };
     }
   };
 
-  watch(selectedRepo, (repo) => {
-    if(repo) {
-      application.value.name = repo.name;
-      application.value.display_name = repo.name;
-      environment.value.name = 'preview';
-      environment.value.display_name = 'preview';
+  const setApplicationSchema = (owner: string, repo: string, installation_id: number, stack_type: string) => {
+    if (repo) {
+      const stackType = (stack_type as Service['stack_type']) || 'SPA';
+      const appConfig = useAppConfig();
+
+      applicationSchema.value = {
+        ...applicationSchema.value,
+        name: repo,
+        display_name: repo,
+        environments: [
+          {
+            name: 'preview',
+            display_name: 'preview',
+            services: [
+              {
+                stack_type: stackType,
+                installation_id: installation_id,
+                app_props: {
+                  rootDir: './',
+                  outputDir: 'public/',
+                },
+                pipeline_props: {
+                  sourceProps: {
+                    owner: owner,
+                    repo: repo,
+                  },
+                  buildProps: {
+                    runtime: appConfig.runtimes[0]?.runtime,
+                    runtime_version: appConfig.runtimes[0]?.value,
+                    installcmd: 'npm install',
+                    buildcmd: 'npm run build',
+                  },
+                },
+                metadata: getMetadataForStackType(stackType),
+              } as Partial<ServiceSchema>,
+            ],
+          } as Partial<EnvironmentSchema>,
+        ],
+      };
     }
-  }, { deep: true });
+  };
+
+  const setProvider = (provider: Provider) => {
+    if (applicationSchema.value.environments && applicationSchema.value.environments.length > 0) {
+      applicationSchema.value.environments[0] = {
+        ...applicationSchema.value.environments[0],
+        provider_id: provider.id,
+        region: provider.region,
+      };
+    }
+  };
 
   return {
-    selectedRepo,
-    githubUserAccessToken,
-    organization,
-    application,
-    environment,
-    service,
-    deploymentStatus,
     currentStep,
-    setRepo,
-    setGithubToken,
-    setOrganization,
-    setProvider,
-    setDeploymentStatus,
+    applicationSchema,
     setServiceType,
+    setApplicationSchema,
+    setProvider,
   };
 };

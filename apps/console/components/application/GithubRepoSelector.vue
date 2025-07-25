@@ -1,68 +1,61 @@
 <template>
   <div>
     <h2>Select a repository</h2>
-    <div v-if="pendingInstallations">Loading installations...</div>
-    <div v-else-if="installations.length === 0">
-      <p>No GitHub installations found. Please connect your GitHub account.</p>
-      <button @click="redirectToGitHubAuth">Connect GitHub</button>
-    </div>
-    <div v-else>
-      <div class="grid grid-cols-3 gap-4">
-        <div class="selector col-span-2">
-          <div class="flex items-center space-between space-x-2 mt-4 mb-4">
-            <USelect 
-              v-model="selectedInstallation" 
-              :items="installationItems" 
-              value-key="value" 
-              :avatar="selectedAvatar" 
-              trailing-icon="mdi:chevron-down"
-              size="lg"
-              class="w-48" 
-            />
+    <div class="grid grid-cols-3 gap-4">
+      <div class="selector col-span-2">
+        <div class="flex items-center space-between space-x-2 mt-4 mb-4">
+          <USelect 
+            v-model="selectedInstallation" 
+            :items="installationItems" 
+            value-key="value" 
+            :avatar="selectedAvatar" 
+            trailing-icon="mdi:chevron-down"
+            size="lg"
+            class="w-48" 
+          />
 
-            <UInput
-              type="text"
-              v-model="searchQuery"
-              placeholder="Search repositories..."
-              size="lg"
-              class="w-full"
-            />
-          </div>
-          <div v-if="pendingRepositories">Loading repositories...</div>
-          <div v-else class="repo-list">
-            <div 
-              v-for="repo in filteredRepositories" 
-              :key="repo.id"
-              class="flex items-center justify-between p-3 border border-muted rounded-md"
-            >
-              <div class="repo-info">
-                <img :src="repo.owner.avatar_url" alt="Repository owner" class="repo-avatar" />
-                <span class="repo-name">{{ repo.owner.login }} / {{ repo.name }}</span>
-              </div>
-              <UButton size="md" color="primary" variant="outline" @click="selectRepository(repo, repo.installationId)">Select</UButton>
+          <UInput
+            type="text"
+            v-model="searchQuery"
+            placeholder="Search repositories..."
+            size="lg"
+            class="w-full"
+          />
+        </div>
+        <div v-if="pendingRepositories">Loading repositories...</div>
+        <div v-else class="repo-list">
+          <div 
+            v-for="repo in filteredRepositories" 
+            :key="repo.id"
+            class="flex items-center justify-between p-3 border border-muted rounded-md"
+          >
+            <div class="repo-info">
+              <img :src="repo.owner.avatar_url" alt="Repository owner" class="repo-avatar" />
+              <span class="repo-name">{{ repo.owner.login }} / {{ repo.name }}</span>
             </div>
+            <UButton size="md" color="primary" variant="outline" @click="selectRepository(repo, repo.installationId)">Select</UButton>
           </div>
         </div>
+      </div>
 
-        <div class="sidebar">
-          <div class="p-4 rounded-md">
-            <h3 class="text-lg font-semibold mb-4">Connected Github accounts</h3>
-            <div v-for="inst in installations" :key="inst.id" class="flex items-center mb-3">
-              <UAvatar :src="inst.metadata.account.avatar_url" :alt="inst.metadata.account.login" class="mr-3" />
-              <a :href="`https://github.com/organizations/${inst.metadata.account.login}/settings/installations/${inst.installation_id}`" target="_blank" class="text-primary-500 hover:underline">
-                {{ inst.metadata.account.login }}
-              </a>
-            </div>
-            <UButton
-              variant="subtle"
-              icon="i-uil-github"
-              size="lg"
-              :to="githubInstallUrl"
-              label="Import repositories"
-              external
-              class="mt-4 w-full"
-            />
+      <div class="sidebar">
+        <div class="p-4 rounded-md">
+          <h3 class="text-lg font-semibold mb-4">Connected Github accounts</h3>
+          <div v-for="inst in installations" :key="inst.id" class="flex items-center mb-3">
+            <UAvatar :src="inst.metadata.account.avatar_url" :alt="inst.metadata.account.login" class="mr-3" />
+            <a :href="`https://github.com/organizations/${inst.metadata.account.login}/settings/installations/${inst.installation_id}`" target="_blank" class="text-primary-500 hover:underline">
+              {{ inst.metadata.account.login }}
+            </a>
           </div>
+          <UButton
+            variant="subtle"
+            icon="i-uil-github"
+            size="lg"
+            :to="githubInstallUrl"
+            label="Import repositories"
+            external
+            class="mt-4 w-full"
+          />
         </div>
       </div>
     </div>
@@ -73,11 +66,10 @@
 import { ref, onMounted, computed, inject, watch } from 'vue';
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
 import type { SelectItem } from '@nuxt/ui';
-import { UPinInput } from '#components';
 
 const { $client } = useNuxtApp();
 const config = useRuntimeConfig();
-const { selectedRepo, setRepo } = useNewApplicationFlow();
+// const { selectedRepo } = useNewApplicationFlow();
 
 const githubApp = computed(() => config.public.GITHUB_APP);
 const base = ref('');
@@ -92,7 +84,6 @@ const githubInstallUrl = computed(() => {
 });
 
 const installations = inject<any>('installations');
-const pendingInstallations = computed(() => !installations.value);
 
 const allRepositories = ref<any[]>([]);
 const pendingRepositories = ref(false);
@@ -158,15 +149,13 @@ const filteredRepositories = computed(() => {
 const emit = defineEmits(['selected']);
 
 const selectRepository = (repo: any, installationId: number) => {
-  setRepo({ ...repo, installationId });
-  emit('selected');
-};
-
-const redirectToGitHubAuth = () => {
-  // This should redirect to your backend's GitHub OAuth initiation endpoint
-  // For now, a placeholder
-  alert('Redirecting to GitHub for authorization...');
-  // Example: window.location.href = '/api/auth/github';
+  // setRepo({ ...repo, installationId });
+  emit('selected', {
+    owner: repo.owner?.login || repo.owner,
+    repo,
+    installationId,
+    type: repo.stack_type || undefined
+  });
 };
 
 watch(installations, (newInstallations) => {

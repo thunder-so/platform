@@ -6,9 +6,10 @@
     <div v-else-if="error" class="flex justify-center items-center p-8">
       <UAlert color="error" variant="soft" :title="`Error loading installations: ${error.message}`" />
     </div>
+
     <div v-else-if="installations.length > 0">
       <ClientOnly>
-        <GithubRepoSelector @selected="navigateTo('/new/configure')" />
+        <GithubRepoSelector @selected="onRepoSelected" />
       </ClientOnly>
     </div>
     <div v-else class="flex justify-center items-center" style="height: 50vh;">
@@ -61,6 +62,19 @@ const githubInstallUrl = computed(() => {
   if (!githubApp.value || !base.value) return '';
   return `https://github.com/apps/${githubApp.value}/installations/new?redirect_uri=${base.value}/new`;
 });
+
+const router = useRouter();
+
+const onRepoSelected = ({ repo, installationId, type }: { repo: any; installationId: number; type?: string }) => {
+  const params = new URLSearchParams({
+    owner: repo.owner?.login || repo.owner,
+    repo: repo.name,
+    installation_id: installationId.toString(),
+    stack_type: type || 'SPA'
+  });
+  if (type) params.append('type', type);
+  router.push(`/new/configure?${params.toString()}`);
+};
 
 const fetchInstallations = async () => {
   if (!user.value) {

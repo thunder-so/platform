@@ -5,22 +5,27 @@
         <h1>Configure application</h1>
       </template>
 
-      <div class="space-y-4">
-        <UForm :state="application">
+      <div v-if="!applicationSchema.environments" class="flex justify-center items-center p-8">
+        <p>Scanning the repository ...</p>
+      </div>
+
+      <div v-else class="space-y-4">
+        <UForm :state="applicationSchema">
           <UFormField label="Application Name">
-            <UInput v-model="application.display_name" size="lg" class="w-96" />
+            <UInput v-model="applicationSchema.display_name" size="lg" class="w-96" />
           </UFormField>
         </UForm>
 
-        <UForm :state="environment" class="space-y-4">
+        <ClientOnly>
+        <UForm :state="applicationSchema" class="space-y-4">
           <UFormField label="Environment Name" description="Your default environment">
-            <UInput v-model="environment.display_name" size="lg" class="w-96" />
+            <UInput v-model="applicationSchema.environments[0].display_name" size="lg" class="w-96" />
           </UFormField>
 
           <div class="flex space-x-4">
             <UFormField label="AWS Account">
               <USelect 
-                v-model="environment.provider_id" 
+                v-model="applicationSchema.environments[0].provider_id" 
                 :items="providerItems" 
                 class="w-96" size="lg"
               />
@@ -28,7 +33,7 @@
 
             <UFormField label="Region">
               <USelect 
-                v-model="environment.region" 
+                v-model="applicationSchema.environments[0].region" 
                 :items="awsRegions" 
                 value-key="name" 
                 option-attribute="label" 
@@ -37,15 +42,13 @@
             </UFormField>
           </div>
         </UForm>
+        </ClientOnly>
+        <ServiceConfiguration />
       </div>
-
-      <ServiceConfiguration />
-
-      <div v-if="deploymentError" style="color: red;">{{ deploymentError }}</div>
 
       <template #footer>
         <div class="flex justify-start">
-          <UButton 
+          <!-- <UButton 
             type="submit" 
             size="lg" 
             :loading="isDeploying" 
@@ -53,15 +56,17 @@
             :disabled="isDeploying"
           >
             {{ isDeploying ? 'Saving ...' : 'Save and continue' }}
-          </UButton>
+          </UButton> -->
         </div>
       </template>
     </UCard>
   </div>
 </template>
 
+
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
 import ServiceConfiguration from '~/components/application/ServiceConfiguration.vue';
 import type { Provider } from '~/server/db/schema';
@@ -70,14 +75,12 @@ definePageMeta({
   layout: 'new'
 });
 
+const route = useRoute();
+const router = useRouter();
 const { 
-  selectedRepo,
-  application,
-  environment,
-  service,
-  deploymentStatus,
-  setDeploymentStatus,
-  setProvider
+  setProvider,
+  setApplicationSchema,
+  applicationSchema
 } = useNewApplicationFlow();
 
 const appConfig = useAppConfig();
@@ -86,12 +89,19 @@ const { selectedOrganization } = useMemberships();
 const supabase = useSupabaseClient();
 const providers = ref<Provider[]>([]);
 const awsRegions = ref(appConfig.regions);
-const deploymentError = ref<string | null>(null);
-const isDeploying = computed(() => deploymentStatus.value === 'in_progress');
 
 const providerItems = computed(() => providers.value.map(p => ({ value: p.id, label: p.alias })));
 
 onMounted(async () => {
+  const ownerParam = route.query.owner as string;
+  const repoParam = route.query.repo as string;
+  const installationIdParam = Number(route.query.installation_id);
+  const typeParam = route.query.type as string;
+  
+  if (ownerParam && repoParam && installationIdParam) {
+    setApplicationSchema(ownerParam, repoParam, installationIdParam, typeParam);
+  }
+
   if (selectedOrganization.value?.id) {
     const { data: supabaseProviders, error: supabaseError } = await supabase
       .from('providers')
@@ -108,58 +118,4 @@ onMounted(async () => {
     }
   }
 });
-
-const deployApplication = async () => {
-  deploymentError.value = null;
-  setDeploymentStatus('in_progress');
-
-  if (!selectedOrganization.value?.id) {
-    deploymentError.value = 'Organization ID is missing.';
-    setDeploymentStatus('failed');
-    return;
-  }
-
-  if (!application.value.name) {
-    deploymentError.value = 'Application name is required.';
-    setDeploymentStatus('failed');
-    return;
-  }
-
-  if (!selectedRepo.value) {
-    deploymentError.value = 'GitHub repository not selected.';
-    setDeploymentStatus('failed');
-    return;
-  }
-
-  if (!environment.value.provider_id) {
-    deploymentError.value = 'AWS Provider not selected.';
-    setDeploymentStatus('failed');
-    return;
-  }
-
-  try {
-    // const newApp = await $client.applications.create.mutate({
-    //   organizationId: selectedOrganization.value.id,
-    //   application: application.value,
-    //   environment: environment.value,
-    //   service: service.value,
-    //   github: {
-    //     repositoryId: selectedRepo.value.id,
-    //     repositoryName: selectedRepo.value.full_name,
-    //     owner: selectedRepo.value.owner.login,
-    //     installationId: selectedRepo.value.installationId,
-    //   }
-    // });
-
-    setDeploymentStatus('succeeded');
-    // console.log('Application deployed successfully:', newApp);
-    // TODO: Redirect to the new application's dashboard page
-  } catch (error: any) {
-    deploymentError.value = error.message || 'Failed to deploy application.';
-    setDeploymentStatus('failed');
-    console.error('Deployment error:', error);
-  }
-};
 </script>
-
-<style scoped></style>

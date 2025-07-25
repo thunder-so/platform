@@ -473,10 +473,13 @@ export interface DomainProps {
 
 export interface PipelineProps {
   sourceProps?: {
-    repository?: string;
+    owner: string;
+    repo?: string;
     branch?: string;
   };
   buildProps?: {
+    runtime?: string;
+    runtime_version?: number;
     installcmd?: string;
     buildcmd?: string;
     environment?: Record<string, string>;
@@ -484,7 +487,21 @@ export interface PipelineProps {
   eventBus?: string;
 }
 
-// Enhance the Service type to include typed JSONB columns
+export interface FunctionProps {
+  dockerFile?: string;
+  memorySize?: number;
+  timeout?: number;
+  keepWarm?: boolean;
+}
+
+export interface WebServiceProps {
+  dockerFile?: string;
+  desiredCount: number;
+  cpu?: number;
+  memorySize?: number;
+  port?: number;
+}
+
 export type ServiceSchema = Service & {
   app_props: AppProps | null;
   cdn_props: CdnProps | null;
@@ -492,10 +509,9 @@ export type ServiceSchema = Service & {
   domain_props: DomainProps | null;
   pipeline_props: PipelineProps | null;
   resources: Record<string, any> | null;
-  metadata: Record<string, any> | null;
+  metadata: (FunctionProps | WebServiceProps) | null;
 };
 
-// export type ServiceSchema = Partial<Service>;
 export type ProviderSchema = Partial<Provider>;
 
 export type EnvironmentSchema = Partial<Environment> & {

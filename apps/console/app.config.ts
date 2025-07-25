@@ -55,19 +55,29 @@ export default defineAppConfig({
   ],
   runtimes: [
     {
-      label: "Node.js 18.x",
+      label: "Node.js 24.4.1 (Current)",
       runtime: "nodejs",
-      value: "18"
+      value: "24"
     },
     {
-      label: "Node.js 20.x",
+      label: "Node.js 23.11.1",
       runtime: "nodejs",
-      value: "20"
+      value: "23"
     },
     {
-      label: "Node.js 22.x",
+      label: "Node.js 22.17.1 (LTS)",
       runtime: "nodejs",
       value: "22"
+    },
+    {
+      label: "Node.js 21.7.3",
+      runtime: "nodejs",
+      value: "21"
+    },
+    {
+      label: "Node.js 20.19.4 (LTS)",
+      runtime: "nodejs",
+      value: "20"
     }
   ]
 })
