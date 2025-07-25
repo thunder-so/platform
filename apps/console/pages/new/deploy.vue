@@ -1,7 +1,6 @@
 <template>
   <div>
     <h1>Deploying Application</h1>
-    <DeploymentProgress />
   </div>
 </template>
 

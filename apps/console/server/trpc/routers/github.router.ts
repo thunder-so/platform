@@ -2,84 +2,9 @@ import { z } from 'zod';
 import { protectedProcedure, router } from '../init';
 import { TRPCError } from '@trpc/server';
 import { db } from '~/server/db/db';
-import { installations } from '~/server/db/schema';
-import { sql } from 'drizzle-orm';
-import { Octokit } from '@octokit/core';
-import { App } from "@octokit/app";
-import type { Endpoints, OctokitResponse } from "@octokit/types";
-import { createAppAuth } from "@octokit/auth-app";
-
-type GetInstallationMetadata = Endpoints['GET /user/installations']['response'];
-type GetInstallationRepositoriesResponse = Endpoints['GET /installation/repositories']['response'];
-
-export default class GithubLibrary {
-    private appId = process.env.GITHUB_APP_ID;
-    private privateKey = process.env.GITHUB_PRIVATE_KEY;
-    private clientId = process.env.GH_CLIENT_ID;
-    private clientSecret = process.env.GITHUB_CLIENT_SECRET;
-
-    /**
-     * Get installation metadata from Octokit
-     * @param installation_id number
-     * @returns 
-     */
-    async getInstallationMetadata(installation_id: number): Promise<GetInstallationMetadata['data']> {
-      const app = new App({ 
-        appId: this.appId as string, 
-        privateKey: this.privateKey as string
-      });
-
-      const octokit = await app.getInstallationOctokit(installation_id);
-
-      const metadata: OctokitResponse<GetInstallationMetadata["data"], number> = await octokit.request(`GET /app/installations/${installation_id}`, {
-        installation_id,
-        headers: {
-          'X-GitHub-Api-Version': '2022-11-28'
-        }
-      });
-
-      return metadata?.data;
-    }
-
-    /**
-     * Get repositories from multiple installations in a single call
-     * @param installation_ids Array of installation IDs
-     * @returns Object with installation IDs as keys and their repositories as values
-     */
-    async getRepositories(
-      installation_ids: number[]
-    ): Promise<Record<number, GetInstallationRepositoriesResponse['data']['repositories']>> {
-      try {
-        // Create a single App instance
-        const app = new App({
-          appId: this.appId as string,
-          privateKey: this.privateKey as string
-        });
-        
-        // Use Promise.all to fetch repositories for all installations in parallel
-        const results = await Promise.all(
-          installation_ids.map(async (installation_id) => {
-            const octokit = await app.getInstallationOctokit(installation_id);
-            const response = await octokit.request("GET /installation/repositories", {
-              headers: {
-                'X-GitHub-Api-Version': '2022-11-28'
-              }
-            });
-            return { installation_id, repositories: response.data.repositories };
-          })
-        );
-        
-        // Convert the results array to an object with installation_id as keys
-        return results.reduce((acc, { installation_id, repositories }) => {
-          acc[installation_id] = repositories;
-          return acc;
-        }, {} as Record<number, GetInstallationRepositoriesResponse['data']['repositories']>);
-      } 
-      catch (error) {
-        throw error as Error;
-      }
-    }
-}
+import { installations, userAccessTokens } from '~/server/db/schema';
+import { sql, eq } from 'drizzle-orm';
+import GithubLibrary from '~/server/lib/github.library';
 
 export const githubRouter = router({
     handleAppInstallationFlow: protectedProcedure
@@ -111,7 +36,7 @@ export const githubRouter = router({
         }
 
         return installation
-    }),
+      }),
 
     getInstallationRepositories: protectedProcedure
       .input(z.object({
@@ -130,4 +55,52 @@ export const githubRouter = router({
 
         return repositories;
       }),
+
+    handleOAuthFlow: protectedProcedure
+      .input(z.object({ 
+        code: z.string(), 
+        environment_id: z.string(), 
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const githubLibrary = new GithubLibrary();
+        
+        try {
+          const { access_token } = await githubLibrary.exchangeCodeForUserToken(input.code);
+          
+          if (!access_token) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Failed to exchange code for access token'
+            });
+          }
+
+          const existingToken = await db.select({ secret_id: userAccessTokens.secret_id })
+            .from(userAccessTokens)
+            .where(eq(userAccessTokens.environment_id, input.environment_id))
+            .limit(1);
+
+          if (existingToken.length === 0) {
+            // @ts-expect-error
+            const [{ create_secret }] = await db.execute(
+              sql`SELECT vault.create_secret(${access_token}) as create_secret`
+            );
+
+            await db.insert(userAccessTokens).values({
+              secret_id: create_secret,
+              user_id: ctx.user.id,
+              environment_id: input.environment_id
+            });
+          } else {
+            await db.execute(sql`SELECT vault.update_secret(${existingToken[0].secret_id}, ${access_token})`);
+          }
+
+          return { success: true };
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'OAuth flow failed'
+          });
+        }
+      }),
+
 });

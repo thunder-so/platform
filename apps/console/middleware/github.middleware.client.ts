@@ -23,4 +23,17 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     return
   }
 
+  /**
+   * Check for Github App OAuth Flow during App Create Flow
+   * @param code
+   * @param state
+   */
+    if(query.code && query.state) {
+      const response = await $client.github.handleOAuthFlow.mutate({ 
+        code: query.code as string, 
+        environment_id: query.state as string 
+      });
+
+      
+    }
 });

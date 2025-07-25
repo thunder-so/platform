@@ -96,7 +96,7 @@ onMounted(async () => {
   const ownerParam = route.query.owner as string;
   const repoParam = route.query.repo as string;
   const installationIdParam = Number(route.query.installation_id);
-  const typeParam = route.query.type as string;
+  const typeParam = route.query.stack_type as string;
   
   if (ownerParam && repoParam && installationIdParam) {
     setApplicationSchema(ownerParam, repoParam, installationIdParam, typeParam);
