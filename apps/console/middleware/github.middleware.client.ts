@@ -29,11 +29,28 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
    * @param state
    */
     if(query.code && query.state) {
-      const response = await $client.github.handleOAuthFlow.mutate({ 
-        code: query.code as string, 
-        environment_id: query.state as string 
-      });
+      const { setUat } = useNewApplicationFlow();
+      try {
+        const response = await $client.github.handleOAuthFlow.mutate({ 
+          code: query.code as string
+        });
+        if (response?.user_access_token) {
+          setUat(response.user_access_token);
+        } else {
+          throw new Error('Failed to retrieve User Access Token');
+        }
+      } catch (error) {
+        console.error('OAuth flow error:', error);
+        // const newUrl = new URL(window.location.href);
+        // newUrl.searchParams.delete('code');
+        // newUrl.searchParams.delete('state');
+        // newUrl.searchParams.set('error', 'true');
+        // return navigateTo(newUrl.toString());
+      }
 
-      
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('code');
+      newUrl.searchParams.delete('state');
+      window.history.replaceState({}, document.title, newUrl.toString());
     }
 });

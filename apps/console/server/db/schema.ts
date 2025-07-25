@@ -246,10 +246,10 @@ export const environmentVariables = pgTable('environment_variables', {
 });
 
 export const userAccessTokens = pgTable('user_access_tokens', {
-  secret_id: uuid('secret_id').primaryKey().defaultRandom(),
+  secret_id: uuid('secret_id').primaryKey(),
   resource: text('resource'), // ARN
   user_id: uuid('user_id').notNull().references(() => users.id),
-  environment_id: text('environment_id').notNull().references(() => environments.id),
+  environment_id: text('environment_id').references(() => environments.id),
   created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
   deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
@@ -339,7 +339,7 @@ export const environmentsRelations = relations(environments, ({ one, many }) => 
   events: many(events),
   builds: many(builds),
   destroys: many(destroys),
-  userAccessTokens: many(userAccessTokens),
+  userAccessTokens: one(userAccessTokens),
 }));
 
 
@@ -434,7 +434,7 @@ export type Build = typeof builds.$inferSelect;
 export type NewBuild = typeof builds.$inferInsert;
 export type Event = typeof events.$inferSelect;
 export type NewEvent = typeof events.$inferInsert;
-
+export type UserAccessToken = typeof userAccessTokens.$inferSelect;
 export type EnvironmentVariable = typeof environmentVariables.$inferSelect;
 export type EnvironmentVariables = Partial<EnvironmentVariable>[];
 export type NewEnvironmentVariable = typeof environmentVariables.$inferInsert;
@@ -518,6 +518,7 @@ export type EnvironmentSchema = Partial<Environment> & {
   environment_variables?: EnvironmentVariables[];
   provider?: ProviderSchema;
   services?: ServiceSchema[];
+  user_access_token?: UserAccessToken;
 };
 
 export type ApplicationSchema = Partial<Application> & {

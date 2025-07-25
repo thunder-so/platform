@@ -48,15 +48,12 @@
 
       <template #footer>
         <div class="flex justify-start">
-          <!-- <UButton 
-            type="submit" 
+          <UButton 
             size="lg" 
-            :loading="isDeploying" 
-            @click="deployApplication"
-            :disabled="isDeploying"
+            @click="router.push('/new/deploy')"
           >
-            {{ isDeploying ? 'Saving ...' : 'Save and continue' }}
-          </UButton> -->
+            Continue
+          </UButton>
         </div>
       </template>
     </UCard>

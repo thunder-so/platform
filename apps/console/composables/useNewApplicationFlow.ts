@@ -1,5 +1,5 @@
 import { watch, computed } from 'vue';
-import type { Service, Provider, ApplicationSchema, EnvironmentSchema, ServiceSchema, FunctionProps, WebServiceProps } from '~/server/db/schema';
+import type { UserAccessToken, Service, Provider, ApplicationSchema, EnvironmentSchema, ServiceSchema, FunctionProps, WebServiceProps } from '~/server/db/schema';
 
 export const useNewApplicationFlow = () => {
   const route = useRoute();
@@ -101,11 +101,18 @@ export const useNewApplicationFlow = () => {
     }
   };
 
+  const setUat = (uat: UserAccessToken) => {
+    if (applicationSchema.value.environments?.[0]) {
+      applicationSchema.value.environments[0].user_access_token = uat;
+    }
+  };
+
   return {
     currentStep,
     applicationSchema,
     setServiceType,
     setApplicationSchema,
     setProvider,
+    setUat,
   };
 };

@@ -58,47 +58,51 @@ export const githubRouter = router({
 
     handleOAuthFlow: protectedProcedure
       .input(z.object({ 
-        code: z.string(), 
-        environment_id: z.string(), 
+        code: z.string(),
       }))
       .mutation(async ({ ctx, input }) => {
         const githubLibrary = new GithubLibrary();
         
         try {
-          const { access_token } = await githubLibrary.exchangeCodeForUserToken(input.code);
+          // Exchange the code for a user access token
+          const result = await githubLibrary.exchangeCodeForUserToken(input.code);
+          const access_token = result?.access_token;
           
           if (!access_token) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: 'Failed to exchange code for access token'
-            });
+            throw new Error('Failed to exchange code for access token');
           }
 
-          const existingToken = await db.select({ secret_id: userAccessTokens.secret_id })
-            .from(userAccessTokens)
-            .where(eq(userAccessTokens.environment_id, input.environment_id))
-            .limit(1);
+          // Store the user access token in the vault
+          const vaultResult = await db.execute(
+            sql`SELECT vault.create_secret(${access_token}) as create_secret`
+          );
 
-          if (existingToken.length === 0) {
-            // @ts-expect-error
-            const [{ create_secret }] = await db.execute(
-              sql`SELECT vault.create_secret(${access_token}) as create_secret`
-            );
+          const create_secret = String(vaultResult.rows[0]?.create_secret);
+          if (!create_secret) {
+            throw new Error('Failed to create secret in vault')
+          }
 
-            await db.insert(userAccessTokens).values({
+          // Insert the user access token into the database
+          const userAccessTokenResult = await db.insert(userAccessTokens).values({
               secret_id: create_secret,
               user_id: ctx.user.id,
-              environment_id: input.environment_id
-            });
-          } else {
-            await db.execute(sql`SELECT vault.update_secret(${existingToken[0].secret_id}, ${access_token})`);
+              environment_id: sql`NULL`
+            }).returning();
+
+          const user_access_token = userAccessTokenResult?.[0];
+
+          if (!user_access_token) {
+            throw new Error('Failed to store user access token');
           }
 
-          return { success: true };
+          return { user_access_token: user_access_token };
         } catch (error) {
+          console.error('OAuth flow error:', error);
+
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
-            message: 'OAuth flow failed'
+            message: `OAuth flow failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            cause: error
           });
         }
       }),
