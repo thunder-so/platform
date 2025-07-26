@@ -6,6 +6,7 @@
       </template>
 
       <ClientOnly>
+        {{ applicationSchema }}
         <div v-if="oAuthError" class="space-y-4 mb-6">
           <UAlert
             color="neutral"
@@ -52,15 +53,19 @@
 
 <script setup lang="ts">
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
+import type { ApplicationInputSchema } from '~/server/trpc/routers/applications.router';
 
 definePageMeta({
   layout: 'new',
   middleware: ['github-middleware-client']
 });
 
-const { applicationSchema, oAuthError, setOAuthError } = useNewApplicationFlow();
+const { applicationSchema, oAuthError, setOAuthError, clearApplicationSchema } = useNewApplicationFlow();
+const { selectedOrganization } = useMemberships()
 const config = useRuntimeConfig();
 const user = useSupabaseUser();
+const { $client } = useNuxtApp();
+const router = useRouter();
 
 if (!applicationSchema.value.name) {
   navigateTo('/new');
@@ -87,15 +92,25 @@ const authorizeGithub = () => {
 };
 
 const installApplication = async () => {
+  if (!applicationSchema.value) {
+    console.error('Application schema is required');
+    return;
+  }
   isDeploying.value = true;
-  // This is where the call to the backend to create the application would go.
-  // For now, we'll just log it.
-  console.log('Installing application with schema:', JSON.stringify(applicationSchema.value, null, 2));
-  // Simulate deployment
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  isDeploying.value = false;
-  // On success, navigate to the new application's page.
-  // This assumes the backend returns the new app's ID.
-  // router.push(`/app/new-app-id`);
+  try {
+    const result = await $client.applications.create.mutate({
+      organization_id: selectedOrganization.value?.id as string,
+      applicationInputSchema: applicationSchema.value as ApplicationInputSchema
+    });
+    if (result.newApplicationId) {
+      clearApplicationSchema();
+      router.push(`/app/${result.newApplicationId}`);
+    }
+  } catch (error) {
+    console.error('Failed to install application:', error);
+    // Here you could show a toast or other error notification
+  } finally {
+    isDeploying.value = false;
+  }
 };
 </script>

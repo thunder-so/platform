@@ -54,7 +54,7 @@ export const useNewApplicationFlow = () => {
 
       applicationSchema.value = {
         ...applicationSchema.value,
-        name: repo,
+        name: repo.replace(/[-_]/g, '').substring(0, 12),
         display_name: repo,
         environments: [
           {
@@ -62,6 +62,8 @@ export const useNewApplicationFlow = () => {
             display_name: 'preview',
             services: [
               {
+                name: stackType,
+                display_name: stackType,
                 stack_type: stackType,
                 installation_id: installation_id,
                 app_props: {
@@ -86,6 +88,7 @@ export const useNewApplicationFlow = () => {
           } as Partial<EnvironmentSchema>,
         ],
       };
+      console.log('applicationSchema after setApplicationSchema:', applicationSchema.value);
     }
   };
 
@@ -109,6 +112,10 @@ export const useNewApplicationFlow = () => {
     oAuthError.value = error;
   };
 
+  const clearApplicationSchema = () => {
+    applicationSchema.value = {};
+  };
+
   return {
     currentStep,
     applicationSchema,
@@ -118,5 +125,6 @@ export const useNewApplicationFlow = () => {
     setProvider,
     setUat,
     setOAuthError,
+    clearApplicationSchema,
   };
 };""
