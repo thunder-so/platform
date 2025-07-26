@@ -56,7 +56,7 @@ const serviceType = service?.stack_type;
 const primaryLinks = computed<NavigationMenuItem[]>(() => {
   return [
     {
-      label: 'Deployments',
+      label: 'Events',
       to: `/app/${appId}`,
     },
     {
