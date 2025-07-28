@@ -2,6 +2,7 @@ import type { SQSHandler } from 'aws-lambda';
 import { CodeBuild, StartBuildCommand, BatchGetBuildsCommand, ArtifactsType, EnvironmentVariableType } from '@aws-sdk/client-codebuild';
 import { STSClient, AssumeRoleCommand } from '@aws-sdk/client-sts';
 import { createClient } from '@supabase/supabase-js';
+import { SSMProvider } from '@aws-lambda-powertools/parameters/ssm';
 import type { BuildRequest } from '@thunder/types/build';
 import { spaBuilder, lambdaBuilder, ecsBuilder } from './builders';
 import type { IStackBuilder } from './builders/types';
@@ -50,15 +51,26 @@ export const handler: SQSHandler = async (event) => {
   }
 
   // running the build on customer account
-  const assumeRoleParams = {
-    RoleArn: buildRequest.provider.roleArn,
-    RoleSessionName: 'RunnerBuildSession',
-    ExternalId: buildRequest.provider.externalId,
-  };
+  let credentials;
 
-  const sts = new STSClient({ region: REGION });
-  const assumedRole = await sts.send(new AssumeRoleCommand(assumeRoleParams));
-  const credentials = assumedRole.Credentials;
+  if (buildRequest.provider.roleArn) {
+    const assumeRoleParams = {
+      RoleArn: buildRequest.provider.roleArn,
+      RoleSessionName: 'RunnerBuildSession',
+      ExternalId: buildRequest.provider.externalId,
+    };
+
+    const sts = new STSClient({ region: REGION });
+    const assumedRole = await sts.send(new AssumeRoleCommand(assumeRoleParams));
+    credentials = assumedRole.Credentials;
+  } else {
+    const parametersProvider = new SSMProvider();
+    const secretAccessKey = await parametersProvider.get(`/thunder/provider/${buildRequest.provider.accessKeyId}/secretAccessKey`, { decrypt: true });
+    credentials = {
+      AccessKeyId: buildRequest.provider.accessKeyId,
+      SecretAccessKey: secretAccessKey,
+    }
+  }
 
   // Initiate codebuild in our account
   const codebuild = new CodeBuild({ region: REGION });

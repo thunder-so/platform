@@ -8,6 +8,7 @@
     "deploy": "sam deploy --template template.yaml --config-file samconfig.toml --config-env sandbox --no-confirm-changeset"
   },
   "dependencies": {
+    "@aws-lambda-powertools/parameters": "^2.1.0",
     "@aws-sdk/client-cloudformation": "^3.840.0",
     "@aws-sdk/client-codebuild": "^3.840.0",
     "@aws-sdk/client-codepipeline": "^3.840.0",

@@ -5,9 +5,10 @@ export interface BuildRequest {
   // === Provider Information (for assuming role) ===
   provider: {
     roleArn: string;
-    externalId: string; // The provider's unique ID
+    externalId: string; // The Organization ID
     accountId: string;
     region: string;
+    accessKeyId?: string; // Manual provider credentials 
   };
 
   // === CDK Stack Properties (to be written to cdk.context.json) ===

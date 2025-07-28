@@ -4,7 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { db } from '~/server/db/db';
 import { providers } from '~/server/db/schema';
 import { sql } from 'drizzle-orm';
-import { STSClient, GetCallerIdentityCommand } from '@aws-sdk/client-sts';
+import { AwsLibrary } from '~/server/lib/aws.library';
 
 export const providersRouter = router({
   addManualProvider: publicProcedure
@@ -19,27 +19,13 @@ export const providersRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { organizationId, alias, accessKeyId, secretAccessKey } = input;
 
-      const stsClient = new STSClient({
-        credentials: {
-          accessKeyId: accessKeyId,
-          secretAccessKey: secretAccessKey,
-        },
-      });
+      const aws = new AwsLibrary(accessKeyId, secretAccessKey);
 
       let callerIdentity;
       try {
-        callerIdentity = await stsClient.send(new GetCallerIdentityCommand({}));
+        callerIdentity = await aws.getCallerIdentity();
       } catch (error: any) {
-        if (error.name === 'InvalidClientTokenId' || error.name === 'SignatureDoesNotMatch') {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Invalid AWS credentials provided.',
-          });
-        }
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'An unexpected error occurred during credential validation.',
-        });
+        throw error;
       }
 
       try {
@@ -56,6 +42,10 @@ export const providersRouter = router({
             message: 'Failed to securely store AWS credentials.',
           });
         }
+
+        // Create SSM Secure Parameter
+        const ssmParamName = `/thunder/provider/${accessKeyId}/secretAccessKey`;
+        await aws.createSsmSecureParameter(ssmParamName, secretAccessKey);
 
         // Insert provider details into the providers table using Drizzle
         const [data] = await db

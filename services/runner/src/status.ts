@@ -1,4 +1,4 @@
-// import { SSMProvider } from '@aws-lambda-powertools/parameters/ssm';
+import { SSMProvider } from '@aws-lambda-powertools/parameters/ssm';
 import { EventBridgeEvent, Context } from "aws-lambda";
 import { STSClient, AssumeRoleCommand } from "@aws-sdk/client-sts";
 import { CodeBuild, CodeBuildClient, BatchGetBuildsCommand } from "@aws-sdk/client-codebuild";
@@ -201,7 +201,7 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
     // Log the fetched data for debugging
     // console.log('eventSchema:', eventSchema);
 
-    /**
+    """    /**
      * Get the Stack Outputs and Update Service
      * 
      * - STS AssumeRoleCommand
@@ -209,16 +209,27 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
      * - Stack Outputs
      * - Update service
      */
-    const assumeRoleParams = {
-      RoleArn: provider.role_arn,
-      RoleSessionName: "StackInquirySession",
-      ExternalId: provider.id
-    };
+    let credentials;
 
-    const sts = new STSClient({ region: REGION });
-    const assumedRole = await sts.send(new AssumeRoleCommand(assumeRoleParams));
-    const credentialedArn = assumedRole.AssumedRoleUser?.Arn;
-    const credentials = assumedRole.Credentials;
+    if (provider.role_arn) {
+      const assumeRoleParams = {
+        RoleArn: provider.role_arn,
+        RoleSessionName: "StackInquirySession",
+        ExternalId: provider.id
+      };
+  
+      const sts = new STSClient({ region: REGION });
+      const assumedRole = await sts.send(new AssumeRoleCommand(assumeRoleParams));
+      credentials = assumedRole.Credentials;
+    } else {
+      // @ts-expect-error
+      const parametersProvider = new SSMProvider();
+      const secretAccessKey = await parametersProvider.get(`/thunder/provider/${provider.id}/secret_access_key`, { decrypt: true });
+      credentials = {
+        AccessKeyId: provider.access_key_id,
+        SecretAccessKey: secretAccessKey,
+      }
+    }""
   
     const client = new CloudFormationClient({ 
       credentials: {
