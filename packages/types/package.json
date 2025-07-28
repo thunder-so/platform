@@ -1,0 +1,8 @@
+{
+  "name": "@thunder/types",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    "./build": "./src/build.ts"
+  }
+}

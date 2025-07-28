@@ -1,8 +1,10 @@
-// import { SSMProvider } from '@aws-lambda-powertools/parameters/ssm';
-import type { SQSHandler } from "aws-lambda";
-import { CodeBuild, CodeBuildClient, StartBuildCommand, type EnvironmentVariable, EnvironmentVariableType, ArtifactsType, BatchGetBuildsCommand } from "@aws-sdk/client-codebuild";
-import { STSClient, AssumeRoleCommand } from "@aws-sdk/client-sts";
+import type { SQSHandler } from 'aws-lambda';
+import { CodeBuild, StartBuildCommand, BatchGetBuildsCommand, ArtifactsType, EnvironmentVariableType } from '@aws-sdk/client-codebuild';
+import { STSClient, AssumeRoleCommand } from '@aws-sdk/client-sts';
 import { createClient } from '@supabase/supabase-js';
+import type { BuildRequest } from '@thunder/types/build';
+import { spaBuilder, lambdaBuilder, ecsBuilder } from './builders';
+import type { IStackBuilder } from './builders/types';
 
 /**
  * Gather the environment
@@ -13,15 +15,15 @@ const RUNNER_BUILD = process.env.RUNNER_BUILD;
 const EVENT_TARGET = process.env.EVENT_TARGET;
 
 if (!RUNNER_BUCKET) {
-  throw new Error("Environment variable RUNNER_BUCKET is not set");
+  throw new Error('Environment variable RUNNER_BUCKET is not set');
 }
 
 if (!RUNNER_BUILD) {
-  throw new Error("Environment variable RUNNER_BUILD is not set");
+  throw new Error('Environment variable RUNNER_BUILD is not set');
 }
 
 if (!EVENT_TARGET) {
-  throw new Error("Environment variable EVENT_TARGET is not set");
+  throw new Error('Environment variable EVENT_TARGET is not set');
 }
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -31,73 +33,54 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
   throw new Error('Supabase URL and Key not found.');
 }
 
+const builders: Record<string, IStackBuilder> = {
+  SPA: spaBuilder,
+  LAMBDA: lambdaBuilder,
+  ECS: ecsBuilder,
+};
+
 export const handler: SQSHandler = async (event) => {
   const record = event.Records[0];
-  const recordBody = JSON.parse(record.body);
-  console.log('Parsed Record Body:', recordBody);
+  const buildRequest: BuildRequest = JSON.parse(record.body);
+  console.log('Parsed Build Request:', buildRequest);
 
-  // Gather the MessageAttributes
-  const eventId = record.messageAttributes?.event_id?.stringValue;
-  const providerId = record.messageAttributes?.providerId?.stringValue;
-  const providerArn = record.messageAttributes?.providerArn?.stringValue;
-  const serviceStackType = record.messageAttributes?.serviceStackType?.stringValue;
-  const serviceStackVersion = record.messageAttributes?.serviceStackVersion?.stringValue;
-
-  if (!providerId || !providerArn) {
-    throw new Error('Provider data not found.');
+  const builder = builders[buildRequest.stackType];
+  if (!builder) {
+    throw new Error(`No builder found for stack type: ${buildRequest.stackType}`);
   }
-
-  // configure the metadata object
-  const metadata = {
-    "metadata": recordBody
-  };
-
-  metadata.metadata.eventTarget = EVENT_TARGET;
 
   // running the build on customer account
   const assumeRoleParams = {
-    RoleArn: providerArn,
-    RoleSessionName: "RunnerBuildSession",
-    ExternalId: providerId
+    RoleArn: buildRequest.provider.roleArn,
+    RoleSessionName: 'RunnerBuildSession',
+    ExternalId: buildRequest.provider.externalId,
   };
 
   const sts = new STSClient({ region: REGION });
   const assumedRole = await sts.send(new AssumeRoleCommand(assumeRoleParams));
-  const credentialedArn = assumedRole.AssumedRoleUser?.Arn;
   const credentials = assumedRole.Credentials;
 
   // Initiate codebuild in our account
   const codebuild = new CodeBuild({ region: REGION });
 
-  const buildSpec = `
-  version: 0.2
-  phases:
-    install:
-      runtime-versions:
-        nodejs: 20
-      commands:
-        - git clone --depth 1 --branch v${serviceStackVersion} https://github.com/thunder-so/cdk-spa.git .
-        - npm install tsx aws-cdk@2.150.0 aws-cdk-lib@2.150.0 
-        - echo '${JSON.stringify(metadata)}' > cdk.context.json
-        - npx cdk bootstrap aws://${recordBody.env.account}/${recordBody.env.region}
-        - npx cdk deploy --app "npx tsx bin/app.ts" --require-approval never --verbose
-  `;
+  const buildSpec = builder.generateBuildSpec(buildRequest);
+  const cdkContext = builder.generateCdkContext(buildRequest);
 
   const params = {
     projectName: process.env.RUNNER_BUILD,
     artifactsOverride: {
-        type: ArtifactsType.S3,
-        location: process.env.RUNNER_BUCKET,
-        path: recordBody.service
+      type: ArtifactsType.S3,
+      location: process.env.RUNNER_BUCKET,
+      path: buildRequest.service,
     },
     buildspecOverride: buildSpec,
     environmentVariablesOverride: [
-      { name: 'AWS_ACCOUNT', value: recordBody.env.account, type: EnvironmentVariableType.PLAINTEXT },
-      { name: 'AWS_REGION', value: recordBody.env.region, type: EnvironmentVariableType.PLAINTEXT },
+      { name: 'AWS_ACCOUNT', value: buildRequest.env.account, type: EnvironmentVariableType.PLAINTEXT },
+      { name: 'AWS_REGION', value: buildRequest.env.region, type: EnvironmentVariableType.PLAINTEXT },
       { name: 'AWS_ACCESS_KEY_ID', value: credentials?.AccessKeyId, type: EnvironmentVariableType.PLAINTEXT },
       { name: 'AWS_SECRET_ACCESS_KEY', value: credentials?.SecretAccessKey, type: EnvironmentVariableType.PLAINTEXT },
-      { name: 'AWS_SESSION_TOKEN', value: credentials?.SessionToken, type: EnvironmentVariableType.PLAINTEXT }
-    ]
+      { name: 'AWS_SESSION_TOKEN', value: credentials?.SessionToken, type: EnvironmentVariableType.PLAINTEXT },
+    ],
   };
 
   try {
@@ -109,37 +92,32 @@ export const handler: SQSHandler = async (event) => {
     if (buildId) {
       console.log(`Build started with ARN: ${buildArn}`);
       console.log(`Build started with ID: ${buildId}`);
-      
-      const buildDetails = await codebuild.send( new BatchGetBuildsCommand({ ids: [buildId] }) );
+
+      const buildDetails = await codebuild.send(new BatchGetBuildsCommand({ ids: [buildId] }));
       if (buildDetails.builds && buildDetails.builds.length > 0) {
         const build = buildDetails.builds[0];
 
         const startTime = build.startTime;
-        // const logStreamName = build.logs?.streamName;
-        // console.log("build.logs", JSON.stringify(build.logs));
 
         // Store the event in Supabase
         const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // Update Supabase DB
         const { data, error } = await supabase
-        .from('builds')
-        .update({
+          .from('builds')
+          .update({
             build_id: buildArn, // using ARN because CodeBuildStateChangeEvent detail['build-id'] uses ARN
             build_start: startTime?.toISOString(),
-            build_context: metadata,
-            // build_log: logStreamName || null,
+            build_context: cdkContext,
             updated_at: new Date().toISOString(),
-        })
-        .eq('id', eventId)
-        // .select();
+          })
+          .eq('id', buildRequest.eventId);
 
         if (error) {
-            throw error;
+          throw error;
         }
       }
-    }    
-
+    }
   } catch (error) {
     console.error('Runner failed', JSON.stringify(error));
     throw error;

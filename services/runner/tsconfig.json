@@ -1,37 +1,13 @@
 {
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "Node",
-    "lib": [
-      "ES2020"
-    ],
-    "jsx": "react-jsx",
-    "strict": true,
-    "declaration": true,
-    "preserveConstEnums": true,
-    "noEmit": true,
-    "sourceMap": false,
-    "esModuleInterop": true, 
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,  
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "noImplicitThis": true,
-    "alwaysStrict": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": false,
-    "inlineSourceMap": false,
-    "inlineSources": false,
-    "experimentalDecorators": true,
-    "strictPropertyInitialization": false,
-    "allowSyntheticDefaultImports": true,
     "typeRoots": [
-      "./node_modules/@types",
-    ],
-    "baseUrl": ".",
+      "./node_modules/@types"
+    ]
   },
-  "exclude": ["node_modules", "**/*.test.ts", "cdk.out"]
+  "exclude": [
+    "node_modules",
+    "**/*.test.ts",
+    "cdk.out"
+  ]
 }
