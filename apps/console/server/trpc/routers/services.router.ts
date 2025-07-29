@@ -3,6 +3,7 @@ import { publicProcedure, router } from '../init';
 import { db } from '~/server/db/db';
 import { services } from '~/server/db/schema';
 import { eq } from 'drizzle-orm';
+import { appPropsSchema, edgePropsSchema, domainPropsSchema, pipelinePropsSchema } from '~/server/trpc/schemas';
 
 // Helper function to deep merge objects
 function deepMerge(target: any, source: any): any {
@@ -37,45 +38,11 @@ export const servicesRouter = router({
   updateServiceProps: publicProcedure
     .input(z.object({
       serviceId: z.string(),
-      app_props: z.object({
-        rootDir: z.string().optional(),
-        outputDir: z.string().optional(),
-      }).optional(),
+      app_props: appPropsSchema.optional(),
       cdn_props: z.record(z.any()).optional(),
-      edge_props: z.object({
-        headers: z.array(z.object({
-          path: z.string(),
-          name: z.string(),
-          value: z.string(),
-        })).optional(),
-        redirects: z.array(z.object({
-          source: z.string(),
-          destination: z.string(),
-          statusCode: z.number().optional(),
-        })).optional(),
-        rewrites: z.array(z.object({
-          source: z.string(),
-          destination: z.string(),
-        })).optional(),
-      }).optional(),
-      domain_props: z.object({
-        domain: z.string().optional(),
-        globalCertificateArn: z.string().optional(),
-        regionalCertificateArn: z.string().optional(),
-        hostedZoneId: z.string().optional(),
-      }).optional(),
-      pipeline_props: z.object({
-        sourceProps: z.object({
-          repository: z.string().optional(),
-          branch: z.string().optional(),
-        }).optional(),
-        buildProps: z.object({
-          installcmd: z.string().optional(),
-          buildcmd: z.string().optional(),
-          environment: z.record(z.string()).optional(),
-        }).optional(),
-        eventBus: z.string().optional(),
-      }).optional(),
+      edge_props: edgePropsSchema.optional(),
+      domain_props: domainPropsSchema.optional(),
+      pipeline_props: pipelinePropsSchema.optional(),
     }))
     .mutation(async ({ input }) => {
       const { serviceId, ...propsToUpdate } = input;

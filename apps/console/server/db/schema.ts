@@ -472,10 +472,10 @@ export interface DomainProps {
 }
 
 export interface PipelineProps {
-  sourceProps?: {
+  sourceProps: {
     owner: string;
-    repo?: string;
-    branch?: string;
+    repo: string;
+    branchOrRef: string;
   };
   buildProps?: {
     runtime?: string;
