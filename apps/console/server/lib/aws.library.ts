@@ -1,6 +1,7 @@
 import { STSClient, GetCallerIdentityCommand } from '@aws-sdk/client-sts';
 import { SSMClient, PutParameterCommand } from '@aws-sdk/client-ssm';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
+import { SecretsManagerClient, CreateSecretCommand, UpdateSecretCommand, ResourceExistsException } from '@aws-sdk/client-secrets-manager';
 import { TRPCError } from '@trpc/server';
 
 export class AwsLibrary {
@@ -54,6 +55,37 @@ export class AwsLibrary {
         code: 'INTERNAL_SERVER_ERROR',
         message: 'Failed to create secure parameter in AWS SSM Parameter Store.',
       });
+    }
+  }
+
+  async createOrUpdateSecret(name: string, secretString: string, description: string): Promise<string> {
+    const credentials = (this._accessKeyId && this._secretAccessKey) ? {
+      accessKeyId: this._accessKeyId,
+      secretAccessKey: this._secretAccessKey,
+    } : undefined;
+    const secretsManagerClient = new SecretsManagerClient({ credentials });
+    try {
+      const response = await secretsManagerClient.send(new CreateSecretCommand({
+        Name: name,
+        SecretString: secretString,
+        Description: description,
+      }));
+      return response.ARN || '';
+    } catch (error) {
+      if (error instanceof ResourceExistsException) {
+        const response = await secretsManagerClient.send(new UpdateSecretCommand({
+          SecretId: name,
+          SecretString: secretString,
+          Description: description,
+        }));
+        return response.ARN || '';
+      } else {
+        console.error('Error creating or updating secret:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to create or update secret in AWS Secrets Manager.',
+        });
+      }
     }
   }
 

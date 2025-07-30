@@ -7,7 +7,7 @@ import { CodePipelineClient, StartPipelineExecutionCommand } from "@aws-sdk/clie
 import { createClient } from '@supabase/supabase-js';
 import Plunk from '@plunk/node';
 import { render } from '@react-email/render';
-import { StackInstalled } from 'emails/stack-installed';
+import { StackInstalled } from '../emails/stack-installed';
 
 const REGION = process.env.REGION;
 
@@ -201,7 +201,7 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
     // Log the fetched data for debugging
     // console.log('eventSchema:', eventSchema);
 
-    """    /**
+    /**
      * Get the Stack Outputs and Update Service
      * 
      * - STS AssumeRoleCommand
@@ -229,7 +229,7 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
         AccessKeyId: provider.access_key_id,
         SecretAccessKey: secretAccessKey,
       }
-    }""
+    }
   
     const client = new CloudFormationClient({ 
       credentials: {

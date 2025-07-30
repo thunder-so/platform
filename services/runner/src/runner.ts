@@ -92,6 +92,7 @@ export const handler: SQSHandler = async (event) => {
       { name: 'AWS_ACCESS_KEY_ID', value: credentials?.AccessKeyId, type: EnvironmentVariableType.PLAINTEXT },
       { name: 'AWS_SECRET_ACCESS_KEY', value: credentials?.SecretAccessKey, type: EnvironmentVariableType.PLAINTEXT },
       { name: 'AWS_SESSION_TOKEN', value: credentials?.SessionToken, type: EnvironmentVariableType.PLAINTEXT },
+      { name: 'CDK_CONTEXT', value: JSON.stringify(cdkContext), type: EnvironmentVariableType.PLAINTEXT },
     ],
   };
 

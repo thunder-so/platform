@@ -13,7 +13,7 @@ export const pipelinePropsSchema = z.object({
   }).partial().optional(),
   buildProps: z.object({
     runtime: z.string().optional(),
-    runtime_version: z.number().optional(),
+    runtime_version: z.string().optional(),
     installcmd: z.string().optional(),
     buildcmd: z.string().optional(),
     environment: z.record(z.string(), z.string()).optional(),

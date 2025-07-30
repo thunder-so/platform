@@ -6,11 +6,13 @@ version = 0.1
 [sandbox.package.parameters]
 s3_bucket = "thunder-functions-sandbox"
 s3_prefix = "package"
+profile = "default"
 
 [sandbox.deploy.parameters]
 stack_name = "thunder-functions-sandbox"
 s3_bucket = "thunder-functions-sandbox"
 s3_prefix = ""
+profile = "default"
 parameter_overrides = "Environment=\"sandbox\""
 disable_rollback = false
 resolve_image_repos = true

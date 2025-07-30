@@ -26,7 +26,7 @@ const environmentSchema = z.object({
   display_name: z.string(),
   provider_id: z.string(),
   region: z.string(),
-  user_access_token: z.any().optional(), // Made optional to match schema.ts
+  user_access_token: z.any().optional(),
   services: z.array(serviceSchema),
 });
 
@@ -75,11 +75,33 @@ export const applicationsRouter = router({
               region: env.region,
             }).returning({ id: environments.id, name: environments.name });
 
-            if (env.user_access_token) {
-              await tx.update(userAccessTokens)
-                .set({ environment_id: newEnvironment.id })
-                .where(eq(userAccessTokens.secret_id, env.user_access_token.secret_id));
+            // Retrieve the decrypted token from the vault
+            const vaultSecretId = env.user_access_token.secret_id;
+            const tokenResult = await tx.execute(sql`SELECT vault.decrypted_secret FROM vault.secrets WHERE id = ${vaultSecretId}`);
+            const decryptedToken = tokenResult.rows[0]?.decrypted_secret as string | undefined;
+
+            if (!decryptedToken) {
+              throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'Failed to decrypt user access token from vault.',
+              });
             }
+
+            // Create or update the secret in AWS Secrets Manager
+            const secretName = `thunder/${newApplication.id}/${newEnvironment.id}/github-token`;
+            const accessTokenSecretArn = await aws.createOrUpdateSecret(
+              secretName,
+              decryptedToken,
+              `GitHub User Access Token for application ${newApplication.name} in environment ${newEnvironment.name}`
+            );
+
+            // Update the user_access_token record with the AWS Secret ARN
+            await tx.update(userAccessTokens)
+              .set({ 
+                environment_id: newEnvironment.id,
+                resource: accessTokenSecretArn 
+              })
+              .where(eq(userAccessTokens.secret_id, env.user_access_token.secret_id));
 
             for (const service of env.services) {
               const [newService] = await tx.insert(services).values({
@@ -100,7 +122,7 @@ export const applicationsRouter = router({
               const [newBuild] = await tx.insert(builds).values({
                 service_id: newService.id,
                 environment_id: newEnvironment.id,
-                build_status: 'NULL',
+                build_status: 'IN_PROGRESS',
               }).returning({ id: builds.id });
 
               if (!newBuild) {
@@ -108,15 +130,6 @@ export const applicationsRouter = router({
                   code: 'INTERNAL_SERVER_ERROR',
                   message: 'Failed to create build entry.',
                 });
-              }
-
-              // Fetch user access token ARN if available
-              let accessTokenSecretArn: string | undefined;
-              if (env.user_access_token) {
-                const userAccessToken = await tx.query.userAccessTokens.findFirst({
-                  where: eq(userAccessTokens.secret_id, env.user_access_token.secret_id),
-                });
-                accessTokenSecretArn = userAccessToken?.resource || undefined;
               }
 
               // Fetch provider details
@@ -132,6 +145,47 @@ export const applicationsRouter = router({
               }
 
               // Construct BuildRequest
+              let props: any;
+              switch (service.stack_type) {
+                case 'SPA':
+                  props = {
+                    outputDir: service.app_props?.outputDir,
+                    buildProps: service.pipeline_props?.buildProps,
+                    domain: service.domain_props,
+                    cdn: {},
+                    edge: service.edge_props,
+                  };
+                  break;
+                case 'LAMBDA':
+                  props = {
+                    functionProps: {
+                      dockerFile: (service.metadata as any)?.dockerFile || 'Dockerfile',
+                      timeout: (service.metadata as any)?.timeout,
+                      memorySize: (service.metadata as any)?.memorySize,
+                      keepWarm: (service.metadata as any)?.keepWarm,
+                    },
+                    buildProps: service.pipeline_props?.buildProps,
+                    domain: service.domain_props,
+                  };
+                  break;
+                case 'ECS':
+                  props = {
+                    serviceProps: {
+                      port: (service.metadata as any)?.port,
+                      dockerFile: (service.metadata as any)?.dockerFile,
+                      cpu: (service.metadata as any)?.cpu,
+                      memorySize: (service.metadata as any)?.memorySize,
+                      desiredCount: (service.metadata as any)?.desiredCount,
+                    },
+                    buildProps: service.pipeline_props?.buildProps,
+                    domain: service.domain_props,
+                    cdn: {},
+                  };
+                  break;
+                default:
+                  throw new TRPCError({ code: 'BAD_REQUEST', message: `Invalid stack type: ${service.stack_type}` });
+              }
+
               const buildRequest: BuildRequest = {
                 eventId: newBuild.id,
                 provider: {
@@ -141,38 +195,23 @@ export const applicationsRouter = router({
                   region: env.region,
                   accessKeyId: providerDetails.access_key_id || undefined,
                 },
+                stackVersion: service.stack_version || 'latest',
                 env: {
                   account: providerDetails.account_id || '',
                   region: env.region,
                 },
                 application: newApplication.name,
-                service: newService.name,
+                service: newService.id,
                 environment: newEnvironment.name,
-                accessTokenSecretArn: accessTokenSecretArn || '',
+                rootDir: service.app_props?.rootDir || './',
                 sourceProps: {
                   owner: service.pipeline_props?.sourceProps?.owner || '',
                   repo: service.pipeline_props?.sourceProps?.repo || '',
                   branchOrRef: service.pipeline_props?.sourceProps?.branchOrRef || '',
                 },
-                buildProps: service.pipeline_props?.buildProps || undefined,
+                accessTokenSecretArn: accessTokenSecretArn || '',
                 stackType: service.stack_type as any,
-                stackVersion: service.stack_version || 'latest',
-                serviceProps: {
-                  rootDir: service.app_props?.rootDir || '',
-                  outputDir: service.app_props?.outputDir || undefined,
-                  redirects: service.edge_props?.redirects || undefined,
-                  rewrites: service.edge_props?.rewrites || undefined,
-                  headers: service.edge_props?.headers || undefined,
-                  dockerFile: (service.metadata as any)?.dockerFile || undefined,
-                  memorySize: (service.metadata as any)?.memorySize || undefined,
-                  handler: (service.metadata as any)?.handler || undefined,
-                  timeout: (service.metadata as any)?.timeout || undefined,
-                  keepWarm: (service.metadata as any)?.keepWarm || undefined,
-                  port: (service.metadata as any)?.port || undefined,
-                  desiredCount: (service.metadata as any)?.desiredCount || undefined,
-                  cpu: (service.metadata as any)?.cpu || undefined,
-                },
-                domainProps: service.domain_props || undefined,
+                props: props,
               };
 
               // Send SQS message
@@ -186,6 +225,7 @@ export const applicationsRouter = router({
 
               try {
                 await aws.sendSqsMessage(runnerServiceQueueUrl, JSON.stringify(buildRequest));
+                console.log('SQS message sent successfully:', buildRequest);
               } catch (sqsError) {
                 console.error('Failed to send SQS message:', sqsError);
                 await tx.update(builds).set({ build_status: 'FAILED' }).where(eq(builds.id, newBuild.id));

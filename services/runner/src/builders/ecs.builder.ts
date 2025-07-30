@@ -3,6 +3,10 @@ import type { BuildRequest } from '@thunder/types/build';
 
 export const ecsBuilder: IStackBuilder = {
   generateBuildSpec(request: BuildRequest): string {
+    if (request.stackType !== 'ECS') {
+      throw new Error('Invalid stack type for ecsBuilder');
+    }
+
     const context = this.generateCdkContext(request);
     return `
       version: 0.2
@@ -12,17 +16,25 @@ export const ecsBuilder: IStackBuilder = {
             nodejs: 20
           commands:
             - git clone --depth 1 --branch v${request.stackVersion} ${this.getStackRepositoryUrl(request.stackVersion)} .
-            - npm install tsx aws-cdk@2.150.0 aws-cdk-lib@2.150.0
             - echo '${JSON.stringify(context)}' > cdk.context.json
-            - npx cdk bootstrap aws://${request.env.account}/${request.env.region}
             - npx cdk deploy --app "npx tsx bin/app.ts" --require-approval never --verbose
     `;
   },
 
   generateCdkContext(request: BuildRequest): Record<string, any> {
+    if (request.stackType !== 'ECS') {
+      throw new Error('Invalid stack type for ecsBuilder');
+    }
+
+    const { props, ...baseRequest } = request;
+
     return {
       "@aws-cdk/core:newStyleStackSynthesis": true,
-      ...request,
+      ...baseRequest,
+      ...props.domain,
+      ...props.cdn,
+      serviceProps: props.serviceProps,
+      buildProps: props.buildProps,
     };
   },
 

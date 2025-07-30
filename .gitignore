@@ -23,3 +23,6 @@ cdk.out
 
 # Turborepo
 .turbo
+
+# AWS SAM
+.aws-sam

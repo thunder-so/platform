@@ -9,7 +9,7 @@
     "deploy": "turbo run deploy",
     "build:console": "turbo run build --filter=console",
     "build:services": "turbo run build --filter=services",
-    "deploy:services": "turbo run deploy --filter=services"
+    "deploy:services": "cd services && turbo run deploy --filter=services"
   },
   "devDependencies": {
     "turbo": "^2.5.4"
