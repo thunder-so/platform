@@ -47,7 +47,7 @@ Resources:
     Properties:
       FunctionName: !Sub 'ProviderFunction-${Environment}'
       CodeUri: .
-      Handler: src/status.handler
+      Handler: status.handler
       Role: !GetAtt ProviderFunctionRole.Arn
       Architectures:
         - x86_64

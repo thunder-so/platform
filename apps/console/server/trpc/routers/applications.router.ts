@@ -4,7 +4,8 @@ import { TRPCError } from '@trpc/server';
 import { db } from '~/server/db/db';
 import { sql, eq } from 'drizzle-orm';
 import { applications, environments, services, userAccessTokens, builds, providers } from '~/server/db/schema';
-import { AwsLibrary } from '~/server/lib/aws.library';
+import { PlatformLibrary } from '~/server/lib/platform.library';
+import * as ProviderLibrary from '~/server/lib/provider.library';
 import type { BuildRequest } from '@thunder/types/build';
 import { appPropsSchema, pipelinePropsSchema, functionPropsSchema, webServicePropsSchema, domainPropsSchema, edgePropsSchema } from '~/server/trpc/schemas';
 
@@ -48,7 +49,7 @@ export const applicationsRouter = router({
       const { user } = ctx;
       const { name, display_name, environments: inputEnvironments } = input.applicationInputSchema;
 
-      const aws = new AwsLibrary(); // Instantiate AwsLibrary for internal SQS
+      const aws = new PlatformLibrary();
 
       try {
         const newApplicationId = await db.transaction(async (tx) => {
@@ -75,24 +76,28 @@ export const applicationsRouter = router({
               region: env.region,
             }).returning({ id: environments.id, name: environments.name });
 
-            // Retrieve the decrypted token from the vault
-            const vaultSecretId = env.user_access_token.secret_id;
-            const tokenResult = await tx.execute(sql`SELECT vault.decrypted_secret FROM vault.secrets WHERE id = ${vaultSecretId}`);
-            const decryptedToken = tokenResult.rows[0]?.decrypted_secret as string | undefined;
+            // Fetch provider details
+            const providerDetails = await tx.query.providers.findFirst({
+              where: eq(providers.id, env.provider_id),
+            });
 
-            if (!decryptedToken) {
+            if (!providerDetails) {
               throw new TRPCError({
-                code: 'INTERNAL_SERVER_ERROR',
-                message: 'Failed to decrypt user access token from vault.',
+                code: 'NOT_FOUND',
+                message: 'Provider not found.',
               });
             }
 
-            // Create or update the secret in AWS Secrets Manager
+            const vaultSecretId = env.user_access_token.secret_id;
+
+            // Create or update the secret in the provider's AWS account
             const secretName = `thunder/${newApplication.id}/${newEnvironment.id}/github-token`;
-            const accessTokenSecretArn = await aws.createOrUpdateSecret(
+            const accessTokenSecretArn = await ProviderLibrary.createOrUpdateSecret(
+              providerDetails,
               secretName,
-              decryptedToken,
-              `GitHub User Access Token for application ${newApplication.name} in environment ${newEnvironment.name}`
+              env.user_access_token.secret_id, // Pass the secret_id to be decrypted by the library
+              `GitHub User Access Token for application ${newApplication.name} in environment ${newEnvironment.name}`,
+              vaultSecretId
             );
 
             // Update the user_access_token record with the AWS Secret ARN
@@ -129,18 +134,6 @@ export const applicationsRouter = router({
                 throw new TRPCError({
                   code: 'INTERNAL_SERVER_ERROR',
                   message: 'Failed to create build entry.',
-                });
-              }
-
-              // Fetch provider details
-              const providerDetails = await tx.query.providers.findFirst({
-                where: eq(providers.id, env.provider_id),
-              });
-
-              if (!providerDetails) {
-                throw new TRPCError({
-                  code: 'NOT_FOUND',
-                  message: 'Provider not found.',
                 });
               }
 
@@ -224,7 +217,7 @@ export const applicationsRouter = router({
               }
 
               try {
-                await aws.sendSqsMessage(runnerServiceQueueUrl, JSON.stringify(buildRequest));
+                await aws.sendSqsMessage(runnerServiceQueueUrl, JSON.stringify(buildRequest), buildRequest.eventId);
                 console.log('SQS message sent successfully:', buildRequest);
               } catch (sqsError) {
                 console.error('Failed to send SQS message:', sqsError);

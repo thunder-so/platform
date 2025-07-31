@@ -103,7 +103,7 @@ Resources:
     Properties:
       FunctionName: !Sub 'YeetFunction-${Environment}'
       CodeUri: .
-      Handler: src/event.handler
+      Handler: event.handler
       Role: !GetAtt YeetRole.Arn
       Architectures:
         - x86_64
@@ -142,7 +142,7 @@ Resources:
     Properties:
       FunctionName: !Sub 'YeetCleanupFunction-${Environment}'
       CodeUri: .
-      Handler: src/cleanup.handler
+      Handler: cleanup.handler
       Role: !GetAtt YeetRole.Arn
       Runtime: nodejs20.x
       MemorySize: 1536

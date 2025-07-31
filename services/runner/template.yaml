@@ -126,7 +126,7 @@ Resources:
     Properties:
       FunctionName: !Sub 'RunnerFunction-${Environment}'
       CodeUri: .
-      Handler: src/runner.handler
+      Handler: runner.handler
       Role: !GetAtt RunnerRole.Arn
       Architectures:
         - x86_64
@@ -178,7 +178,7 @@ Resources:
     Properties:
       FunctionName: !Sub 'RunnerStatusFunction-${Environment}'
       CodeUri: .
-      Handler: src/status.handler
+      Handler: status.handler
       Role: !GetAtt RunnerRole.Arn
       Runtime: nodejs20.x
       MemorySize: 1536

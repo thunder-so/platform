@@ -117,7 +117,7 @@ Resources:
     Properties:
       FunctionName: !Sub 'PingFunction-${Environment}'
       CodeUri: ./
-      Handler: src/event.handler
+      Handler: event.handler
       Role: !GetAtt PingFunctionRole.Arn
       Architectures:
         - x86_64

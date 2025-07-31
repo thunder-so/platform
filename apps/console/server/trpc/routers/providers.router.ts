@@ -4,7 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { db } from '~/server/db/db';
 import { providers } from '~/server/db/schema';
 import { sql } from 'drizzle-orm';
-import { AwsLibrary } from '~/server/lib/aws.library';
+import * as ProviderLibrary from '~/server/lib/provider.library';
 
 export const providersRouter = router({
   addManualProvider: publicProcedure
@@ -19,11 +19,26 @@ export const providersRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { organizationId, alias, accessKeyId, secretAccessKey } = input;
 
-      const aws = new AwsLibrary(accessKeyId, secretAccessKey);
+      const tempProvider = {
+        access_key_id: accessKeyId,
+        secret_access_key: secretAccessKey,
+        alias: alias,
+        organization_id: organizationId,
+        id: '',
+        account_id: '',
+        role_arn: null,
+        region: null,
+        stack_id: null,
+        stack_name: null,
+        external_id: null,
+        created_at: new Date(),
+        updated_at: new Date(),
+        deleted_at: null,
+      };
 
       let callerIdentity;
       try {
-        callerIdentity = await aws.getCallerIdentity();
+        callerIdentity = await ProviderLibrary.getCallerIdentity(tempProvider);
       } catch (error: any) {
         throw error;
       }
@@ -45,7 +60,7 @@ export const providersRouter = router({
 
         // Create SSM Secure Parameter
         const ssmParamName = `/thunder/provider/${accessKeyId}/secretAccessKey`;
-        await aws.createSsmSecureParameter(ssmParamName, secretAccessKey);
+        await ProviderLibrary.createSsmSecureParameter(tempProvider, ssmParamName, secretAccessKey);
 
         // Insert provider details into the providers table using Drizzle
         const [data] = await db
