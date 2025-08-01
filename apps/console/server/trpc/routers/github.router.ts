@@ -73,8 +73,9 @@ export const githubRouter = router({
           }
 
           // Store the user access token in the vault
+          const secretName = `access_token_${ctx.user.id}_${Date.now()}`;
           const vaultResult = await db.execute(
-            sql`SELECT vault.create_secret(${access_token}) as create_secret`
+            sql`SELECT vault.create_secret(${access_token}, ${secretName}, ${`Github User Access Token for user ${ctx.user.id}`}) as create_secret`
           );
 
           const create_secret = String(vaultResult.rows[0]?.create_secret);

@@ -27,6 +27,7 @@ export const providersRouter = router({
         id: '',
         account_id: '',
         role_arn: null,
+        secret_id: null,
         region: null,
         stack_id: null,
         stack_name: null,
@@ -45,12 +46,14 @@ export const providersRouter = router({
 
       try {
         // Store secret access key in Supabase Vault using Drizzle raw query
-        const secretName = `aws_secret_key_${organizationId}_${accessKeyId}`;
-        const vaultSuccess = await db.execute(sql`
+        const secretName = `secret_access_key_${organizationId}_${accessKeyId}`;
+        const vaultResult = await db.execute(sql`
           SELECT vault.create_secret(${secretAccessKey}, ${secretName}, ${`AWS Secret Access Key for organization ${organizationId} and Access Key ID ${accessKeyId}`})
         `);
 
-        if (!vaultSuccess) {
+        const secret_id = vaultResult.rows[0]?.create_secret as string | undefined;
+
+        if (!secret_id) {
           console.error('Error storing secret in vault: vault.create_secret returned false or an unexpected value');
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
@@ -70,6 +73,7 @@ export const providersRouter = router({
             alias: alias,
             access_key_id: accessKeyId,
             account_id: callerIdentity.Account,
+            secret_id: secret_id,
             created_at: new Date(),
             updated_at: new Date(),
           })

@@ -9,7 +9,7 @@ import { sql } from 'drizzle-orm';
 // A type for the initial validation scenario where the secret is not yet in the vault
 type ManualProvider = Provider & { secret_access_key: string };
 
-async function getCredentials(provider: Provider | ManualProvider, secret_id?: string) {
+async function getCredentials(provider: Provider | ManualProvider) {
     // Scenario 1: Role-based provider
     if (provider.role_arn) {
         const stsClient = new STSClient({});
@@ -22,14 +22,14 @@ async function getCredentials(provider: Provider | ManualProvider, secret_id?: s
     }
 
     // Scenario 2: Key-based provider where the secret is in the vault
-    if (provider.access_key_id && secret_id) {
-        const tokenResult = await db.execute(sql`SELECT decrypted_secret FROM vault.decrypted_secrets WHERE id = ${secret_id}::uuid`);
+    if (provider.access_key_id && provider.secret_id) {
+        const tokenResult = await db.execute(sql`SELECT decrypted_secret FROM vault.decrypted_secrets WHERE id = ${provider.secret_id}::uuid`);
         const secret_access_key = tokenResult.rows[0]?.decrypted_secret as string | undefined;
 
         if (!secret_access_key) {
             throw new TRPCError({
                 code: 'INTERNAL_SERVER_ERROR',
-                message: 'Failed to decrypt secret from vault.',
+                message: 'Failed to decrypt provider secret from vault.',
             });
         }
         return {
@@ -54,14 +54,13 @@ async function getCredentials(provider: Provider | ManualProvider, secret_id?: s
 
 async function getAwsClient<TClient>(
     clientConstructor: new (config: any) => TClient,
-    provider: Provider | ManualProvider,
-    secret_id?: string
+    provider: Provider | ManualProvider
 ): Promise<TClient> {
-    const credentials = await getCredentials(provider, secret_id);
+    const credentials = await getCredentials(provider);
     return new clientConstructor({ credentials });
 }
 
-export async function getCallerIdentity(provider: Provider) {
+export async function getCallerIdentity(provider: ManualProvider) {
     try {
         const stsClient = await getAwsClient(STSClient, provider);
         const callerIdentity = await stsClient.send(new GetCallerIdentityCommand({}));
@@ -80,7 +79,7 @@ export async function getCallerIdentity(provider: Provider) {
     }
 }
 
-export async function createSsmSecureParameter(provider: Provider, name: string, value: string) {
+export async function createSsmSecureParameter(provider: ManualProvider, name: string, value: string) {
     try {
         const ssmClient = await getAwsClient(SSMClient, provider);
         await ssmClient.send(new PutParameterCommand({
@@ -98,8 +97,8 @@ export async function createSsmSecureParameter(provider: Provider, name: string,
     }
 }
 
-export async function createOrUpdateSecret(provider: Provider, name: string, secretString: string, description: string, secret_id: string): Promise<string> {
-    const secretsManagerClient = await getAwsClient(SecretsManagerClient, provider, secret_id);
+export async function createOrUpdateSecret(provider: Provider, name: string, secretString: string, description: string): Promise<string> {
+    const secretsManagerClient = await getAwsClient(SecretsManagerClient, provider);
     try {
         const response = await secretsManagerClient.send(new CreateSecretCommand({
             Name: name,

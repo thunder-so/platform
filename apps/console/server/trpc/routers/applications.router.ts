@@ -88,16 +88,25 @@ export const applicationsRouter = router({
               });
             }
 
+            // Decrypt the GitHub token from the vault
             const vaultSecretId = env.user_access_token.secret_id;
+            const tokenResult = await tx.execute(sql`SELECT decrypted_secret FROM vault.decrypted_secrets WHERE id = ${vaultSecretId}::uuid`);
+            const decryptedToken = tokenResult.rows[0]?.decrypted_secret as string | undefined;
 
-            // Create or update the secret in the provider's AWS account
+            if (!decryptedToken) {
+              throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'Failed to decrypt GitHub access token from vault.',
+              });
+            }
+
+            // Create or update the secret in the provider's AWS account, using the provider's credentials
             const secretName = `thunder/${newApplication.id}/${newEnvironment.id}/github-token`;
             const accessTokenSecretArn = await ProviderLibrary.createOrUpdateSecret(
               providerDetails,
               secretName,
-              env.user_access_token.secret_id, // Pass the secret_id to be decrypted by the library
-              `GitHub User Access Token for application ${newApplication.name} in environment ${newEnvironment.name}`,
-              vaultSecretId
+              decryptedToken,
+              `GitHub User Access Token for application ${newApplication.name} in environment ${newEnvironment.name}`
             );
 
             // Update the user_access_token record with the AWS Secret ARN
