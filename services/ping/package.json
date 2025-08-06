@@ -1,6 +1,0 @@
-{
-  "name": "ping",
-  "version": "0.0.0",
-  "description": "Pipeline events on customer accounts.",
-  "type": "module"
-}

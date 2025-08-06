@@ -3,7 +3,7 @@ import { CodeBuild, StartBuildCommand, BatchGetBuildsCommand, ArtifactsType, Env
 import { STSClient, AssumeRoleCommand } from '@aws-sdk/client-sts';
 import { createClient } from '@supabase/supabase-js';
 import { SSMProvider } from '@aws-lambda-powertools/parameters/ssm';
-import type { BuildRequest } from '@thunder/types/build';
+import type { BuildRequest } from '@thunder/types';
 import { spaBuilder, lambdaBuilder, ecsBuilder } from './builders';
 import type { IStackBuilder } from './builders/types';
 
@@ -42,7 +42,15 @@ const builders: Record<string, IStackBuilder> = {
 
 export const handler: SQSHandler = async (event) => {
   const record = event.Records[0];
-  const buildRequest: BuildRequest = JSON.parse(record.body);
+  console.log('Received SQS message:', record);
+
+  let buildRequest: BuildRequest;
+  try {
+    buildRequest = JSON.parse(record.body);
+  } catch (error) {
+    console.error('Failed to parse SQS message body as JSON:', record.body);
+    throw error;
+  }
   console.log('Parsed Build Request:', buildRequest);
 
   const builder = builders[buildRequest.stackType];
@@ -53,6 +61,8 @@ export const handler: SQSHandler = async (event) => {
   // running the build on customer account
   let credentials;
 
+  // Provider role ARN is provided
+  // If the roleArn is provided, we assume that role to get the credentials
   if (buildRequest.provider.roleArn) {
     const assumeRoleParams = {
       RoleArn: buildRequest.provider.roleArn,
@@ -63,14 +73,28 @@ export const handler: SQSHandler = async (event) => {
     const sts = new STSClient({ region: REGION });
     const assumedRole = await sts.send(new AssumeRoleCommand(assumeRoleParams));
     credentials = assumedRole.Credentials;
-  } else {
+  } 
+  // If the roleArn is not provided, we use the accessKeyId and secretAccessKey from SSM
+  else {
     const parametersProvider = new SSMProvider();
-    const secretAccessKey = await parametersProvider.get(`/thunder/provider/${buildRequest.provider.accessKeyId}/secretAccessKey`, { decrypt: true });
+    let secretAccessKey;
+    if (buildRequest.provider.accessKeyId) {
+      const parameterPath = `/thunder/provider/${buildRequest.provider.accessKeyId}/secretAccessKey`;
+      console.log(`Attempting to retrieve SSM parameter: ${parameterPath} for accessKeyId: ${buildRequest.provider.accessKeyId}`);
+      try {
+        secretAccessKey = await parametersProvider.get(parameterPath, { decrypt: true });
+        console.log(`Successfully retrieved SSM parameter: ${parameterPath}`);
+      } catch (ssmError) {
+        console.error(`Failed to retrieve SSM parameter ${parameterPath}:`, ssmError);
+        throw ssmError; // Re-throw the error after logging
+      }
+    }
     credentials = {
       AccessKeyId: buildRequest.provider.accessKeyId,
       SecretAccessKey: secretAccessKey,
     }
-  }
+  } 
+
 
   // Initiate codebuild in our account
   const codebuild = new CodeBuild({ region: REGION });

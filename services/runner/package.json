@@ -1,9 +1,5 @@
 {
-  "name": "runner",
-  "version": "0.0.0",
-  "description": "Build and deploy stacks on customer account.",
-  "type": "module",
-  "dependencies": {
-    "@aws-lambda-powertools/parameters": "^2.24.1"
-  }
+  "name": "runner-service",
+  "version": "0.1.0",
+  "type": "module"
 }

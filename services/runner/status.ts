@@ -7,7 +7,7 @@ import { CodePipelineClient, StartPipelineExecutionCommand } from "@aws-sdk/clie
 import { createClient } from '@supabase/supabase-js';
 import Plunk from '@plunk/node';
 import { render } from '@react-email/render';
-import { StackInstalled } from '../emails/stack-installed';
+import { StackInstalled } from './emails/stack-installed';
 
 const REGION = process.env.REGION;
 
@@ -222,7 +222,6 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
       const assumedRole = await sts.send(new AssumeRoleCommand(assumeRoleParams));
       credentials = assumedRole.Credentials;
     } else {
-      // @ts-expect-error
       const parametersProvider = new SSMProvider();
       const secretAccessKey = await parametersProvider.get(`/thunder/provider/${provider.id}/secret_access_key`, { decrypt: true });
       credentials = {

@@ -6,7 +6,7 @@ import { sql, eq } from 'drizzle-orm';
 import { applications, environments, services, userAccessTokens, builds, providers } from '~/server/db/schema';
 import { PlatformLibrary } from '~/server/lib/platform.library';
 import * as ProviderLibrary from '~/server/lib/provider.library';
-import type { BuildRequest } from '@thunder/types/build';
+import type { BuildRequest } from '@thunder/types';
 import { appPropsSchema, pipelinePropsSchema, functionPropsSchema, webServicePropsSchema, domainPropsSchema, edgePropsSchema } from '~/server/trpc/schemas';
 
 const serviceSchema = z.object({
@@ -227,7 +227,7 @@ export const applicationsRouter = router({
 
               try {
                 await aws.sendSqsMessage(runnerServiceQueueUrl, JSON.stringify(buildRequest), buildRequest.eventId);
-                console.log('SQS message sent successfully:', buildRequest);
+                console.log('SQS message sent successfully:', JSON.stringify(buildRequest));
               } catch (sqsError) {
                 console.error('Failed to send SQS message:', sqsError);
                 await tx.update(builds).set({ build_status: 'FAILED' }).where(eq(builds.id, newBuild.id));

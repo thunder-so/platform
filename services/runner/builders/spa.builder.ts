@@ -1,10 +1,10 @@
 import type { IStackBuilder } from './types';
-import type { BuildRequest } from '@thunder/types/build';
+import type { BuildRequest } from '@thunder/types';
 
-export const lambdaBuilder: IStackBuilder = {
+export const spaBuilder: IStackBuilder = {
   generateBuildSpec(request: BuildRequest): string {
-    if (request.stackType !== 'LAMBDA') {
-      throw new Error('Invalid stack type for lambdaBuilder');
+    if (request.stackType !== 'SPA') {
+      throw new Error('Invalid stack type for spaBuilder');
     }
 
     const context = this.generateCdkContext(request);
@@ -22,8 +22,8 @@ export const lambdaBuilder: IStackBuilder = {
   },
 
   generateCdkContext(request: BuildRequest): Record<string, any> {
-    if (request.stackType !== 'LAMBDA') {
-      throw new Error('Invalid stack type for lambdaBuilder');
+    if (request.stackType !== 'SPA') {
+      throw new Error('Invalid stack type for spaBuilder');
     }
 
     const { props, ...baseRequest } = request;
@@ -31,13 +31,15 @@ export const lambdaBuilder: IStackBuilder = {
     return {
       "@aws-cdk/core:newStyleStackSynthesis": true,
       ...baseRequest,
+      outputDir: props.outputDir,
       ...props.domain,
-      functionProps: props.functionProps,
+      ...props.cdn,
+      ...props.edge,
       buildProps: props.buildProps,
     };
   },
 
   getStackRepositoryUrl(version: string): string {
-    return 'https://github.com/thunder-so/cdk-functions.git';
+    return 'https://github.com/thunder-so/cdk-spa.git';
   },
 };

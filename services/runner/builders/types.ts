@@ -1,4 +1,4 @@
-import type { BuildRequest } from '@thunder/types/build';
+import type { BuildRequest } from '@thunder/types';
 
 // A type guard to check if the request is of a certain stack type
 function isStackType<T extends BuildRequest>(request: BuildRequest, stackType: T['stackType']): request is T {

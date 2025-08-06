@@ -1,10 +1,10 @@
 import type { IStackBuilder } from './types';
-import type { BuildRequest } from '@thunder/types/build';
+import type { BuildRequest } from '@thunder/types';
 
-export const ecsBuilder: IStackBuilder = {
+export const lambdaBuilder: IStackBuilder = {
   generateBuildSpec(request: BuildRequest): string {
-    if (request.stackType !== 'ECS') {
-      throw new Error('Invalid stack type for ecsBuilder');
+    if (request.stackType !== 'LAMBDA') {
+      throw new Error('Invalid stack type for lambdaBuilder');
     }
 
     const context = this.generateCdkContext(request);
@@ -22,8 +22,8 @@ export const ecsBuilder: IStackBuilder = {
   },
 
   generateCdkContext(request: BuildRequest): Record<string, any> {
-    if (request.stackType !== 'ECS') {
-      throw new Error('Invalid stack type for ecsBuilder');
+    if (request.stackType !== 'LAMBDA') {
+      throw new Error('Invalid stack type for lambdaBuilder');
     }
 
     const { props, ...baseRequest } = request;
@@ -32,13 +32,12 @@ export const ecsBuilder: IStackBuilder = {
       "@aws-cdk/core:newStyleStackSynthesis": true,
       ...baseRequest,
       ...props.domain,
-      ...props.cdn,
-      serviceProps: props.serviceProps,
+      functionProps: props.functionProps,
       buildProps: props.buildProps,
     };
   },
 
   getStackRepositoryUrl(version: string): string {
-    return 'https://github.com/thunder-so/cdk-webservice.git';
+    return 'https://github.com/thunder-so/cdk-functions.git';
   },
 };
