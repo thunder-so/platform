@@ -64,6 +64,10 @@ const schema = z.object({
     .regex(/^[a-zA-Z]*$/, 'May only contain letters')
 })
 
+const props = defineProps<{
+  organizationId: string
+}>()
+
 const state = ref({
   alias: ''
 })
@@ -80,15 +84,18 @@ const cloudformationUrl = computed(() => {
   if (!isAliasValid.value) {
     return ''
   }
+  const baseUrl = 'https://us-east-1.console.aws.amazon.com/cloudformation/home#/stacks/quickcreate';
   const roleTemplateUrl = runtimeConfig.public.providerStack;
   const stackName = `thunder-provider-${state.value.alias.replace(/\s+/g, '-').toLowerCase()}`;
   
-  const url = new URL('https://us-east-1.console.aws.amazon.com/cloudformation/home#/stacks/quickcreate');
-  url.searchParams.set('templateURL', roleTemplateUrl);
-  url.searchParams.set('stackName', stackName);
-  url.searchParams.set('param_Alias', state.value.alias);
+  const params = new URLSearchParams({
+    templateURL: roleTemplateUrl,
+    stackName: stackName,
+    param_Alias: state.value.alias,
+    param_OrganizationId: props.organizationId || '',
+  });
 
-  return url.toString();
+  return `${baseUrl}?${params.toString()}`;
 })
 
 function openCloudFormation() {

@@ -64,6 +64,7 @@
         "@react-email/components": "^0.4.0",
         "@react-email/render": "^1.1.4",
         "@supabase/supabase-js": "^2.53.0",
+        "aws-cloudformation-custom-resource": "^5.0.0",
         "constructs": "^10.4.2",
       },
       "devDependencies": {
@@ -981,6 +982,8 @@
     "aws-cdk": ["aws-cdk@2.1023.0", "", { "optionalDependencies": { "fsevents": "2.3.2" }, "bin": { "cdk": "bin/cdk" } }, "sha512-DWMA+IrAsBUNF2RvH7ujpDp7wSJkqTkRL8yfK4AYpEjoGY1KMaKIfxz3M3+Nk3ogM7VhZiW3OGWEOgyDF47HOQ=="],
 
     "aws-cdk-lib": ["aws-cdk-lib@2.208.0", "", { "dependencies": { "@aws-cdk/asset-awscli-v1": "2.2.242", "@aws-cdk/asset-node-proxy-agent-v6": "^2.1.0", "@aws-cdk/cloud-assembly-schema": "^45.2.0", "@balena/dockerignore": "^1.0.2", "case": "1.6.3", "fs-extra": "^11.3.0", "ignore": "^5.3.2", "jsonschema": "^1.5.0", "mime-types": "^2.1.35", "minimatch": "^3.1.2", "punycode": "^2.3.1", "semver": "^7.7.2", "table": "^6.9.0", "yaml": "1.10.2" }, "peerDependencies": { "constructs": "^10.0.0" } }, "sha512-lZW475enKz36A/hZvS7xUwfjeqLqxKgBmZ2cGA7BB5PAlQsjBfN70ZGDgGl0egug5fb/hsYy1Dy4OrclfNzxFg=="],
+
+    "aws-cloudformation-custom-resource": ["aws-cloudformation-custom-resource@5.0.0", "", {}, "sha512-ekTL9j/Pb5T7S6RVnlWDiDoBH0uT4OBMJ2d1AMATX2ULvXz6hhr3OL2aRLZB1kf8ekrNghJtOYcmiMmlZ7s8Ow=="],
 
     "b4a": ["b4a@1.6.7", "", {}, "sha512-OnAYlL5b7LEkALw87fUVafQw5rVR9RjwGd4KUwNQ6DrrNmaVaUCgLipfVlzrPQ4tWOR9P0IXGNOx50jYCCdSJg=="],
 

@@ -7,6 +7,9 @@ Parameters:
   Alias:
     Description: This is the short name you have selected for your provider.
     Type: String
+  OrganizationId:
+    Description: The ID of the organization this account will belong to. DO NOT EDIT!
+    Type: String
 Outputs: {}
 Resources:
   ThunderRole:
@@ -24,9 +27,9 @@ Resources:
             Principal:
               AWS: '665186350589'
             Action: sts:AssumeRole
-            # Condition:
-            #   StringEquals:
-            #     'sts:ExternalId': !Ref ProviderId
+            Condition:
+              StringEquals:
+                'sts:ExternalId': !Ref OrganizationId
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
   ThunderProvider:
@@ -39,6 +42,7 @@ Resources:
       Region: !Ref 'AWS::Region'
       StackName: !Ref 'AWS::StackName'
       RoleArn: !GetAtt ThunderRole.Arn
+      OrganizationId: !Ref OrganizationId
 Rules:
   CheckRegion:
     Assertions:

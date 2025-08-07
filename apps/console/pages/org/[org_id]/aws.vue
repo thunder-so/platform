@@ -98,7 +98,7 @@ const providerEditModal = resolveComponent('ProviderUpdateModal')
 const providerDeleteModal = resolveComponent('ProviderDeleteModal')
 
 const addNewAccount = () => {
-  providerCreateModal.open()
+  providerCreateModal.open({ organizationId: orgId })
 };
 
 type Schema = z.output<typeof manualSchema>

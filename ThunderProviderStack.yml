@@ -29,7 +29,7 @@ Resources:
             Action: sts:AssumeRole
             Condition:
               StringEquals:
-                'sts:ExternalId': !Ref ProviderId
+                'sts:ExternalId': !Ref OrganizationId
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
   ThunderProvider:
@@ -42,7 +42,6 @@ Resources:
       Region: !Ref 'AWS::Region'
       StackName: !Ref 'AWS::StackName'
       RoleArn: !GetAtt ThunderRole.Arn
-      ProviderId: !Ref ProviderId
 Rules:
   CheckRegion:
     Assertions:

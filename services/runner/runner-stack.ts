@@ -14,7 +14,7 @@ import * as path from 'path';
 export class RunnerService extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
-    const environment = this.node.tryGetContext('environment') || 'dev';
+    const environment = this.node.tryGetContext('environment') || 'sandbox';
 
     // S3 Bucket for artifacts
     const runnerBucket = new Bucket(this, 'RunnerBucket', {
@@ -104,7 +104,7 @@ export class RunnerService extends Stack {
       entry: path.join(__dirname, '../runner/build.ts'),
       handler: 'handler',
       depsLockFilePath: path.join(__dirname, '../../bun.lock'),
-      runtime: Runtime.NODEJS_20_X,
+      runtime: Runtime.NODEJS_22_X,
       memorySize: 1536,
       timeout: Duration.seconds(10),
       role: runnerRole,
@@ -113,7 +113,6 @@ export class RunnerService extends Stack {
         REGION: Aws.REGION,
         RUNNER_BUCKET: runnerBucket.bucketName,
         RUNNER_BUILD: runnerBuild.projectName,
-        EVENT_TARGET: '',
       },
     });
     runnerFunction.addEventSource(new SqsEventSource(runnerQueue, { batchSize: 1, enabled: true }));
@@ -124,7 +123,7 @@ export class RunnerService extends Stack {
       entry: path.join(__dirname, '../runner/status.ts'),
       handler: 'handler',
       depsLockFilePath: path.join(__dirname, '../../bun.lock'),
-      runtime: Runtime.NODEJS_20_X,
+      runtime: Runtime.NODEJS_22_X,
       memorySize: 1536,
       timeout: Duration.seconds(5),
       role: runnerRole,

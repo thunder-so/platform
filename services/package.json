@@ -5,16 +5,15 @@
   "scripts": {
     "build": "tsc",
     "cdk": "cdk",
-    "deploy": "cdk deploy --all",
+    "deploy:sandbox": "cdk deploy --all --app \"npx tsx bin/ping.ts && npx tsx bin/provider.ts && npx tsx bin/runner.ts\" --context environment=sandbox",
+    "deploy:production": "cdk deploy --all --app \"npx tsx bin/ping.ts && npx tsx bin/provider.ts && npx tsx bin/runner.ts\" --context environment=production",
     "synth": "cdk synth",
+    "deploy:provider:sandbox": "cdk deploy --app \"npx tsx bin/provider.ts\" --context environment=sandbox",
+    "deploy:provider:production": "cdk deploy --app \"npx tsx bin/provider.ts\" --context environment=production",
     "deploy:runner:sandbox": "cdk deploy --app \"npx tsx bin/runner.ts\" --context environment=sandbox",
     "deploy:runner:production": "cdk deploy --app \"npx tsx bin/runner.ts\" --context environment=production",
     "deploy:ping:sandbox": "cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=sandbox",
-    "deploy:ping:production": "cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=production",
-    "deploy:provider:sandbox": "cdk deploy --app \"npx tsx bin/provider.ts\" --context environment=sandbox",
-    "deploy:provider:production": "cdk deploy --app \"npx tsx bin/provider.ts\" --context environment=production",
-    "deploy:all:sandbox": "cdk deploy --all --app \"npx tsx bin/ping.ts && npx tsx bin/provider.ts && npx tsx bin/runner.ts\" --context environment=sandbox",
-    "deploy:all:production": "cdk deploy --all --app \"npx tsx bin/ping.ts && npx tsx bin/provider.ts && npx tsx bin/runner.ts\" --context environment=production"
+    "deploy:ping:production": "cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=production"
   },
   "devDependencies": {
     "aws-cdk": "^2.1023.0",
@@ -31,6 +30,7 @@
     "@react-email/components": "^0.4.0",
     "@react-email/render": "^1.1.4",
     "@supabase/supabase-js": "^2.53.0",
+    "aws-cloudformation-custom-resource": "^5.0.0",
     "constructs": "^10.4.2"
   }
 }
