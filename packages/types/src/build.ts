@@ -10,7 +10,7 @@ interface BaseBuildRequest {
   eventId: string;
   provider: {
     roleArn: string;
-    externalId: string;
+    organizationId: string;
     accountId: string;
     region: string;
     accessKeyId?: string;

@@ -79,23 +79,23 @@ export async function getCallerIdentity(provider: ManualProvider) {
     }
 }
 
-export async function createSsmSecureParameter(provider: ManualProvider, name: string, value: string) {
-    try {
-        const ssmClient = await getAwsClient(SSMClient, provider);
-        await ssmClient.send(new PutParameterCommand({
-            Name: name,
-            Value: value,
-            Type: 'SecureString',
-            Overwrite: true,
-        }));
-    } catch (error) {
-        console.error('Error creating SSM secure parameter:', error);
-        throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: 'Failed to create secure parameter in AWS SSM Parameter Store.',
-        });
-    }
-}
+// export async function createSsmSecureParameter(provider: ManualProvider, name: string, value: string) {
+//     try {
+//         const ssmClient = await getAwsClient(SSMClient, provider);
+//         await ssmClient.send(new PutParameterCommand({
+//             Name: name,
+//             Value: value,
+//             Type: 'SecureString',
+//             Overwrite: true,
+//         }));
+//     } catch (error) {
+//         console.error('Error creating SSM secure parameter:', error);
+//         throw new TRPCError({
+//             code: 'INTERNAL_SERVER_ERROR',
+//             message: 'Failed to create secure parameter in AWS SSM Parameter Store.',
+//         });
+//     }
+// }
 
 export async function createOrUpdateSecret(provider: Provider, name: string, secretString: string, description: string): Promise<string> {
     const secretsManagerClient = await getAwsClient(SecretsManagerClient, provider);

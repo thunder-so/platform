@@ -5,6 +5,7 @@ import { db } from '~/server/db/db';
 import { providers } from '~/server/db/schema';
 import { sql } from 'drizzle-orm';
 import * as ProviderLibrary from '~/server/lib/provider.library';
+import { PlatformLibrary } from '~/server/lib/platform.library';
 
 export const providersRouter = router({
   addManualProvider: publicProcedure
@@ -62,8 +63,9 @@ export const providersRouter = router({
         }
 
         // Create SSM Secure Parameter
-        const ssmParamName = `/thunder/provider/${accessKeyId}/secretAccessKey`;
-        await ProviderLibrary.createSsmSecureParameter(tempProvider, ssmParamName, secretAccessKey);
+        const platform = new PlatformLibrary();
+        const ssmParamName = `/thunder/${organizationId}/${accessKeyId}/secretAccessKey`;
+        await platform.createSsmSecureParameter(ssmParamName, secretAccessKey);
 
         // Insert provider details into the providers table using Drizzle
         const [data] = await db

@@ -192,7 +192,7 @@ export const applicationsRouter = router({
                 eventId: newBuild.id,
                 provider: {
                   roleArn: providerDetails.role_arn || '',
-                  externalId: input.organization_id,
+                  organizationId: input.organization_id,
                   accountId: providerDetails.account_id || '',
                   region: env.region,
                   accessKeyId: providerDetails.access_key_id || undefined,

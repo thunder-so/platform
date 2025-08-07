@@ -1,13 +1,16 @@
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { TRPCError } from '@trpc/server';
+import { SSMClient, PutParameterCommand } from '@aws-sdk/client-ssm';
 
 export class PlatformLibrary {
 
-  constructor() {
-    // No credentials needed for platform-level operations
-  }
-
-  async sendSqsMessage(queueUrl: string, messageBody: string, messageGroupId: string) {
+  /**
+   * Send Create New Application SQS message
+   * @param queueUrl 
+   * @param messageBody 
+   * @param messageGroupId 
+   */
+  async sendSqsMessage(queueUrl: string, messageBody: string, messageGroupId: string): Promise<void> {
     try {
       const sqsClient = new SQSClient({});
 
@@ -23,6 +26,29 @@ export class PlatformLibrary {
         code: 'INTERNAL_SERVER_ERROR',
         message: 'Failed to send message to SQS queue.',
       });
+    }
+  }
+
+  /**
+   * Create or update a secure SSM parameter
+   * @param name 
+   * @param value
+   */
+  async createSsmSecureParameter(name: string, value: string): Promise<void> {
+    try {
+        const ssmClient = new SSMClient({});
+        await ssmClient.send(new PutParameterCommand({
+            Name: name,
+            Value: value,
+            Type: 'SecureString',
+            Overwrite: true,
+        }));
+    } catch (error) {
+        console.error('Error creating SSM secure parameter:', error);
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to create secure parameter in AWS SSM Parameter Store.',
+        });
     }
   }
 }

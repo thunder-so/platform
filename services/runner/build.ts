@@ -67,7 +67,7 @@ export const handler: SQSHandler = async (event) => {
     const assumeRoleParams = {
       RoleArn: buildRequest.provider.roleArn,
       RoleSessionName: 'RunnerBuildSession',
-      ExternalId: buildRequest.provider.externalId,
+      ExternalId: buildRequest.provider.organizationId,
     };
 
     const sts = new STSClient({ region: REGION });
@@ -79,7 +79,7 @@ export const handler: SQSHandler = async (event) => {
     const parametersProvider = new SSMProvider();
     let secretAccessKey;
     if (buildRequest.provider.accessKeyId) {
-      const parameterPath = `/thunder/provider/${buildRequest.provider.accessKeyId}/secretAccessKey`;
+      const parameterPath = `/thunder/${buildRequest.provider.organizationId}/${buildRequest.provider.accessKeyId}/secretAccessKey`;
       console.log(`Attempting to retrieve SSM parameter: ${parameterPath} for accessKeyId: ${buildRequest.provider.accessKeyId}`);
       try {
         secretAccessKey = await parametersProvider.get(parameterPath, { decrypt: true });
@@ -117,7 +117,7 @@ export const handler: SQSHandler = async (event) => {
       { name: 'AWS_SECRET_ACCESS_KEY', value: credentials?.SecretAccessKey, type: EnvironmentVariableType.PLAINTEXT },
       { name: 'AWS_SESSION_TOKEN', value: credentials?.SessionToken, type: EnvironmentVariableType.PLAINTEXT },
       { name: 'CDK_CONTEXT', value: JSON.stringify(cdkContext), type: EnvironmentVariableType.PLAINTEXT },
-    ],
+    ].filter(({ value }) => value !== undefined && value !== null),
   };
 
   try {
