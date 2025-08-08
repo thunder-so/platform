@@ -3,7 +3,7 @@
     <Header />
     
     <div class="app-container">
-      <aside class="sidebar bg-elevated border-r border-muted">
+      <aside class="sidebar border-r border-muted">
         <div class="pb-2 border-b border-muted mb-4">
           <NuxtLink :to="`/org/${applicationSchema?.organization_id}`" class="text-sm button flex items-center gap-1">
             <UIcon name="i-lucide-arrow-left" />
@@ -18,14 +18,22 @@
           :items="primaryLinks"
           orientation="vertical" 
           class="mb-4"
+          :ui="{
+            link: 'p-3'
+          }"
         />
 
-        <h3>Manage</h3>
+        <h3 class="text-xs uppercase pl-3 pr-3 mb-2">
+          Manage
+        </h3>
         <UNavigationMenu 
           v-if="applicationSchema"
           :items="manageLinks"
           orientation="vertical" 
           class="mb-4"
+          :ui="{
+            link: 'p-3'
+          }"
         />
       </aside>
       <main class="main-content"> 

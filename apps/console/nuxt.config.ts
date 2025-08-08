@@ -66,7 +66,7 @@ export default defineNuxtConfig({
   icon: {
     customCollections: [
       {
-        prefix: 'thunder',
+        prefix: 'custom',
         dir: './assets/icons'
       },
     ],

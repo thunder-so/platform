@@ -2,7 +2,7 @@
   <header class="flex justify-between items-center py-2 px-2 border-b border-muted">
     <div class="flex items-center space-x-2">
       <NuxtLink to="/" class="text-xl font-bold">
-        <UButton icon="thunder:thunderso" size="md" color="neutral" variant="ghost"></UButton>
+        <UButton icon="custom:thunderso" size="md" color="neutral" variant="ghost"></UButton>
       </NuxtLink>
       <div class="relative" v-if="selectedOrganization">
         <button @click="dropdownOpen = !dropdownOpen" class="flex cursor-pointer justify-between items-center space-x-2 w-64 border rounded border-muted hover:border-neutral-600 px-3 py-2">

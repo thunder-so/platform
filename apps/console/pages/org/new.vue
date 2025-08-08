@@ -2,19 +2,21 @@
   <div>
     <Header />
 
-    <h1>Create New Organization</h1>
-    <ClientOnly>
-      <UForm :state="{ orgName, selectedPlan }" @submit.prevent="createOrganization" class="space-y-4">
-        <UInput id="org-name" v-model="orgName" type="text" required />
+    <UContainer>
+      <h1>Create New Organization</h1>
+      <ClientOnly>
+        <UForm :state="{ orgName, selectedPlan }" @submit.prevent="createOrganization" class="space-y-4">
+          <UInput id="org-name" v-model="orgName" type="text" required />
 
-        <PricingTable :plans="plans" :selectedPlan="selectedPlan" @update:selectedPlan="selectedPlan = $event" />
+          <PricingTable :plans="plans" :selectedPlan="selectedPlan" @update:selectedPlan="selectedPlan = $event" />
 
-        <UButton type="submit" :loading="loading" :disabled="!orgName.trim()" block size="lg">
-          {{ loading ? 'Creating...' : 'Continue' }}
-        </UButton>
-        <UAlert v-if="error" color="red" variant="soft" :title="error.message" />
-      </UForm>
-    </ClientOnly>
+          <UButton type="submit" :loading="loading" :disabled="!orgName.trim()" block size="lg">
+            {{ loading ? 'Creating...' : 'Continue' }}
+          </UButton>
+          <UAlert v-if="error" variant="solid" :title="error.message" />
+        </UForm>
+      </ClientOnly>
+    </UContainer>
   </div>
 </template>
 
@@ -25,7 +27,7 @@ import PricingTable from '~/components/PricingTable.vue';
 const appConfig = useAppConfig();
 
 definePageMeta({
-  layout: '',
+  // layout: '',
 });
 
 const orgName = ref('');
@@ -33,7 +35,7 @@ const orgName = ref('');
 const plans = ref(appConfig.plans);
 const selectedPlan = ref(plans.value.find(p => p.productId === null)?.id || plans.value[0]?.id);
 const loading = ref(false);
-const error = ref(null);
+const error = ref<{ message: string } | null>(null);
 
 const createOrganization = async () => {
   if (!selectedPlan.value) {
@@ -60,10 +62,9 @@ const createOrganization = async () => {
     }
   } catch (e) {
     console.error('Error creating organization:', e);
-    error.value = e;
+    error.value = { message: (e as Error).message };
   } finally {
     loading.value = false;
   }
 };
 </script>
-

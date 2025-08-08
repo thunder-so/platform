@@ -169,8 +169,6 @@ const updateProfile = async (event: FormSubmitEvent<Schema>) => {
     }
 
     successMessage.value = 'Profile updated successfully!'
-    // To reflect changes immediately, you might need to refresh the user data.
-    // Consider calling a function to re-fetch the user state.
   } catch (error: any) {
     errorMessage.value = error.message || 'An unknown error occurred.'
   } finally {
@@ -178,7 +176,3 @@ const updateProfile = async (event: FormSubmitEvent<Schema>) => {
   }
 }
 </script>
-
-<style scoped>
-/* Add any specific styles here if needed */
-</style>

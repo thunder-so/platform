@@ -3,12 +3,15 @@
     <Header />
 
     <div class="app-container">
-      <aside class="sidebar bg-elevated border-r border-muted">
+      <aside class="sidebar border-r border-muted">
         <UNavigationMenu 
           v-if="selectedOrganization"
           :items="links"
           orientation="vertical" 
           class="mb-4"
+          :ui="{
+            link: 'p-3'
+          }"
         />
       </aside>
       <main class="main-content"> 
