@@ -29,7 +29,7 @@ const service = environment?.services?.[0];
 
 const events = ref([])
 const loading = ref(false)
-const error = ref(null)
+const error = ref<{ message: string } | null>(null);
 
 const UBadge = resolveComponent('UBadge')
 
@@ -96,7 +96,7 @@ const fetchEvents = async (envId: string) => {
 
     events.value = eventData
   } catch (e: any) {
-    error.value = e
+    error.value = { message: (e as Error).message || 'Error fetching events.' };
   } finally {
     loading.value = false
   }

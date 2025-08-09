@@ -47,7 +47,7 @@ const config = useRuntimeConfig();
 
 const installations = ref<any[]>([]);
 const loading = ref(true);
-const error = ref<any>(null);
+const error = ref<{ message: string } | null>(null);
 
 provide('installations', installations);
 
@@ -93,8 +93,8 @@ const fetchInstallations = async () => {
     if (fetchError) throw fetchError;
     installations.value = data || [];
   } catch (e: any) {
-    error.value = e;
     console.error('Error fetching installations:', e);
+    error.value = { message: (e as Error).message || 'Error fetching Github installations.' };
   } finally {
     loading.value = false;
   }

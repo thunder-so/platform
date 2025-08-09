@@ -4,11 +4,6 @@
     <div v-if="loading">Loading activities...</div>
     <div v-else-if="error">Error fetching activities: {{ error.message }}</div>
     <div v-else-if="activities.length">
-      <!-- <UTable
-        :data="activities"
-        :columns="columns"
-      /> -->
-
       <div v-for="activity in activities" :key="activity.id" class="p-4 mb-2 border border-muted rounded flex items-center gap-4">
         <Icon 
           :name="getStatusIcon(activity.status)" 
@@ -124,7 +119,7 @@ interface ActivityItem {
 
 const activities = ref<ActivityItem[]>([]);
 const loading = ref(false);
-const error = ref<Error | null>(null);
+const error = ref<{ message: string } | null>(null);
 
 // const UBadge = resolveComponent('UBadge');
 // const UButton = resolveComponent('UButton');

@@ -8,31 +8,31 @@
         <p>Enter an alias for your new account.</p>
         
         <UForm :schema="schema" :state="state">
-          <UFormField label="Alias" name="alias" required>
-            <UInput v-model="state.alias" placeholder="Production Account" size="lg" />
+          <UFormField label="Alias" name="alias" required class="mb-3">
+            <UInput v-model="state.alias" placeholder="Production" size="lg" />
+          </UFormField>
+
+          <UFormField label="CloudFormation URL">
+            <UInput
+              :model-value="cloudformationUrl"
+              readonly
+              :ui="{ trailing: 'pr-0.5', base: 'w-full', root: 'w-full' }"
+            >
+              <template #trailing>
+                <UTooltip text="Copy to clipboard" :popper="{ placement: 'right' }">
+                  <UButton
+                    :color="copied ? 'success' : 'neutral'"
+                    variant="link"
+                    size="sm"
+                    :icon="copied ? 'i-lucide-copy-check' : 'i-lucide-copy'"
+                    aria-label="Copy to clipboard"
+                    @click="copy(cloudformationUrl)"
+                  />
+                </UTooltip>
+              </template>
+            </UInput>
           </UFormField>
         </UForm>
-
-        <UFormField label="CloudFormation URL">
-          <UInput
-            :model-value="cloudformationUrl"
-            readonly
-            :ui="{ trailing: 'pr-0.5', base: 'w-full', root: 'w-full' }"
-          >
-            <template #trailing>
-              <UTooltip text="Copy to clipboard" :popper="{ placement: 'right' }">
-                <UButton
-                  :color="copied ? 'success' : 'neutral'"
-                  variant="link"
-                  size="sm"
-                  :icon="copied ? 'i-lucide-copy-check' : 'i-lucide-copy'"
-                  aria-label="Copy to clipboard"
-                  @click="copy(cloudformationUrl)"
-                />
-              </UTooltip>
-            </template>
-          </UInput>
-        </UFormField>
       </div>
     </template>
 

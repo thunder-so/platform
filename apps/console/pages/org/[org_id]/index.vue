@@ -26,7 +26,7 @@ const { selectedOrganization } = useMemberships()
 
 const applications = ref([])
 const loading = ref(false)
-const error = ref(null)
+const error = ref<{ message: string } | null>(null);
 const orgId = selectedOrganization?.value?.id as string
 
 const UBadge = resolveComponent('UBadge')

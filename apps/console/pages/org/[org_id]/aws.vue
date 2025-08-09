@@ -2,7 +2,17 @@
   <div>
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-xl font-semibold">AWS Accounts</h2>
-      <UButton @click="addNewAccount">Add New</UButton>
+      <!-- <UButton @click="addNewAccount">Add New</UButton> -->
+
+      <UDropdownMenu :items="addNewItems">
+        <UButton
+          color="neutral"
+          variant="outline"
+          size="lg"
+          trailing-icon="i-lucide-chevron-down"
+          label="Add New"
+        />
+      </UDropdownMenu>
     </div>
 
     <div v-if="loading">Loading AWS accounts...</div>
@@ -25,7 +35,7 @@
       <p>No AWS accounts connected yet.</p>
     </div>
 
-    <UCard class="mt-4">
+    <!-- <UCard class="mt-4">
       <template #header>
         <h3>Add AWS account credentials</h3>
       </template>
@@ -55,16 +65,14 @@
         </div>
         <UButton type="submit" :loading="manualFormLoading">Add Account</UButton>
       </UForm>
-    </UCard>
+    </UCard> -->
   </div>
 </template>
 
 <script setup lang="ts">
-import { z } from 'zod'
-import type { FormSubmitEvent } from '#ui/types'
 import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
 import { useClipboard } from '@vueuse/core'
-import { ProviderCreateModal } from '#components'
+import { ProviderCreateStackModal, ProviderCreateCredentialsModal } from '#components'
 
 definePageMeta({
   layout: 'org'
@@ -79,29 +87,34 @@ const overlay = useOverlay()
 
 const providers = ref([])
 const loading = ref(false)
-const error = ref(null)
-
+const error = ref<{ message: string } | null>(null);
 const orgId = selectedOrganization.value?.id as string;
-const manualFormError = ref<string | null>(null);
-
-const manualSchema = z.object({
-  alias: z.string()
-    .min(3, 'Must be at least 3 characters')
-    .regex(/^[a-zA-Z]*$/, 'May only contain letters'),
-  accessKeyId: z.string().min(1, 'Access Key ID is required'),
-  secretAccessKey: z.string().min(1, 'Secret Access Key is required')
-})
 
 const UBadge = resolveComponent('UBadge')
-const providerCreateModal = overlay.create(ProviderCreateModal);
+const providerCreateStackModal = overlay.create(ProviderCreateStackModal);
+const providerCreateCredentialsModal = overlay.create(ProviderCreateCredentialsModal);
 const providerEditModal = resolveComponent('ProviderUpdateModal')
 const providerDeleteModal = resolveComponent('ProviderDeleteModal')
 
-const addNewAccount = () => {
-  providerCreateModal.open({ organizationId: orgId })
+const addNewAccountStack = () => {
+  providerCreateStackModal.open({ organizationId: orgId })
+};
+const addNewAccountCredentials = () => {
+  providerCreateCredentialsModal.open({ organizationId: orgId })
 };
 
-type Schema = z.output<typeof manualSchema>
+const addNewItems: DropdownMenuItem[] = [
+  {
+    label: 'Using Access Key',
+    icon: 'material-symbols:key-outline',
+    onSelect: addNewAccountCredentials
+  },
+  {
+    label: 'Using CloudFormation',
+    icon: 'mdi:aws',
+    onSelect: addNewAccountStack
+  }
+]
 
 export type Provider = {
   id: string,
@@ -284,32 +297,6 @@ const deleteProvider = async (providerId: string) => {
     })
   }
 };
-
-const manualFormState = ref({
-  alias: '',
-  accessKeyId: '',
-  secretAccessKey: '',
-});
-const manualFormLoading = ref(false);
-
-async function submitManualForm(event: FormSubmitEvent<Schema>) {
-  manualFormLoading.value = true;
-  manualFormError.value = null;
-  try {
-    await $client.providers.addManualProvider.mutate({
-      organizationId: selectedOrganization.value?.id as string,
-      ...event.data,
-    });
-    toast.add({ title: 'AWS Account added successfully!', color: 'success' });
-    manualFormState.value = { alias: '', accessKeyId: '', secretAccessKey: '' }; // Clear form
-    fetchProviders(); // Re-fetch providers to update the list
-  } catch (e: any) {
-    console.error('Error adding manual provider:', e);
-    manualFormError.value = e.message;
-  } finally {
-    manualFormLoading.value = false;
-  }
-}
 
 onMounted(() => {
   if (selectedOrganization.value) {

@@ -47,7 +47,7 @@ definePageMeta({
 const supabase = useSupabaseClient();
 
 const loading = ref(false);
-const error = ref(null);
+const error = ref<{ message: string } | null>(null);
 const success = ref(false);
 const hasApplications = ref(false);
 const confirmDelete = ref(false);

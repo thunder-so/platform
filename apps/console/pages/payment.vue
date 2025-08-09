@@ -29,7 +29,7 @@ const route = useRoute()
 
 const organizationId = ref('')
 const loading = ref(true)
-const error = ref(null)
+const error = ref<{ message: string } | null>(null);
 
 onMounted(async () => {
   const checkoutId = route.query.checkout_id
@@ -41,11 +41,11 @@ onMounted(async () => {
   }
 
   try {
-    const org = await $client.organizations.verifyCheckout.query({ checkoutId })
+    const org = await $client.organizations.verifyCheckout.query({ checkoutId: checkoutId as string })
     organizationId.value = org.organizationId
   } catch (e) {
-    console.error('Error fetching organization by checkout ID:', e)
-    error.value = e
+    console.error('Error fetching organization by checkout ID:', e);
+    error.value = { message: (e as Error).message || 'Error fetching organization by checkout ID' };
   } finally {
     loading.value = false
   }

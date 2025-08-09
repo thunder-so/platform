@@ -1,17 +1,17 @@
 <template>
   <div>
     <div v-if="error" class="text-center p-4">
-      <p class="text-red-500 text-lg">{{ error }}</p>
+      <p class="text-red-500 text-lg">{{ error.message }}</p>
       <UButton to="/login" class="mt-4">Go to Login</UButton>
     </div>
     <div v-else class="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
-      <div class="w-full rounded-lg shadow border md:mt-0 sm:max-w-md xl:p-0 card border-border">
+      <Card>
         <div class="p-6 space-y-4 md:space-y-6 sm:p-8">
           <ClientOnly>
             <div class="text-center">Logging you in...</div>
           </ClientOnly>
         </div>
-      </div>
+      </Card>
     </div>
   </div>
 </template>
@@ -21,7 +21,7 @@ const supabase = useSupabaseClient();
 const user = useSupabaseUser();
 const route = useRoute();
 const { selectedOrganization, initializeSession } = useMemberships()
-const error = ref(null);
+const error = ref<{ message: string } | null>(null);
 
 const setupAndRedirect = async () => {
   await initializeSession();
@@ -57,7 +57,7 @@ onMounted(async () => {
 
       // Redirect based on organization_id
       const organizationId = queryParams.organization_id;
-      if (organizationId && data.user.email) {
+      if (organizationId && data?.user?.email) {
         navigateTo({
           path: '/invite',
           query: {
@@ -78,9 +78,9 @@ onMounted(async () => {
       }, { immediate: true })
     }
 
-  } catch (err) {
+  } catch (err: any) {
     console.error('Authentication error:', err);
-    error.value = err.message || 'An error occurred during authentication.';
+    error.value = err?.message || 'An error occurred during authentication.';
   }
 });
 </script>

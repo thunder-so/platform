@@ -41,7 +41,7 @@ definePageMeta({
 const orgId = selectedOrganization.value?.id as string;
 const subscription = ref(null)
 const isLoading = ref(false)
-const error = ref(null)
+const error = ref<{ message: string } | null>(null);
 const plans = ref(appConfig.plans);
 const selectedPlan = ref(appConfig.plans.find(p => p.productId === undefined)?.id || undefined);
 
