@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, uuid, text, timestamp, jsonb, integer, boolean, unique, index } from 'drizzle-orm/pg-core';
+import { pgTable, pgEnum, uuid, text, timestamp, jsonb, integer, boolean, unique, index, primaryKey, foreignKey } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { cuid2 } from 'drizzle-cuid2/postgres';
 
@@ -74,10 +74,11 @@ export const pricingPlanIntervalEnum = pgEnum('PRICING_PLAN_INTERVAL', ['month',
 export const subscriptionStatusEnum = pgEnum('SUBSCRIPTION_STATUS', ['trialing', 'active', 'canceled', 'incomplete', 'incomplete_expired', 'past_due', 'unpaid', 'paused']);
 
 export const customers = pgTable('customers', {
-  user_id: uuid('user_id').primaryKey().references(() => users.id),
+  user_id: uuid('user_id').notNull().references(() => users.id),
   organization_id: text('organization_id').notNull().references(() => organizations.id),
-  polar_customer_id: text('polar_customer_id').unique().notNull(),
+  polar_customer_id: text('polar_customer_id').notNull(),
 }, (table) => ({
+  pk: primaryKey({ columns: [table.user_id, table.organization_id] }),
   organization_idIdx: index('customers_organization_id_idx').on(table.organization_id),
   polarCustomerIdIdx: index('customers_polar_customer_id_idx').on(table.polar_customer_id),
 }));
@@ -96,7 +97,7 @@ export const subscriptions = pgTable('subscriptions', {
   id: text('id').primaryKey(), // Polar subscription ID, e.g., sub_1234
   user_id: uuid('user_id').notNull().references(() => users.id),
   organization_id: text('organization_id').notNull().references(() => organizations.id),
-  polar_customer_id: text('polar_customer_id').notNull().references(() => customers.polar_customer_id),
+  polar_customer_id: text('polar_customer_id').notNull(),
   status: subscriptionStatusEnum('status').notNull(),
   product_id: text('product_id').references(() => products.id),
   cancel_at_period_end: boolean('cancel_at_period_end').default(false).notNull(),
@@ -108,6 +109,7 @@ export const subscriptions = pgTable('subscriptions', {
   canceled_at: timestamp('canceled_at', { withTimezone: true, precision: 6 }),
   metadata: jsonb('metadata'),
 }, (table) => ({
+  customerFk: foreignKey({ columns: [table.user_id, table.organization_id], foreignColumns: [customers.user_id, customers.organization_id] }),
   user_idIdx: index('subscriptions_user_id_idx').on(table.user_id),
   organization_idIdx: index('subscriptions_organization_id_idx').on(table.organization_id),
   polarCustomerIdIdx: index('subscriptions_polar_customer_id_idx').on(table.polar_customer_id),
@@ -123,8 +125,8 @@ export const subscriptionsRelations = relations(subscriptions, ({ one }) => ({
     references: [users.id],
   }),
   customer: one(customers, {
-    fields: [subscriptions.polar_customer_id],
-    references: [customers.polar_customer_id],
+    fields: [subscriptions.user_id, subscriptions.organization_id],
+    references: [customers.user_id, customers.organization_id],
   }),
   product: one(products, {
     fields: [subscriptions.product_id],

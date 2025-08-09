@@ -12,7 +12,35 @@ const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
 
 console.log('🚀 Polar Webhook Edge Function initialized!')
 
-Deno.serve(async (req) => {  
+// Helper function to sync customer data
+async function syncCustomer(customerData: any, metadata: any) {
+  const userId = metadata?.user_id
+  const organizationId = metadata?.organization_id
+  const polarCustomerId = customerData.id
+
+  if (!userId || !organizationId) {
+    console.error('Webhook Error: user_id or organization_id not found in metadata for customer.', { polarCustomerId })
+    // Acknowledge the event to prevent retries, but log the issue.
+    return
+  }
+
+  const { error } = await supabase
+    .from('customers')
+    .upsert({
+      user_id: userId,
+      organization_id: organizationId,
+      polar_customer_id: polarCustomerId,
+    })
+
+  if (error) {
+    // Log the error but don't throw, allowing the main process to continue if possible
+    console.error('❌ Failed to sync customer:', error)
+  } else {
+    console.log(`✅ Successfully synced customer: ${polarCustomerId} for org ${organizationId}`)
+  }
+}
+
+Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return new Response('Method Not Allowed', { status: 401 })
   }
@@ -25,7 +53,7 @@ Deno.serve(async (req) => {
   try {
     if (eventType === 'product.created' || eventType === 'product.updated') {
       const productData = payload.data
-      
+
       const { error } = await supabase
         .from('products')
         .upsert({
@@ -39,29 +67,32 @@ Deno.serve(async (req) => {
 
       if (error) {
         console.error('❌ Failed to sync product:', error)
+        // Still return OK to prevent Polar retries for this single failure
         return new Response('OK', { status: 200 })
       }
 
       console.log(`✅ Successfully synced product: ${productData.id}`)
-    }
-
-    else if (['subscription.created', 'subscription.active', 'subscription.updated', 'subscription.cancelled', 'subscription.uncanceled', 'subscription.revoked'].includes(eventType)) {
+    } else if (eventType === 'customer.created' || eventType === 'customer.updated') {
+      const customerData = payload.data
+      // The customer's metadata should contain our internal IDs
+      await syncCustomer(customerData, customerData.metadata)
+      console.log(`✅ Successfully synced customer: ${customerData.id}`)
+      
+    } else if (['subscription.created', 'subscription.active', 'subscription.updated', 'subscription.cancelled', 'subscription.uncanceled', 'subscription.revoked'].includes(eventType)) {
       const subData = payload.data
+
+      // Sync the customer record first using the subscription's metadata
+      // This ensures the customer record is up-to-date
+      await syncCustomer(subData.customer, subData.metadata)
+
       const userId = subData.metadata?.user_id
       const organizationId = subData.metadata?.organization_id
 
-      if (!userId && !organizationId) {
+      // The check is now inside syncCustomer, but we repeat it here for the subscription itself.
+      if (!userId || !organizationId) {
         console.error('Webhook Error: user_id and organization_id not found in subscription metadata.', { subscriptionId: subData.id })
         return new Response('OK', { status: 200 })
       }
-
-      // Upsert customer
-      await supabase
-        .from('customers')
-        .upsert({
-          id: userId,
-          polar_customer_id: subData.customer.id,
-        })
 
       // Upsert subscription
       const { error } = await supabase

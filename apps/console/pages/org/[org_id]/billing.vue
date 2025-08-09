@@ -1,5 +1,6 @@
 <template>
   <div>
+    <UAlert v-if="error" color="warning" variant="outline" :title="error.message" class="mb-4" />
     <div v-if="isLoading">Loading billing information...</div>
     <div v-else-if="error">Error: {{ error.message }}</div>
     <div v-else-if="subscription">
@@ -19,15 +20,16 @@
         :plans="plans"
         :selectedPlan="selectedPlan"
         @update:selectedPlan="selectedPlan = $event"
-        @selectPlan="subscribeToPlan"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+const toast = useToast();
 import PricingTable from '~/components/PricingTable.vue';
+import type { Plan } from '~/types';
 const appConfig = useAppConfig();
 const route = useRoute()
 const supabase = useSupabaseClient()
@@ -42,8 +44,14 @@ const orgId = selectedOrganization.value?.id as string;
 const subscription = ref(null)
 const isLoading = ref(false)
 const error = ref<{ message: string } | null>(null);
-const plans = ref(appConfig.plans);
+const plans = ref<Plan[]>(appConfig.plans);
 const selectedPlan = ref(appConfig.plans.find(p => p.productId === undefined)?.id || undefined);
+
+watch(selectedPlan, (newPlanId) => {
+  if (newPlanId) {
+    subscribeToPlan(newPlanId);
+  }
+});
 
 const subscribeToPlan = async (planId: string) => {
   const selected = plans.value.find(p => p.id === planId);
@@ -60,7 +68,7 @@ const subscribeToPlan = async (planId: string) => {
     window.location.href = checkoutUrl;
   } catch (e) {
     console.error('Error creating checkout session:', e);
-    alert('Failed to create checkout session. Please try again.');
+    error.value = { message: 'Failed to create checkout session. Please try again.' };
   }
 };
 
@@ -84,7 +92,7 @@ const fetchSubscription = async () => {
     }
     subscription.value = data
   } catch (e) {
-    error.value = e
+    error.value = { message: (e as Error).message || 'Error fetching subscriptions.' };
   } finally {
     isLoading.value = false
   }
@@ -108,7 +116,7 @@ const manageSubscription = async () => {
 
   } catch (e) {
     console.error('Failed to get subscription management URL:', e)
-    alert('Failed to get subscription management URL. See console for details.')
+    error.value = { message: 'Failed to get subscription management URL. See console for details.' };
   }
 }
 </script>

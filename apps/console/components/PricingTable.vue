@@ -16,9 +16,9 @@
         <UButton
           type="button"
           :variant="selectedPlan === plan.id ? 'solid' : 'outline'"
-          :color="selectedPlan === plan.id ? 'primary' : 'gray'"
+          :color="selectedPlan === plan.id ? 'primary' : 'neutral'"
           :disabled="selectedPlan === plan.id || disableSelection"
-          @click="selectPlan(plan.id)"
+          @click="emit('update:selectedPlan', plan.id)"
           block
         >
           {{ selectedPlan === plan.id ? 'Selected' : 'Select Plan' }}
@@ -29,9 +29,11 @@
 </template>
 
 <script setup lang="ts">
+import type { Plan } from '~/types';
+
 const props = defineProps({
   plans: {
-    type: Array,
+    type: Array as () => Plan[],
     required: true,
   },
   selectedPlan: {
@@ -44,12 +46,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:selectedPlan', 'selectPlan']);
-
-const selectPlan = (planId) => {
-  emit('update:selectedPlan', planId);
-  emit('selectPlan', planId);
-};
+const emit = defineEmits(['update:selectedPlan']);
 </script>
 
 <style scoped>
