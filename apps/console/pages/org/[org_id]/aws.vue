@@ -2,18 +2,37 @@
   <div>
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-xl font-semibold">AWS Accounts</h2>
-      <!-- <UButton @click="addNewAccount">Add New</UButton> -->
 
       <UDropdownMenu :items="addNewItems">
         <UButton
           color="neutral"
           variant="outline"
           size="lg"
-          trailing-icon="i-lucide-chevron-down"
+          :trailing-icon="limitReached ? 'i-lucide-lock' : 'i-lucide-chevron-down'"
           label="Add New"
+          :disabled="limitReached"
         />
       </UDropdownMenu>
     </div>
+
+    <UAlert
+      v-if="limitReached"
+      icon="i-lucide-info"
+      color="info"
+      variant="soft"
+      title="Upgrade to add more AWS Accounts"
+      description="The Free plan is limited to 1 AWS Account. Upgrade your plan to add more."
+      class="mb-4"
+    >
+      <template #right>
+        <UButton
+          label="Upgrade Plan"
+          color="primary"
+          variant="solid"
+          :to="`/org/${orgId}/billing`"
+        />
+      </template>
+    </UAlert>
 
     <div v-if="loading">Loading AWS accounts...</div>
     <div v-else-if="error">Error loading AWS accounts: {{ error.message }}</div>
@@ -34,38 +53,6 @@
     <div v-else>
       <p>No AWS accounts connected yet.</p>
     </div>
-
-    <!-- <UCard class="mt-4">
-      <template #header>
-        <h3>Add AWS account credentials</h3>
-      </template>
-      <UAlert
-        v-if="manualFormError"
-        :title="manualFormError"
-        color="error"
-        variant="outline"
-        icon="i-lucide-alert-triangle"
-        class="mb-4"
-      />
-      <UForm :schema="manualSchema" :state="manualFormState" @submit="submitManualForm" class="space-y-4">
-        <UFormField label="Alias" name="alias">
-          <UInput v-model="manualFormState.alias" />
-        </UFormField>
-        <div class="flex gap-4">
-          <div>
-            <UFormField label="Access Key ID" name="accessKeyId">
-              <UInput v-model="manualFormState.accessKeyId" />
-            </UFormField>
-          </div>
-          <div>
-            <UFormField label="Secret Access Key" name="secretAccessKey">
-              <UInput v-model="manualFormState.secretAccessKey" type="password" />
-            </UFormField>
-          </div>
-        </div>
-        <UButton type="submit" :loading="manualFormLoading">Add Account</UButton>
-      </UForm>
-    </UCard> -->
   </div>
 </template>
 
@@ -73,6 +60,7 @@
 import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
 import { useClipboard } from '@vueuse/core'
 import { ProviderCreateStackModal, ProviderCreateCredentialsModal } from '#components'
+import { computed } from 'vue';
 
 definePageMeta({
   layout: 'org'
@@ -89,6 +77,9 @@ const providers = ref([])
 const loading = ref(false)
 const error = ref<{ message: string } | null>(null);
 const orgId = selectedOrganization.value?.id as string;
+
+const isPaidPlan = computed(() => selectedOrganization.value?.status === 'active');
+const limitReached = computed(() => !isPaidPlan.value && providers.value.length >= 1);
 
 const UBadge = resolveComponent('UBadge')
 const providerCreateStackModal = overlay.create(ProviderCreateStackModal);

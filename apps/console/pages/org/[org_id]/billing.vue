@@ -1,4 +1,3 @@
-
 <template>
   <div>
     <UAlert v-if="error" color="warning" variant="outline" :title="error.message" class="mb-4" />
@@ -70,10 +69,7 @@ const error = ref<{ message: string } | null>(null);
 const selectedPlan = ref<string | undefined>(undefined);
 const isPageLoading = computed(() => isLoading.value || plansLoading.value);
 const isCreatingCheckout = ref(false);
-
 const paidPlans = computed<Plan[]>(() => plans.value.filter(p => p.id !== 'free'));
-
-
 
 const subscribeToPlan = async () => {
   if (!selectedPlan.value) {
@@ -133,13 +129,6 @@ onMounted(async () => {
 
 const manageSubscription = async () => {
   try {
-    // const response = await fetch(`/api/portal?organization_id=${orgId}`)
-    // const data = await response.json()
-    // if (response.ok) {
-    //   window.location.href = data.url
-    // } else {
-    //   throw new Error(data.message || 'Failed to get portal URL')
-    // }
     const { url } = await $client.organizations.createPortalSession.mutate({ organizationId: orgId })
     window.location.href = url
 

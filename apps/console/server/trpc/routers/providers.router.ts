@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { publicProcedure, router } from '../init';
+import { publicProcedure, protectedProcedure, router } from '../init';
 import { TRPCError } from '@trpc/server';
 import { db } from '~/server/db/db';
 import { providers } from '~/server/db/schema';
@@ -8,7 +8,7 @@ import * as ProviderLibrary from '~/server/lib/provider.library';
 import { PlatformLibrary } from '~/server/lib/platform.library';
 
 export const providersRouter = router({
-  addManualProvider: publicProcedure
+  addManualProvider: protectedProcedure
     .input(
       z.object({
         organizationId: z.string(),
@@ -99,7 +99,7 @@ export const providersRouter = router({
       }
     }),
     
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(
       z.object({
         providerId: z.string(),

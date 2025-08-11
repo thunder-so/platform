@@ -1,12 +1,12 @@
 import { z } from 'zod';
-import { publicProcedure, router } from '../init';
+import { publicProcedure, protectedProcedure, router } from '../init';
 import { db } from '~/server/db/db';
 import { environmentVariables } from '~/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { cuid2 } from 'drizzle-cuid2/postgres';
 
 export const environmentsRouter = router({
-  upsertEnvironmentVariable: publicProcedure
+  upsertEnvironmentVariable: protectedProcedure
     .input(z.object({
       id: z.string().optional(), // Optional for new variables
       environment_id: z.string(),
@@ -34,7 +34,7 @@ export const environmentsRouter = router({
       return { success: true };
     }),
 
-  deleteEnvironmentVariable: publicProcedure
+  deleteEnvironmentVariable: protectedProcedure
     .input(z.object({
       id: z.string(),
     }))

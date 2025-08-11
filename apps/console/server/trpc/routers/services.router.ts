@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { publicProcedure, router } from '../init';
+import { publicProcedure, protectedProcedure, router } from '../init';
 import { db } from '~/server/db/db';
 import { services } from '~/server/db/schema';
 import { eq } from 'drizzle-orm';
@@ -35,7 +35,7 @@ function deepMerge(target: any, source: any): any {
 }
 
 export const servicesRouter = router({
-  updateServiceProps: publicProcedure
+  updateServiceProps: protectedProcedure
     .input(z.object({
       serviceId: z.string(),
       app_props: appPropsSchema.optional(),
