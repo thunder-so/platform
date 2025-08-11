@@ -481,6 +481,18 @@ export type NewSubscription = typeof subscriptions.$inferInsert;
 export type Customer = typeof customers.$inferSelect;
 export type NewCustomer = typeof customers.$inferInsert;
 
+// Organization Memberships Schema
+export interface Membership {
+  id: Organization['id'];
+  name: Organization['name'];
+  pending: boolean;
+  subscriptions?: Array<{
+    id: Subscription['id'];
+    status: Subscription['status'];
+    products?: Product;
+  }>;
+}
+
 // Application Schema Interfaces
 export interface AppProps {
   rootDir: string;

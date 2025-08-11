@@ -1,18 +1,6 @@
-import type { Organization, Subscription, Product } from '~/server/db/schema';
+import type { Membership } from '~/server/db/schema';
 import { usePlans } from '~/composables/usePlans';
 import { computed } from 'vue';
-
-export interface Membership {
-  id: Organization['id'];
-  name: Organization['name'];
-  pending: boolean;
-  subscriptions?: Array<{
-    id: Subscription['id'];
-    status: Subscription['status'];
-    products?: Product;
-    [key: string]: any;
-  }>;
-}
 
 export const useMemberships = () => {
   const user = useSupabaseUser()
@@ -33,7 +21,9 @@ export const useMemberships = () => {
         .from('memberships')
         .select(`id, pending,
           organizations:organization_id (id, name,
-            subscriptions(*, products(*))
+            subscriptions(id, status, 
+              products(id, active, name, description, metadata)
+            )
           )
         `)
         .is('organizations.deleted_at', null)
@@ -43,26 +33,39 @@ export const useMemberships = () => {
 
       if (error) throw error
 
-      const flattened: Membership[] = data?.flatMap(membership => 
-        membership.organizations.subscriptions && membership.organizations.subscriptions.length > 0
-          ? [{
-              id: membership.organizations.id,
-              name: membership.organizations.name,
-              pending: membership.pending,
-              subscriptions: membership.organizations.subscriptions.map(sub => ({
-                ...sub,
-                products: sub.products
-              }))
-            }]
-          : [{
-              id: membership.organizations.id,
-              name: membership.organizations.name,
-              pending: membership.pending,
-              subscriptions: []
-            }]
-      ) || []
+      const flattened: Membership[] = (data as any[])?.map((membership: any) => {
+        const org = membership.organizations;
+        let subs: any[] = [];
+        if (org.subscriptions && org.subscriptions.length > 0) {
+          subs = org.subscriptions.map((sub: any) => {
+            return {
+              id: sub.id,
+              status: sub.status,
+              products: sub.products ? {
+                id: sub.products.id,
+                name: sub.products.name,
+                description: sub.products.description ?? null,
+                metadata: sub.products.metadata,
+                prices: Array.isArray(sub.products.prices) ? sub.products.prices.map((price: any) => ({
+                  id: price.id,
+                  type: price.type,
+                  price_amount: price.price_amount,
+                  price_currency: price.price_currency,
+                  recurring_interval: price.recurring_interval
+                })) : []
+              } : undefined
+            };
+          });
+        }
+        return {
+          id: org.id,
+          name: org.name,
+          pending: membership.pending,
+          subscriptions: subs
+        };
+      }) || [];
 
-      memberships.value = flattened
+      memberships.value = flattened;
     } catch (e) {
       console.error('error loading memberships')
     } finally {
