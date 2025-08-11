@@ -1,53 +1,54 @@
 <template>
   <div>
-    <div class="container mx-auto p-4">
-      <h1 class="text-2xl font-bold mb-4">Profile Page</h1>
-
+    <UCard>
+      <template #header>
+        <h3>Profile Settings</h3>
+      </template>
       <div v-if="user">
-        <p class="mb-2">Current Display Name: <span class="font-semibold">{{ displayName }}</span></p>
-
-        <UForm :schema="schema" :state="state" @submit="updateProfile" class="space-y-4 max-w-sm">
-          <UFormField label="New Display Name" name="newDisplayName">
+        <UForm :schema="schema" :state="state" @submit.prevent="updateProfile" class="space-y-4 max-w-sm">
+          <UFormField label="Display Name" name="newDisplayName">
             <UInput v-model="state.newDisplayName" placeholder="Enter new display name" />
           </UFormField>
-
-          <UButton type="submit" :loading="loading">
-            Update Profile
-          </UButton>
-
-          <p v-if="successMessage" class="text-green-500 text-xs italic mt-2">{{ successMessage }}</p>
-          <p v-if="errorMessage" class="text-red-500 text-xs italic mt-2">{{ errorMessage }}</p>
         </UForm>
+        <UAlert v-if="errorMessage" color="error" variant="soft" class="mt-4" :title="errorMessage" />
       </div>
-      <div v-else>
-        <p>Please log in to view your profile.</p>
-      </div>
+      <template #footer>
+        <UButton 
+          type="submit" 
+          @click="updateProfile" 
+          :loading="loading" 
+          :disabled="loading || !isFormValid || !hasChanges">
+          Update
+        </UButton>
+      </template>
+    </UCard>
 
-      <div class="mt-8">
-        <div class="flex justify-between items-center">
-          <h2 class="text-xl font-bold mb-4">Github accounts</h2>
-          <UButton
-            icon="i-lucide-plus" 
-            :to="`https://github.com/apps/${githubApp}/installations/new?redirect_uri=${base}/profile`"
-            target="_blank"
-          >
-            Import repositories
-          </UButton>
-        </div>
-        <UTable :columns="columns" :data="installations">
-          <template #action-cell="{ row }">
-            <UDropdownMenu :items="getDropdownActions(row.original)">
-              <UButton
-                icon="i-lucide-ellipsis-vertical"
-                color="neutral"
-                variant="ghost"
-                aria-label="Actions"
-              />
-            </UDropdownMenu>
-          </template>
-        </UTable>
+    <UCard class="mt-8">
+      <template #header>
+        <h3>Github accounts</h3>
+      </template>
+      <div class="flex justify-between items-center mb-4">
+        <UButton
+          icon="i-lucide-plus" 
+          :to="`https://github.com/apps/${githubApp}/installations/new?redirect_uri=${base}/profile`"
+          target="_blank"
+        >
+          Import repositories
+        </UButton>
       </div>
-    </div>
+      <UTable :columns="columns" :data="installations">
+        <template #action-cell="{ row }">
+          <UDropdownMenu :items="getDropdownActions(row.original)">
+            <UButton
+              icon="i-lucide-ellipsis-vertical"
+              color="neutral"
+              variant="ghost"
+              aria-label="Actions"
+            />
+          </UDropdownMenu>
+        </template>
+      </UTable>
+    </UCard>
   </div>
 </template>
 
@@ -55,15 +56,14 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import { z } from 'zod'
 import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
-import type { FormSubmitEvent } from '#ui/types'
 
 const user = useSupabaseUser()
 const supabase = useSupabaseClient()
 
 const loading = ref(false)
-const successMessage = ref('')
 const errorMessage = ref('')
 const installations = ref<any[]>([])
+const toast = useToast()
 
 definePageMeta({
   layout: 'org',
@@ -76,9 +76,13 @@ const base = useRequestURL().origin
 
 
 const displayName = computed(() => user.value?.user_metadata?.full_name || 'N/A')
+const isFormValid = computed(() => state.newDisplayName && state.newDisplayName.length >= 3)
+const hasChanges = computed(() => state.newDisplayName !== displayName.value)
 
 const schema = z.object({
-  newDisplayName: z.string().min(3, 'Must be at least 3 characters'),
+  newDisplayName: z.string()
+    .min(3, 'Must be at least 3 characters')
+    .regex(/^[a-zA-Z0-9 ]+$/, 'Only letters, numbers, and spaces are allowed'),
 })
 
 type Schema = z.output<typeof schema>
@@ -154,25 +158,24 @@ onMounted(async () => {
   }
 })
 
-const updateProfile = async (event: FormSubmitEvent<Schema>) => {
-  loading.value = true
-  successMessage.value = ''
-  errorMessage.value = ''
 
+async function updateProfile() {
+  if (!isFormValid.value || !hasChanges.value) return;
+  loading.value = true;
+  errorMessage.value = '';
   try {
     const { error } = await supabase.auth.updateUser({
-      data: { full_name: event.data.newDisplayName },
-    })
-
-    if (error) {
-      throw error
-    }
-
-    successMessage.value = 'Profile updated successfully!'
+      data: { full_name: state.newDisplayName },
+    });
+    if (error) throw error;
+    toast.add({
+      title: 'Profile updated successfully!',
+      color: 'success',
+    });
   } catch (error: any) {
-    errorMessage.value = error.message || 'An unknown error occurred.'
+    errorMessage.value = error.message || 'An unknown error occurred.';
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 </script>

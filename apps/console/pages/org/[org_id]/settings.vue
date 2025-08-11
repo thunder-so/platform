@@ -5,8 +5,8 @@
         <h3>Workspace Settings</h3>
       </template>
       <UForm :schema="schema" :state="state" @submit.prevent="updateOrganization" class="space-y-4 max-w-sm">
-        <UFormField label="Display Name" name="displayName">
-          <UInput v-model="state.displayName" />
+        <UFormField label="Display Name" name="newDisplayName">
+          <UInput v-model="state.newDisplayName" />
         </UFormField>
       </UForm>
 
@@ -71,10 +71,9 @@ definePageMeta({
 });
 
 const supabase = useSupabaseClient();
-
+const toast = useToast();
 const loading = ref(false);
 const error = ref<{ message: string } | null>(null);
-const success = ref(false);
 const hasApplications = ref(false);
 const confirmDelete = ref(false);
 const deleting = ref(false);
@@ -85,11 +84,11 @@ const hasActiveSubscription = computed(() => {
   return currentOrgMembership?.status === "active";
 });
 const isFormValid = computed(() => {
-  return state.displayName && state.displayName.length >= 3;
+  return state.newDisplayName && state.newDisplayName.length >= 3;
 });
 
 const hasChanges = computed(() => {
-  return state.displayName !== selectedOrganization.value?.name;
+  return state.newDisplayName !== selectedOrganization.value?.name;
 });
 
 const orgId = selectedOrganization.value?.id as string;
@@ -108,11 +107,13 @@ async function deleteOrganizationModal() {
 }
 
 const schema = z.object({
-  displayName: z.string().min(3, 'Must be at least 3 characters'),
-});
+  newDisplayName: z.string()
+    .min(3, 'Must be at least 3 characters')
+    .regex(/^[a-zA-Z0-9 ]+$/, 'Only letters, numbers, and spaces are allowed'),
+})
 
 const state = reactive({
-  displayName: selectedOrganization.value?.name,
+  newDisplayName: selectedOrganization.value?.name,
 });
 
 onMounted(async () => {
@@ -151,12 +152,11 @@ const deleteOrganization = async () => {
 
 const updateOrganization = async () => {
   loading.value = true;
-  success.value = false;
   error.value = null;
   try {
     const { data, error: updateError } = await supabase
       .from('organizations')
-      .update({ name: state.displayName })
+      .update({ name: state.newDisplayName })
       .eq('id', orgId)
       .select('id, name')
       .single();
@@ -169,7 +169,10 @@ const updateOrganization = async () => {
     }
 
     if (updateError) throw updateError;
-    success.value = true;
+    toast.add({
+      title: 'Organization updated successfully.',
+      color: 'success',
+    });
     setTimeout(() => success.value = false, 3000);
   } catch (e: any) {
     error.value = e;
