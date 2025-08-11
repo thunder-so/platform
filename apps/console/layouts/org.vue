@@ -65,20 +65,3 @@ watch(() => route.params.org_id, (newOrgId) => {
   }
 }, { immediate: true });
 </script>
-
-<style scoped>
-.app-container {
-  display: flex;
-  height: 100vh;
-  color: #fff;
-}
-
-.sidebar {
-  width: 303px;
-  padding: 20px;
-}
-.main-content {
-  flex-grow: 1;
-  padding: 30px 0;
-}
-</style>

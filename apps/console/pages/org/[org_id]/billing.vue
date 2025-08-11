@@ -14,27 +14,46 @@
       </div>
     </div>
     <div v-else>
-      <h2>You are on the free tier.</h2>
-      <p>Upgrade to a Pro plan to unlock more features</p>
-      <PricingTable
-        :plans="plans"
-        :selectedPlan="selectedPlan"
-        @update:selectedPlan="selectedPlan = $event"
-      />
+      <UCard>
+        <h2>You are on the free tier.</h2>
+      </UCard>
+      <UCard class="mt-4">
+        <template #header>
+          <p>Upgrade to a Pro plan</p>
+        </template>
+
+        <div v-if="plansLoading">Loading plans...</div>
+        <PricingTable v-else-if="paidPlans.length > 0"
+          :plans="paidPlans"
+          :selectedPlan="selectedPlan"
+          @update:selectedPlan="selectedPlan = $event"
+        />
+
+        <template #footer>
+          <UButton 
+            @click="subscribeToPlan" 
+            :disabled="!selectedPlan" 
+            size="lg"
+          >
+            Upgrade to Pro
+          </UButton>
+        </template>
+      </UCard>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-const toast = useToast();
+import { ref, onMounted, watch, computed } from 'vue'
 import PricingTable from '~/components/PricingTable.vue';
-import type { Plan } from '~/types';
-const appConfig = useAppConfig();
+import { usePlans, type Plan } from '~/composables/usePlans';
+
 const route = useRoute()
 const supabase = useSupabaseClient()
 const { selectedOrganization } = useMemberships()
 const { $client } = useNuxtApp()
+const { plans, isLoading: plansLoading, fetchPlans } = usePlans();
+const toast = useToast();
 
 definePageMeta({
   layout: 'org',
@@ -44,26 +63,27 @@ const orgId = selectedOrganization.value?.id as string;
 const subscription = ref(null)
 const isLoading = ref(false)
 const error = ref<{ message: string } | null>(null);
-const plans = ref<Plan[]>(appConfig.plans);
-const selectedPlan = ref(appConfig.plans.find(p => p.productId === undefined)?.id || undefined);
+const selectedPlan = ref<string | undefined>(undefined);
 
-watch(selectedPlan, (newPlanId) => {
-  if (newPlanId) {
-    subscribeToPlan(newPlanId);
+const paidPlans = computed<Plan[]>(() => plans.value.filter(p => p.id !== 'free'));
+
+
+
+const subscribeToPlan = async () => {
+  if (!selectedPlan.value) {
+    console.error('No plan selected.');
+    return;
   }
-});
-
-const subscribeToPlan = async (planId: string) => {
-  const selected = plans.value.find(p => p.id === planId);
-  if (!selected || !selected.productId) {
-    console.error('Invalid plan selected or no product ID for the selected plan.');
+  const selected = plans.value.find(p => p.id === selectedPlan.value);
+  if (!selected) {
+    console.error('Invalid plan selected.');
     return;
   }
 
   try {
     const { checkoutUrl } = await $client.organizations.createCheckoutSession.mutate({
       organizationId: orgId as string,
-      productId: selected.productId,
+      productId: selected.id,
     });
     window.location.href = checkoutUrl;
   } catch (e) {
@@ -83,12 +103,10 @@ const fetchSubscription = async () => {
         products (*)
       `)
       .eq('organization_id', orgId)
-      .single()
+      .maybeSingle()
 
-    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is 'JSON object requested, multiple (or no) rows returned'
+    if (fetchError) {
       throw fetchError
-    } else if (fetchError && fetchError.code === 'PGRST116') {
-      subscription.value = null; // No subscription found
     }
     subscription.value = data
   } catch (e) {
@@ -98,8 +116,10 @@ const fetchSubscription = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await fetchPlans()
   fetchSubscription()
+  selectedPlan.value = paidPlans.value[0]?.id
 })
 
 const manageSubscription = async () => {

@@ -2,42 +2,54 @@
   <div>
     <Header />
 
-    <UContainer>
-      <h1>Create New Organization</h1>
-      <ClientOnly>
+    <UContainer class="mt-12">
+      <UCard>
+        <template #header>
+          <h1>Create New Organization</h1>
+        </template>
+        
         <UForm :state="{ orgName, selectedPlan }" @submit.prevent="createOrganization" class="space-y-4">
-          <UInput id="org-name" v-model="orgName" type="text" required />
+          <UFormField label="Organization Name" name="orgName" required>
+            <UInput id="org-name" v-model="orgName" type="text" size="xl" required />
+          </UFormField>
 
-          <PricingTable :plans="plans" :selectedPlan="selectedPlan" @update:selectedPlan="selectedPlan = $event" />
+          <div v-if="plansLoading">Loading plans...</div>
+          <PricingTable v-else :plans="plans" :selectedPlan="selectedPlan" @update:selectedPlan="selectedPlan = $event" />
 
-          <UButton type="submit" :loading="loading" :disabled="!orgName.trim()" block size="lg">
-            {{ loading ? 'Creating...' : 'Continue' }}
-          </UButton>
-          <UAlert v-if="error" variant="solid" :title="error.message" />
+          <UAlert v-if="error" color="error" variant="soft" :title="error.message" />
         </UForm>
-      </ClientOnly>
+
+        <template #footer>
+          <UButton @click="createOrganization" :loading="loading" :disabled="!orgName.trim()" size="lg">
+            {{ selectedPlan === 'free' ? 'Create organization' : 'Continue to payment' }}
+          </UButton>
+        </template>
+      </UCard>
     </UContainer>
   </div>
 </template>
 
 <script setup lang="ts">
-const { $client } = useNuxtApp();
-const router = useRouter();
-const toast = useToast();
 import PricingTable from '~/components/PricingTable.vue';
-import type { Plan } from '~/types';
-const appConfig = useAppConfig();
+import { usePlans, type Plan } from '~/composables/usePlans';
 
 definePageMeta({
   // layout: '',
 });
 
-const orgName = ref('');
-// Assuming plans in app.config.ts have name, id, description, and price
-const plans = ref<Plan[]>(appConfig.plans);
-const selectedPlan = ref(plans.value.find(p => p.productId === null)?.id || plans.value[0]?.id);
+const { $client } = useNuxtApp();
+const router = useRouter();
+const toast = useToast();
+
+const orgName = ref<string>('');
+const { plans, isLoading: plansLoading, fetchPlans } = usePlans();
+const selectedPlan = ref<string | undefined>(undefined);
 const loading = ref(false);
 const error = ref<{ message: string } | null>(null);
+
+fetchPlans().then(() => {
+  selectedPlan.value = 'free';
+});
 
 const createOrganization = async () => {
   if (!selectedPlan.value) {
