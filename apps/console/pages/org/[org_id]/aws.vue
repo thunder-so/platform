@@ -21,7 +21,7 @@
       color="info"
       variant="soft"
       title="Upgrade to add more AWS Accounts"
-      description="The Free plan is limited to 1 AWS Account. Upgrade your plan to add more."
+      description="The Hobby plan is limited to 1 AWS Account. Upgrade your plan to add more."
       class="mb-4"
     />
 

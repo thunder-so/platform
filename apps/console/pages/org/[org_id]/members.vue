@@ -2,8 +2,26 @@
   <div>
     <div class="flex justify-between items-center mb-4">
       <h3 class="text-lg font-medium">Members</h3>
-      <UButton color="neutral" variant="outline" size="lg" label="Invite Member" @click="openInviteModal" />
+      <UButton 
+        color="neutral" 
+        variant="outline" 
+        size="lg" 
+        :trailing-icon="limitReached ? 'i-lucide-lock' : 'i-lucide-user-plus'"
+        label="Invite Member" 
+        @click="openInviteModal" 
+        :disabled="limitReached"
+      />
     </div>
+
+    <UAlert
+      v-if="limitReached"
+      icon="i-lucide-info"
+      color="info"
+      variant="soft"
+      title="Upgrade to add more team members"
+      description="The Hobby plan is limited to 1 member. Upgrade your plan to add more."
+      class="mb-4"
+    />
     <div v-if="isLoading">Loading members...</div>
     <div v-else-if="error">
       <UAlert color="warning" variant="outline" :title="error.message" class="mb-4" />
@@ -34,6 +52,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, h } from 'vue';
+import { useMemberships } from '~/composables/useMemberships';
 import { TRPCClientError } from '@trpc/client';
 
 definePageMeta({
@@ -41,7 +60,7 @@ definePageMeta({
 });
 
 const supabase = useSupabaseClient();
-const { selectedOrganization } = useMemberships();
+const { selectedOrganization, currentPlan } = useMemberships();
 const { $client } = useNuxtApp();
 const overlay = useOverlay();
 const toast = useToast()
@@ -49,6 +68,11 @@ const MemberInviteModal = resolveComponent('MemberInviteModal');
 const UAvatar = resolveComponent('UAvatar');
 const UBadge = resolveComponent('UBadge');
 const orgId = selectedOrganization?.value?.id as string;
+const maxMembers = computed(() => {
+  return currentPlan.value?.metadata?.metadata?.max_members ?? 1;
+});
+const limitReached = computed(() => members.value.length >= maxMembers.value);
+
 const removingMemberId = ref<number | null>(null);
 const members = ref<any[]>([]);
 const isLoading = ref(false);
