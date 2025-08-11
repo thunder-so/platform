@@ -49,6 +49,7 @@
 
 <script setup lang="ts">
 import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
+import type { Provider } from '~/server/db/schema'
 import { useClipboard } from '@vueuse/core'
 import { ProviderCreateStackModal, ProviderCreateCredentialsModal } from '#components'
 import { computed } from 'vue';
@@ -100,19 +101,6 @@ const addNewItems: DropdownMenuItem[] = [
     onSelect: addNewAccountStack
   }
 ]
-
-export type Provider = {
-  id: string,
-  alias: string,
-  account_id: string,
-  region: string,
-  role_arn: string,
-  stack_id: string,
-  stack_name: string,
-  access_key_id: string,
-  updated_at: string,
-  created_at: string,
-}
 
 function getDropdownActions(provider: Provider): DropdownMenuItem[][] {
   const linkToStack = []
