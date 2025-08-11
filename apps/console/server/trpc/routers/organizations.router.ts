@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { nullable, z } from 'zod'
 import { protectedProcedure, router } from '~/server/trpc/init'
 import { db } from '~/server/db/db'
 import { organizations, memberships, subscriptions, customers, applications } from '~/server/db/schema'
@@ -23,14 +23,14 @@ export const organizationsRouter = router({
       } = useRuntimeConfig()
 
       // 1. Find the selected plan from app.config
-      const plans = useAppConfig().plans
-      const selectedPlan = plans.find((p: any) => p.id === planId)
-      if (!selectedPlan) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Invalid plan selected.',
-        })
-      }
+      // const plans = useAppConfig().plans
+      // const selectedPlan = plans.find((p: any) => p.id === planId)
+      // if (!selectedPlan) {
+      //   throw new TRPCError({
+      //     code: 'BAD_REQUEST',
+      //     message: 'Invalid plan selected.',
+      //   })
+      // }
 
       // 2. Create the organization in the database
       const [newOrg] = await db
@@ -50,13 +50,13 @@ export const organizationsRouter = router({
       // 3. Create the membership for the user
       await db.insert(memberships).values({
         organization_id: newOrg.id,
-        userId: user.id,
+        user_id: user.id,
         access: 'ADMIN',
       })
 
       // 4. Handle payment flow for paid plans
       let checkoutUrl: string | null = null
-      if (selectedPlan.productId) {
+      if (planId !== 'free') {
         const polar = new Polar({
           accessToken: polarAccessToken,
           server: polarServer as 'sandbox' | 'production',
@@ -64,7 +64,7 @@ export const organizationsRouter = router({
 
         try {
           const checkout = await polar.checkouts.create({
-            products: [selectedPlan.productId],
+            products: [planId],
             successUrl: `${siteUrl}${polarCheckoutSuccessUrl}`,
             customerEmail: user.email,
             metadata: {

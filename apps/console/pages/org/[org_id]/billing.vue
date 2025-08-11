@@ -1,7 +1,8 @@
+
 <template>
   <div>
     <UAlert v-if="error" color="warning" variant="outline" :title="error.message" class="mb-4" />
-    <div v-if="isLoading">Loading billing information...</div>
+    <div v-if="isPageLoading">Loading billing information...</div>
     <div v-else-if="error">Error: {{ error.message }}</div>
     <div v-else-if="subscription">
       <h3 class="text-lg font-medium mb-2">Current Subscription</h3>
@@ -14,6 +15,7 @@
       </div>
     </div>
     <div v-else>
+      <ClientOnly>
       <UCard>
         <h2>You are on the free tier.</h2>
       </UCard>
@@ -21,9 +23,8 @@
         <template #header>
           <p>Upgrade to a Pro plan</p>
         </template>
-
-        <div v-if="plansLoading">Loading plans...</div>
-        <PricingTable v-else-if="paidPlans.length > 0"
+      
+        <PricingTable v-if="paidPlans.length > 0"
           :plans="paidPlans"
           :selectedPlan="selectedPlan"
           @update:selectedPlan="selectedPlan = $event"
@@ -31,17 +32,20 @@
 
         <template #footer>
           <UButton 
-            @click="subscribeToPlan" 
-            :disabled="!selectedPlan" 
-            size="lg"
-          >
+          @click="subscribeToPlan" 
+          :disabled="!selectedPlan" 
+          :loading="isCreatingCheckout"
+          size="lg"
+        >
             Upgrade to Pro
           </UButton>
         </template>
       </UCard>
+      </ClientOnly>
     </div>
   </div>
 </template>
+
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
@@ -64,6 +68,8 @@ const subscription = ref(null)
 const isLoading = ref(false)
 const error = ref<{ message: string } | null>(null);
 const selectedPlan = ref<string | undefined>(undefined);
+const isPageLoading = computed(() => isLoading.value || plansLoading.value);
+const isCreatingCheckout = ref(false);
 
 const paidPlans = computed<Plan[]>(() => plans.value.filter(p => p.id !== 'free'));
 
@@ -80,6 +86,7 @@ const subscribeToPlan = async () => {
     return;
   }
 
+  isCreatingCheckout.value = true;
   try {
     const { checkoutUrl } = await $client.organizations.createCheckoutSession.mutate({
       organizationId: orgId as string,
@@ -89,6 +96,8 @@ const subscribeToPlan = async () => {
   } catch (e) {
     console.error('Error creating checkout session:', e);
     error.value = { message: 'Failed to create checkout session. Please try again.' };
+  } finally {
+    isCreatingCheckout.value = false;
   }
 };
 

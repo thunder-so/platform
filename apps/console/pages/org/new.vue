@@ -33,6 +33,8 @@
 import PricingTable from '~/components/PricingTable.vue';
 import { usePlans, type Plan } from '~/composables/usePlans';
 
+import { useMemberships } from '~/composables/useMemberships';
+
 definePageMeta({
   // layout: '',
 });
@@ -40,6 +42,7 @@ definePageMeta({
 const { $client } = useNuxtApp();
 const router = useRouter();
 const toast = useToast();
+const { refreshMemberships } = useMemberships();
 
 const orgName = ref<string>('');
 const { plans, isLoading: plansLoading, fetchPlans } = usePlans();
@@ -70,8 +73,8 @@ const createOrganization = async () => {
       // For paid plans, redirect to the Polar checkout page
       window.location.href = newOrg.checkoutUrl;
     } else {
-      // For free plans, redirect to the new organization's dashboard
-      // Await is important here for navigation to complete before potential cleanup.
+      // For free plans, refresh state and redirect to the new organization's dashboard
+      await refreshMemberships();
       toast.add({ title: 'Organization created successfully', color: 'success' });
       await router.push(`/org/${newOrg.id}`);
     }
