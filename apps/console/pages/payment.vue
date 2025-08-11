@@ -1,21 +1,26 @@
 <template>
   <div>
-    <Header />
-    <div class="container">
-      <div v-if="loading">Loading...</div>
-      <div v-else-if="error">
-        <h1>Payment Processing Error</h1>
-        <p>{{ error.message }}</p>
-        <p>Please contact support.</p>
-      </div>
-      <div v-else>
-        <h1>Payment Successful!</h1>
-        <p>Thank you for your payment. Your plan has been activated.</p>
-        <p>You can now proceed to your organization's dashboard.</p>
-        <NuxtLink :to="`/org/${organizationId}`" class="button">
-          Go to Dashboard
-        </NuxtLink>
-      </div>
+    <div v-if="loading">Loading...</div>
+    
+    <div v-else-if="error">
+      <UAlert color="error" variant="soft" title="Payment Processing Error" :description="error.message" />
+      <p class="mt-4 mb-4">Please contact support.</p>
+      <UButton to="/">Go to Dashboard</UButton>
+    </div>
+    
+    <div v-else>
+      <UCard>
+        <template #header>
+          <div class="flex items-center gap-4">
+            <UIcon name="lucide:circle-check" class="w-6 h-6 text-green-500" />
+            <h1>Payment Successful</h1>
+          </div>
+        </template>
+        
+        <p class="mb-4">Thank you for your payment. Your plan has been activated.</p>
+        <p class="mb-4">You can now proceed to your organization's dashboard.</p>
+        <UButton :to="`/org/${organizationId}`">Go to Dashboard</UButton>
+      </UCard>
     </div>
   </div>
 </template>
@@ -23,6 +28,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+
+definePageMeta({
+  layout: 'blank',
+});
 
 const { $client } = useNuxtApp()
 const route = useRoute()
@@ -51,25 +60,3 @@ onMounted(async () => {
   }
 })
 </script>
-
-<style scoped>
-.container {
-  text-align: center;
-  padding: 2rem;
-}
-
-.button {
-  display: inline-block;
-  padding: 0.75rem 1.5rem;
-  margin-top: 1.5rem;
-  background-color: #007bff;
-  color: white;
-  text-decoration: none;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-
-.button:hover {
-  background-color: #0056b3;
-}
-</style>

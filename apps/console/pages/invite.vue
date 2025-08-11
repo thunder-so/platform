@@ -1,29 +1,30 @@
 <template>
-  <div class="min-h-screen flex flex-col items-center justify-center">
+  <div>
     <div v-if="pending">Loading invitation...</div>
 
     <div v-else-if="pendingInvite">
-      <div class="bg-gray-100 p-6 rounded-lg shadow-md mb-4">
-        <h1 class="text-2xl font-bold mb-2">You've been invited to join {{ pendingInvite?.organization?.name }}</h1>
+      <UCard>
+        <template #header>
+          <h1 class="text-2xl font-bold">You've been invited to join {{ pendingInvite?.organization?.name }}</h1>
+        </template>
+        
         <p class="mb-4">Accept the invitation to join the organization.</p>
         <UButton @click="accept(pendingInvite?.organization?.id)" :loading="loading">Accept Invitation</UButton>
-      </div>
+      </UCard>
     </div>
-    <div v-else-if="inviteError">
-      <h1 class="text-2xl font-bold">Error processing invitation</h1>
-      <p>There appears to be a glitch.</p>
-      <NuxtLink to="/">Go back to dashboard</NuxtLink>
-    </div>
-    <div v-else>
-      <h1 class="text-2xl font-bold">No invitation found</h1>
-      <p>There appears to be a glitch.</p>
-      <NuxtLink to="/">Go back to dashboard</NuxtLink>
+    <div v-else="inviteError">
+      <UAlert color="error" variant="soft" title="Error processing invitation" description="Your invitation has either expired or has been revoked. Please contact the product owner." />
+      <p>
+        <UButton to="/login" class="mt-4">Go to Login</UButton>
+      </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-// import type { memberships, organizations } from '~/server/db/schema'
+definePageMeta({
+  layout: 'blank',
+});
 
 const { $client } = useNuxtApp()
 const route = useRoute()

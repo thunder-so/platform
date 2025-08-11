@@ -1,17 +1,19 @@
 <template>
   <div>
     <div v-if="error" class="text-center p-4">
-      <p class="text-red-500 text-lg">{{ error.message }}</p>
-      <UButton to="/login" class="mt-4">Go to Login</UButton>
+      <UAlert color="error" variant="soft" :title="error.message" />
+      <p>
+        <UButton to="/login" class="mt-4">Go to Login</UButton>
+      </p>
     </div>
     <div v-else class="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
-      <Card>
+      <UCard>
         <div class="p-6 space-y-4 md:space-y-6 sm:p-8">
           <ClientOnly>
             <div class="text-center">Logging you in...</div>
           </ClientOnly>
         </div>
-      </Card>
+      </UCard>
     </div>
   </div>
 </template>

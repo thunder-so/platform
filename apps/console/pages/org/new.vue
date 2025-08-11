@@ -1,43 +1,35 @@
 <template>
-  <div>
-    <Header />
+  <UCard>
+    <template #header>
+      <h1>Create New Organization</h1>
+    </template>
+    
+    <UForm :state="{ orgName, selectedPlan }" @submit.prevent="createOrganization" class="space-y-4">
+      <UFormField label="Organization Name" name="orgName" required>
+        <UInput id="org-name" v-model="orgName" type="text" size="xl" required />
+      </UFormField>
 
-    <UContainer class="mt-12">
-      <UCard>
-        <template #header>
-          <h1>Create New Organization</h1>
-        </template>
-        
-        <UForm :state="{ orgName, selectedPlan }" @submit.prevent="createOrganization" class="space-y-4">
-          <UFormField label="Organization Name" name="orgName" required>
-            <UInput id="org-name" v-model="orgName" type="text" size="xl" required />
-          </UFormField>
+      <div v-if="plansLoading">Loading plans...</div>
+      <PricingTable v-else :plans="plans" :selectedPlan="selectedPlan" @update:selectedPlan="selectedPlan = $event" />
 
-          <div v-if="plansLoading">Loading plans...</div>
-          <PricingTable v-else :plans="plans" :selectedPlan="selectedPlan" @update:selectedPlan="selectedPlan = $event" />
+      <UAlert v-if="error" color="error" variant="soft" :title="error.message" />
+    </UForm>
 
-          <UAlert v-if="error" color="error" variant="soft" :title="error.message" />
-        </UForm>
-
-        <template #footer>
-          <UButton @click="createOrganization" :loading="loading" :disabled="!orgName.trim()" size="lg">
-            {{ selectedPlan === 'free' ? 'Create organization' : 'Continue to payment' }}
-          </UButton>
-        </template>
-      </UCard>
-    </UContainer>
-  </div>
+    <template #footer>
+      <UButton @click="createOrganization" :loading="loading" :disabled="!orgName.trim()" size="lg">
+        {{ selectedPlan === 'free' ? 'Create organization' : 'Continue to payment' }}
+      </UButton>
+    </template>
+  </UCard>
 </template>
 
 <script setup lang="ts">
 import PricingTable from '~/components/PricingTable.vue';
 import { usePlans } from '~/composables/usePlans';
-import type { Product } from '~/server/db/schema';
-
 import { useMemberships } from '~/composables/useMemberships';
 
 definePageMeta({
-  // layout: '',
+  layout: 'blank',
 });
 
 const { $client } = useNuxtApp();
