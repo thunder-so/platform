@@ -4,14 +4,17 @@
     <div v-if="isPageLoading">Loading billing information...</div>
     <div v-else-if="error">Error: {{ error.message }}</div>
     <div v-else-if="subscription">
-      <h3 class="text-lg font-medium mb-2">Current Subscription</h3>
-      <div class="p-4 border rounded-md">
+      <UCard>
+        <template #header>
+          <h3>Current Subscription</h3>
+        </template>
+        
         <p><strong>Status:</strong> {{ subscription.status }}</p>
         <p><strong>Plan:</strong> {{ subscription.products?.name }}</p>
         <p><strong>Current Period:</strong> {{ new Date(subscription.current_period_start).toLocaleDateString() }} - {{ new Date(subscription.current_period_end).toLocaleDateString() }}</p>
         <p v-if="subscription.cancel_at_period_end">Subscription will be canceled at the end of the current period.</p>
         <UButton @click="manageSubscription" class="mt-4">Manage Subscription</UButton>
-      </div>
+      </UCard>
     </div>
     <div v-else>
       <ClientOnly>

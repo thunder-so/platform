@@ -1,35 +1,61 @@
 <template>
   <div>
-    <UForm :schema="schema" :state="state" @submit.prevent="updateOrganization" class="space-y-4 max-w-sm">
-      <UFormField label="Display Name" name="displayName">
-        <UInput v-model="state.displayName" />
-      </UFormField>
+    <UCard>
+      <template #header>
+        <h3>Workspace Settings</h3>
+      </template>
+      <UForm :schema="schema" :state="state" @submit.prevent="updateOrganization" class="space-y-4 max-w-sm">
+        <UFormField label="Display Name" name="displayName">
+          <UInput v-model="state.displayName" />
+        </UFormField>
+      </UForm>
 
-      <UButton type="submit" :loading="loading">
-        Save
-      </UButton>
-      <p v-if="success" class="text-green-500">Settings saved!</p>
-    </UForm>
+      <template #footer>
+        <UButton 
+          type="submit" 
+          @click="updateOrganization" 
+          :loading="loading" 
+          :disabled="loading || !isFormValid || !hasChanges">
+          Update
+        </UButton>
+      </template>
+    </UCard>
 
-    <h3 class="mt-8">Danger Zone</h3>
-    <div class="border border-red-500 p-4 rounded-md">
-      <p class="text-red-500 mb-4">
-        Deleting your workspace is a permanent action and cannot be undone.
-      </p>
-      <div v-if="hasApplications" class="text-red-500">
-        <p>You cannot delete this organization because it still has applications associated with it.</p>
-        <p>Please delete all applications before attempting to delete the organization.</p>
+    <UCard color="error" class="mt-8">
+      <template #header>
+        <h3>Danger Zone</h3>
+      </template>
+
+      <div v-if="hasApplications">
+        <UAlert 
+          color="error" 
+          variant="soft" 
+          class="mb-4"
+          title="You cannot delete this organization because it still has applications associated with it."
+          description="Please delete all applications before attempting to delete the organization." 
+        />
       </div>
-      <div v-else-if="hasActiveSubscription" class="text-red-500">
-        <p>You cannot delete this organization because it has an active subscription.</p>
-        <p>Please cancel your subscription before attempting to delete the organization.</p>
+      <div v-else-if="hasActiveSubscription">
+        <UAlert 
+          color="error" 
+          variant="soft" 
+          class="mb-4"
+          title="You cannot delete this organization because it has an active subscription."
+          description="Please cancel your subscription before attempting to delete the organization." 
+        />
       </div>
       <div v-else>
+        <UAlert 
+          color="error" 
+          variant="soft" 
+          class="mb-4"
+          title="Deleting your workspace is a permanent action and cannot be undone." 
+        />
         <UButton @click="deleteOrganizationModal()" variant="outline" color="error">
           Delete Workspace
         </UButton>
       </div>
-    </div>
+    </UCard>
   </div>
 </template>
 
@@ -57,6 +83,13 @@ const hasActiveSubscription = computed(() => {
     (m) => m.id === orgId
   );
   return currentOrgMembership?.status === "active";
+});
+const isFormValid = computed(() => {
+  return state.displayName && state.displayName.length >= 3;
+});
+
+const hasChanges = computed(() => {
+  return state.displayName !== selectedOrganization.value?.name;
 });
 
 const orgId = selectedOrganization.value?.id as string;
