@@ -1,8 +1,7 @@
 <template>
   <div>
     <div class="flex justify-between items-center mb-4">
-      <h2 class="text-xl font-semibold">AWS Accounts</h2>
-
+      <h3 class="text-lg font-medium">AWS Accounts</h3>
       <UDropdownMenu :items="addNewItems">
         <UButton
           color="neutral"
@@ -28,18 +27,7 @@
     <div v-if="loading">Loading AWS accounts...</div>
     <div v-else-if="error">Error loading AWS accounts: {{ error.message }}</div>
     <div v-else-if="providers.length">
-      <UTable :data="providers" :columns="columns">
-        <template #action-cell="{ row }">
-          <UDropdownMenu :items="getDropdownActions(row.original)">
-            <UButton
-              icon="i-lucide-ellipsis-vertical"
-              color="neutral"
-              variant="ghost"
-              aria-label="Actions"
-            />
-          </UDropdownMenu>
-        </template>
-      </UTable>
+  <UTable :data="providers" :columns="columns" />
     </div>
     <div v-else>
       <p>No AWS accounts connected yet.</p>
@@ -77,6 +65,8 @@ const maxProviders = computed(() => {
 const limitReached = computed(() => providers.value.length >= maxProviders.value);
 
 const UBadge = resolveComponent('UBadge')
+const UDropdownMenu = resolveComponent('UDropdownMenu')
+const UButton = resolveComponent('UButton')
 const providerCreateStackModal = overlay.create(ProviderCreateStackModal);
 const providerCreateCredentialsModal = overlay.create(ProviderCreateCredentialsModal);
 const providerEditModal = resolveComponent('ProviderUpdateModal')
@@ -180,7 +170,7 @@ const columns = [
     header: 'Type',
     cell: ({ row }) => {
       if (row.original.stack_name) {
-        return h(UBadge, { color: 'primary', variant: 'subtle' }, () => 'CLOUDFORMATION')
+        return h(UBadge, { color: 'success', variant: 'subtle' }, () => 'CLOUDFORMATION')
       } else if (row.original.access_key_id) {
         return h(UBadge, { color: 'secondary', variant: 'subtle' }, () => 'ACCESS KEY')
       }
@@ -201,7 +191,17 @@ const columns = [
     }
   },
   {
-    id: 'action'
+    id: 'action',
+    cell: ({ row }) => h('div', { class: 'text-right' }, [
+      h(UDropdownMenu, { items: getDropdownActions(row.original) }, () =>
+        h(UButton, {
+          icon: 'i-lucide-ellipsis-vertical',
+          color: 'neutral',
+          variant: 'ghost',
+          'aria-label': 'Actions'
+        })
+      )
+    ])
   }
 ];
 

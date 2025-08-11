@@ -1,10 +1,24 @@
 <template>
   <div>
-    <!-- <Header /> -->
-    
-    <h3>Applications</h3>
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-medium">Applications</h3>
+      <UButton 
+        color="neutral" 
+        variant="outline" 
+        size="lg" 
+        trailing-icon="i-lucide-plus"
+        label="New Application" 
+        to="/new" 
+      />
+    </div>
+
     <div v-if="loading">Loading applications...</div>
-    <div v-else-if="error">Error fetching applications: {{ error.message }}</div>
+    <div v-else-if="error">
+      <UAlert v-if="error" color="warning" variant="soft" class="mb-3">
+        <template #title>{{ error.message }}</template>
+      </UAlert>
+    </div>
+
     <div v-else-if="applications.length">
       <UTable 
         :data="applications" 
@@ -71,7 +85,13 @@ const columns = [
     accessorKey: 'stack_type', 
     header: 'Type',
     cell: ({ row }) => {
-      return h(UBadge, { color: 'primary', variant: 'subtle' }, () => row.getValue('stack_type'))
+      if (row.getValue('stack_type') === 'SPA') {
+        return h(UBadge, { color: 'success', variant: 'subtle' }, () => row.getValue('stack_type'))
+      } else if (row.getValue('stack_type') === 'LAMBDA') {
+        return h(UBadge, { color: 'secondary', variant: 'subtle' }, () => row.getValue('stack_type'))
+      } else if (row.getValue('stack_type') === 'ECS') {
+        return h(UBadge, { color: 'info', variant: 'subtle' }, () => row.getValue('stack_type'))
+      }
     }
   },
   { 

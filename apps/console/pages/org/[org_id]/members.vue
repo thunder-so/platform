@@ -24,25 +24,14 @@
     />
     <div v-if="isLoading">Loading members...</div>
     <div v-else-if="error">
-      <UAlert color="warning" variant="outline" :title="error.message" class="mb-4" />
+      <UAlert color="warning" variant="soft" :title="error.message" class="mb-4" />
     </div>
     <div v-else>
       <UTable :data="sortedMembers" :columns="columns">
         <template #status-cell="{ row }">
-          <UBadge :color="row.original.pending ? 'secondary' : 'primary'" variant="subtle">
+          <UBadge :color="row.original.pending ? 'secondary' : 'success'" variant="subtle">
             {{ row.original.pending ? 'INVITED' : 'ACTIVE' }}
           </UBadge>
-        </template>
-        <template #action-cell="{ row }">
-          <UDropdownMenu :items="getDropdownActions(row.original)">
-            <UButton
-              icon="i-lucide-ellipsis-vertical"
-              color="neutral"
-              variant="ghost"
-              aria-label="Actions"
-              :disabled="removingMemberId === row.original.id"
-            />
-          </UDropdownMenu>
         </template>
       </UTable>
       <div v-if="!sortedMembers.length" class="text-gray-500">No members or invitations.</div>
@@ -105,7 +94,18 @@ const columns = [
     cell: undefined // handled by slot
   },
   {
-    id: 'action'
+    id: 'action',
+    cell: ({ row }) => h('div', { class: 'text-right' }, [
+      h(resolveComponent('UDropdownMenu'), { items: getDropdownActions(row.original) }, () =>
+        h(resolveComponent('UButton'), {
+          icon: 'i-lucide-ellipsis-vertical',
+          color: 'neutral',
+          variant: 'ghost',
+          'aria-label': 'Actions',
+          disabled: removingMemberId.value === row.original.id
+        })
+      )
+    ])
   }
 ];
 

@@ -7,7 +7,7 @@
       <div class="space-y-4">
         <p class="text-sm">Enter the Access Key ID and Secret Access Key for the IAM role you have created. For more information, see <NuxtLink to="https://thunder.so/docs/aws">documentation</NuxtLink></p>
         
-        <UAlert v-if="error" color="warning" variant="outline" class="mb-3">
+        <UAlert v-if="error" color="warning" variant="soft" class="mb-3">
           <template #title>{{ error.message }}</template>
         </UAlert>
 

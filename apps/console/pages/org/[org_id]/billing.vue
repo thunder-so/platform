@@ -1,6 +1,6 @@
 <template>
   <div>
-    <UAlert v-if="error" color="warning" variant="outline" :title="error.message" class="mb-4" />
+    <UAlert v-if="error" color="warning" variant="soft" :title="error.message" class="mb-4" />
     <div v-if="isPageLoading">Loading billing information...</div>
     <div v-else-if="error">Error: {{ error.message }}</div>
     <div v-else-if="subscription">
@@ -19,7 +19,11 @@
     <div v-else>
       <ClientOnly>
       <UCard>
-        <h2>You are on the free tier.</h2>
+        <template #header>
+          <p>Subcription</p>
+        </template>
+
+        <p>This workspace is on the hobby plan.</p>
       </UCard>
       <UCard class="mt-4">
         <template #header>

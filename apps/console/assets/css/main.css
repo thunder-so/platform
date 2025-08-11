@@ -9,9 +9,9 @@
   --ui-bg: hsl(224 71% 4%);
   --ui-border: hsl(216 34% 17%);
   --ui-primary: hsl(210 40% 98%);
-  --ui-secondary: hsl(222.2 47.4% 11.2%);
+  --ui-secondary: #facc15;
   --ui-success: var(--ui-color-success-400);
-  --ui-info: hsl(216 34% 17%);
+  --ui-info: hsla(276, 68%, 63%, 1.00);
   --ui-warning: var(--ui-color-warning-400);
   --ui-error: var(--ui-color-error-400);
 }
