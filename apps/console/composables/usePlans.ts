@@ -1,45 +1,9 @@
 import { useSupabaseClient } from '#imports';
-
-interface Price {
-  id: string;
-  type: string;
-  created_at: string;
-  product_id: string;
-  amount_type: string;
-  is_archived?: boolean;
-  modified_at: string;
-  price_amount: number;
-  price_currency: string;
-  recurring_interval: "month" | "year";
-}
-
-interface ProductMetadata {
-  id: string;
-  name: string;
-  medias: readonly any[];
-  prices: readonly Price[];
-  benefits: readonly any[];
-  metadata: Record<string, any>;
-  created_at: string;
-  description: string;
-  is_archived: boolean;
-  modified_at: string;
-  is_recurring: boolean;
-  organization_id: string;
-  recurring_interval: "month" | "year";
-  attached_custom_fields: readonly any[];
-}
-
-export interface Plan {
-  id: string;
-  name: string;
-  description: string | null;
-  metadata: ProductMetadata
-}
+import type { Product } from '~/server/db/schema';
 
 export const usePlans = () => {
   const supabase = useSupabaseClient();
-  const plans = useState<Plan[]>('plans', () => []);
+  const plans = useState<Product[]>('plans', () => []);
   const isLoading = useState('plans.loading', () => false);
 
   const fetchPlans = async () => {
@@ -47,19 +11,20 @@ export const usePlans = () => {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, description, metadata')
+        .select('*')
         .eq('active', true)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
 
-      const freePlan: Plan = {
+      // Add a synthetic free plan if needed
+      const freePlan: Product = {
         id: 'free',
         name: 'Hobby',
         description: 'For personal projects and vibe coders.',
         metadata: {
-          id: 'prod_free',
-          name: 'Free',
+          max_providers: 1,
+          max_members: 1,
           prices: [
             {
               id: 'price_free',
@@ -68,12 +33,16 @@ export const usePlans = () => {
               amount_type: 'fixed',
               price_amount: 0,
               price_currency: 'USD',
+              recurring_interval: 'month',
             }
           ],
-        } as any,
-      };
+        },
+        active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as Product;
 
-      plans.value = [freePlan, ...(data as Plan[])];
+      plans.value = [freePlan, ...(data as Product[])];
     } catch (e) {
       console.error('Error fetching plans:', e);
     } finally {

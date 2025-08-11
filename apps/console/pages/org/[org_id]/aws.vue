@@ -23,16 +23,7 @@
       title="Upgrade to add more AWS Accounts"
       description="The Free plan is limited to 1 AWS Account. Upgrade your plan to add more."
       class="mb-4"
-    >
-      <template #right>
-        <UButton
-          label="Upgrade Plan"
-          color="primary"
-          variant="solid"
-          :to="`/org/${orgId}/billing`"
-        />
-      </template>
-    </UAlert>
+    />
 
     <div v-if="loading">Loading AWS accounts...</div>
     <div v-else-if="error">Error loading AWS accounts: {{ error.message }}</div>
@@ -67,7 +58,7 @@ definePageMeta({
 })
 
 const supabase = useSupabaseClient()
-const { selectedOrganization } = useMemberships()
+const { selectedOrganization, currentPlan } = useMemberships()
 const { $client } = useNuxtApp()
 const toast = useToast()
 const { copy } = useClipboard()
@@ -78,8 +69,11 @@ const loading = ref(false)
 const error = ref<{ message: string } | null>(null);
 const orgId = selectedOrganization.value?.id as string;
 
-const isPaidPlan = computed(() => selectedOrganization.value?.status === 'active');
-const limitReached = computed(() => !isPaidPlan.value && providers.value.length >= 1);
+const maxProviders = computed(() => {
+  // Defensive: fallback to 1 if not present
+  return currentPlan.value?.metadata?.metadata?.max_providers ?? 1;
+});
+const limitReached = computed(() => providers.value.length >= maxProviders.value);
 
 const UBadge = resolveComponent('UBadge')
 const providerCreateStackModal = overlay.create(ProviderCreateStackModal);

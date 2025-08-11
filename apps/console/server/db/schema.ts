@@ -442,6 +442,46 @@ export type EnvironmentVariable = typeof environmentVariables.$inferSelect;
 export type EnvironmentVariables = Partial<EnvironmentVariable>[];
 export type NewEnvironmentVariable = typeof environmentVariables.$inferInsert;
 
+// Types for Polar Payment Integration
+export interface Price {
+  id: string;
+  type: string;
+  created_at: string;
+  product_id: string;
+  amount_type: string;
+  is_archived?: boolean;
+  modified_at: string;
+  price_amount: number;
+  price_currency: string;
+  recurring_interval: "month" | "year";
+}
+
+export interface ProductMetadata {
+  id: string;
+  name: string;
+  medias: readonly any[];
+  prices: readonly Price[];
+  benefits: readonly any[];
+  metadata: Record<string, any>;
+  created_at: string;
+  description: string;
+  is_archived: boolean;
+  modified_at: string;
+  is_recurring: boolean;
+  organization_id: string;
+  recurring_interval: "month" | "year";
+  attached_custom_fields: readonly any[];
+}
+
+export type DBProduct = typeof products.$inferSelect;
+export type Product = Omit<DBProduct, 'metadata'> & { metadata: ProductMetadata };
+export type NewProduct = typeof products.$inferInsert;
+export type Subscription = typeof subscriptions.$inferSelect;
+export type NewSubscription = typeof subscriptions.$inferInsert;
+export type Customer = typeof customers.$inferSelect;
+export type NewCustomer = typeof customers.$inferInsert;
+
+// Application Schema Interfaces
 export interface AppProps {
   rootDir: string;
   outputDir: string;

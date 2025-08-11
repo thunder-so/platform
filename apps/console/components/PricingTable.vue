@@ -42,11 +42,11 @@
 </template>
 
 <script setup lang="ts">
-import type { Plan } from '~/composables/usePlans';
+import type { Product } from '~/server/db/schema';
 
 const props = defineProps({
   plans: {
-    type: Array as () => readonly Plan[],
+    type: Array as () => readonly Product[],
     required: true,
   },
   selectedPlan: {

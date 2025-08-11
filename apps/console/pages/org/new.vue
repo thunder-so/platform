@@ -31,7 +31,8 @@
 
 <script setup lang="ts">
 import PricingTable from '~/components/PricingTable.vue';
-import { usePlans, type Plan } from '~/composables/usePlans';
+import { usePlans } from '~/composables/usePlans';
+import type { Product } from '~/server/db/schema';
 
 import { useMemberships } from '~/composables/useMemberships';
 

@@ -1,8 +1,17 @@
-export type Membership = {
-  id: string,
-  pending: boolean,
-  name: string,
-  status: string
+import type { Organization, Subscription, Product } from '~/server/db/schema';
+import { usePlans } from '~/composables/usePlans';
+import { computed } from 'vue';
+
+export interface Membership {
+  id: Organization['id'];
+  name: Organization['name'];
+  pending: boolean;
+  subscriptions?: Array<{
+    id: Subscription['id'];
+    status: Subscription['status'];
+    products?: Product;
+    [key: string]: any;
+  }>;
 }
 
 export const useMemberships = () => {
@@ -24,7 +33,7 @@ export const useMemberships = () => {
         .from('memberships')
         .select(`id, pending,
           organizations:organization_id (id, name,
-            subscriptions(status)
+            subscriptions(*, products(*))
           )
         `)
         .is('organizations.deleted_at', null)
@@ -35,12 +44,22 @@ export const useMemberships = () => {
       if (error) throw error
 
       const flattened: Membership[] = data?.flatMap(membership => 
-        membership.organizations.subscriptions.length > 0
-          ? membership.organizations.subscriptions.map(sub => {
-              const { subscriptions, ...org } = membership.organizations;
-              return { ...org, ...sub };
-            })
-          : [{ ...membership.organizations, subscriptions: undefined }].map(({ subscriptions, ...org }) => org)
+        membership.organizations.subscriptions && membership.organizations.subscriptions.length > 0
+          ? [{
+              id: membership.organizations.id,
+              name: membership.organizations.name,
+              pending: membership.pending,
+              subscriptions: membership.organizations.subscriptions.map(sub => ({
+                ...sub,
+                products: sub.products
+              }))
+            }]
+          : [{
+              id: membership.organizations.id,
+              name: membership.organizations.name,
+              pending: membership.pending,
+              subscriptions: []
+            }]
       ) || []
 
       memberships.value = flattened
@@ -90,12 +109,31 @@ export const useMemberships = () => {
     }
   }
 
+  // Centralized currentPlan computed property
+  const { plans } = usePlans();
+  const currentPlan = computed(() => {
+    const org = selectedOrganization.value;
+    if (!org) return plans.value.find(p => p.id === 'free');
+    const activeSub = org.subscriptions?.find(sub => sub.status === 'active');
+    if (activeSub && activeSub.products) {
+      // Return the product object as Plan
+      return {
+        id: activeSub.products.id,
+        name: activeSub.products.name,
+        description: activeSub.products.description ?? null,
+        metadata: activeSub.products.metadata
+      };
+    }
+    return plans.value.find(p => p.id === 'free');
+  });
+
   return {
     memberships: readonly(memberships),
     selectedOrganization,
     isLoading: readonly(isLoading),
     refreshMemberships,
     initializeSession,
-    setSelectedOrganization
+    setSelectedOrganization,
+    currentPlan
   }
 }

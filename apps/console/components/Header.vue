@@ -11,7 +11,6 @@
             <span>{{ selectedOrganization.name }}</span>
           </div>
           <div class="flex items-center space-x-2">
-            <UBadge v-if="selectedOrganization.status === 'active'" icon="i-lucide-rocket" size="md" color="warning" variant="outline"></UBadge>
             <Icon name="i-heroicons-chevron-down-20-solid" />
           </div>
         </button>
@@ -23,7 +22,8 @@
                 <UAvatar :alt="org.name" size="sm" />
                 <span>{{ org.name }}</span>
               </div>
-              <UBadge v-if="org.status === 'active'" icon="i-lucide-rocket" size="md" color="warning" variant="outline">Pro</UBadge>
+              <UBadge v-if="org.subscriptions && org.subscriptions.some(sub => sub.status === 'active')" icon="i-lucide-rocket" size="md" color="warning" variant="outline">Pro</UBadge>
+              <UBadge v-else size="md" color="neutral" variant="outline">Hobby</UBadge>
             </li>
             <hr class="border-gray-700" />
             <li>
@@ -70,9 +70,8 @@
               </div>
             </li>
             <template v-for="(group, index) in userMenuItems" :key="index">
-              <li v-for="item in group" :key="item.label" :class="{ 'cursor-pointer hover:bg-gray-800': !item.disabled, 'opacity-50 px-4 py-2 text-sm': item.disabled }">
+              <li v-for="item in group" :key="item.label" class="cursor-pointer hover:bg-gray-800">
                 <NuxtLink v-if="item.to" :to="item.to" class="block px-4 py-2 text-sm">{{ item.label }}</NuxtLink>
-                <span v-else-if="item.disabled" class="block text-sm">{{ item.label }}</span>
                 <span v-else @click="item.click" class="block px-4 py-2 text-sm">{{ item.label }}</span>
               </li>
               <hr v-if="index < userMenuItems.length - 1" class="border-gray-700" />
@@ -85,17 +84,12 @@
 </template>
 
 <script setup lang="ts">
-const { $client } = useNuxtApp();
 const user = useSupabaseUser();
 const supabase = useSupabaseClient();
-const { memberships, selectedOrganization } = useMemberships()
-const { applicationSchema } = useApplications();
+const { memberships, selectedOrganization, currentPlan } = useMemberships()
 const dropdownOpen = ref(false);
 const newMenuOpen = ref(false);
 const userMenuOpen = ref(false);
-
-// console.log('components/Header selectedOrganization', selectedOrganization.value)
-// console.log('components/Header applicationSchema', applicationSchema.value)
 
 function selectOrganization(org: any) {
   selectedOrganization.value = org;
@@ -105,7 +99,7 @@ function selectOrganization(org: any) {
 
 const newItems = [
   [
-    { label: 'New application', to: '/new' },
+    { label: 'New application', to: '/new', disabled: false },
   ],
   // [
   //   { label: 'Static Site', to: '/static/new' },
@@ -133,5 +127,4 @@ const logout = async () => {
     navigateTo('/login')
   }
 }
-
 </script>

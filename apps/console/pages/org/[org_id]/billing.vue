@@ -49,7 +49,8 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
 import PricingTable from '~/components/PricingTable.vue';
-import { usePlans, type Plan } from '~/composables/usePlans';
+import { usePlans } from '~/composables/usePlans';
+import type { Product } from '~/server/db/schema';
 
 const route = useRoute()
 const supabase = useSupabaseClient()
@@ -69,7 +70,7 @@ const error = ref<{ message: string } | null>(null);
 const selectedPlan = ref<string | undefined>(undefined);
 const isPageLoading = computed(() => isLoading.value || plansLoading.value);
 const isCreatingCheckout = ref(false);
-const paidPlans = computed<Plan[]>(() => plans.value.filter(p => p.id !== 'free'));
+const paidPlans = computed<Product[]>(() => plans.value.filter(p => p.id !== 'free'));
 
 const subscribeToPlan = async () => {
   if (!selectedPlan.value) {
