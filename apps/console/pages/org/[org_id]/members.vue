@@ -1,77 +1,58 @@
 <template>
   <div>
-    <div class="mb-4">
-      <UCard variant="subtle">
-        <template #header>
-          <h3 class="text-lg font-medium">Invite Member</h3>
-        </template>
-
-        <UForm :schema="schema" :state="state" @submit.prevent="inviteMember" class="flex items-center space-x-2 mt-2">
-          <UFormField name="emailToInvite" class="flex-grow">
-            <UInput v-model="state.emailToInvite" placeholder="member@example.com" />
-          </UFormField>
-        </UForm>
-        <p v-if="inviteError" class="text-red-500 mt-2">{{ inviteError.message }}</p>
-
-        <template #footer>
-          <UButton type="submit" :loading="inviting">Invite</UButton>
-        </template>
-      </UCard>
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-medium">Members</h3>
+      <UButton color="neutral" variant="outline" size="lg" label="Invite Member" @click="openInviteModal" />
     </div>
-
     <div v-if="isLoading">Loading members...</div>
-    <div v-else-if="error">Error: {{ error.message }}</div>
+    <div v-else-if="error">
+      <UAlert color="warning" variant="outline" :title="error.message" class="mb-4" />
+    </div>
     <div v-else>
-      <h3 class="text-lg font-medium mb-2">Active Members</h3>
-      <UTable
-        v-if="activeMembers.length"
-        :data="activeMembers"
-        :columns="columns"
-      >
-        <template #actions-data="{ row }">
-          <UButton color="warning" variant="soft" @click="removeMember(row.id)" :loading="removingMemberId === row.id">Remove</UButton>
+      <UTable :data="sortedMembers" :columns="columns">
+        <template #status-cell="{ row }">
+          <UBadge :color="row.original.pending ? 'secondary' : 'primary'" variant="subtle">
+            {{ row.original.pending ? 'INVITED' : 'ACTIVE' }}
+          </UBadge>
+        </template>
+        <template #action-cell="{ row }">
+          <UDropdownMenu :items="getDropdownActions(row.original)">
+            <UButton
+              icon="i-lucide-ellipsis-vertical"
+              color="neutral"
+              variant="ghost"
+              aria-label="Actions"
+              :disabled="removingMemberId === row.original.id"
+            />
+          </UDropdownMenu>
         </template>
       </UTable>
-      <div v-else class="text-gray-500">No active members.</div>
-
-      <h3 class="text-lg font-medium mt-6 mb-2">Pending Invitations</h3>
-      <UTable
-        v-if="pendingMembers.length"
-        :data="pendingMembers"
-        :columns="columns"
-      >
-        <template #actions-data="{ row }">
-          <UButton color="warning" variant="soft" @click="removeMember(row.id)" :loading="removingMemberId === row.id">Cancel Invite</UButton>
-        </template>
-      </UTable>
-      <div v-else class="text-gray-500">No pending invitations.</div>
+      <div v-if="!sortedMembers.length" class="text-gray-500">No members or invitations.</div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue';
-import { z } from 'zod';
-
-const route = useRoute();
-const supabase = useSupabaseClient();
-const { selectedOrganization } = useMemberships()
-const { $client } = useNuxtApp();
+import { ref, onMounted, computed, h } from 'vue';
+import { TRPCClientError } from '@trpc/client';
 
 definePageMeta({
   layout: 'org',
 });
 
+const supabase = useSupabaseClient();
+const { selectedOrganization } = useMemberships();
+const { $client } = useNuxtApp();
+const overlay = useOverlay();
+const toast = useToast()
+const MemberInviteModal = resolveComponent('MemberInviteModal');
+const UAvatar = resolveComponent('UAvatar');
+const UBadge = resolveComponent('UBadge');
 const orgId = selectedOrganization?.value?.id as string;
-const inviting = ref(false);
-const inviteError = ref(null);
-const removingMemberId = ref(null);
-
-const members = ref([]);
+const removingMemberId = ref<number | null>(null);
+const members = ref<any[]>([]);
 const isLoading = ref(false);
 const error = ref<{ message: string } | null>(null);
-
-const UAvatar = resolveComponent('UAvatar')
 
 const columns = [
   {
@@ -93,28 +74,22 @@ const columns = [
   {
     accessorKey: 'user.email',
     header: 'Email',
-    // cell: ({ row }) => row.user.email
   },
-  // {
-  //   accessorKey: 'access',
-  //   header: 'Access',
-  //   // cell: ({ row }) => row.access
-  // },
   {
-    accessorKey: 'actions',
-    header: 'Actions',
+    accessorKey: 'status',
+    header: 'Status',
+    cell: undefined // handled by slot
+  },
+  {
+    id: 'action'
   }
 ];
 
-const activeMembers = computed(() => members.value.filter(m => !m.pending));
-const pendingMembers = computed(() => members.value.filter(m => m.pending));
-
-const schema = z.object({
-  emailToInvite: z.string().email('Invalid email address'),
-});
-
-const state = reactive({
-  emailToInvite: ''
+const sortedMembers = computed(() => {
+  // Sort: active first, then invited
+  return [...members.value].sort((a, b) => {
+    return a.pending ? 1 : -1;
+  });
 });
 
 const fetchMembers = async () => {
@@ -129,45 +104,73 @@ const fetchMembers = async () => {
         pending,
         user:users (id, email, full_name, avatar_url)
       `)
-      .eq('organization_id', orgId);
+      .eq('organization_id', orgId)
+      .order('pending', { ascending: true }); // Only order by top-level field
 
     if (fetchError) throw fetchError;
     members.value = data;
-  } catch (e) {
-    error.value = e;
+  } catch (e:any) {
+    error.value = { message: e.message };
   } finally {
     isLoading.value = false;
   }
 };
 
+function getDropdownActions(member: any) {
+  if (!member.pending) {
+    return [[
+      {
+        label: 'Remove Member',
+        icon: 'i-lucide-trash',
+        color: 'error',
+        onSelect: async () => {
+          removingMemberId.value = member.id;
+          try {
+            await $client.team.removeMember.mutate({ membershipId: member.id });
+            toast.add({ title: 'Member removed successfully!', color: 'success' });
+            await fetchMembers();
+          } catch (e: any) {
+            toast.add({ title: 'Failed to remove member', color: 'error' });
+          } finally {
+            removingMemberId.value = null;
+          }
+        }
+      }
+    ]];
+  } else {
+    return [[
+      {
+        label: 'Cancel Invite',
+        icon: 'i-lucide-trash',
+        color: 'error',
+        onSelect: async () => {
+          removingMemberId.value = member.id;
+          try {
+            await $client.team.removeMember.mutate({ membershipId: member.id });
+            toast.add({ title: 'Invitation cancelled!', color: 'success' });
+            await fetchMembers();
+          } catch (e: any) {
+            toast.add({ title: 'Failed to cancel invite', color: 'error' });
+          } finally {
+            removingMemberId.value = null;
+          }
+        }
+      }
+    ]];
+  }
+}
+
 onMounted(() => {
   fetchMembers();
 });
 
-const inviteMember = async () => {
-  inviting.value = true;
-  inviteError.value = null;
-  try {
-    await $client.team.inviteMember.mutate({ organizationId: orgId, email: state.emailToInvite });
-    state.emailToInvite = '';
+const openInviteModal = async () => {
+  const modal = overlay.create(MemberInviteModal, {
+    props: { organizationId: orgId }
+  });
+  const result = await modal.open().result;
+  if (result) {
     await fetchMembers();
-  } catch (e: any) {
-    inviteError.value = e;
-  } finally {
-    inviting.value = false;
-  }
-};
-
-const removeMember = async (membershipId: any) => {
-  removingMemberId.value = membershipId;
-  try {
-    await $client.team.removeMember.mutate({ membershipId });
-    await fetchMembers();
-  } catch (e) {
-    console.error('Failed to remove member:', e);
-    alert('Failed to remove member. See console for details.');
-  } finally {
-    removingMemberId.value = null;
   }
 };
 </script>
