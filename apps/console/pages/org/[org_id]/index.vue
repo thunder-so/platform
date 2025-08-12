@@ -12,7 +12,13 @@
       />
     </div>
 
-    <div v-if="loading">Loading applications...</div>
+    <div v-if="loading">
+      <div class="flex flex-col gap-4 mt-7">
+        <div v-for="i in 3" :key="i" class="space-y-4">
+          <USkeleton class="h-6 w-full" />
+        </div>
+      </div>
+    </div>
     <div v-else-if="error">
       <UAlert v-if="error" color="warning" variant="soft" class="mb-3">
         <template #title>{{ error.message }}</template>
@@ -39,7 +45,7 @@ const supabase = useSupabaseClient()
 const { selectedOrganization } = useMemberships()
 
 const applications = ref([])
-const loading = ref(false)
+const loading = ref(true)
 const error = ref<{ message: string } | null>(null);
 const orgId = selectedOrganization?.value?.id as string
 

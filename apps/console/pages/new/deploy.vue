@@ -1,38 +1,44 @@
 <template>
   <div>
-    <UCard>
+    <UCard class="mb-6">
       <template #header>
-        <h1>Deploy Application</h1>
+        <h1>Authorize and Deploy</h1>
       </template>
 
       <ClientOnly>
-        {{ applicationSchema }}
         <div v-if="oAuthError" class="space-y-4 mb-6">
           <UAlert
-            color="neutral"
-            variant="subtle"
+            class="mb-4"
+            color="error"
+            variant="soft"
             title="Authorization failed!"
-            description="Failed to generate a user access token from your Github account."
+            description="Failed to generate an access token from your Github account."
             icon="i-lucide-terminal"
           />
         </div>
 
         <div v-if="!hasUat" class="space-y-4">
-          <h2>Authorize Github</h2>
-          <p class="text-sm text-muted-foreground mt-1">Authorization on GitHub involves granting permissions to Thunder to issue a User Access Token (UAT). The encrypted token will be used by CodePipeline to watch for changes in your repository.</p>
-          <UButton @click="authorizeGithub" :loading="authorizing" :disabled="authorizing">Authorize with GitHub</UButton>
+          <p class="text-sm text-muted-foreground">Authorization with GitHub involves granting permissions to Thunder to issue an access token on your behalf.</p> 
+          <p class="text-sm text-muted-foreground">The access token will be used by CodePipeline to watch for changes in your repository.</p>
+          <p class="text-sm text-muted-foreground">Find out more at our <NuxtLink class="no-underline hover:underline" to="https://www.thunder.so/docs/aws">documentation</NuxtLink>.</p>
+          <UButton 
+            size="lg"
+            @click="authorizeGithub" 
+            :loading="authorizing" 
+            :disabled="authorizing">Authorize with GitHub
+          </UButton>
         </div>
         <div v-else class="space-y-4">
           <UAlert
-            color="neutral"
-            variant="outline"
+            color="success"
+            variant="soft"
             title="Authorization Successful!"
-            description="You have successfully generated a User Access Token (UAT) from your Github account. Now we can proceed with the deployment."
+            description="You have successfully generated an access token. Now we can proceed with the deployment."
             icon="i-lucide-github"
           />
         </div>
       </ClientOnly>
-
+      
       <template #footer>
         <ClientOnly>
           <div class="flex justify-start">
@@ -42,7 +48,7 @@
               :loading="isDeploying"
               @click="installApplication"
             >
-              {{ isDeploying ? 'Installing...' : 'Install Application' }}
+              {{ isDeploying ? 'Deploying...' : 'Deploy Application' }}
             </UButton>
           </div>
         </ClientOnly>

@@ -1,8 +1,13 @@
 <template>
   <div>
     <UAlert v-if="error" color="warning" variant="soft" :title="error.message" class="mb-4" />
-    <div v-if="isPageLoading">Loading billing information...</div>
-    <div v-else-if="error">Error: {{ error.message }}</div>
+    <div v-if="isPageLoading">
+      <div class="flex flex-col gap-4">
+        <div v-for="i in 3" :key="i" class="space-y-4">
+          <USkeleton class="h-12 w-full" />
+        </div>
+      </div>
+    </div>
     <div v-else-if="subscription">
       <UCard>
         <template #header>
@@ -72,7 +77,7 @@ definePageMeta({
 
 const orgId = selectedOrganization.value?.id as string;
 const subscription = ref(null)
-const isLoading = ref(false)
+const isLoading = ref(true)
 const error = ref<{ message: string } | null>(null);
 const selectedPlan = ref<string | undefined>(undefined);
 const isPageLoading = computed(() => isLoading.value || plansLoading.value);
@@ -106,7 +111,6 @@ const subscribeToPlan = async () => {
 };
 
 const fetchSubscription = async () => {
-  isLoading.value = true
   error.value = null
   try {
     const { data, error: fetchError } = await supabase

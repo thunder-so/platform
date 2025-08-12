@@ -14,8 +14,8 @@
         <UButton 
           type="submit" 
           @click="updateOrganization" 
-          :loading="loading" 
-          :disabled="loading || !isFormValid || !hasChanges">
+          :loading="submitButton" 
+          :disabled="submitButton || !isFormValid || !hasChanges">
           Update
         </UButton>
       </template>
@@ -25,8 +25,15 @@
       <template #header>
         <h3>Danger Zone</h3>
       </template>
-
-      <div v-if="hasApplications">
+      <div v-if="loading">
+        <div class="flex flex-col gap-4">
+          <USkeleton class="h-12 w-full" />
+        </div>
+      </div>
+      <div v-else-if="error">
+        <UAlert color="error" variant="soft" :title="error.message" class="mb-4" />
+      </div>
+      <div v-else-if="hasApplications">
         <UAlert 
           color="error" 
           variant="soft" 
@@ -72,7 +79,8 @@ definePageMeta({
 
 const supabase = useSupabaseClient();
 const toast = useToast();
-const loading = ref(false);
+const submitButton = ref(false);
+const loading = ref(true);
 const error = ref<{ message: string } | null>(null);
 const hasApplications = ref(false);
 const confirmDelete = ref(false);
@@ -131,6 +139,8 @@ const checkApplications = async () => {
     hasApplications.value = count > 0;
   } catch (e: any) {
     console.error("Error checking applications:", e.message);
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -151,7 +161,7 @@ const deleteOrganization = async () => {
 };
 
 const updateOrganization = async () => {
-  loading.value = true;
+  submitButton.value = true;
   error.value = null;
   try {
     const { data, error: updateError } = await supabase
@@ -177,7 +187,7 @@ const updateOrganization = async () => {
   } catch (e: any) {
     error.value = e;
   } finally {
-    loading.value = false;
+    submitButton.value = false;
   }
 };
 </script>

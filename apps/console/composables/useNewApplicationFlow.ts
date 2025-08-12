@@ -3,7 +3,7 @@ import type { UserAccessToken, Service, Provider, ApplicationSchema, Environment
 export const useNewApplicationFlow = () => {
   const route = useRoute();
   const applicationSchema = useCookie<Partial<ApplicationSchema>>('newApplicationSchema', { default: () => ({}) });
-  const oAuthError = useCookie<boolean>('newApplicationOAuthError', { default: () => false });
+  const oAuthError = useState<boolean>('newApplicationOAuthError', () => false );
 
   const currentStep = computed(() => {
     const path = route.path;

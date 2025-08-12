@@ -22,7 +22,13 @@
       description="The Hobby plan is limited to 1 member. Upgrade your plan to add more."
       class="mb-4"
     />
-    <div v-if="isLoading">Loading members...</div>
+    <div v-if="loading">
+      <div class="flex flex-col gap-4 mt-7">
+        <div v-for="i in 3" :key="i" class="space-y-4">
+          <USkeleton class="h-6 w-full" />
+        </div>
+      </div>
+    </div>
     <div v-else-if="error">
       <UAlert color="warning" variant="soft" :title="error.message" class="mb-4" />
     </div>
@@ -63,7 +69,7 @@ const limitReached = computed(() => members.value.length >= maxMembers.value);
 
 const removingMemberId = ref<number | null>(null);
 const members = ref<any[]>([]);
-const isLoading = ref(false);
+const loading = ref(true);
 const error = ref<{ message: string } | null>(null);
 
 const columns = [
@@ -116,7 +122,6 @@ const sortedMembers = computed(() => {
 });
 
 const fetchMembers = async () => {
-  isLoading.value = true;
   error.value = null;
   try {
     const { data, error: fetchError } = await supabase
@@ -135,7 +140,7 @@ const fetchMembers = async () => {
   } catch (e:any) {
     error.value = { message: e.message };
   } finally {
-    isLoading.value = false;
+    loading.value = false;
   }
 };
 

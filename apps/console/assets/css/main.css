@@ -30,3 +30,7 @@
   flex-grow: 1;
   padding: 30px 0;
 }
+
+p a {
+  @apply no-underline hover:underline
+}

@@ -38,9 +38,9 @@
         </div>
       </div>
 
-      <div class="sidebar">
+      <div>
         <div class="p-4 rounded-md">
-          <h3 class="text-lg font-semibold mb-4">Connected Github accounts</h3>
+          <h3 class="text-md font-semibold mt-1 mb-4">Connected Github accounts</h3>
           <div v-for="inst in installations" :key="inst.id" class="flex items-center mb-3">
             <UAvatar :src="inst.metadata.account.avatar_url" :alt="inst.metadata.account.login" class="mr-3" />
             <a :href="`https://github.com/organizations/${inst.metadata.account.login}/settings/installations/${inst.installation_id}`" target="_blank" class="text-primary-500 hover:underline">
