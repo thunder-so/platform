@@ -1,11 +1,11 @@
 <template>
   <UCard>
     <template #header>
-      <h1>Create New Organization</h1>
+      <h1>New Workspace</h1>
     </template>
     
     <UForm :state="{ orgName, selectedPlan }" @submit.prevent="createOrganization" class="space-y-4">
-      <UFormField label="Organization Name" name="orgName" required>
+      <UFormField label="Workspace Name" name="orgName" required>
         <UInput id="org-name" v-model="orgName" type="text" size="xl" required />
       </UFormField>
 
@@ -17,7 +17,7 @@
 
     <template #footer>
       <UButton @click="createOrganization" :loading="loading" :disabled="!orgName.trim()" size="lg">
-        {{ selectedPlan === 'free' ? 'Create organization' : 'Continue to payment' }}
+        {{ selectedPlan === 'free' ? 'Create workspace' : 'Continue to payment' }}
       </UButton>
     </template>
   </UCard>

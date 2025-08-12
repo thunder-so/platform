@@ -41,6 +41,7 @@
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
+    "@nuxt/types": "^2.18.1",
     "@types/pg": "^8.15.4",
     "dotenv": "^17.2.0",
     "dotenv-cli": "^8.0.0",

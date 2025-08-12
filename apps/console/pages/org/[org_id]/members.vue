@@ -26,7 +26,7 @@
     <div v-else-if="error">
       <UAlert color="warning" variant="soft" :title="error.message" class="mb-4" />
     </div>
-    <div v-else>
+    <div v-else-if="sortedMembers.length > 0">
       <UTable :data="sortedMembers" :columns="columns">
         <template #status-cell="{ row }">
           <UBadge :color="row.original.pending ? 'secondary' : 'success'" variant="subtle">
@@ -34,7 +34,6 @@
           </UBadge>
         </template>
       </UTable>
-      <div v-if="!sortedMembers.length" class="text-gray-500">No members or invitations.</div>
     </div>
   </div>
 </template>
@@ -70,7 +69,7 @@ const error = ref<{ message: string } | null>(null);
 const columns = [
   {
     accessorKey: 'user.avatar_url',
-    header: '',
+    header: 'Member',
     cell: ({ row }) => {
       return h('div', { class: 'flex items-center gap-3' }, [
         h(UAvatar, {

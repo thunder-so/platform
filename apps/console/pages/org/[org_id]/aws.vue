@@ -164,7 +164,15 @@ function getDropdownActions(provider: Provider): DropdownMenuItem[][] {
 }
 
 const columns = [
-  { accessorKey: 'alias', header: 'Alias' },
+  { 
+    accessorKey: 'alias', 
+    header: 'Alias',
+    cell: ({ row }) => {
+      return h('div', undefined, [
+        h('p', { class: 'font-medium text-highlighted' }, row.original.alias),
+      ])
+    }
+  },
   {
     accessorKey: 'access_key_id',
     header: 'Type',

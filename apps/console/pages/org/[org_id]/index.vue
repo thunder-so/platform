@@ -7,7 +7,7 @@
         variant="outline" 
         size="lg" 
         trailing-icon="i-lucide-plus"
-        label="New Application" 
+        label="Import repository" 
         to="/new" 
       />
     </div>
@@ -56,7 +56,6 @@ const columns = [
   },
   { 
     accessorKey: 'name', 
-    // header: 'Name',
     meta: {
       style: {
         th: 'width: 50%',
@@ -79,18 +78,21 @@ const columns = [
         onClick: () => column.toggleSorting(column.getIsSorted() === 'asc')
       })
     },
-    cell: ({ row }) => h(resolveComponent('NuxtLink'), { to: `/app/${row.getValue('id')}` }, () => row.getValue('name'))
+    cell: ({ row }) => h(resolveComponent('NuxtLink'), { 
+      to: `/app/${row.getValue('id')}`, 
+      class: 'font-medium text-highlighted hover:underline' 
+    }, () => row.getValue('name'))
   },
   { 
     accessorKey: 'stack_type', 
     header: 'Type',
     cell: ({ row }) => {
       if (row.getValue('stack_type') === 'SPA') {
-        return h(UBadge, { color: 'success', variant: 'subtle' }, () => row.getValue('stack_type'))
+        return h(UBadge, { color: 'success', variant: 'subtle' }, () => 'STATIC')
       } else if (row.getValue('stack_type') === 'LAMBDA') {
         return h(UBadge, { color: 'secondary', variant: 'subtle' }, () => row.getValue('stack_type'))
       } else if (row.getValue('stack_type') === 'ECS') {
-        return h(UBadge, { color: 'info', variant: 'subtle' }, () => row.getValue('stack_type'))
+        return h(UBadge, { color: 'info', variant: 'subtle' }, () => 'FARGATE')
       }
     }
   },

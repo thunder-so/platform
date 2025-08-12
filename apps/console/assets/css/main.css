@@ -23,8 +23,8 @@
 }
 
 .sidebar {
-  width: 303px;
-  padding: 20px;
+  width: 300px;
+  padding: 16px;
 }
 .main-content {
   flex-grow: 1;
