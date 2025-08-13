@@ -22,7 +22,13 @@
             class="w-full"
           />
         </div>
-        <div v-if="pendingRepositories">Loading repositories...</div>
+        <div v-if="pendingRepositories">
+          <div class="flex flex-col gap-4 mt-7">
+            <div v-for="i in 3" :key="i" class="space-y-4">
+              <USkeleton class="h-12 w-full" />
+            </div>
+          </div>
+        </div>
         <div v-else class="repo-list">
           <div 
             v-for="repo in filteredRepositories" 

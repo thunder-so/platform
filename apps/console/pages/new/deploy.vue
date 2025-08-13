@@ -1,6 +1,35 @@
 <template>
   <div>
-    <UCard class="mb-6">
+    <UCard>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <Icon name="mdi:github" class="w-6 h-6 text-gray-700" />
+          <div>
+            <h3 class="text-md font-medium">{{ applicationSchema.name }}</h3>
+            <a 
+              :href="`https://github.com/${applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.owner}/${applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.repo}`"
+              target="_blank"
+              class="text-sm text-gray-600 hover:underline"
+            >
+              {{ applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.owner }}/{{ applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.repo }}
+            </a>
+          </div>
+        </div>
+        
+        <Icon name="mdi:arrow-right" class="w-5 h-5 text-gray-400" />
+        
+        <div class="flex items-center space-x-3">
+          <Icon name="mdi:aws" class="w-6 h-6 text-orange-500" />
+          <div>
+            <h3 class="text-md font-medium">{{ applicationSchema.environments?.[0]?.provider?.alias }}</h3>
+            <p class="text-sm text-gray-600">
+              {{ applicationSchema.environments?.[0]?.provider?.account_id }} • {{ applicationSchema.environments?.[0]?.region }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </UCard>
+    <UCard class="mt-6 mb-6">
       <template #header>
         <h1>Authorize and Deploy</h1>
       </template>
@@ -19,10 +48,10 @@
 
         <div v-if="!hasUat" class="space-y-4">
           <p class="text-sm text-muted-foreground">Authorization with GitHub involves granting permissions to Thunder to issue an access token on your behalf.</p> 
-          <p class="text-sm text-muted-foreground">The access token will be used by CodePipeline to watch for changes in your repository.</p>
-          <p class="text-sm text-muted-foreground">Find out more at our <NuxtLink class="no-underline hover:underline" to="https://www.thunder.so/docs/aws">documentation</NuxtLink>.</p>
+          <p class="text-sm text-muted-foreground">The access token will be used by AWS CodePipeline to watch for changes in your Github repository via webhook. Find out more at our <NuxtLink class="no-underline hover:underline" to="https://www.thunder.so/docs/aws">documentation</NuxtLink>.</p>
           <UButton 
             size="lg"
+            icon="mdi:github"
             @click="authorizeGithub" 
             :loading="authorizing" 
             :disabled="authorizing">Authorize with GitHub
@@ -44,6 +73,7 @@
           <div class="flex justify-start">
             <UButton
               size="lg"
+              icon="mdi:aws"
               :disabled="!hasUat || isDeploying"
               :loading="isDeploying"
               @click="installApplication"

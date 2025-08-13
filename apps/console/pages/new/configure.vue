@@ -1,6 +1,25 @@
 <template>
   <div>
     <UCard>
+      <div class="flex items-center space-x-3">
+        <div class="flex-shrink-0">
+          <Icon name="mdi:github" class="w-6 h-6 text-gray-700" />
+        </div>
+        <div>
+          <h3 class="text-md text-highlighted">{{ applicationSchema.name }}</h3>
+          <p class="text-sm text-gray-600">
+            <a 
+              :href="`https://github.com/${applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.owner}/${applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.repo}`"
+              target="_blank"
+              class="text-sm text-gray-600 hover:underline"
+            >
+              {{ applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.owner }}/{{ applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.repo }}
+            </a>
+          </p>
+        </div>
+      </div>
+    </UCard>
+    <UCard class="mt-6">
       <template #header>
         <h1>Configure application</h1>
       </template>

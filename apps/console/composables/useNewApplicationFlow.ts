@@ -96,8 +96,9 @@ export const useNewApplicationFlow = () => {
     if (applicationSchema.value.environments && applicationSchema.value.environments.length > 0) {
       applicationSchema.value.environments[0] = {
         ...applicationSchema.value.environments[0],
-        provider_id: provider.id,
-        region: provider.region,
+        // provider_id: provider.id,
+        // region: provider.region,
+        provider: provider
       };
     }
   };

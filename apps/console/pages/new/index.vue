@@ -1,7 +1,7 @@
 <template>
   <div>
     <div v-if="loading" class="flex justify-center items-center p-8">
-      <p>Loading installations...</p>
+      <p>Loading ...</p>
     </div>
     <div v-else-if="error" class="flex justify-center items-center p-8">
       <UAlert color="error" variant="soft" :title="`Error loading installations: ${error.message}`" />
@@ -15,9 +15,9 @@
     <div v-else class="flex justify-center items-center" style="height: 50vh;">
       <UCard class="w-full max-w-lg">
         <template #header>
-          <h2 class="text-xl font-semibold text-center">Connect to GitHub</h2>
+          <h2 class="text-lg">Connect to GitHub</h2>
         </template>
-        <div class="text-center p-4">
+        <div class="p-4">
           <p class="mb-4">You need to install the Thunder GitHub App to see your repositories.</p>
           <UButton
             icon="i-uil-github"
