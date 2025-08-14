@@ -3,7 +3,7 @@ import { publicProcedure, protectedProcedure, router } from '../init';
 import { db } from '~/server/db/db';
 import { services } from '~/server/db/schema';
 import { eq } from 'drizzle-orm';
-import { appPropsSchema, edgePropsSchema, domainPropsSchema, pipelinePropsSchema } from '~/server/trpc/schemas';
+import { appPropsSchema, edgePropsSchema } from '~/server/trpc/schemas';
 
 // Helper function to deep merge objects
 function deepMerge(target: any, source: any): any {
@@ -41,8 +41,8 @@ export const servicesRouter = router({
       app_props: appPropsSchema.optional(),
       cdn_props: z.record(z.any()).optional(),
       edge_props: edgePropsSchema.optional(),
-      domain_props: domainPropsSchema.optional(),
-      pipeline_props: pipelinePropsSchema.optional(),
+      domain_props: z.record(z.any()).optional(),
+      pipeline_props: z.record(z.any()).optional(),
     }))
     .mutation(async ({ input }) => {
       const { serviceId, ...propsToUpdate } = input;

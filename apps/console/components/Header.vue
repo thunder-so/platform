@@ -113,8 +113,8 @@
           side: 'bottom',
         }"
       >
-        <UButton size="lg" color="neutral" variant="ghost">A
-          <!-- <UAvatar :src="user?.user_metadata.avatar_url" :alt="user?.user_metadata.full_name" size="xs" /> -->
+        <UButton size="lg" color="neutral" variant="ghost">
+          <UAvatar :src="user?.user_metadata.avatar_url" :alt="user?.user_metadata.full_name" size="xs" class="h-5 w-5" />
         </UButton>
 
         <template #content>
