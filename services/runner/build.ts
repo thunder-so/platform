@@ -36,8 +36,8 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 
 const builders: Record<string, IStackBuilder> = {
   SPA: spaBuilder,
-  LAMBDA: lambdaBuilder,
-  ECS: ecsBuilder,
+  FUNCTION: lambdaBuilder,
+  WEB_SERVICE: ecsBuilder,
 };
 
 export const handler: SQSHandler = async (event) => {
@@ -111,8 +111,8 @@ export const handler: SQSHandler = async (event) => {
     },
     buildspecOverride: buildSpec,
     environmentVariablesOverride: [
-      { name: 'AWS_ACCOUNT', value: buildRequest.env.account, type: EnvironmentVariableType.PLAINTEXT },
-      { name: 'AWS_REGION', value: buildRequest.env.region, type: EnvironmentVariableType.PLAINTEXT },
+      { name: 'AWS_ACCOUNT', value: buildRequest.context.env.account, type: EnvironmentVariableType.PLAINTEXT },
+      { name: 'AWS_REGION', value: buildRequest.context.env.region, type: EnvironmentVariableType.PLAINTEXT },
       { name: 'AWS_ACCESS_KEY_ID', value: credentials?.AccessKeyId, type: EnvironmentVariableType.PLAINTEXT },
       { name: 'AWS_SECRET_ACCESS_KEY', value: credentials?.SecretAccessKey, type: EnvironmentVariableType.PLAINTEXT },
       { name: 'AWS_SESSION_TOKEN', value: credentials?.SessionToken, type: EnvironmentVariableType.PLAINTEXT },

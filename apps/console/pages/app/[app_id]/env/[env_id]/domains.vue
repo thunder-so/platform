@@ -1,3 +1,4 @@
+
 <template>
   <div>
     <UCard class="mt-4">
@@ -5,24 +6,22 @@
         <h2 class="text-xl font-semibold">Domain Settings</h2>
       </template>
 
-      <UForm :state="formState" @submit="saveSettings">
-        <div class="">
-          <UFormField label="Domain" name="domain">
-            <UInput v-model="formState.domain" />
-          </UFormField>
+      <UForm :state="formState" @submit="saveSettings" class="space-y-4">
+        <UFormField label="Domain" name="domain">
+          <UInput v-model="formState.domain" />
+        </UFormField>
 
-          <UFormField label="Global Certificate ARN" name="globalCertificateArn">
-            <UInput v-model="formState.globalCertificateArn" />
-          </UFormField>
+        <UFormField v-if="service?.stack_type === 'SPA' || service?.stack_type === 'WEB_SERVICE'" label="Global Certificate ARN (for CloudFront)" name="globalCertificateArn">
+          <UInput v-model="formState.globalCertificateArn" />
+        </UFormField>
 
-          <UFormField label="Regional Certificate ARN" name="regionalCertificateArn">
-            <UInput v-model="formState.regionalCertificateArn" />
-          </UFormField>
+        <UFormField v-if="service?.stack_type === 'FUNCTION' || service?.stack_type === 'WEB_SERVICE'" label="Regional Certificate ARN (for API Gateway/ALB)" name="regionalCertificateArn">
+          <UInput v-model="formState.regionalCertificateArn" />
+        </UFormField>
 
-          <UFormField label="Hosted Zone ID" name="hostedZoneId">
-            <UInput v-model="formState.hostedZoneId" />
-          </UFormField>
-        </div>
+        <UFormField label="Hosted Zone ID" name="hostedZoneId">
+          <UInput v-model="formState.hostedZoneId" />
+        </UFormField>
 
         <div class="mt-4">
           <UButton type="submit" :loading="isSaving">Save Settings</UButton>
@@ -49,8 +48,8 @@ const service = environment?.services?.[0];
 
 const formState = ref({
   domain: service?.domain_props?.domain,
-  globalCertificateArn: service?.domain_props?.globalCertificateArn,
-  regionalCertificateArn: service?.domain_props?.regionalCertificateArn,
+  globalCertificateArn: (service?.domain_props as any)?.globalCertificateArn,
+  regionalCertificateArn: (service?.domain_props as any)?.regionalCertificateArn,
   hostedZoneId: service?.domain_props?.hostedZoneId,
 });
 

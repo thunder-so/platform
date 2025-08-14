@@ -26,16 +26,9 @@ export const spaBuilder: IStackBuilder = {
       throw new Error('Invalid stack type for spaBuilder');
     }
 
-    const { props, ...baseRequest } = request;
-
     return {
       "@aws-cdk/core:newStyleStackSynthesis": true,
-      ...baseRequest,
-      outputDir: props.outputDir,
-      ...props.domain,
-      ...props.cdn,
-      ...props.edge,
-      buildProps: props.buildProps,
+      ...request.context,
     };
   },
 

@@ -93,7 +93,7 @@
                   <Icon :name="item.icon" class="mr-2" />
                   <span>{{ item.label }}</span>
                 </NuxtLink>
-                <div v-else @click="() => { item.click(); isHelpPopoverOpen = false }" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800 cursor-pointer">
+                <div v-else-if="item.click" @click="() => { item.click(); isHelpPopoverOpen = false }" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800 cursor-pointer">
                   <Icon :name="item.icon" class="mr-2" />
                   <span>{{ item.label }}</span>
                 </div>
@@ -113,8 +113,8 @@
           side: 'bottom',
         }"
       >
-        <UButton size="lg" color="neutral" variant="ghost">
-          <UAvatar :src="user?.user_metadata.avatar_url" :alt="user?.user_metadata.full_name" size="xs" />
+        <UButton size="lg" color="neutral" variant="ghost">A
+          <!-- <UAvatar :src="user?.user_metadata.avatar_url" :alt="user?.user_metadata.full_name" size="xs" /> -->
         </UButton>
 
         <template #content>
@@ -133,7 +133,7 @@
                   <Icon :name="item.icon" class="mr-2" />
                   <span>{{ item.label }}</span>
                 </NuxtLink>
-                <div v-else @click="() => { item.click(); isUserPopoverOpen = false }" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800 cursor-pointer">
+                <div v-else-if="item.click" @click="() => { item.click(); isUserPopoverOpen = false }" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800 cursor-pointer">
                   <Icon :name="item.icon" class="mr-2" />
                   <span>{{ item.label }}</span>
                 </div>

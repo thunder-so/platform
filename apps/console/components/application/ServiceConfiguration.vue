@@ -6,8 +6,8 @@
 
       <div class="mt-4">
         <ServiceConfigStatic v-if="service.stack_type === 'SPA'" :service="service" />
-        <ServiceConfigFunction v-else-if="service.stack_type === 'LAMBDA'" :service="service" />
-        <ServiceConfigWeb v-else-if="service.stack_type === 'ECS'" :service="service" />
+        <ServiceConfigFunction v-else-if="service.stack_type === 'FUNCTION'" :service="service" />
+        <ServiceConfigWeb v-else-if="service.stack_type === 'WEB_SERVICE'" :service="service" />
       </div>
     </ClientOnly>
   </div>
@@ -36,8 +36,8 @@ const selectedStackType = computed({
 
 const serviceTypes = [
   { label: 'Static', value: 'SPA', description: 'Hosted on S3 and CloudFront' },
-  { label: 'Function', value: 'LAMBDA', description: 'Serverless Lambda function' },
-  { label: 'Web Service', value: 'ECS', description: 'Container deployed on ECS Fargate' },
+  { label: 'Function', value: 'FUNCTION', description: 'Serverless Lambda function' },
+  { label: 'Web Service', value: 'WEB_SERVICE', description: 'Container deployed on ECS Fargate' },
 ];
 
 watch(service, (newService) => {

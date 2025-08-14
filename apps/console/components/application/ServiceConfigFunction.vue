@@ -4,7 +4,10 @@
       <UFormField label="Root Directory" name="appProps.rootDir">
         <UInput v-model="service.app_props.rootDir" placeholder="./" class="w-96" size="lg" />
       </UFormField>
-      <UFormField label="Docker File" name="metadata.dockerFile">
+      <UFormField label="Build System" name="metadata.buildSystem">
+        <USelect v-model="buildSystem" :items="['Nixpacks', 'Buildpacks', 'Custom Dockerfile']" class="w-96" size="lg" />
+      </UFormField>
+      <UFormField v-if="buildSystem === 'Custom Dockerfile'" label="Docker File" name="metadata.dockerFile">
         <UInput v-model="service.metadata.dockerFile" placeholder="Dockerfile" class="w-96" size="lg" />
       </UFormField>
       <UFormField label="Memory Size (MB)" name="metadata.memorySize">
@@ -18,7 +21,9 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import type { ServiceSchema } from '~/server/db/schema';
 
 const props = defineProps<{ service: ServiceSchema }>();
+const buildSystem = ref('Nixpacks');
 </script>

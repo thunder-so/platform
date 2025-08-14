@@ -332,9 +332,9 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
           trimmedOutputs.CloudFrontDistributionUrl,
           provider.account_id,
           environment.region,
-          service.metadata.repo,
-          service.metadata.owner,
-          service.metadata.branch
+          service.pipeline_props.sourceProps.repo,
+          service.pipeline_props.sourceProps.owner,
+          service.pipeline_props.sourceProps.branchOrRef
         );
     }
 

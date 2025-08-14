@@ -1,3 +1,4 @@
+
 import { pgTable, pgEnum, uuid, text, timestamp, jsonb, integer, boolean, unique, index, primaryKey, foreignKey } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { cuid2 } from 'drizzle-cuid2/postgres';
@@ -5,12 +6,16 @@ import { cuid2 } from 'drizzle-cuid2/postgres';
 // Enums
 export const buildStatusEnum = pgEnum('BUILD_STATUS', ['NULL', 'IN_PROGRESS', 'SUCCEEDED', 'FAILED', 'FAULT', 'TIMED_OUT', 'STOPPED']);
 export const pipelineStatusEnum = pgEnum('PIPELINE_STATUS', ['NULL', 'STARTED', 'SUCCEEDED', 'RESUMED', 'FAILED', 'CANCELED', 'SUPERSEDED']);
+export const accountAccessEnum = pgEnum('ACCOUNT_ACCESS', ['READ_ONLY', 'READ_WRITE', 'ADMIN', 'OWNER']);
+export const applicationStatusEnum = pgEnum('APPLICATION_STATUS', ['PENDING', 'CONFIGURED', 'READY']);
+export const stackTypeEnum = pgEnum('STACK_TYPE', ['SPA', 'FUNCTION', 'WEB_SERVICE']);
+export const pricingTypeEnum = pgEnum('PRICING_TYPE', ['one_time', 'recurring']);
+export const pricingPlanIntervalEnum = pgEnum('PRICING_PLAN_INTERVAL', ['month', 'year']);
+export const subscriptionStatusEnum = pgEnum('SUBSCRIPTION_STATUS', ['trialing', 'active', 'canceled', 'incomplete', 'incomplete_expired', 'past_due', 'unpaid', 'paused']);
 
 /**
- * User, Organization, and Membership tables
+ * Core Tables: Users, Organizations, Memberships
  */
-export const accountAccessEnum = pgEnum('ACCOUNT_ACCESS', ['READ_ONLY', 'READ_WRITE', 'ADMIN', 'OWNER']);
-
 export const users = pgTable('users', {
   id: uuid('id').primaryKey(),
   updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }),
@@ -42,37 +47,9 @@ export const memberships = pgTable('memberships', {
   userOrgUnique: unique().on(table.user_id, table.organization_id)
 }));
 
-export const usersRelations = relations(users, ({ many }) => ({
-  installations: many(installations),
-  memberships: many(memberships),
-  userAccessTokens: many(userAccessTokens),
-}));
-
-export const organizationsRelations = relations(organizations, ({ many }) => ({
-  applications: many(applications),
-  members: many(memberships),
-  providers: many(providers),
-  subscriptions: many(subscriptions),
-}));
-
-export const membershipsRelations = relations(memberships, ({ one }) => ({
-  organization: one(organizations, {
-    fields: [memberships.organization_id],
-    references: [organizations.id],
-  }),
-  user: one(users, {
-    fields: [memberships.user_id],
-    references: [users.id],
-  }),
-}));
-
 /**
- * Polar Payment Integration
+ * Payment & Subscription Tables
  */
-export const pricingTypeEnum = pgEnum('PRICING_TYPE', ['one_time', 'recurring']);
-export const pricingPlanIntervalEnum = pgEnum('PRICING_PLAN_INTERVAL', ['month', 'year']);
-export const subscriptionStatusEnum = pgEnum('SUBSCRIPTION_STATUS', ['trialing', 'active', 'canceled', 'incomplete', 'incomplete_expired', 'past_due', 'unpaid', 'paused']);
-
 export const customers = pgTable('customers', {
   user_id: uuid('user_id').notNull().references(() => users.id),
   organization_id: text('organization_id').notNull().references(() => organizations.id),
@@ -84,7 +61,7 @@ export const customers = pgTable('customers', {
 }));
 
 export const products = pgTable('products', {
-  id: text('id').primaryKey(), // Polar product ID, e.g., prod_1234
+  id: text('id').primaryKey(),
   active: boolean('active').notNull(),
   name: text('name').notNull(),
   description: text('description'),
@@ -94,7 +71,7 @@ export const products = pgTable('products', {
 });
 
 export const subscriptions = pgTable('subscriptions', {
-  id: text('id').primaryKey(), // Polar subscription ID, e.g., sub_1234
+  id: text('id').primaryKey(),
   user_id: uuid('user_id').notNull().references(() => users.id),
   organization_id: text('organization_id').notNull().references(() => organizations.id),
   polar_customer_id: text('polar_customer_id').notNull(),
@@ -115,30 +92,10 @@ export const subscriptions = pgTable('subscriptions', {
   polarCustomerIdIdx: index('subscriptions_polar_customer_id_idx').on(table.polar_customer_id),
 }));
 
-export const subscriptionsRelations = relations(subscriptions, ({ one }) => ({
-  organization: one(organizations, {
-    fields: [subscriptions.organization_id],
-    references: [organizations.id],
-  }),
-  user: one(users, {
-    fields: [subscriptions.user_id],
-    references: [users.id],
-  }),
-  customer: one(customers, {
-    fields: [subscriptions.user_id, subscriptions.organization_id],
-    references: [customers.user_id, customers.organization_id],
-  }),
-  product: one(products, {
-    fields: [subscriptions.product_id],
-    references: [products.id],
-  }),
-}));
-
 /**
- * AWS Account Providers
+ * Platform Infrastructure Tables
  */
 export const providers = pgTable('providers', {
-//   id: text('id').primaryKey().$defaultFn(() => cuid2()),
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
   alias: text('alias'),
   role_arn: text('role_arn'),
@@ -153,20 +110,6 @@ export const providers = pgTable('providers', {
   deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
   organization_id: text('organization_id').notNull().references(() => organizations.id),
 });
-
-export const providersRelations = relations(providers, ({ one, many }) => ({
-  organization: one(organizations, {
-    fields: [providers.organization_id],
-    references: [organizations.id],
-  }),
-  environments: many(environments),
-}));
-
-/**
- * Applications, Environments, Services, and related tables
- */
-export const applicationStatusEnum = pgEnum('APPLICATION_STATUS', ['PENDING', 'CONFIGURED', 'READY']);
-export const stackTypeEnum = pgEnum('STACK_TYPE', ['SPA', 'LAMBDA', 'ECS', 'CRON', 'THIRD_PARTY']);
 
 export const applications = pgTable('applications', {
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
@@ -198,13 +141,13 @@ export const services = pgTable('services', {
   display_name: text('display_name').notNull(),
   stack_type: stackTypeEnum('stack_type').default('SPA'),
   stack_version: text('stack_version'),
-  resources: jsonb('resources'), // store stack output
-  metadata: jsonb('metadata'), // service specific: LambdaProps, ServiceProps, etc.
-  app_props: jsonb('app_props'), // rootdir, outputdir
-  cdn_props: jsonb('cdn_props'), // cloudfront
-  edge_props: jsonb('edge_props'), // headers, redirects, rewrites
-  domain_props: jsonb('domain_props'), // route53, domains, certificates
-  pipeline_props: jsonb('pipeline_props'), // sourceprops, buildprops, event bus
+  resources: jsonb('resources'),
+  metadata: jsonb('metadata'),
+  app_props: jsonb('app_props'),
+  cdn_props: jsonb('cdn_props'),
+  edge_props: jsonb('edge_props'),
+  domain_props: jsonb('domain_props'),
+  pipeline_props: jsonb('pipeline_props'),
   created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
   deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
@@ -212,9 +155,6 @@ export const services = pgTable('services', {
   installation_id: integer('installation_id').references(() => installations.installation_id),
 });
 
-/**
- * Installations and related tables
- */
 export const installations = pgTable('installations', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   installation_id: integer('installation_id').unique().notNull(),
@@ -225,23 +165,11 @@ export const installations = pgTable('installations', {
   metadata: jsonb('metadata').notNull(),
 });
 
-export const installationsRelations = relations(installations, ({ one, many }) => ({
-  user: one(users, {
-    fields: [installations.user_id],
-    references: [users.id],
-  }),
-  services: many(services),
-}));
-
-
-/**
- * Env Vars.
- */
 export const environmentVariables = pgTable('environment_variables', {
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
   key: text('key').notNull(),
-  value: text('value').notNull(), // populated when string env variable
-  resource: text('resource'), // ARN 
+  value: text('value').notNull(),
+  resource: text('resource'),
   environment_id: text('environment_id').notNull().references(() => environments.id),
   created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
@@ -250,7 +178,7 @@ export const environmentVariables = pgTable('environment_variables', {
 
 export const userAccessTokens = pgTable('user_access_tokens', {
   secret_id: uuid('secret_id').primaryKey(),
-  resource: text('resource'), // ARN
+  resource: text('resource'),
   user_id: uuid('user_id').notNull().references(() => users.id),
   environment_id: text('environment_id').references(() => environments.id),
   created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
@@ -312,115 +240,9 @@ export const events = pgTable('events', {
   environment_id: text('environment_id').notNull().references(() => environments.id),
 });
 
-// Relations
-// export const paymentsRelations = relations(payments, ({ one }) => ({
-//   organization: one(organizations, {
-//     fields: [payments.organization_id],
-//     references: [organizations.id],
-//   }),
-// }));
-
-export const applicationsRelations = relations(applications, ({ one, many }) => ({
-  organization: one(organizations, {
-    fields: [applications.organization_id],
-    references: [organizations.id],
-  }),
-  environments: many(environments),
-}));
-
-export const environmentsRelations = relations(environments, ({ one, many }) => ({
-  provider: one(providers, {
-    fields: [environments.provider_id],
-    references: [providers.id],
-  }),
-  application: one(applications, {
-    fields: [environments.application_id],
-    references: [applications.id],
-  }),
-  environmentVariables: many(environmentVariables),
-  services: many(services),
-  events: many(events),
-  builds: many(builds),
-  destroys: many(destroys),
-  userAccessTokens: one(userAccessTokens),
-}));
-
-
-
-export const servicesRelations = relations(services, ({ one, many }) => ({
-  environment: one(environments, {
-    fields: [services.environment_id],
-    references: [environments.id],
-  }),
-  installation: one(installations, {
-    fields: [services.installation_id],
-    references: [installations.installation_id],
-  }),
-  domains: many(domains),
-  events: many(events),
-  builds: many(builds),
-  destroys: many(destroys),
-}));
-
-export const environmentVariablesRelations = relations(environmentVariables, ({ one }) => ({
-  environment: one(environments, {
-    fields: [environmentVariables.environment_id],
-    references: [environments.id],
-  }),
-}));
-
-export const userAccessTokensRelations = relations(userAccessTokens, ({ one }) => ({
-  user: one(users, {
-    fields: [userAccessTokens.user_id],
-    references: [users.id],
-  }),
-  environment: one(environments, {
-    fields: [userAccessTokens.environment_id],
-    references: [environments.id],
-  }),
-}));
-
-export const domainsRelations = relations(domains, ({ one }) => ({
-  service: one(services, {
-    fields: [domains.service_id],
-    references: [services.id],
-  }),
-}));
-
-export const buildsRelations = relations(builds, ({ one }) => ({
-  service: one(services, {
-    fields: [builds.service_id],
-    references: [services.id],
-  }),
-  environment: one(environments, {
-    fields: [builds.environment_id],
-    references: [environments.id],
-  }),
-}));
-
-export const destroysRelations = relations(destroys, ({ one }) => ({
-  service: one(services, {
-    fields: [destroys.service_id],
-    references: [services.id],
-  }),
-  environment: one(environments, {
-    fields: [destroys.environment_id],
-    references: [environments.id],
-  }),
-}));
-
-export const eventsRelations = relations(events, ({ one }) => ({
-  service: one(services, {
-    fields: [events.service_id],
-    references: [services.id],
-  }),
-  environment: one(environments, {
-    fields: [events.environment_id],
-    references: [environments.id],
-  }),
-}));
-
-// Export types for TypeScript
+/**
+ * Export types for TypeScript
+ */
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Organization = typeof organizations.$inferSelect;
@@ -496,76 +318,157 @@ export interface Membership {
 // Application Schema Interfaces
 export interface AppProps {
   rootDir: string;
-  outputDir: string;
+  debug?: boolean;
 }
 
-export interface CdnProps {
-  
+export interface CloudFrontProps {
+  errorPagePath?: string;
+  allowHeaders?: string[];
+  allowCookies?: string[];
+  allowQueryParams?: string[];
+  denyQueryParams?: string[];
 }
 
 export interface EdgeProps {
-  headers?: Array<{
-    path: string; 
-    name: string; 
-    value: string
-  }>;
-  redirects?: Array<{
-    source: string;
-    destination: string;
-  }>;
-  rewrites?: Array<{
-    source: string;
-    destination: string;
-  }>;
+  headers?: Array<{ path: string; name: string; value: string }>;
+  redirects?: Array<{ source: string; destination: string }>;
+  rewrites?: Array<{ source: string; destination: string }>;
 }
 
-export interface DomainProps {
+export interface SourceProps {
+  owner: string;
+  repo: string;
+  branchOrRef: string;
+}
+
+export type BuildSystem = 'Nixpacks' | 'Buildpacks' | 'Custom Dockerfile';
+
+// --- Stack-Specific Prop Interfaces ---
+
+// Build Props
+export interface NodeBasedBuildProps {
+  runtime?: string;
+  runtime_version?: number | string;
+  installcmd?: string;
+  buildcmd?: string;
+  environment?: Record<string, string>;
+  include?: string[];
+  exclude?: string[];
+  secrets?: { key: string; resource: string; }[];
+}
+
+export interface DockerBasedBuildProps {
+  include?: string[];
+  exclude?: string[];
+  environment?: Record<string, string>;
+  secrets?: { key: string; resource: string; }[];
+  dockerBuildArgs?: string[];
+}
+
+// Domain Props
+export interface SpaDomainProps {
+  domain?: string;
+  globalCertificateArn?: string;
+  hostedZoneId?: string;
+}
+
+export interface FunctionDomainProps {
+  domain?: string;
+  regionalCertificateArn?: string;
+  hostedZoneId?: string;
+}
+
+export interface WebServiceDomainProps {
   domain?: string;
   globalCertificateArn?: string;
   regionalCertificateArn?: string;
   hostedZoneId?: string;
 }
 
-export interface PipelineProps {
-  sourceProps: {
-    owner: string;
-    repo: string;
-    branchOrRef: string;
-  };
-  buildProps?: {
-    runtime?: string;
-    runtime_version?: number;
-    installcmd?: string;
-    buildcmd?: string;
-    environment?: Record<string, string>;
-  };
-  eventBus?: string;
+// Metadata Props
+export interface SpaMetadata {
+  outputDir: string;
 }
 
-export interface FunctionProps {
+export interface FunctionMetadata {
+  buildSystem?: BuildSystem;
   dockerFile?: string;
   memorySize?: number;
   timeout?: number;
   keepWarm?: boolean;
+  url?: boolean;
+  runtime?: 'nodejs20.x' | 'nodejs22.x' | 'nodejs24.x';
+  architecture?: 'x86_64' | 'ARM_64';
+  codeDir?: string;
+  handler?: string;
+  include?: string[];
+  exclude?: string[];
+  tracing?: boolean;
+  reservedConcurrency?: number;
+  provisionedConcurrency?: number;
+  variables?: Array<{ [key: string]: string }>;
+  secrets?: { key: string; resource: string; }[];
+  dockerBuildArgs?: string[];
 }
 
-export interface WebServiceProps {
+export interface WebServiceMetadata {
+  buildSystem?: BuildSystem;
   dockerFile?: string;
   desiredCount: number;
   cpu?: number;
   memorySize?: number;
   port?: number;
+  architecture?: 'x86_64' | 'ARM64';
+  variables?: Array<{ [key: string]: string; }>;
+  secrets?: { key: string; resource: string; }[];
+  dockerBuildArgs?: string[];
 }
 
-export type ServiceSchema = Service & {
+// Pipeline Props
+interface BasePipelineProps {
+  sourceProps: SourceProps;
+  eventBus?: string;
+}
+
+export interface SpaPipelineProps extends BasePipelineProps {
+  buildProps?: NodeBasedBuildProps;
+}
+
+export interface FunctionPipelineProps extends BasePipelineProps {
+  buildProps?: DockerBasedBuildProps;
+}
+
+export interface WebServicePipelineProps extends BasePipelineProps {
+  buildProps?: DockerBasedBuildProps;
+}
+
+// --- Main Discriminated Union for ServiceSchema ---
+
+export type ServiceSchema = Omit<Service, 'metadata' | 'pipeline_props' | 'domain_props'> & {
   app_props: AppProps | null;
-  cdn_props: CdnProps | null;
+  cdn_props: CloudFrontProps | null;
   edge_props: EdgeProps | null;
-  domain_props: DomainProps | null;
-  pipeline_props: PipelineProps | null;
   resources: Record<string, any> | null;
-  metadata: (FunctionProps | WebServiceProps) | null;
-};
+} & (
+  | { 
+      stack_type: 'SPA'; 
+      metadata: SpaMetadata | null;
+      pipeline_props: SpaPipelineProps | null;
+      domain_props: SpaDomainProps | null;
+    }
+  | { 
+      stack_type: 'FUNCTION'; 
+      metadata: FunctionMetadata | null; 
+      pipeline_props: FunctionPipelineProps | null;
+      domain_props: FunctionDomainProps | null;
+    }
+  | { 
+      stack_type: 'WEB_SERVICE'; 
+      metadata: WebServiceMetadata | null; 
+      pipeline_props: WebServicePipelineProps | null;
+      domain_props: WebServiceDomainProps | null;
+    }
+);
 
 export type ProviderSchema = Partial<Provider>;
 
