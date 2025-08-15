@@ -52,6 +52,7 @@
 
       <!-- New Menu -->
       <UPopover
+        v-model:open="isNewPopoverOpen"
         mode="click"
         :content="{
           align: 'end',
@@ -66,7 +67,10 @@
           <div class="py-1">
             <template v-for="(group, index) in newMenuItems" :key="index">
               <div v-for="item in group" :key="item.to">
-                <NuxtLink :to="item.to" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">{{ item.label }}</NuxtLink>
+                <NuxtLink :to="item.to" class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">
+                  <Icon :name="item.icon" class="mr-2" />
+                  <span>{{ item.label }}</span>
+                </NuxtLink>
               </div>
               <hr v-if="index < newMenuItems.length - 1" class="border-gray-200 dark:border-gray-700" />
             </template>
@@ -166,11 +170,23 @@ const organizationItems = computed(() => [
   }))
 ])
 
+const isNewPopoverOpen = ref(false);
 const newMenuItems = ref([
   [
     { 
-      label: 'New application', 
-      to: '/new', 
+      label: 'New Static Site', 
+      to: '/new?stack_type=SPA',
+      icon: 'streamline:browser-website-1-solid'
+    },
+    { 
+      label: 'New Lambda Function', 
+      to: '/new?stack_type=FUNCTION',
+      icon: 'simple-icons:awslambda'
+    },
+    { 
+      label: 'New Web Service', 
+      to: '/new?stack_type=WEB_SERVICE',
+      icon: 'mdi:web'
     },
   ],
 ]);

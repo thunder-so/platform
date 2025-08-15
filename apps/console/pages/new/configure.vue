@@ -7,7 +7,7 @@
             <Icon name="mdi:github" class="w-6 h-6 text-gray-700" />
           </div>
           <div>
-            <h3 class="text-md text-highlighted">{{ applicationSchema.name }}</h3>
+            <h3 class="text-md text-highlighted">{{ applicationSchema.display_name }}</h3>
             <!-- <h3 class="text-md text-highlighted"><pre>{{ applicationSchema }}</pre></h3> -->
             <p class="text-sm text-gray-600">
               <a 
