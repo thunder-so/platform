@@ -2,7 +2,7 @@
   <header class="flex justify-between items-center py-2 px-4 border-b border-muted">
     <div class="flex items-center space-x-2">
       <NuxtLink to="/" class="text-xl font-bold">
-        <UButton icon="custom:thunderso" size="sm" color="neutral" variant="ghost"></UButton>
+        <UButton icon="custom:thunderso" size="sm" color="neutral" variant="ghost" class="p-3"></UButton>
       </NuxtLink>
 
       <!-- Organizations Menu -->
