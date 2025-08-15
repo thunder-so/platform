@@ -128,7 +128,7 @@ const createServiceSchema = (
 
 export const useNewApplicationFlow = () => {
   const route = useRoute();
-  const applicationSchema = useSessionStorage<Partial<ApplicationInputSchema>>('newApplicationSchema', () => ({}));
+  const applicationSchema = useCookie<Partial<ApplicationInputSchema>>('newApplicationSchema', { default: () => ({}) });
   const oAuthError = useState<boolean>('newApplicationOAuthError', () => false);
 
   const currentStep = computed(() => {
@@ -145,8 +145,7 @@ export const useNewApplicationFlow = () => {
 
     if (sourceProps && installationId && (type === 'SPA' || type === 'FUNCTION' || type === 'WEB_SERVICE')) {
       const newService = createServiceSchema(type, sourceProps.owner, sourceProps.repo, installationId);
-      // Force reactivity by replacing the whole array
-      applicationSchema.value.environments![0]!.services = [newService];
+      applicationSchema.value.environments![0]!.services.splice(0, 1, newService);
     }
   };
 

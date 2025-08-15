@@ -26,18 +26,14 @@
           <h1>Configure application</h1>
         </template>
 
-        <div v-if="!applicationSchema.environments" class="flex justify-center items-center p-8">
-          <p>Scanning the repository ...</p>
-        </div>
-
-        <div v-else class="space-y-4">
+        <div v-if="applicationSchema.environments" class="space-y-4">
           <UForm :state="applicationSchema">
             <UFormField label="Application Name">
               <UInput v-model="applicationSchema.display_name" size="lg" class="w-96" />
             </UFormField>
           </UForm>
 
-          <UForm v-if="applicationSchema.environments && applicationSchema.environments[0]" :state="applicationSchema" class="space-y-4">
+          <UForm v-if="applicationSchema.environments[0]" :state="applicationSchema" class="space-y-4">
             <UFormField label="Environment Name" description="Your default environment">
               <UInput v-model="applicationSchema.environments[0].display_name" size="lg" class="w-96" />
             </UFormField>
@@ -79,7 +75,7 @@
     </div>
     <template #placeholder>
       <div class="flex justify-center items-center p-8">
-        <p>Loading configuration...</p>
+        <p>Scanning the repository ...</p>
       </div>
     </template>
   </ClientOnly>
