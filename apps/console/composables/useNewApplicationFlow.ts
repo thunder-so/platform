@@ -140,13 +140,47 @@ export const useNewApplicationFlow = () => {
 
   const setServiceType = (type: Service['stack_type']) => {
     const service = applicationSchema.value.environments?.[0]?.services?.[0];
-    const sourceProps = service?.pipeline_props?.sourceProps;
-    const installationId = service?.installation_id;
+    if (!service) return;
 
-    if (sourceProps && installationId && (type === 'SPA' || type === 'FUNCTION' || type === 'WEB_SERVICE')) {
-      const newService = createServiceSchema(type, sourceProps.owner, sourceProps.repo, installationId);
-      applicationSchema.value.environments![0]!.services.splice(0, 1, newService);
+    // If type isn't changing, do nothing
+    if (service.stack_type === type) return;
+
+    const sourceProps = service.pipeline_props?.sourceProps;
+    const installationId = service.installation_id;
+    if (!sourceProps || !installationId || !(type === 'SPA' || type === 'FUNCTION' || type === 'WEB_SERVICE')) return;
+
+    // Create a new service with fresh defaults for the target type
+    const newService = createServiceSchema(type, sourceProps.owner, sourceProps.repo, installationId);
+
+    // --- Intelligent Merge ---
+    // Preserve app_props (contains rootDir)
+    newService.app_props = service.app_props;
+
+    // Preserve the entire sourceProps object (contains branch)
+    if (service.pipeline_props?.sourceProps) {
+        newService.pipeline_props.sourceProps = service.pipeline_props.sourceProps;
     }
+
+    // Preserve properties in metadata that exist in the new metadata
+    if (service.metadata) {
+      for (const key in newService.metadata) {
+        if (key in service.metadata) {
+          (newService.metadata as any)[key] = (service.metadata as any)[key];
+        }
+      }
+    }
+
+    // Preserve properties in buildProps if the new type is SPA
+    if (newService.stack_type === 'SPA' && service.pipeline_props?.buildProps && newService.pipeline_props?.buildProps) {
+      for (const key in newService.pipeline_props.buildProps) {
+        if (key in service.pipeline_props.buildProps) {
+          (newService.pipeline_props.buildProps as any)[key] = (service.pipeline_props.buildProps as any)[key];
+        }
+      }
+    }
+
+    // Replace the old service with the new, merged one
+    applicationSchema.value.environments![0]!.services.splice(0, 1, newService);
   };
 
   const setApplicationSchema = (owner: string, repo: string, installation_id: number, stack_type: string | null) => {

@@ -21,9 +21,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
+import type { PropType } from 'vue';
+import type { ApplicationInputSchema } from '~/server/trpc/routers/applications.router';
 
-const { applicationSchema } = useNewApplicationFlow();
-const service = computed(() => applicationSchema.value.environments?.[0]?.services?.[0]);
+type ServiceInput = ApplicationInputSchema['environments'][0]['services'][0];
+
+defineProps({
+  service: {
+    type: Object as PropType<ServiceInput>,
+    required: true
+  }
+});
 </script>

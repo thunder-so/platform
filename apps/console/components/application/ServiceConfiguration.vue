@@ -5,9 +5,9 @@
       <URadioGroup v-model="selectedStackType" :items="serviceTypes" orientation="horizontal" variant="card" />
 
       <div class="mt-4">
-        <ServiceConfigStatic v-if="service.stack_type === 'SPA'" />
-        <ServiceConfigFunction v-else-if="service.stack_type === 'FUNCTION'" />
-        <ServiceConfigWeb v-else-if="service.stack_type === 'WEB_SERVICE'" />
+        <ServiceConfigStatic v-if="service.stack_type === 'SPA'" :service="service" />
+        <ServiceConfigFunction v-else-if="service.stack_type === 'FUNCTION'" :service="service" />
+        <ServiceConfigWeb v-else-if="service.stack_type === 'WEB_SERVICE'" :service="service" />
       </div>
     </ClientOnly>
   </div>
