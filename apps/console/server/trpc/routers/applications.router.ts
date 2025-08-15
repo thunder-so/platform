@@ -4,7 +4,7 @@ import { protectedProcedure, router } from '../init';
 import { TRPCError } from '@trpc/server';
 import { db } from '~/server/db/db';
 import { sql, eq } from 'drizzle-orm';
-import { applications, environments, services, userAccessTokens, builds, providers } from '~/server/db/schema';
+import { applications, environments, services, userAccessTokens, builds } from '~/server/db/schema';
 import { PlatformLibrary } from '~/server/lib/platform.library';
 import * as ProviderLibrary from '~/server/lib/provider.library';
 import type { BuildRequest } from '@thunder/types';
@@ -66,10 +66,26 @@ const serviceSchema = z.discriminatedUnion('stack_type', [
   }),
 ]);
 
+const providerSchema = z.object({
+  id: z.string(),
+  alias: z.string().nullable(),
+  role_arn: z.string().nullable(),
+  account_id: z.string().nullable(),
+  region: z.string().nullable(),
+  stack_id: z.string().nullable(),
+  stack_name: z.string().nullable(),
+  access_key_id: z.string().nullable(),
+  secret_id: z.string().uuid().nullable(),
+  created_at: z.string().nullable().optional(),
+  updated_at: z.string().nullable().optional(),
+  deleted_at: z.string().nullable().optional(),
+  organization_id: z.string(),
+});
+
 const environmentSchema = z.object({
   name: z.string(),
   display_name: z.string(),
-  provider_id: z.string(),
+  provider: providerSchema.optional(),
   region: z.string(),
   user_access_token: z.any().optional(),
   services: z.array(serviceSchema),
@@ -106,18 +122,19 @@ export const applicationsRouter = router({
         }
 
         for (const env of inputEnvironments) {
+          if (!env.provider) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Environment is missing provider details.' });
+          }
+
           const [newEnvironment] = await tx.insert(environments).values({
             name: env.name,
             display_name: env.display_name,
             application_id: newApplication.id,
-            provider_id: env.provider_id,
+            provider_id: env.provider.id,
             region: env.region,
           }).returning({ id: environments.id, name: environments.name });
 
-          const providerDetails = await tx.query.providers.findFirst({ where: eq(providers.id, env.provider_id) });
-          if (!providerDetails) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'Provider not found.' });
-          }
+          const providerDetails = env.provider;
 
           const vaultSecretId = env.user_access_token.secret_id;
           const tokenResult = await tx.execute(sql`SELECT decrypted_secret FROM vault.decrypted_secrets WHERE id = ${vaultSecretId}::uuid`);

@@ -1,13 +1,13 @@
 <template>
   <ClientOnly>
-    <UForm :state="service" class="space-y-4">
+    <UForm v-if="service" :state="service" class="space-y-4">
       <UFormField label="Root Directory" name="appProps.rootDir">
         <UInput v-model="service.app_props.rootDir" placeholder="./" class="w-96" size="lg" />
       </UFormField>
       <UFormField label="Build System" name="metadata.buildSystem">
-        <USelect v-model="buildSystem" :items="['Nixpacks', 'Buildpacks', 'Custom Dockerfile']" class="w-96" size="lg" />
+        <USelect v-model="service.metadata.buildSystem" :items="['Nixpacks', 'Buildpacks', 'Custom Dockerfile']" class="w-96" size="lg" />
       </UFormField>
-      <UFormField v-if="buildSystem === 'Custom Dockerfile'" label="Docker File" name="metadata.dockerFile">
+      <UFormField v-if="service.metadata.buildSystem === 'Custom Dockerfile'" label="Docker File" name="metadata.dockerFile">
         <UInput v-model="service.metadata.dockerFile" placeholder="Dockerfile" class="w-96" size="lg" />
       </UFormField>
       <UFormField label="Memory Size (MB)" name="metadata.memorySize">
@@ -21,9 +21,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import type { ServiceSchema } from '~/server/db/schema';
+import { computed } from 'vue';
+import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
 
-const props = defineProps<{ service: ServiceSchema }>();
-const buildSystem = ref('Nixpacks');
+const { applicationSchema } = useNewApplicationFlow();
+const service = computed(() => applicationSchema.value.environments?.[0]?.services?.[0]);
 </script>

@@ -1,11 +1,11 @@
 <template>
   <ClientOnly>
-    <UForm :state="service" class="space-y-4">
+    <UForm v-if="service" :state="service" class="space-y-4">
       <UFormField label="Root Directory" name="app_props.rootDir">
         <UInput v-model="service.app_props.rootDir" placeholder="./" class="w-96" size="lg" />
       </UFormField>
-      <UFormField label="Output Directory" name="app_props.outputDir">
-        <UInput v-model="service.app_props.outputDir" placeholder="public/" class="w-96" size="lg" />
+      <UFormField label="Output Directory" name="metadata.outputDir">
+        <UInput v-model="service.metadata.outputDir" placeholder="public/" class="w-96" size="lg" />
       </UFormField>
       <UFormField label="Runtime" name="pipeline_props.buildProps.runtime_version">
         <USelect 
@@ -27,9 +27,12 @@
 </template>
 
 <script setup lang="ts">
-import type { ServiceSchema } from '~/server/db/schema';
+import { computed } from 'vue';
+import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
 
-const props = defineProps<{ service: ServiceSchema }>();
+const { applicationSchema } = useNewApplicationFlow();
+const service = computed(() => applicationSchema.value.environments?.[0]?.services?.[0]);
+
 const appConfig = useAppConfig();
 const runtimes = ref(appConfig.runtimes);
 </script>

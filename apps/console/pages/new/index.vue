@@ -1,4 +1,6 @@
 <template>
+          <ClientOnly><pre>{{ applicationSchema }}</pre></ClientOnly>
+
   <div>
     <div v-if="loading" class="flex justify-center items-center p-8">
       <p>Loading ...</p>
@@ -35,11 +37,15 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, provide } from 'vue';
 import GithubRepoSelector from '~/components/application/GithubRepoSelector.vue';
+import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
 
 definePageMeta({
   layout: 'new',
   middleware: ['github-middleware-client']
 });
+
+const { clearApplicationSchema, applicationSchema } = useNewApplicationFlow();
+clearApplicationSchema();
 
 const user = useSupabaseUser();
 const supabase = useSupabaseClient();

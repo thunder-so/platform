@@ -341,8 +341,6 @@ export interface SourceProps {
   branchOrRef: string;
 }
 
-export type BuildSystem = 'Nixpacks' | 'Buildpacks' | 'Custom Dockerfile';
-
 // --- Stack-Specific Prop Interfaces ---
 
 // Build Props
@@ -386,6 +384,8 @@ export interface WebServiceDomainProps {
 }
 
 // Metadata Props
+export type BuildSystem = 'Nixpacks' | 'Buildpacks' | 'Custom Dockerfile';
+
 export interface SpaMetadata {
   outputDir: string;
 }

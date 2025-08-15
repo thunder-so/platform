@@ -1,82 +1,88 @@
 <template>
-  <div>
-    <UCard>
-      <div class="flex items-center space-x-3">
-        <div class="flex-shrink-0">
-          <Icon name="mdi:github" class="w-6 h-6 text-gray-700" />
-        </div>
-        <div>
-          <h3 class="text-md text-highlighted">{{ applicationSchema.name }}</h3>
-          <p class="text-sm text-gray-600">
-            <a 
-              :href="`https://github.com/${applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.owner}/${applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.repo}`"
-              target="_blank"
-              class="text-sm text-gray-600 hover:underline"
-            >
-              {{ applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.owner }}/{{ applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.repo }}
-            </a>
-          </p>
-        </div>
-      </div>
-    </UCard>
-    <UCard class="mt-6">
-      <template #header>
-        <h1>Configure application</h1>
-      </template>
-
-      <div v-if="!applicationSchema.environments" class="flex justify-center items-center p-8">
-        <p>Scanning the repository ...</p>
-      </div>
-
-      <div v-else class="space-y-4">
-        <UForm :state="applicationSchema">
-          <UFormField label="Application Name">
-            <UInput v-model="applicationSchema.display_name" size="lg" class="w-96" />
-          </UFormField>
-        </UForm>
-
-        <ClientOnly>
-        <UForm :state="applicationSchema" class="space-y-4">
-          <UFormField label="Environment Name" description="Your default environment">
-            <UInput v-model="applicationSchema.environments[0].display_name" size="lg" class="w-96" />
-          </UFormField>
-
-          <div class="flex space-x-4">
-            <UFormField label="AWS Account">
-              <USelect 
-                v-model="applicationSchema.environments[0].provider_id" 
-                :items="providerItems" 
-                class="w-96" size="lg"
-              />
-            </UFormField>
-
-            <UFormField label="Region">
-              <USelect 
-                v-model="applicationSchema.environments[0].region" 
-                :items="awsRegions" 
-                value-key="name" 
-                option-attribute="label" 
-                class="w-96" size="lg"
-              />
-            </UFormField>
+  <ClientOnly>
+    <div>
+      <UCard>
+        <div class="flex items-center space-x-3">
+          <div class="flex-shrink-0">
+            <Icon name="mdi:github" class="w-6 h-6 text-gray-700" />
           </div>
-        </UForm>
-        </ClientOnly>
-        <ServiceConfiguration />
-      </div>
-
-      <template #footer>
-        <div class="flex justify-start">
-          <UButton 
-            size="lg" 
-            @click="router.push('/new/deploy')"
-          >
-            Continue
-          </UButton>
+          <div>
+            <h3 class="text-md text-highlighted">{{ applicationSchema.name }}</h3>
+            <!-- <h3 class="text-md text-highlighted"><pre>{{ applicationSchema }}</pre></h3> -->
+            <p class="text-sm text-gray-600">
+              <a 
+                :href="`https://github.com/${applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.owner}/${applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.repo}`"
+                target="_blank"
+                class="text-sm text-gray-600 hover:underline"
+              >
+                {{ applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.owner }}/{{ applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.repo }}
+              </a>
+            </p>
+          </div>
         </div>
-      </template>
-    </UCard>
-  </div>
+      </UCard>
+      <UCard class="mt-6">
+        <template #header>
+          <h1>Configure application</h1>
+        </template>
+
+        <div v-if="!applicationSchema.environments" class="flex justify-center items-center p-8">
+          <p>Scanning the repository ...</p>
+        </div>
+
+        <div v-else class="space-y-4">
+          <UForm :state="applicationSchema">
+            <UFormField label="Application Name">
+              <UInput v-model="applicationSchema.display_name" size="lg" class="w-96" />
+            </UFormField>
+          </UForm>
+
+          <UForm v-if="applicationSchema.environments && applicationSchema.environments[0]" :state="applicationSchema" class="space-y-4">
+            <UFormField label="Environment Name" description="Your default environment">
+              <UInput v-model="applicationSchema.environments[0].display_name" size="lg" class="w-96" />
+            </UFormField>
+
+            <div class="flex space-x-4">
+              <UFormField label="AWS Account">
+                <USelect 
+                  v-model="selectedProviderId" 
+                  :items="providerItems" 
+                  class="w-96" size="lg"
+                />
+              </UFormField>
+
+              <UFormField label="Region">
+                <USelect 
+                  v-model="applicationSchema.environments[0].region" 
+                  :items="awsRegions" 
+                  value-key="name" 
+                  option-attribute="label" 
+                  class="w-96" size="lg"
+                />
+              </UFormField>
+            </div>
+          </UForm>
+          <ServiceConfiguration />
+        </div>
+
+        <template #footer>
+          <div class="flex justify-start">
+            <UButton 
+              size="lg" 
+              @click="router.push('/new/deploy')"
+            >
+              Continue
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+    </div>
+    <template #placeholder>
+      <div class="flex justify-center items-center p-8">
+        <p>Loading configuration...</p>
+      </div>
+    </template>
+  </ClientOnly>
 </template>
 
 
@@ -100,13 +106,22 @@ const {
 } = useNewApplicationFlow();
 
 const appConfig = useAppConfig();
-const { $client } = useNuxtApp();
 const { selectedOrganization } = useMemberships();
 const supabase = useSupabaseClient();
 const providers = ref<Provider[]>([]);
+const selectedProviderId = ref<string | null>(null);
 const awsRegions = ref(appConfig.regions);
 
 const providerItems = computed(() => providers.value.map(p => ({ value: p.id, label: p.alias })));
+
+watch(selectedProviderId, (newId) => {
+  if (newId) {
+    const provider = providers.value.find(p => p.id === newId);
+    if (provider) {
+      setProvider(provider);
+    }
+  }
+});
 
 onMounted(async () => {
   const ownerParam = route.query.owner as string;
@@ -129,8 +144,8 @@ onMounted(async () => {
       throw supabaseError;
     }
     providers.value = supabaseProviders || [];
-    if (providers.value.length > 0) {
-      setProvider(providers.value[0]!);
+    if (providers.value.length > 0 && providers.value[0]) {
+      selectedProviderId.value = providers.value[0].id;
     }
   }
 });

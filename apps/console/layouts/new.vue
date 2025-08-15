@@ -27,7 +27,7 @@
 <script setup lang="ts">
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
 
-const { currentStep } = useNewApplicationFlow();
+const { currentStep, applicationSchema } = useNewApplicationFlow();
 
 const steps = [
   {
