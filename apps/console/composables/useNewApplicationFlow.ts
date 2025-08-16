@@ -233,6 +233,15 @@ export const useNewApplicationFlow = () => {
     applicationSchema.value = {};
   };
 
+  const setBuildProps = (props: { runtime: string; installCommand: string; buildCommand: string; }) => {
+    const service = applicationSchema.value.environments?.[0]?.services?.[0];
+    if (service?.stack_type === 'SPA' && service.pipeline_props?.buildProps) {
+      service.pipeline_props.buildProps.runtime_version = props.runtime;
+      service.pipeline_props.buildProps.installcmd = props.installCommand;
+      service.pipeline_props.buildProps.buildcmd = props.buildCommand;
+    }
+  };
+
   return {
     currentStep,
     applicationSchema,
@@ -243,5 +252,6 @@ export const useNewApplicationFlow = () => {
     setUat,
     setOAuthError,
     clearApplicationSchema,
+    setBuildProps,
   };
 };

@@ -35,9 +35,7 @@
             <UFormField label="Application Name" class="grid grid-cols-3 gap-4">
               <UInput v-model="applicationSchema.display_name" size="lg" class="w-96" />
             </UFormField>
-          <!-- </UForm>
 
-          <UForm v-if="applicationSchema.environments[0]" :state="applicationSchema" class="space-y-4"> -->
             <UFormField label="Environment Name" class="grid grid-cols-3 gap-4">
               <UInput v-model="applicationSchema.environments[0].display_name" size="lg" class="w-96" />
             </UFormField>
@@ -102,7 +100,8 @@ const { $client } = useNuxtApp();
 const { 
   setProvider,
   setApplicationSchema,
-  applicationSchema
+  applicationSchema,
+  setBuildProps
 } = useNewApplicationFlow();
 
 const appConfig = useAppConfig();
@@ -140,13 +139,25 @@ onMounted(async () => {
         repo: repoParam,
         installation_id: installationIdParam,
       });
+      
       repoBranches.value = branches || [];
       const defaultBranch = branches.find(b => b.is_default);
       if (defaultBranch && applicationSchema.value.environments?.[0]?.services?.[0]?.pipeline_props) {
         applicationSchema.value.environments[0].services[0].pipeline_props.sourceProps.branchOrRef = defaultBranch.name;
       }
+
+      if (typeParam === 'SPA') {
+        const buildSettings = await $client.github.scanRepository.query({
+          owner: ownerParam,
+          repo: repoParam,
+          installation_id: installationIdParam,
+        });
+        if (buildSettings) {
+          setBuildProps(buildSettings);
+        }
+      }
     } catch (error) {
-      console.error('Failed to fetch branches:', error);
+      console.error('Failed to fetch branches or scan repository:', error);
     }
   }
 

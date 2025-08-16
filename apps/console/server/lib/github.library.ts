@@ -7,6 +7,7 @@ type GetInstallationMetadata = Endpoints['GET /user/installations']['response'];
 type GetInstallationRepositoriesResponse = Endpoints['GET /installation/repositories']['response'];
 type ListBranchesResponse = Endpoints['GET /repos/{owner}/{repo}/branches']['response'];
 type GetRepoResponse = Endpoints['GET /repos/{owner}/{repo}']['response'];
+type GetContentResponse = Endpoints['GET /repos/{owner}/{repo}/contents/{path}']['response'];
 
 export interface Branch {
   name: string;
@@ -134,6 +135,71 @@ export default class GithubLibrary {
       }));
 
       return result;
+    }
+
+    async getFileContent(
+      owner: string,
+      repo: string,
+      installation_id: number,
+      path: string
+    ): Promise<string | null> {
+      const app = new App({
+        appId: this.appId as string,
+        privateKey: this.privateKey as string
+      });
+      const octokit = await app.getInstallationOctokit(installation_id);
+
+      try {
+        const response: GetContentResponse = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+          owner,
+          repo,
+          path,
+          headers: {
+            'X-GitHub-Api-Version': '2022-11-28'
+          }
+        });
+
+        if (!Array.isArray(response.data) && response.data.type === 'file') {
+          const content = Buffer.from(response.data.content, 'base64').toString('utf-8');
+          return content;
+        }
+        return null;
+      } catch (error: any) {
+        if (error.status === 404) {
+          return null;
+        }
+        throw error;
+      }
+    }
+
+    async checkFileExists(
+      owner: string,
+      repo: string,
+      installation_id: number,
+      path: string
+    ): Promise<boolean> {
+      const app = new App({
+        appId: this.appId as string,
+        privateKey: this.privateKey as string
+      });
+      const octokit = await app.getInstallationOctokit(installation_id);
+
+      try {
+        await octokit.request('HEAD /repos/{owner}/{repo}/contents/{path}', {
+          owner,
+          repo,
+          path,
+          headers: {
+            'X-GitHub-Api-Version': '2022-11-28'
+          }
+        });
+        return true;
+      } catch (error: any) {
+        if (error.status === 404) {
+          return false;
+        }
+        throw error;
+      }
     }
 
     /**

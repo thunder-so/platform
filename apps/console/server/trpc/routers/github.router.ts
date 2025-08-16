@@ -69,6 +69,69 @@ export const githubRouter = router({
         return branches;
       }),
 
+    scanRepository: protectedProcedure
+      .input(z.object({
+        owner: z.string(),
+        repo: z.string(),
+        installation_id: z.number(),
+      }))
+      .query(async ({ input }) => {
+        const { owner, repo, installation_id } = input;
+        const github = new GithubLibrary();
+
+        const packageJsonContent = await github.getFileContent(owner, repo, installation_id, 'package.json');
+
+        if (!packageJsonContent) {
+          return {
+            runtime: '24',
+            installCommand: 'npm install',
+            buildCommand: 'npm run build',
+          };
+        }
+
+        const packageJson = JSON.parse(packageJsonContent);
+
+        let runtime = '24';
+        if (packageJson.engines && packageJson.engines.node) {
+            const versionMatch = packageJson.engines.node.match(/\d+/);
+            if (versionMatch) {
+                runtime = versionMatch[0];
+            }
+        }
+
+        let installCommand = 'npm install';
+        const [hasBunLock, hasPnpmLock, hasYarnLock] = await Promise.all([
+          github.checkFileExists(owner, repo, installation_id, 'bun.lockb'),
+          github.checkFileExists(owner, repo, installation_id, 'pnpm-lock.yaml'),
+          github.checkFileExists(owner, repo, installation_id, 'yarn.lock'),
+        ]);
+
+        if (hasBunLock) {
+          installCommand = 'bun install';
+        } else if (hasPnpmLock) {
+          installCommand = 'pnpm install';
+        } else if (hasYarnLock) {
+          installCommand = 'yarn install';
+        }
+
+        let buildCommand = '';
+        if (packageJson.scripts) {
+          if (packageJson.scripts.build) {
+            buildCommand = 'npm run build';
+          } else if (packageJson.scripts.generate) {
+            buildCommand = 'npm run generate';
+          }
+        }
+
+        console.log(`Detected runtime: ${runtime}, install command: ${installCommand}, build command: ${buildCommand}`);
+
+        return {
+          runtime,
+          installCommand,
+          buildCommand,
+        };
+      }),
+
     handleOAuthFlow: protectedProcedure
       .input(z.object({ 
         code: z.string(),
