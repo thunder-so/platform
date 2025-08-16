@@ -72,7 +72,7 @@ const steps = [
 }
 
 .step.completed {
-  @apply ring ring-inset ring-primary/25 bg-primary/10 text-primary;
+  @apply ring ring-inset ring-success/25 bg-success/10 text-success;
 }
 
 .separator {

@@ -127,6 +127,7 @@ const createServiceSchema = (
 
 export const useNewApplicationFlow = () => {
   const route = useRoute();
+  const router = useRouter();
   const applicationSchema = useCookie<Partial<ApplicationInputSchema>>('newApplicationSchema', { default: () => ({}) });
   const oAuthError = useState<boolean>('newApplicationOAuthError', () => false);
 
@@ -180,6 +181,9 @@ export const useNewApplicationFlow = () => {
 
     // Replace the old service with the new, merged one
     applicationSchema.value.environments![0]!.services.splice(0, 1, newService);
+
+    const newQuery = { ...route.query, stack_type: type };
+    router.replace({ query: newQuery });
   };
 
   const setApplicationSchema = (owner: string, repo: string, installation_id: number, stack_type: string | null) => {

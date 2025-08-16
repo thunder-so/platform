@@ -1,6 +1,5 @@
 <template>
-  <ClientOnly>
-    <div>
+    <ClientOnly v-if="!isLoading">
       <UCard class="mt-6">
         <template #header>
           <h1>Configure application</h1>
@@ -72,13 +71,10 @@
           </div>
         </template>
       </UCard>
+    </ClientOnly>
+    <div v-else class="flex justify-center items-center p-8">
+      <p>Configuring your application...</p>
     </div>
-    <template #placeholder>
-      <div class="flex justify-center items-center p-8">
-        <p>Scanning the repository ...</p>
-      </div>
-    </template>
-  </ClientOnly>
 </template>
 
 
@@ -104,6 +100,8 @@ const {
   setBuildProps
 } = useNewApplicationFlow();
 
+const isLoading = ref(true);
+
 const appConfig = useAppConfig();
 const { selectedOrganization } = useMemberships();
 const supabase = useSupabaseClient();
@@ -125,15 +123,16 @@ watch(selectedProviderId, (newId) => {
 });
 
 onMounted(async () => {
-  const ownerParam = route.query.owner as string;
-  const repoParam = route.query.repo as string;
-  const installationIdParam = Number(route.query.installation_id);
-  const typeParam = route.query.stack_type as string;
-  
-  if (ownerParam && repoParam && installationIdParam) {
-    setApplicationSchema(ownerParam, repoParam, installationIdParam, typeParam);
+  isLoading.value = true;
+  try {
+    const ownerParam = route.query.owner as string;
+    const repoParam = route.query.repo as string;
+    const installationIdParam = Number(route.query.installation_id);
+    const typeParam = route.query.stack_type as string;
+    
+    if (ownerParam && repoParam && installationIdParam) {
+      setApplicationSchema(ownerParam, repoParam, installationIdParam, typeParam);
 
-    try {
       const branches = await $client.github.getBranches.query({
         owner: ownerParam,
         repo: repoParam,
@@ -156,25 +155,27 @@ onMounted(async () => {
           setBuildProps(buildSettings);
         }
       }
-    } catch (error) {
-      console.error('Failed to fetch branches or scan repository:', error);
     }
-  }
 
-  if (selectedOrganization.value?.id) {
-    const { data: supabaseProviders, error: supabaseError } = await supabase
-      .from('providers')
-      .select('*')
-      .eq('organization_id', selectedOrganization.value.id)
-      .is('deleted_at', null);
+    if (selectedOrganization.value?.id) {
+      const { data: supabaseProviders, error: supabaseError } = await supabase
+        .from('providers')
+        .select('*')
+        .eq('organization_id', selectedOrganization.value.id)
+        .is('deleted_at', null);
 
-    if (supabaseError) {
-      throw supabaseError;
+      if (supabaseError) {
+        throw supabaseError;
+      }
+      providers.value = supabaseProviders || [];
+      if (providers.value.length > 0 && providers.value[0]) {
+        selectedProviderId.value = providers.value[0].id;
+      }
     }
-    providers.value = supabaseProviders || [];
-    if (providers.value.length > 0 && providers.value[0]) {
-      selectedProviderId.value = providers.value[0].id;
-    }
+  } catch (error) {
+    console.error('Failed to fetch initial data for configuration page:', error);
+  } finally {
+    isLoading.value = false;
   }
 });
 </script>
