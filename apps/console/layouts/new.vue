@@ -4,7 +4,7 @@
 
     <UContainer>
       <div class="mt-8 mb-6 pb-6 border-b border-muted">
-        <h1 class="text-2xl font-bold mb-6">New application</h1>
+        <h1 class="text-2xl font-bold mb-6">{{ pageTitle }}</h1>
         <div class="flex items-center space-x-4">
           <div v-for="(step, index) in steps" :key="index" class="flex items-center">
             <div :class="['step', { 'active': currentStep >= index + 1, 'completed': currentStep > index + 1 }]">
@@ -25,9 +25,27 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
 
 const { currentStep, applicationSchema } = useNewApplicationFlow();
+
+const route = useRoute();
+
+const pageTitle = computed(() => {
+  const stackType = route.query.stack_type;
+  switch (stackType) {
+    case 'SPA':
+      return 'Create new Static Site';
+    case 'FUNCTION':
+      return 'Create new Lambda Function';
+    case 'WEB_SERVICE':
+      return 'Create new Web Service';
+    default:
+      return 'Create new Application';
+  }
+});
 
 const steps = [
   {

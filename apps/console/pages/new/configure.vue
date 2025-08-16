@@ -1,62 +1,64 @@
 <template>
   <ClientOnly>
     <div>
-      <UCard>
-        <div class="flex items-center space-x-3">
-          <div class="flex-shrink-0">
-            <Icon name="mdi:github" class="w-6 h-6 text-gray-700" />
-          </div>
-          <div>
-            <h3 class="text-md text-highlighted">{{ applicationSchema.display_name }}</h3>
-            <!-- <h3 class="text-md text-highlighted"><pre>{{ applicationSchema }}</pre></h3> -->
-            <p class="text-sm text-gray-600">
-              <a 
-                :href="`https://github.com/${applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.owner}/${applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.repo}`"
-                target="_blank"
-                class="text-sm text-gray-600 hover:underline"
-              >
-                {{ applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.owner }}/{{ applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.repo }}
-              </a>
-            </p>
-          </div>
-        </div>
-      </UCard>
       <UCard class="mt-6">
         <template #header>
           <h1>Configure application</h1>
         </template>
 
         <div v-if="applicationSchema.environments" class="space-y-4">
-          <UForm :state="applicationSchema">
-            <UFormField label="Application Name">
+          <UForm :state="applicationSchema" class="space-y-4">
+            <UFormField label="Repository" class="grid grid-cols-3 gap-4">
+              <UInput 
+                disabled 
+                size="lg" 
+                variant="outline"
+                class="w-full"
+              > 
+                <template #leading>
+                  <p class="flex items-center">
+                    <Icon name="mdi:github" class="w-5 h-5 text-muted mr-2" />
+                    <span class="text-sm text-muted">{{applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.owner}}/{{applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.repo}}</span>
+                  </p>
+                </template>
+              </UInput>
+            </UFormField>
+
+            <UFormField label="Branch" class="grid grid-cols-3 gap-4">
+              <USelect 
+                v-model="applicationSchema.environments[0].services[0].pipeline_props.sourceProps.branchOrRef" 
+                :items="branchItems" 
+                class="w-96" size="lg"
+              />
+            </UFormField>
+
+            <UFormField label="Application Name" class="grid grid-cols-3 gap-4">
               <UInput v-model="applicationSchema.display_name" size="lg" class="w-96" />
             </UFormField>
-          </UForm>
+          <!-- </UForm>
 
-          <UForm v-if="applicationSchema.environments[0]" :state="applicationSchema" class="space-y-4">
-            <UFormField label="Environment Name" description="Your default environment">
+          <UForm v-if="applicationSchema.environments[0]" :state="applicationSchema" class="space-y-4"> -->
+            <UFormField label="Environment Name" class="grid grid-cols-3 gap-4">
               <UInput v-model="applicationSchema.environments[0].display_name" size="lg" class="w-96" />
             </UFormField>
 
-            <div class="flex space-x-4">
-              <UFormField label="AWS Account">
-                <USelect 
-                  v-model="selectedProviderId" 
-                  :items="providerItems" 
-                  class="w-96" size="lg"
-                />
-              </UFormField>
+            <UFormField label="AWS Account" class="grid grid-cols-3 gap-4">
+              <USelect 
+                v-model="selectedProviderId" 
+                :items="providerItems" 
+                class="w-96" size="lg"
+              />
+            </UFormField>
 
-              <UFormField label="Region">
-                <USelect 
-                  v-model="applicationSchema.environments[0].region" 
-                  :items="awsRegions" 
-                  value-key="name" 
-                  option-attribute="label" 
-                  class="w-96" size="lg"
-                />
-              </UFormField>
-            </div>
+            <UFormField label="Region" class="grid grid-cols-3 gap-4">
+              <USelect 
+                v-model="applicationSchema.environments[0].region" 
+                :items="awsRegions" 
+                value-key="name" 
+                option-attribute="label" 
+                class="w-96" size="lg"
+              />
+            </UFormField>
           </UForm>
           <ServiceConfiguration />
         </div>
@@ -88,6 +90,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
 import ServiceConfiguration from '~/components/application/ServiceConfiguration.vue';
 import type { Provider } from '~/server/db/schema';
+import type { Branch } from '~/server/lib/github.library';
 
 definePageMeta({
   layout: 'new'
@@ -95,6 +98,7 @@ definePageMeta({
 
 const route = useRoute();
 const router = useRouter();
+const { $client } = useNuxtApp();
 const { 
   setProvider,
   setApplicationSchema,
@@ -107,8 +111,10 @@ const supabase = useSupabaseClient();
 const providers = ref<Provider[]>([]);
 const selectedProviderId = ref<string | null>(null);
 const awsRegions = ref(appConfig.regions);
+const repoBranches = ref<Branch[]>([]);
 
 const providerItems = computed(() => providers.value.map(p => ({ value: p.id, label: p.alias })));
+const branchItems = computed(() => repoBranches.value.map(b => ({ value: b.name, label: b.name })));
 
 watch(selectedProviderId, (newId) => {
   if (newId) {
@@ -127,6 +133,21 @@ onMounted(async () => {
   
   if (ownerParam && repoParam && installationIdParam) {
     setApplicationSchema(ownerParam, repoParam, installationIdParam, typeParam);
+
+    try {
+      const branches = await $client.github.getBranches.query({
+        owner: ownerParam,
+        repo: repoParam,
+        installation_id: installationIdParam,
+      });
+      repoBranches.value = branches || [];
+      const defaultBranch = branches.find(b => b.is_default);
+      if (defaultBranch && applicationSchema.value.environments?.[0]?.services?.[0]?.pipeline_props) {
+        applicationSchema.value.environments[0].services[0].pipeline_props.sourceProps.branchOrRef = defaultBranch.name;
+      }
+    } catch (error) {
+      console.error('Failed to fetch branches:', error);
+    }
   }
 
   if (selectedOrganization.value?.id) {

@@ -5,6 +5,18 @@ import { createAppAuth } from "@octokit/auth-app";
 
 type GetInstallationMetadata = Endpoints['GET /user/installations']['response'];
 type GetInstallationRepositoriesResponse = Endpoints['GET /installation/repositories']['response'];
+type ListBranchesResponse = Endpoints['GET /repos/{owner}/{repo}/branches']['response'];
+type GetRepoResponse = Endpoints['GET /repos/{owner}/{repo}']['response'];
+
+export interface Branch {
+  name: string;
+  commit: {
+    sha: string;
+    url: string;
+  };
+  protected: boolean;
+  is_default: boolean;
+}
 
 export default class GithubLibrary {
     private appId = process.env.GITHUB_APP_ID;
@@ -72,6 +84,56 @@ export default class GithubLibrary {
       catch (error) {
         throw error as Error;
       }
+    }
+
+    /**
+     * Get branches for a repository
+     * @param owner string
+     * @param repo string
+     * @param installation_id number
+     * @returns Array of branches with a marker for the default branch
+     */
+    async getBranches(
+      owner: string,
+      repo: string,
+      installation_id: number
+    ): Promise<Branch[]> {
+      const app = new App({
+        appId: this.appId as string,
+        privateKey: this.privateKey as string
+      });
+
+      const octokit = await app.getInstallationOctokit(installation_id);
+
+      // Get repository details to find the default branch
+      const repoDetails: OctokitResponse<GetRepoResponse['data']> = await octokit.request('GET /repos/{owner}/{repo}', {
+        owner,
+        repo,
+        headers: {
+          'X-GitHub-Api-Version': '2022-11-28'
+        }
+      });
+      const defaultBranch = repoDetails.data.default_branch;
+
+      // List all branches
+      const branchesResponse: OctokitResponse<ListBranchesResponse['data']> = await octokit.request('GET /repos/{owner}/{repo}/branches', {
+        owner,
+        repo,
+        headers: {
+          'X-GitHub-Api-Version': '2022-11-28'
+        }
+      });
+      const branches = branchesResponse.data;
+
+      // Map branches and mark the default one
+      const result: Branch[] = branches.map(branch => ({
+        name: branch.name,
+        commit: branch.commit,
+        protected: branch.protected,
+        is_default: branch.name === defaultBranch
+      }));
+
+      return result;
     }
 
     /**

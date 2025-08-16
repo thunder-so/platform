@@ -56,6 +56,19 @@ export const githubRouter = router({
         return repositories;
       }),
 
+    getBranches: protectedProcedure
+      .input(z.object({
+        owner: z.string(),
+        repo: z.string(),
+        installation_id: z.number(),
+      }))
+      .query(async ({ input }) => {
+        const { owner, repo, installation_id } = input;
+        const github = new GithubLibrary();
+        const branches = await github.getBranches(owner, repo, installation_id);
+        return branches;
+      }),
+
     handleOAuthFlow: protectedProcedure
       .input(z.object({ 
         code: z.string(),
