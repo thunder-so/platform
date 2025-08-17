@@ -1,15 +1,15 @@
 <template>
     <ClientOnly v-if="!isLoading">
-      <UCard>
+      <!-- <UCard>
         <pre>{{ applicationSchema }}</pre>
-      </UCard>
+      </UCard> -->
       <UCard class="mt-6">
         <template #header>
           <h1>Configure application</h1>
         </template>
 
         <div class="space-y-4">
-          <UAlert v-if="providerError" type="danger" class="mb-4">{{ providerError }}</UAlert>
+          <UAlert v-if="providerError" color="error" variant="subtle" class="mb-4" :title="providerError" />
 
           <div v-if="applicationSchema.environments" class="space-y-4">
             <UForm :state="applicationSchema" class="space-y-4">
@@ -64,7 +64,7 @@
             </UFormField>
             </UForm>
           </div>
-          <ServiceConfiguration />
+          <ServiceConfiguration :scan-error="scanError" :service="service" />
         </div>
 
         <template #footer>
@@ -105,6 +105,7 @@ const {
   providers,
   selectedProviderId,
   providerError,
+  scanError,
 } = useNewApplicationFlow();
 
 const appConfig = useAppConfig();
@@ -112,8 +113,9 @@ const awsRegions = ref(appConfig.regions);
 
 const providerItems = computed(() => providers.value.map(p => ({ value: p.id, label: p.alias })));
 const branchItems = computed(() => branches.value.map(b => ({ value: b.name, label: b.name })));
+const service = computed(() => applicationSchema.value.environments?.[0]?.services?.[0]);
 
-onMounted(() => {
+onMounted(async () => {
   // If route contains repo info, let the composable initialize applicationSchema and fetch branches/build settings
   const ownerParam = route.query.owner as string | undefined;
   const repoParam = route.query.repo as string | undefined;
@@ -121,7 +123,7 @@ onMounted(() => {
   const typeParam = route.query.stack_type as string | undefined;
 
   if (ownerParam && repoParam && installationIdParam) {
-    setApplicationSchema(ownerParam, repoParam, installationIdParam, typeParam || null);
+    await setApplicationSchema(ownerParam, repoParam, installationIdParam, typeParam || null);
   }
 });
 </script>

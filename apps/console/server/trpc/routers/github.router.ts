@@ -80,13 +80,10 @@ export const githubRouter = router({
         const github = new GithubLibrary();
 
         const packageJsonContent = await github.getFileContent(owner, repo, installation_id, 'package.json');
+        // console.log('>>>> DEBUG: packageJsonContent is:', packageJsonContent);
 
         if (!packageJsonContent) {
-          return {
-            runtime_version: '24',
-            installCommand: 'npm install',
-            buildCommand: 'npm run build',
-          };
+          throw new Error('A package.json file was not found at the root of your repository.')
         }
 
         const packageJson = JSON.parse(packageJsonContent);
@@ -99,7 +96,7 @@ export const githubRouter = router({
             }
         }
 
-        let installCommand = 'npm install';
+        let installcmd = 'npm install';
         const [hasBunLock, hasPnpmLock, hasYarnLock] = await Promise.all([
           github.checkFileExists(owner, repo, installation_id, 'bun.lockb'),
           github.checkFileExists(owner, repo, installation_id, 'pnpm-lock.yaml'),
@@ -107,28 +104,28 @@ export const githubRouter = router({
         ]);
 
         if (hasBunLock) {
-          installCommand = 'bun install';
+          installcmd = 'bun install';
         } else if (hasPnpmLock) {
-          installCommand = 'pnpm install';
+          installcmd = 'pnpm install';
         } else if (hasYarnLock) {
-          installCommand = 'yarn install';
+          installcmd = 'yarn install';
         }
 
-        let buildCommand = '';
+        let buildcmd = '';
         if (packageJson.scripts) {
           if (packageJson.scripts.build) {
-            buildCommand = 'npm run build';
+            buildcmd = packageJson.scripts.build;
           } else if (packageJson.scripts.generate) {
-            buildCommand = 'npm run generate';
+            buildcmd = packageJson.scripts.generate;
           }
         }
 
-        console.log(`Detected runtime: ${runtime_version}, install command: ${installCommand}, build command: ${buildCommand}`);
+        console.log(`Detected runtime: ${runtime_version}, install command: ${installcmd}, build command: ${buildcmd}`);
 
         return {
           runtime_version,
-          installCommand,
-          buildCommand,
+          installcmd,
+          buildcmd,
         };
       }),
 

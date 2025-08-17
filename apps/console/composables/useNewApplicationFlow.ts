@@ -88,6 +88,7 @@ export const useNewApplicationFlow = () => {
   const selectedProviderId = ref<string | null>(null);
   const providerLoading = ref(false);
   const providerError = ref<string | null>(null);
+  const scanError = ref<string | null>(null);
 
   const currentStep = computed(() => {
     const path = route.path;
@@ -96,82 +97,20 @@ export const useNewApplicationFlow = () => {
     return 1;
   });
 
-  // const sourceInfo = computed(() => {
-  //   const service = applicationSchema.value.environments?.[0]?.services?.[0];
-  //   if (!service) return null;
-  //   return {
-  //     owner: service.pipeline_props?.sourceProps?.owner,
-  //     repo: service.pipeline_props?.sourceProps?.repo,
-  //     installation_id: service.installation_id,
-  //     stack_type: service.stack_type,
-  //   };
-  // });
-
-  // watch(sourceInfo, async (newSourceInfo) => {
-  //   if (!newSourceInfo) return;
-
-  //   const { owner, repo, installation_id, stack_type } = newSourceInfo;
-
-  //   if (!owner || !repo || !installation_id) return;
-
-  //   if (typeof window === 'undefined' || !$client || !($client as any).github) {
-  //     return;
-  //   }
-
-  //   isLoading.value = true;
-  //   try {
-  //     const fetchedBranches = await $client.github.getBranches.query({
-  //       owner,
-  //       repo,
-  //       installation_id,
-  //     });
-  //     branches.value = fetchedBranches || [];
-  //     const defaultBranch = fetchedBranches.find(b => b.is_default);
-  //     const service = applicationSchema.value.environments?.[0]?.services?.[0];
-  //     if (defaultBranch && service?.pipeline_props?.sourceProps) {
-  //       service.pipeline_props.sourceProps.branchOrRef = defaultBranch.name;
-  //     }
-
-  //     if (stack_type === 'SPA') {
-  //       const buildSettings = await $client.github.scanRepository.query({
-  //         owner,
-  //         repo,
-  //         installation_id,
-  //       });
-  //       if (buildSettings) {
-  //         scannedBuildProps.value = buildSettings;
-  //         if (service?.pipeline_props?.buildProps) {
-  //           service.pipeline_props.buildProps.runtime_version = buildSettings.runtime;
-  //           service.pipeline_props.buildProps.installcmd = buildSettings.installCommand;
-  //           service.pipeline_props.buildProps.buildcmd = buildSettings.buildCommand;
-  //         }
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error("Error fetching repository details:", error);
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // }, { deep: true });
-
   /**
    * Fetch branches and scan the selected repository
    */
   const fetchBranches = async (owner: string, repo: string, installation_id: number, stack_type: string) => {
-    try {
-      const fetchedBranches = await $client.github.getBranches.query({
-        owner,
-        repo,
-        installation_id,
-      });
-      branches.value = fetchedBranches || [];
-      const defaultBranch = fetchedBranches.find(b => b.is_default);
-      const service = applicationSchema.value.environments?.[0]?.services?.[0];
-      if (defaultBranch && service?.pipeline_props?.sourceProps) {
-        service.pipeline_props.sourceProps.branchOrRef = defaultBranch.name;
-      }
-    } catch (error) {
-      console.error("Error fetching repository details:", error);
+    const fetchedBranches = await $client.github.getBranches.query({
+      owner,
+      repo,
+      installation_id,
+    });
+    branches.value = fetchedBranches || [];
+    const defaultBranch = fetchedBranches.find(b => b.is_default);
+    const service = applicationSchema.value.environments?.[0]?.services?.[0];
+    if (defaultBranch && service?.pipeline_props?.sourceProps) {
+      service.pipeline_props.sourceProps.branchOrRef = defaultBranch.name;
     }
   }
 
@@ -225,7 +164,6 @@ export const useNewApplicationFlow = () => {
 
   watch(selectedProviderId, (newId) => {
     if (!newId) return;
-    // Avoid redundant updates if the provider is already set on the application schema
     const currentProviderId = applicationSchema.value.environments?.[0]?.provider?.id;
     if (currentProviderId === newId) return;
 
@@ -246,24 +184,18 @@ export const useNewApplicationFlow = () => {
     });
     if (buildSettings) {
       scannedBuildProps.value = buildSettings;
-      // const service = applicationSchema.value.environments?.[0]?.services?.[0];
-      // if (service?.pipeline_props?.buildProps) {
-      //   service.pipeline_props.buildProps.runtime_version = buildSettings.runtime;
-      //   service.pipeline_props.buildProps.installcmd = buildSettings.installCommand;
-      //   service.pipeline_props.buildProps.buildcmd = buildSettings.buildCommand;
-      // }
     }
   }
 
   /**
    * Create a service schema based on the selected stack type
    */
-  const createServiceSchema = (
+  const createServiceSchema = async (
     stackType: ValidStackType,
     owner: string,
     repo: string,
     installation_id: number
-  ): ServiceInput => {
+  ): Promise<ServiceInput> => {
     const baseService = {
       name: stackType,
       display_name: stackType,
@@ -274,9 +206,13 @@ export const useNewApplicationFlow = () => {
       domain_props: null,
     };
 
-    // Scan repository if switching to SPA and no cached data exists
-    if (stackType === 'SPA' && !scannedBuildProps.value) {
-      scanRepository(owner, repo, installation_id);
+    if (stackType === 'SPA') {
+      try {
+        await scanRepository(owner, repo, installation_id);
+      } catch (e: any) {
+        console.error("scanRepository error:", e);
+        scanError.value = e.message || e;
+      }
     }
 
     const sourceProps: SourceProps = {
@@ -313,86 +249,46 @@ export const useNewApplicationFlow = () => {
     }
   };
 
-  /**
-   * Handle service type changes
-   */
-  // const setServiceType = (type: Service['stack_type']) => {
-  //   const service = applicationSchema.value.environments?.[0]?.services?.[0];
-  //   if (!service || service.stack_type === type) return;
-    
-  //   // Get the source info before recreating the service
-  //   const sourceProps = service.pipeline_props?.sourceProps;
-  //   const installationId = service.installation_id;
-  //   if (!sourceProps || !installationId) return;
+  const setApplicationSchema = async (owner: string, repo: string, installation_id: number, stack_type: string | null) => {
+    isLoading.value = true;
+    scanError.value = null;
+    // applicationSchema.value = {}; // Clear previous data to avoid showing stale info on error
 
-  //   // Create new service schema with proper structure for the new type
-  //   const newService = createServiceSchema(
-  //     type as ValidStackType, 
-  //     sourceProps.owner, 
-  //     sourceProps.repo, 
-  //     installationId
-  //   );
+    try {
+        const getValidStackType = (): ValidStackType => {
+          if (stack_type === 'SPA' || stack_type === 'FUNCTION' || stack_type === 'WEB_SERVICE') {
+            return stack_type;
+          }
+          return 'SPA';
+        };
+        
+        const validStackType = getValidStackType();
 
-  //   // Replace the service in the application schema
-  //   applicationSchema.value.environments![0].services![0] = newService;
+        const serviceSchema = await createServiceSchema(validStackType, owner, repo, installation_id);
 
-  //   router.replace({
-  //     query: { ...route.query, stack_type: type }
-  //   });
+        await Promise.all([
+            fetchProviders(selectedOrganization.value?.id),
+            fetchBranches(owner, repo, installation_id, validStackType)
+        ]);
 
-  //   // Preserve local mutable fields from the old service (app_props, pipeline source) while
-  //   // mutating the existing reactive service object in-place to avoid replacing proxies
-  //   // which can cause broad reactive invalidation and unnecessary reloads.
-  //   // if (service) {
-  //   //   // Copy top-level fields from newService into the existing service object
-  //   //   Object.keys(newService).forEach((k) => {
-  //   //     service[k] = (newService as any)[k];
-  //   //   });
-
-  //   //   // Restore previous app_props and sourceProps if present
-  //   //   service.app_props = service.app_props || (newService as any).app_props;
-  //   //   if (service.pipeline_props?.sourceProps && (newService as any).pipeline_props?.sourceProps) {
-  //   //     service.pipeline_props.sourceProps = service.pipeline_props.sourceProps;
-  //   //   }
-
-  //   //   // Merge metadata keys that existed previously
-  //   //   if (service.metadata && (newService as any).metadata) {
-  //   //     for (const key in (newService as any).metadata) {
-  //   //       if ((service.metadata as any) && key in (service.metadata as any)) {
-  //   //         (newService as any).metadata[key] = (service.metadata as any)[key];
-  //   //       }
-  //   //     }
-  //   //     service.metadata = (newService as any).metadata;
-  //   //   }
-  //   // }
-  // };
-
-  const setApplicationSchema = (owner: string, repo: string, installation_id: number, stack_type: string | null) => {
-    const getValidStackType = (): ValidStackType => {
-      if (stack_type === 'SPA' || stack_type === 'FUNCTION' || stack_type === 'WEB_SERVICE') {
-        return stack_type;
-      }
-      return 'SPA';
-    };
-    
-    const validStackType = getValidStackType();
-
-    const serviceSchema = createServiceSchema(validStackType, owner, repo, installation_id);
-    fetchProviders(selectedOrganization.value?.id);
-    fetchBranches(owner, repo, installation_id, validStackType);
-
-    applicationSchema.value = {
-      name: repo.replace(/[-_]/g, '').substring(0, 12),
-      display_name: repo,
-      environments: [
-        {
-          name: 'preview',
-          display_name: 'preview',
-          region: 'us-east-1',
-          services: [serviceSchema],
-        },
-      ],
-    };
+        applicationSchema.value = {
+          name: repo.replace(/[-_]/g, '').substring(0, 12),
+          display_name: repo,
+          environments: [
+            {
+              name: 'preview',
+              display_name: 'preview',
+              region: 'us-east-1',
+              services: [serviceSchema],
+            },
+          ],
+        };
+    } catch (e: any) {
+        console.error("Failed to configure application:", e);
+        scanError.value = e.message || 'An unexpected error occurred during configuration.';
+    } finally {
+        isLoading.value = false;
+    }
   };
 
   const clearApplicationSchema = () => {
@@ -419,11 +315,9 @@ export const useNewApplicationFlow = () => {
     selectedProviderId,
     providerLoading,
     providerError,
-    // setServiceType,
+    scanError,
     setApplicationSchema,
     setProvider,
-    // scanRepository,
-    // scannedBuildProps,
     setUat,
     setOAuthError,
     clearApplicationSchema,
