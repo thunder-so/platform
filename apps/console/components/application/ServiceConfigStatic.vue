@@ -29,10 +29,11 @@
 <script setup lang="ts">
 import type { PropType } from 'vue';
 import type { ApplicationInputSchema } from '~/server/trpc/routers/applications.router';
+// const { scanRepository, scannedBuildProps } = useNewApplicationFlow();
 
 type ServiceInput = ApplicationInputSchema['environments'][0]['services'][0];
 
-defineProps({
+const props = defineProps({
   service: {
     type: Object as PropType<ServiceInput>,
     required: true
@@ -41,4 +42,14 @@ defineProps({
 
 const appConfig = useAppConfig();
 const runtimes = ref(appConfig.runtimes);
+
+// onMounted(() => {
+//   if (!scannedBuildProps.value && props.service.pipeline_props) {
+//     scanRepository(
+//       props.service.pipeline_props.sourceProps.owner, 
+//       props.service.pipeline_props.sourceProps.repo, 
+//       props.service.installation_id
+//     );
+//   }
+// });
 </script>

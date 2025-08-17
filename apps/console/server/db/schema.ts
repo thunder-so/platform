@@ -482,3 +482,16 @@ export type EnvironmentSchema = Partial<Environment> & {
 export type ApplicationSchema = Partial<Application> & {
   environments?: EnvironmentSchema[];
 };
+
+/**
+ * Github Interfaces
+ */
+export interface Branch {
+  name: string;
+  commit: {
+    sha: string;
+    url: string;
+  };
+  protected: boolean;
+  is_default: boolean;
+}

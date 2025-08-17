@@ -2,22 +2,13 @@ import { Octokit } from '@octokit/core';
 import { App } from "@octokit/app";
 import type { Endpoints, OctokitResponse } from "@octokit/types";
 import { createAppAuth } from "@octokit/auth-app";
+import type { Branch } from '~/server/db/schema';
 
 type GetInstallationMetadata = Endpoints['GET /user/installations']['response'];
 type GetInstallationRepositoriesResponse = Endpoints['GET /installation/repositories']['response'];
 type ListBranchesResponse = Endpoints['GET /repos/{owner}/{repo}/branches']['response'];
 type GetRepoResponse = Endpoints['GET /repos/{owner}/{repo}']['response'];
 type GetContentResponse = Endpoints['GET /repos/{owner}/{repo}/contents/{path}']['response'];
-
-export interface Branch {
-  name: string;
-  commit: {
-    sha: string;
-    url: string;
-  };
-  protected: boolean;
-  is_default: boolean;
-}
 
 export default class GithubLibrary {
     private appId = process.env.GITHUB_APP_ID;

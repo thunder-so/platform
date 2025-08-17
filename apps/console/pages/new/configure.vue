@@ -1,12 +1,18 @@
 <template>
     <ClientOnly v-if="!isLoading">
+      <UCard>
+        <pre>{{ applicationSchema }}</pre>
+      </UCard>
       <UCard class="mt-6">
         <template #header>
           <h1>Configure application</h1>
         </template>
 
-        <div v-if="applicationSchema.environments" class="space-y-4">
-          <UForm :state="applicationSchema" class="space-y-4">
+        <div class="space-y-4">
+          <UAlert v-if="providerError" type="danger" class="mb-4">{{ providerError }}</UAlert>
+
+          <div v-if="applicationSchema.environments" class="space-y-4">
+            <UForm :state="applicationSchema" class="space-y-4">
             <UFormField label="Repository" class="grid grid-cols-3 gap-4">
               <UInput 
                 disabled 
@@ -56,7 +62,8 @@
                 class="w-96" size="lg"
               />
             </UFormField>
-          </UForm>
+            </UForm>
+          </div>
           <ServiceConfiguration />
         </div>
 
@@ -73,7 +80,7 @@
       </UCard>
     </ClientOnly>
     <div v-else class="flex justify-center items-center p-8">
-      <p>Configuring your application...</p>
+      <p>Scanning your repository...</p>
     </div>
 </template>
 
@@ -83,8 +90,6 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
 import ServiceConfiguration from '~/components/application/ServiceConfiguration.vue';
-import type { Provider } from '~/server/db/schema';
-import type { Branch } from '~/server/lib/github.library';
 
 definePageMeta({
   layout: 'new'
@@ -92,90 +97,31 @@ definePageMeta({
 
 const route = useRoute();
 const router = useRouter();
-const { $client } = useNuxtApp();
 const { 
-  setProvider,
   setApplicationSchema,
   applicationSchema,
-  setBuildProps
+  branches,
+  isLoading,
+  providers,
+  selectedProviderId,
+  providerError,
 } = useNewApplicationFlow();
 
-const isLoading = ref(true);
-
 const appConfig = useAppConfig();
-const { selectedOrganization } = useMemberships();
-const supabase = useSupabaseClient();
-const providers = ref<Provider[]>([]);
-const selectedProviderId = ref<string | null>(null);
 const awsRegions = ref(appConfig.regions);
-const repoBranches = ref<Branch[]>([]);
 
 const providerItems = computed(() => providers.value.map(p => ({ value: p.id, label: p.alias })));
-const branchItems = computed(() => repoBranches.value.map(b => ({ value: b.name, label: b.name })));
+const branchItems = computed(() => branches.value.map(b => ({ value: b.name, label: b.name })));
 
-watch(selectedProviderId, (newId) => {
-  if (newId) {
-    const provider = providers.value.find(p => p.id === newId);
-    if (provider) {
-      setProvider(provider);
-    }
-  }
-});
+onMounted(() => {
+  // If route contains repo info, let the composable initialize applicationSchema and fetch branches/build settings
+  const ownerParam = route.query.owner as string | undefined;
+  const repoParam = route.query.repo as string | undefined;
+  const installationIdParam = route.query.installation_id ? Number(route.query.installation_id) : undefined;
+  const typeParam = route.query.stack_type as string | undefined;
 
-onMounted(async () => {
-  isLoading.value = true;
-  try {
-    const ownerParam = route.query.owner as string;
-    const repoParam = route.query.repo as string;
-    const installationIdParam = Number(route.query.installation_id);
-    const typeParam = route.query.stack_type as string;
-    
-    if (ownerParam && repoParam && installationIdParam) {
-      setApplicationSchema(ownerParam, repoParam, installationIdParam, typeParam);
-
-      const branches = await $client.github.getBranches.query({
-        owner: ownerParam,
-        repo: repoParam,
-        installation_id: installationIdParam,
-      });
-      
-      repoBranches.value = branches || [];
-      const defaultBranch = branches.find(b => b.is_default);
-      if (defaultBranch && applicationSchema.value.environments?.[0]?.services?.[0]?.pipeline_props) {
-        applicationSchema.value.environments[0].services[0].pipeline_props.sourceProps.branchOrRef = defaultBranch.name;
-      }
-
-      if (typeParam === 'SPA') {
-        const buildSettings = await $client.github.scanRepository.query({
-          owner: ownerParam,
-          repo: repoParam,
-          installation_id: installationIdParam,
-        });
-        if (buildSettings) {
-          setBuildProps(buildSettings);
-        }
-      }
-    }
-
-    if (selectedOrganization.value?.id) {
-      const { data: supabaseProviders, error: supabaseError } = await supabase
-        .from('providers')
-        .select('*')
-        .eq('organization_id', selectedOrganization.value.id)
-        .is('deleted_at', null);
-
-      if (supabaseError) {
-        throw supabaseError;
-      }
-      providers.value = supabaseProviders || [];
-      if (providers.value.length > 0 && providers.value[0]) {
-        selectedProviderId.value = providers.value[0].id;
-      }
-    }
-  } catch (error) {
-    console.error('Failed to fetch initial data for configuration page:', error);
-  } finally {
-    isLoading.value = false;
+  if (ownerParam && repoParam && installationIdParam) {
+    setApplicationSchema(ownerParam, repoParam, installationIdParam, typeParam || null);
   }
 });
 </script>

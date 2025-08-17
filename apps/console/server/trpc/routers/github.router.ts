@@ -83,7 +83,7 @@ export const githubRouter = router({
 
         if (!packageJsonContent) {
           return {
-            runtime: '24',
+            runtime_version: '24',
             installCommand: 'npm install',
             buildCommand: 'npm run build',
           };
@@ -91,11 +91,11 @@ export const githubRouter = router({
 
         const packageJson = JSON.parse(packageJsonContent);
 
-        let runtime = '24';
+        let runtime_version = '24';
         if (packageJson.engines && packageJson.engines.node) {
             const versionMatch = packageJson.engines.node.match(/\d+/);
             if (versionMatch) {
-                runtime = versionMatch[0];
+                runtime_version = versionMatch[0];
             }
         }
 
@@ -123,10 +123,10 @@ export const githubRouter = router({
           }
         }
 
-        console.log(`Detected runtime: ${runtime}, install command: ${installCommand}, build command: ${buildCommand}`);
+        console.log(`Detected runtime: ${runtime_version}, install command: ${installCommand}, build command: ${buildCommand}`);
 
         return {
-          runtime,
+          runtime_version,
           installCommand,
           buildCommand,
         };
