@@ -1,11 +1,14 @@
 <template>
   <div>
+    <!-- <UCard>
+      <pre>{{ applicationSchema }}</pre>
+    </UCard> -->
     <UCard>
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-3">
           <Icon name="mdi:github" class="w-6 h-6 text-gray-700" />
           <div>
-            <h3 class="text-md font-medium">{{ applicationSchema.name }}</h3>
+            <h3 class="text-md font-medium">{{ applicationSchema.display_name }}</h3>
             <a 
               :href="`https://github.com/${applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.owner}/${applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.repo}`"
               target="_blank"

@@ -252,7 +252,6 @@ export const useNewApplicationFlow = () => {
   const setApplicationSchema = async (owner: string, repo: string, installation_id: number, stack_type: string | null) => {
     isLoading.value = true;
     scanError.value = null;
-    // applicationSchema.value = {}; // Clear previous data to avoid showing stale info on error
 
     try {
         const getValidStackType = (): ValidStackType => {
@@ -264,12 +263,20 @@ export const useNewApplicationFlow = () => {
         
         const validStackType = getValidStackType();
 
-        const serviceSchema = await createServiceSchema(validStackType, owner, repo, installation_id);
-
-        await Promise.all([
+        // Run fetches that don't depend on each other in parallel
+        const [serviceSchema] = await Promise.all([
+            createServiceSchema(validStackType, owner, repo, installation_id),
             fetchProviders(selectedOrganization.value?.id),
-            fetchBranches(owner, repo, installation_id, validStackType)
         ]);
+
+        // Now that providers are fetched, we can get the default one
+        const initialProvider = providers.value[0] || undefined;
+        if (initialProvider) {
+            selectedProviderId.value = initialProvider.id;
+        }
+
+        // Fetch branches after service schema is ready
+        await fetchBranches(owner, repo, installation_id, validStackType);
 
         applicationSchema.value = {
           name: repo.replace(/[-_]/g, '').substring(0, 12),
@@ -280,6 +287,12 @@ export const useNewApplicationFlow = () => {
               display_name: 'preview',
               region: 'us-east-1',
               services: [serviceSchema],
+              provider: initialProvider ? {
+                  ...initialProvider,
+                  created_at: new Date(initialProvider.created_at).toISOString(),
+                  updated_at: initialProvider.updated_at ? new Date(initialProvider.updated_at).toISOString() : null,
+                  deleted_at: initialProvider.deleted_at ? new Date(initialProvider.deleted_at).toISOString() : null,
+              } : undefined,
             },
           ],
         };
