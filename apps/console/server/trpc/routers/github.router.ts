@@ -129,6 +129,25 @@ export const githubRouter = router({
         };
       }),
 
+    scanForDockerfile: protectedProcedure
+      .input(z.object({
+        owner: z.string(),
+        repo: z.string(),
+        installation_id: z.number(),
+      }))
+      .query(async ({ input }) => {
+        const { owner, repo, installation_id } = input;
+        const github = new GithubLibrary();
+
+        const hasDockerfile = await github.checkFileExists(owner, repo, installation_id, 'Dockerfile');
+
+        if (!hasDockerfile) {
+          throw new Error('A Dockerfile was not found at the root of your repository.')
+        }
+
+        return { success: true };
+      }),
+
     handleOAuthFlow: protectedProcedure
       .input(z.object({ 
         code: z.string(),

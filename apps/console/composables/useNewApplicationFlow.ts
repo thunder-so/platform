@@ -187,6 +187,16 @@ export const useNewApplicationFlow = () => {
     }
   }
 
+  const scanForDockerfile = async (owner: string, repo: string, installation_id: number) => {
+    const result = await $client.github.scanForDockerfile.query({
+      owner,
+      repo,
+      installation_id,
+    });
+
+    return result
+  }
+
   /**
    * Create a service schema based on the selected stack type
    */
@@ -200,7 +210,7 @@ export const useNewApplicationFlow = () => {
       name: stackType,
       display_name: stackType,
       installation_id: installation_id,
-      app_props: { rootDir: './' },
+      app_props: { rootDir: '/' },
       cdn_props: null,
       edge_props: null,
       domain_props: null,
@@ -210,8 +220,19 @@ export const useNewApplicationFlow = () => {
       try {
         await scanRepository(owner, repo, installation_id);
       } catch (e: any) {
-        console.error("scanRepository error:", e);
+        console.error("scan error:", e);
         scanError.value = e.message || e;
+      }
+    }
+    else if (stackType === 'FUNCTION' || stackType === 'WEB_SERVICE') {
+      try {
+        const dockerFileStatus = await scanForDockerfile(owner, repo, installation_id);
+        if (dockerFileStatus.success) {
+          STACK_DEFAULTS[stackType].metadata.buildSystem = 'Custom Dockerfile';
+        }
+      } catch (e: any) {
+        console.error("scan error:", e);
+        // scanError.value = e.message || e;
       }
     }
 
