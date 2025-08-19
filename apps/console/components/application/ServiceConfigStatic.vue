@@ -1,6 +1,6 @@
 <template>
   <ClientOnly>
-    <UForm v-if="service" :state="service" :schema="serviceSchema" :validate-on="['input']" class="space-y-4">
+    <UForm ref="form" v-if="service" :state="service" :schema="serviceSchema" :validate-on="['input']" class="space-y-4">
       <UFormField label="Root Directory" name="app_props.rootDir" class="grid grid-cols-3 gap-4">
         <UInput v-model="service.app_props.rootDir" placeholder="./" class="w-96" size="lg" />
       </UFormField>
@@ -55,7 +55,7 @@
 <script setup lang="ts">
 import type { PropType } from 'vue';
 import { z } from 'zod';
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import { type ApplicationInputSchema, appPropsSchema, spaMetadataSchema, spaPipelinePropsSchema } from '~/server/db/types';
 
 type ServiceInput = ApplicationInputSchema['environments'][0]['services'][0];
@@ -120,4 +120,9 @@ const serviceSchema = z.object({
   metadata: spaMetadataSchema,
   pipeline_props: spaPipelinePropsSchema
 });
+
+const form = ref();
+const errors = computed(() => form.value?.errors || []);
+
+defineExpose({ errors });
 </script>

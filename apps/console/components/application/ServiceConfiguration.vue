@@ -6,15 +6,16 @@
 
     <ClientOnly v-if="service">
       <div class="mt-4">
-        <ServiceConfigStatic v-if="service.stack_type === 'SPA'" :service="service" />
-        <ServiceConfigFunction v-else-if="service.stack_type === 'FUNCTION'" :service="service" />
-        <ServiceConfigWeb v-else-if="service.stack_type === 'WEB_SERVICE'" :service="service" />
+        <ServiceConfigStatic v-if="service.stack_type === 'SPA'" ref="serviceForm" :service="service" />
+        <ServiceConfigFunction v-else-if="service.stack_type === 'FUNCTION'" ref="serviceForm" :service="service" />
+        <ServiceConfigWeb v-else-if="service.stack_type === 'WEB_SERVICE'" ref="serviceForm" :service="service" />
       </div>
     </ClientOnly>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue';
 import type { PropType } from 'vue';
 import type { Service } from '~/server/db/schema';
 import ServiceConfigStatic from './ServiceConfigStatic.vue';
@@ -31,4 +32,12 @@ defineProps({
     default: null,
   },
 });
+
+const serviceForm = ref();
+
+const hasErrors = computed(() => {
+  return serviceForm.value?.errors?.length > 0;
+});
+
+defineExpose({ hasErrors });
 </script>

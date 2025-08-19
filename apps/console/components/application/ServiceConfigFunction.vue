@@ -1,6 +1,6 @@
 <template>
   <ClientOnly>
-    <UForm v-if="service" :state="service" :schema="serviceSchema" :validate-on="['input']" class="space-y-4">
+    <UForm ref="form" v-if="service" :state="service" :schema="serviceSchema" :validate-on="['input']" class="space-y-4">
       <UFormField label="Root Directory" name="app_props.rootDir" class="grid grid-cols-3 gap-4">
         <UInput v-model="service.app_props.rootDir" placeholder="./" class="w-96" size="lg" />
       </UFormField>
@@ -43,5 +43,10 @@ const serviceSchema = z.object({
   metadata: functionMetadataSchema,
   pipeline_props: functionPipelinePropsSchema
 });
+
+const form = ref();
+const errors = computed(() => form.value?.errors || []);
+
+defineExpose({ errors });
 
 </script>

@@ -1,8 +1,8 @@
 <template>
     <ClientOnly v-if="!isLoading">
-      <UCard>
+      <!-- <UCard>
         <pre>{{ applicationSchema }}</pre>
-      </UCard>
+      </UCard> -->
       <UCard class="mt-6">
         <template #header>
           <h1>Configure application</h1>
@@ -13,7 +13,7 @@
 
           <div v-if="applicationSchema.environments" class="space-y-4">
             <!-- <UForm :state="applicationSchema" class="space-y-4"> -->
-            <UForm :state="applicationSchema" :schema="applicationInputSchema" :validate-on="['input']" class="space-y-4">
+            <UForm ref="form" :state="applicationSchema" :schema="applicationInputSchema" :validate-on="['input']" class="space-y-4">
               <UFormField label="Repository" class="grid grid-cols-3 gap-4">
                 <UInput 
                   disabled 
@@ -65,13 +65,14 @@
               </UFormField>
             </UForm>
           </div>
-          <ServiceConfiguration :scan-error="scanError" :service="service" />
+          <ServiceConfiguration ref="serviceConfig" :scan-error="scanError" :service="service" />
         </div>
 
         <template #footer>
           <div class="flex justify-start">
             <UButton 
               size="lg" 
+              :disabled="hasValidationErrors"
               @click="router.push('/new/deploy')"
             >
               Continue
@@ -116,6 +117,15 @@ const awsRegions = ref(appConfig.regions);
 const providerItems = computed(() => providers.value.map(p => ({ value: p.id, label: p.alias })));
 const branchItems = computed(() => branches.value.map(b => ({ value: b.name, label: b.name })));
 const service = computed(() => applicationSchema.value.environments?.[0]?.services?.[0]);
+
+const form = ref();
+const serviceConfig = ref();
+
+const hasValidationErrors = computed(() => {
+  const formErrors = form.value?.errors?.length > 0;
+  const serviceErrors = serviceConfig.value?.hasErrors;
+  return formErrors || serviceErrors;
+});
 
 onMounted(async () => {
   // If route contains repo info, let the composable initialize applicationSchema and fetch branches/build settings
