@@ -12,8 +12,8 @@
           <UAlert v-if="loadError" color="error" variant="subtle" class="mb-4" :title="loadError" />
 
           <div v-if="applicationSchema.environments" class="space-y-4">
-            <UForm :state="applicationSchema" class="space-y-4">
-            <!-- <UForm :state="applicationSchema" :schema="applicationInputSchema" :validate-on="['input']" class="space-y-4"> -->
+            <!-- <UForm :state="applicationSchema" class="space-y-4"> -->
+            <UForm :state="applicationSchema" :schema="applicationInputSchema" :validate-on="['input']" class="space-y-4">
               <UFormField label="Repository" class="grid grid-cols-3 gap-4">
                 <UInput 
                   disabled 
@@ -38,11 +38,11 @@
                 />
               </UFormField>
 
-              <UFormField label="Application Name" class="grid grid-cols-3 gap-4">
+              <UFormField label="Application Name" name="display_name" class="grid grid-cols-3 gap-4">
                 <UInput v-model="applicationSchema.display_name" size="lg" class="w-96" />
               </UFormField>
 
-              <UFormField label="Environment Name" class="grid grid-cols-3 gap-4">
+              <UFormField label="Environment Name" name="environments.0.display_name" class="grid grid-cols-3 gap-4">
                 <UInput v-model="applicationSchema.environments[0].display_name" size="lg" class="w-96" />
               </UFormField>
 
@@ -90,7 +90,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
 import ServiceConfiguration from '~/components/application/ServiceConfiguration.vue';
-// import { applicationInputSchema } from '~/server/trpc/routers/applications.router';
+import { applicationInputSchema } from '~/server/db/types';
 
 definePageMeta({
   layout: 'new'
