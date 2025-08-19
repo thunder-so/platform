@@ -86,11 +86,13 @@ export const useNewApplicationFlow = () => {
 
   const isLoading = ref(false);
   const branches = ref<Branch[]>([]);
+  const selectedBranchName = ref<string>();
+  const branchesLoading = ref(false);
   const scannedBuildProps = ref<Partial<NodeBasedBuildProps> | null>(null);
   const providers = ref<Provider[]>([]);
   const selectedProviderId = ref<string | null>(null);
   const providerLoading = ref(false);
-  const providerError = ref<string | null>(null);
+  const loadError = ref<string | null>(null);
   const scanError = ref<string | null>(null);
 
   const currentStep = computed(() => {
@@ -104,18 +106,35 @@ export const useNewApplicationFlow = () => {
    * Fetch branches and scan the selected repository
    */
   const fetchBranches = async (owner: string, repo: string, installation_id: number, stack_type: string) => {
-    const fetchedBranches = await $client.github.getBranches.query({
-      owner,
-      repo,
-      installation_id,
-    });
-    branches.value = fetchedBranches || [];
-    const defaultBranch = fetchedBranches.find(b => b.is_default);
-    const service = applicationSchema.value.environments?.[0]?.services?.[0];
-    if (defaultBranch && service?.pipeline_props?.sourceProps) {
-      service.pipeline_props.sourceProps.branchOrRef = defaultBranch.name;
+    try {
+      const fetchedBranches = await $client.github.getBranches.query({
+        owner,
+        repo,
+        installation_id,
+      });
+      branches.value = fetchedBranches || [];
+      if (branches.value.length > 0) {
+        const defaultBranch = branches.value.find(b => b.is_default) || branches.value[0];
+        if (defaultBranch) {    
+          selectedBranchName.value = defaultBranch.name;
+        }
+      }
+    }
+    catch (err: any) {
+      loadError.value = err?.message || String(err) || 'Failed to load branches';
+      branches.value = [];
+    } finally {
+      branchesLoading.value = false;
     }
   }
+
+  watch(selectedBranchName, (newBranchName) => {
+    if (!newBranchName) return;
+    const service = applicationSchema.value.environments?.[0]?.services?.[0];
+    if (service?.pipeline_props?.sourceProps) {
+      service.pipeline_props.sourceProps.branchOrRef = newBranchName;
+    }
+  });
 
   /**
    * Handle provider fetching and selection
@@ -126,7 +145,7 @@ export const useNewApplicationFlow = () => {
   const fetchProviders = async (organizationId?: string) => {
     if (!organizationId) return;
     providerLoading.value = true;
-    providerError.value = null;
+    loadError.value = null;
     try {
       const { data: supabaseProviders, error: supabaseError } = await supabase
         .from('providers')
@@ -135,7 +154,7 @@ export const useNewApplicationFlow = () => {
         .is('deleted_at', null);
 
       if (supabaseError) {
-        providerError.value = supabaseError.message || 'Failed to load providers';
+        loadError.value = supabaseError.message || 'Failed to load providers';
         providers.value = [];
         return;
       }
@@ -146,7 +165,7 @@ export const useNewApplicationFlow = () => {
         selectedProviderId.value = providers.value[0]?.id as string;
       }
     } catch (err: any) {
-      providerError.value = err?.message || String(err) || 'Failed to load providers';
+      loadError.value = err?.message || String(err) || 'Failed to load providers';
       providers.value = [];
     } finally {
       providerLoading.value = false;
@@ -239,10 +258,12 @@ export const useNewApplicationFlow = () => {
       }
     }
 
+    await fetchBranches(owner, repo, installation_id, stackType);
+
     const sourceProps: SourceProps = {
       owner,
       repo,
-      branchOrRef: 'main',
+      branchOrRef: selectedBranchName.value || 'main',
     };
 
     switch (stackType) {
@@ -287,7 +308,6 @@ export const useNewApplicationFlow = () => {
         
         const validStackType = getValidStackType();
 
-        // Run fetches that don't depend on each other in parallel
         const [serviceSchema] = await Promise.all([
             createServiceSchema(validStackType, owner, repo, installation_id),
             fetchProviders(selectedOrganization.value?.id),
@@ -300,7 +320,7 @@ export const useNewApplicationFlow = () => {
         }
 
         // Fetch branches after service schema is ready
-        await fetchBranches(owner, repo, installation_id, validStackType);
+        // await fetchBranches(owner, repo, installation_id, validStackType);
 
         applicationSchema.value = {
           name: repo.replace(/[-_]/g, '').substring(0, 12),
@@ -348,10 +368,11 @@ export const useNewApplicationFlow = () => {
     oAuthError,
     isLoading,
     branches,
+    selectedBranchName,
     providers,
     selectedProviderId,
     providerLoading,
-    providerError,
+    loadError,
     scanError,
     setApplicationSchema,
     setProvider,

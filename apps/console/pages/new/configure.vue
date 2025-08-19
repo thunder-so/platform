@@ -9,7 +9,7 @@
         </template>
 
         <div class="space-y-4">
-          <UAlert v-if="providerError" color="error" variant="subtle" class="mb-4" :title="providerError" />
+          <UAlert v-if="loadError" color="error" variant="subtle" class="mb-4" :title="loadError" />
 
           <div v-if="applicationSchema.environments" class="space-y-4">
             <UForm :state="applicationSchema" class="space-y-4">
@@ -32,7 +32,7 @@
 
               <UFormField label="Branch" class="grid grid-cols-3 gap-4">
                 <USelect 
-                  v-model="applicationSchema.environments[0].services[0].pipeline_props.sourceProps.branchOrRef" 
+                  v-model="selectedBranchName" 
                   :items="branchItems" 
                   class="w-96" size="lg"
                 />
@@ -102,10 +102,11 @@ const {
   setApplicationSchema,
   applicationSchema,
   branches,
+  selectedBranchName,
   isLoading,
   providers,
   selectedProviderId,
-  providerError,
+  loadError,
   scanError,
 } = useNewApplicationFlow();
 
