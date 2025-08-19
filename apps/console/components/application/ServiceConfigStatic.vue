@@ -30,7 +30,8 @@
               :model-value="getKey(variable)" 
               @update:model-value="updateKey(index, $event)"
               placeholder="Key" 
-              class="w-full" 
+              class="w-full"
+              :error="getKeyError(index)"
             />
           </UFormField>
           <UFormField :name="`pipeline_props.buildProps.environment.${index}.value`" class="col-span-4">
@@ -54,6 +55,7 @@
 <script setup lang="ts">
 import type { PropType } from 'vue';
 import { z } from 'zod';
+import { computed } from 'vue';
 import { type ApplicationInputSchema, appPropsSchema, spaMetadataSchema, spaPipelinePropsSchema } from '~/server/db/types';
 
 type ServiceInput = ApplicationInputSchema['environments'][0]['services'][0];
@@ -92,6 +94,25 @@ const addVariable = () => {
 
 const removeVariable = (index: number) => {
   props.service.pipeline_props.buildProps.environment.splice(index, 1);
+};
+
+const getKeyError = (index: number) => {
+  return computed(() => {
+    const variable = props.service.pipeline_props.buildProps.environment[index];
+    if (!variable) return null;
+    
+    const key = getKey(variable);
+    
+    if (!key.trim()) {
+      return 'Key is required.';
+    }
+    
+    if (key.trim() && !/^[a-zA-Z0-9_]+$/.test(key.trim())) {
+      return 'Use only letters, numbers, and underscores.';
+    }
+    
+    return null;
+  }).value;
 };
 
 const serviceSchema = z.object({
