@@ -29,28 +29,43 @@ export const sourcePropsSchema = z.object({
 
 export const buildSystemSchema = z.enum(['Nixpacks', 'Buildpacks', 'Custom Dockerfile']);
 
-// Environment Variables Schema with Validation
-export const envVarSchema = z.object({
-  key: z.string().regex(/^[a-zA-Z0-9_]*$/, {
-    message: 'Invalid format. Use only letters, numbers, and underscores.'
-  }),
+// Environment Variables Schema with Validation and Transformation
+const envVarUIObjectSchema = z.object({
+  key: z.string(),
   value: z.string(),
 });
 
-export const envVarArraySchema = z.array(envVarSchema).superRefine((items, ctx) => {
-  const seen = new Set();
-  items.forEach((item, index) => {
-    if (!item.key) return;
-    if (seen.has(item.key)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `Duplicate key.`,
-        path: [index, 'key'],
-      });
-    }
-    seen.add(item.key);
-  });
-});
+// This schema validates the UI structure and transforms it to the required backend structure.
+const envVarTransformSchema = z.array(envVarUIObjectSchema)
+  .superRefine((items, ctx) => {
+    const seen = new Set();
+    items.forEach((item, index) => {
+      if (!item.key) return; // Don't validate empty keys for uniqueness yet
+
+      // Format validation
+      if (!/^[a-zA-Z0-9_]+$/.test(item.key)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Invalid format. Use only letters, numbers, and underscores.',
+          path: [index, 'key'],
+        });
+      }
+
+      // Uniqueness validation
+      if (seen.has(item.key)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Duplicate key.`,
+          path: [index, 'key'],
+        });
+      }
+      seen.add(item.key);
+    });
+  })
+  .transform(items =>
+    items.filter(item => item.key).map(item => ({ [item.key]: item.value }))
+  );
+
 
 // BuildProps: Varied by stack type
 export const nodeBasedBuildPropsSchema = z.object({
@@ -60,12 +75,12 @@ export const nodeBasedBuildPropsSchema = z.object({
   buildcmd: z.string().optional(),
   include: z.array(z.string()).optional(),
   exclude: z.array(z.string()).optional(),
-  environment: envVarArraySchema.optional(),
+  environment: envVarTransformSchema.optional(),
   secrets: z.array(z.object({ key: z.string(), resource: z.string() })).optional(),
 });
 
 export const dockerBasedBuildPropsSchema = z.object({
-  environment: envVarArraySchema.optional(),
+  environment: envVarTransformSchema.optional(),
   secrets: z.array(z.object({ key: z.string(), resource: z.string() })).optional(),
   dockerBuildArgs: z.array(z.string()).optional(),
 });
@@ -110,7 +125,7 @@ export const functionMetadataSchema = z.object({
   tracing: z.boolean().optional(),
   reservedConcurrency: z.number().optional(),
   provisionedConcurrency: z.number().optional(),
-  variables: envVarArraySchema.optional(),
+  variables: envVarTransformSchema.optional(),
   secrets: z.array(z.object({ key: z.string(), resource: z.string() })).optional(),
   dockerBuildArgs: z.array(z.string()).optional(),
   bunLayerArn: z.string().optional(),
@@ -124,7 +139,7 @@ export const webServiceMetadataSchema = z.object({
   port: z.number().optional(),
   buildSystem: buildSystemSchema.optional(),
   architecture: z.enum(['x86_64', 'ARM64']).optional(),
-  variables: envVarArraySchema.optional(),
+  variables: envVarTransformSchema.optional(),
   secrets: z.array(z.object({ key: z.string(), resource: z.string() })).optional(),
   dockerBuildArgs: z.array(z.string()).optional(),
 });
