@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { computed } from 'vue';
 
 const props = defineProps({
   modelValue: {
@@ -32,28 +32,25 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue']);
 
-const variables = ref(props.modelValue);
-
-watch(() => props.modelValue, (newVal) => {
-  if (JSON.stringify(variables.value) !== JSON.stringify(newVal)) {
-    variables.value = newVal;
+// Using a computed property with a getter and setter is the standard
+// and safest way to implement v-model on a component.
+const variables = computed({
+  get: () => props.modelValue,
+  set: (value) => {
+    emit('update:modelValue', value);
   }
-}, { deep: true });
-
-const updateModel = () => {
-  emit('update:modelValue', variables.value);
-};
+});
 
 const addVariable = () => {
-  variables.value.push({ key: '', value: '' });
-  updateModel();
+  // To update, we emit a new array with the added item.
+  const newArray = [...variables.value, { key: '', value: '' }];
+  emit('update:modelValue', newArray);
 };
 
 const removeVariable = (index: number) => {
-  variables.value.splice(index, 1);
-  updateModel();
+  // To update, we emit a new array with the item removed.
+  const newArray = [...variables.value];
+  newArray.splice(index, 1);
+  emit('update:modelValue', newArray);
 };
-
-watch(variables, updateModel, { deep: true });
-
 </script>
