@@ -1,6 +1,6 @@
 <template>
   <ClientOnly>
-    <UForm v-if="service" :state="service" :schema="schema" class="space-y-4">
+    <UForm v-if="service" :state="service" :schema="serviceSchema" :validate-on="['input']" class="space-y-4">
       <UFormField label="Root Directory" name="app_props.rootDir" class="grid grid-cols-3 gap-4">
         <UInput v-model="service.app_props.rootDir" placeholder="./" class="w-96" size="lg" />
       </UFormField>
@@ -31,7 +31,7 @@
 import type { PropType } from 'vue';
 import { z } from 'zod';
 import type { ApplicationInputSchema } from '~/server/trpc/routers/applications.router';
-import { spaPipelinePropsSchema } from '~/server/db/types';
+import { appPropsSchema, spaMetadataSchema, spaPipelinePropsSchema } from '~/server/db/types';
 import EnvironmentVariables from './EnvironmentVariables.vue';
 
 type ServiceInput = ApplicationInputSchema['environments'][0]['services'][0];
@@ -46,7 +46,9 @@ const props = defineProps({
 const appConfig = useAppConfig();
 const runtimes = ref(appConfig.runtimes);
 
-const schema = z.object({
+const serviceSchema = z.object({
+  app_props: appPropsSchema,
+  metadata: spaMetadataSchema,
   pipeline_props: spaPipelinePropsSchema
 });
 </script>

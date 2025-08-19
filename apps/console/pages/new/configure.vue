@@ -13,55 +13,56 @@
 
           <div v-if="applicationSchema.environments" class="space-y-4">
             <UForm :state="applicationSchema" class="space-y-4">
-            <UFormField label="Repository" class="grid grid-cols-3 gap-4">
-              <UInput 
-                disabled 
-                size="lg" 
-                variant="outline"
-                class="w-full"
-              > 
-                <template #leading>
-                  <p class="flex items-center">
-                    <Icon name="mdi:github" class="w-5 h-5 text-muted mr-2" />
-                    <span class="text-sm text-muted">{{applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.owner}}/{{applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.repo}}</span>
-                  </p>
-                </template>
-              </UInput>
-            </UFormField>
+            <!-- <UForm :state="applicationSchema" :schema="applicationInputSchema" :validate-on="['input']" class="space-y-4"> -->
+              <UFormField label="Repository" class="grid grid-cols-3 gap-4">
+                <UInput 
+                  disabled 
+                  size="lg" 
+                  variant="outline"
+                  class="w-full"
+                > 
+                  <template #leading>
+                    <p class="flex items-center">
+                      <Icon name="mdi:github" class="w-5 h-5 text-muted mr-2" />
+                      <span class="text-sm text-muted">{{applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.owner}}/{{applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.repo}}</span>
+                    </p>
+                  </template>
+                </UInput>
+              </UFormField>
 
-            <UFormField label="Branch" class="grid grid-cols-3 gap-4">
-              <USelect 
-                v-model="applicationSchema.environments[0].services[0].pipeline_props.sourceProps.branchOrRef" 
-                :items="branchItems" 
-                class="w-96" size="lg"
-              />
-            </UFormField>
+              <UFormField label="Branch" class="grid grid-cols-3 gap-4">
+                <USelect 
+                  v-model="applicationSchema.environments[0].services[0].pipeline_props.sourceProps.branchOrRef" 
+                  :items="branchItems" 
+                  class="w-96" size="lg"
+                />
+              </UFormField>
 
-            <UFormField label="Application Name" class="grid grid-cols-3 gap-4">
-              <UInput v-model="applicationSchema.display_name" size="lg" class="w-96" />
-            </UFormField>
+              <UFormField label="Application Name" class="grid grid-cols-3 gap-4">
+                <UInput v-model="applicationSchema.display_name" size="lg" class="w-96" />
+              </UFormField>
 
-            <UFormField label="Environment Name" class="grid grid-cols-3 gap-4">
-              <UInput v-model="applicationSchema.environments[0].display_name" size="lg" class="w-96" />
-            </UFormField>
+              <UFormField label="Environment Name" class="grid grid-cols-3 gap-4">
+                <UInput v-model="applicationSchema.environments[0].display_name" size="lg" class="w-96" />
+              </UFormField>
 
-            <UFormField label="AWS Account" class="grid grid-cols-3 gap-4">
-              <USelect 
-                v-model="selectedProviderId" 
-                :items="providerItems" 
-                class="w-96" size="lg"
-              />
-            </UFormField>
+              <UFormField label="AWS Account" class="grid grid-cols-3 gap-4">
+                <USelect 
+                  v-model="selectedProviderId" 
+                  :items="providerItems" 
+                  class="w-96" size="lg"
+                />
+              </UFormField>
 
-            <UFormField label="Region" class="grid grid-cols-3 gap-4">
-              <USelect 
-                v-model="applicationSchema.environments[0].region" 
-                :items="awsRegions" 
-                value-key="name" 
-                option-attribute="label" 
-                class="w-96" size="lg"
-              />
-            </UFormField>
+              <UFormField label="Region" class="grid grid-cols-3 gap-4">
+                <USelect 
+                  v-model="applicationSchema.environments[0].region" 
+                  :items="awsRegions" 
+                  value-key="name" 
+                  option-attribute="label" 
+                  class="w-96" size="lg"
+                />
+              </UFormField>
             </UForm>
           </div>
           <ServiceConfiguration :scan-error="scanError" :service="service" />
@@ -84,12 +85,12 @@
     </div>
 </template>
 
-
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
 import ServiceConfiguration from '~/components/application/ServiceConfiguration.vue';
+// import { applicationInputSchema } from '~/server/trpc/routers/applications.router';
 
 definePageMeta({
   layout: 'new'
