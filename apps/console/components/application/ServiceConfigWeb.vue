@@ -22,6 +22,7 @@
       <UFormField label="Port" name="metadata.port" class="grid grid-cols-3 gap-4">
         <UInput v-model.number="service.metadata.port" type="number" placeholder="3000" size="lg" />
       </UFormField>
+      <EnvironmentVariables v-model="service.metadata.variables" data-type="array" />
     </UForm>
   </ClientOnly>
 </template>
@@ -29,6 +30,7 @@
 <script setup lang="ts">
 import type { PropType } from 'vue';
 import type { ApplicationInputSchema } from '~/server/trpc/routers/applications.router';
+import EnvironmentVariables from './EnvironmentVariables.vue';
 
 type ServiceInput = ApplicationInputSchema['environments'][0]['services'][0];
 

@@ -22,6 +22,7 @@
       <UFormField label="Build Command" name="pipeline_props.buildProps.buildcmd" class="grid grid-cols-3 gap-4">
         <UInput v-model="service.pipeline_props.buildProps.buildcmd" placeholder="npm run build" class="w-128" size="lg" />
       </UFormField>
+      <EnvironmentVariables v-model="service.pipeline_props.buildProps.environment" data-type="object" />
     </UForm>
   </ClientOnly>
 </template>
@@ -29,6 +30,7 @@
 <script setup lang="ts">
 import type { PropType } from 'vue';
 import type { ApplicationInputSchema } from '~/server/trpc/routers/applications.router';
+import EnvironmentVariables from './EnvironmentVariables.vue';
 
 type ServiceInput = ApplicationInputSchema['environments'][0]['services'][0];
 
