@@ -34,33 +34,46 @@ const NAME_ERROR_MESSAGE = 'Use letters, numbers, and hyphens. Must start with a
 
 const envVarSchema = z.array(z.record(z.string(), z.string()))
   .superRefine((items, ctx) => {
-    const seen = new Set();
+    // Collect all keys with their indices
+    const keyMap = new Map();
     items.forEach((item, index) => {
       const keys = Object.keys(item);
       keys.forEach(key => {
-        // Format validation - use array index as path
-        if (!/^[a-zA-Z0-9_]+$/.test(key)) {
+        const trimmedKey = key.trim();
+        
+        // Format validation
+        if (trimmedKey && !/^[a-zA-Z0-9_]+$/.test(trimmedKey)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: 'Use only letters, numbers, and underscores.',
-            path: [index], // Use array index instead of [index, key]
+            path: [index, 'key'],
           });
         }
 
-        // Uniqueness validation
-        if (seen.has(key)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `Duplicate key.`,
-            path: [index],
-          });
+        // Track key occurrences (case-insensitive)
+        if (trimmedKey) {
+          const lowerKey = trimmedKey.toLowerCase();
+          if (!keyMap.has(lowerKey)) {
+            keyMap.set(lowerKey, []);
+          }
+          keyMap.get(lowerKey).push(index);
         }
-        seen.add(key);
       });
     });
+
+    // Add duplicate errors to all occurrences of duplicate keys
+    keyMap.forEach((indices, key) => {
+      if (indices.length > 1) {
+        indices.forEach(index => {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Duplicate key.',
+            path: [index, 'key'],
+          });
+        });
+      }
+    });
   });
-
-
 
 // BuildProps: Varied by stack type
 export const nodeBasedBuildPropsSchema = z.object({

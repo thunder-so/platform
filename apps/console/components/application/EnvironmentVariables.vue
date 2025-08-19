@@ -1,12 +1,22 @@
 <template>
   <div>
     <h2 class="text-md font-semibold mt-6 mb-4 pb-4 border-b border-muted">Environment Variables</h2>
-    <div v-for="(variable, index) in localVariables" :key="index" class="grid grid-cols-9 gap-x-2 mt-2 items-start">
-      <UFormField :name="`${name}[${index}]`" class="col-span-4">
-        <UInput v-model="variable.key" placeholder="Key" class="w-full" />
+    <div v-for="(variable, index) in modelValue" :key="index" class="grid grid-cols-9 gap-x-2 mt-2 items-start">
+      <UFormField :name="`${name}.${index}`" class="col-span-4">
+        <UInput 
+          :model-value="getKey(variable)" 
+          @update:model-value="updateKey(index, $event)"
+          placeholder="Key" 
+          class="w-full" 
+        />
       </UFormField>
-      <UFormField :name="`${name}[${index}]`" class="col-span-4">
-        <UInput v-model="variable.value" placeholder="Value" class="w-full" />
+      <UFormField :name="`${name}.${index}`" class="col-span-4">
+        <UInput 
+          :model-value="getValue(variable)" 
+          @update:model-value="updateValue(index, $event)"
+          placeholder="Value" 
+          class="w-full" 
+        />
       </UFormField>
       <div class="col-span-1">
         <UButton icon="heroicons:trash" color="error" variant="ghost" @click="removeVariable(index)" />
@@ -17,8 +27,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-
 const props = defineProps({
   modelValue: {
     type: Array as () => Record<string, string>[],
@@ -32,24 +40,36 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue']);
 
-const localVariables = ref(props.modelValue.map(obj => {
-  const [key, value] = Object.entries(obj)[0] || ['', ''];
-  return { key, value };
-}));
+const getKey = (variable: Record<string, string>) => {
+  return Object.keys(variable)[0] || '';
+};
 
-// Watch for changes and emit updates
-watch(localVariables, (newVariables) => {
-  const formatted = newVariables
-    .filter(v => v.key.trim() !== '') // Only include variables with keys
-    .map(v => ({ [v.key]: v.value }));
-  emit('update:modelValue', formatted);
-}, { deep: true });
+const getValue = (variable: Record<string, string>) => {
+  return Object.values(variable)[0] || '';
+};
+
+const updateKey = (index: number, newKey: string) => {
+  const updated = [...props.modelValue];
+  const oldValue = getValue(updated[index]);
+  updated[index] = { [newKey]: oldValue };
+  emit('update:modelValue', updated);
+};
+
+const updateValue = (index: number, newValue: string) => {
+  const updated = [...props.modelValue];
+  const oldKey = getKey(updated[index]);
+  updated[index] = { [oldKey]: newValue };
+  emit('update:modelValue', updated);
+};
 
 const addVariable = () => {
-  localVariables.value.push({ key: '', value: '' });
+  const updated = [...props.modelValue, { '': '' }];
+  emit('update:modelValue', updated);
 };
 
 const removeVariable = (index: number) => {
-  localVariables.value.splice(index, 1);
+  const updated = [...props.modelValue];
+  updated.splice(index, 1);
+  emit('update:modelValue', updated);
 };
 </script>
