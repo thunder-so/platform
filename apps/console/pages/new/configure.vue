@@ -12,7 +12,6 @@
           <UAlert v-if="loadError" color="error" variant="subtle" class="mb-4" :title="loadError" />
 
           <div v-if="applicationSchema.environments" class="space-y-4">
-            <!-- <UForm :state="applicationSchema" class="space-y-4"> -->
             <UForm ref="form" :state="applicationSchema" :schema="applicationInputSchema" :validate-on="['input']" class="space-y-4">
               <UFormField label="Repository" class="grid grid-cols-3 gap-4">
                 <UInput 
@@ -65,7 +64,11 @@
               </UFormField>
             </UForm>
           </div>
-          <ServiceConfiguration ref="serviceConfig" :scan-error="scanError" :service="service" />
+          <ServiceConfiguration ref="serviceConfig" :scan-error="scanError" :service="service" @update:service="(updatedService) => {
+            if (applicationSchema.environments && applicationSchema.environments[0] && applicationSchema.environments[0].services) {
+              applicationSchema.environments[0].services = [updatedService];
+            }
+          }" />
         </div>
 
         <template #footer>

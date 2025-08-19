@@ -4,14 +4,16 @@
     <div v-for="(variable, index) in modelValue" :key="index" class="grid grid-cols-9 gap-x-2 mt-2 items-start">
       <UFormField :name="`${index}.key`" class="col-span-4">
         <UInput 
-          v-model="variable.key" 
+          :model-value="variable.key" 
+          @update:model-value="updateKey(index, $event)"
           placeholder="Key" 
           class="w-full" 
         />
       </UFormField>
       <UFormField :name="`${index}.value`" class="col-span-4">
         <UInput 
-          v-model="variable.value" 
+          :model-value="variable.value" 
+          @update:model-value="updateValue(index, $event)"
           placeholder="Value" 
           class="w-full" 
         />
@@ -45,6 +47,18 @@ const hasErrors = computed(() => {
 });
 
 defineExpose({ hasErrors });
+
+const updateKey = (index: number, newKey: string) => {
+  const updated = [...props.modelValue];
+  updated[index] = { ...updated[index], key: newKey };
+  emit('update:modelValue', updated);
+};
+
+const updateValue = (index: number, newValue: string) => {
+  const updated = [...props.modelValue];
+  updated[index] = { ...updated[index], value: newValue };
+  emit('update:modelValue', updated);
+};
 
 const addVariable = () => {
   const updated = [...props.modelValue, { key: '', value: '' }];

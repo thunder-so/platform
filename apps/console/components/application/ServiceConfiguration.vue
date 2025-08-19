@@ -35,6 +35,8 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits(['update:service']);
+
 const serviceForm = ref();
 const envVarsForm = ref();
 
@@ -52,15 +54,19 @@ const environmentVariablesModel = computed({
   set(newValue: { key: string; value: string }[]) {
     if (!props.service) return;
     const transformedValue = newValue.map(v => ({ [v.key]: v.value }));
-    if (props.service.stack_type === 'SPA') {
-      if (props.service.pipeline_props?.buildProps) {
-        props.service.pipeline_props.buildProps.environment = transformedValue;
+    
+    const updatedService = { ...props.service };
+
+    if (updatedService.stack_type === 'SPA') {
+      if (updatedService.pipeline_props?.buildProps) {
+        updatedService.pipeline_props.buildProps.environment = transformedValue;
       }
     } else {
-      if (props.service.metadata) {
-        props.service.metadata.variables = transformedValue;
+      if (updatedService.metadata) {
+        updatedService.metadata.variables = transformedValue;
       }
     }
+    emit('update:service', updatedService);
   }
 });
 
