@@ -2,8 +2,7 @@ import { z } from 'zod';
 
 // Base & Shared Props
 export const appPropsSchema = z.object({
-  rootDir: z.string(),
-  outputDir: z.string().optional(),
+  rootDir: z.string().min(1, 'Project root directory is required. Defaults to /'),
   debug: z.boolean().optional(),
 });
 
@@ -29,58 +28,54 @@ export const sourcePropsSchema = z.object({
 
 export const buildSystemSchema = z.enum(['Nixpacks', 'Buildpacks', 'Custom Dockerfile']);
 
-// Environment Variables Schema with Validation and Transformation
-const envVarUIObjectSchema = z.object({
-  key: z.string(),
-  value: z.string(),
-});
+// Shared regex pattern for name validation
+const NAME_REGEX = /^[a-zA-Z](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$/;
+const NAME_ERROR_MESSAGE = 'Use letters, numbers, and hyphens. Must start with a letter.';
 
-// This schema validates the UI structure and transforms it to the required backend structure.
-const envVarTransformSchema = z.array(envVarUIObjectSchema)
+const envVarSchema = z.array(z.record(z.string(), z.string()))
   .superRefine((items, ctx) => {
     const seen = new Set();
     items.forEach((item, index) => {
-      if (!item.key) return; // Don't validate empty keys for uniqueness yet
+      const keys = Object.keys(item);
+      keys.forEach(key => {
+        // Format validation - use array index as path
+        if (!/^[a-zA-Z0-9_]+$/.test(key)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Use only letters, numbers, and underscores.',
+            path: [index], // Use array index instead of [index, key]
+          });
+        }
 
-      // Format validation
-      if (!/^[a-zA-Z0-9_]+$/.test(item.key)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Invalid format. Use only letters, numbers, and underscores.',
-          path: [index, 'key'],
-        });
-      }
-
-      // Uniqueness validation
-      if (seen.has(item.key)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `Duplicate key.`,
-          path: [index, 'key'],
-        });
-      }
-      seen.add(item.key);
+        // Uniqueness validation
+        if (seen.has(key)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Duplicate key.`,
+            path: [index],
+          });
+        }
+        seen.add(key);
+      });
     });
-  })
-  .transform(items =>
-    items.filter(item => item.key).map(item => ({ [item.key]: item.value }))
-  );
+  });
+
 
 
 // BuildProps: Varied by stack type
 export const nodeBasedBuildPropsSchema = z.object({
-  runtime: z.string().optional(),
-  runtime_version: z.union([z.string(), z.number()]).optional(),
-  installcmd: z.string().optional(),
-  buildcmd: z.string().optional(),
+  runtime: z.string(),
+  runtime_version: z.union([z.string(), z.number()]),
+  installcmd: z.string().min(1, 'Install command is required'),
+  buildcmd: z.string().min(1, 'Build command is required'),
   include: z.array(z.string()).optional(),
   exclude: z.array(z.string()).optional(),
-  environment: envVarTransformSchema.optional(),
+  environment: envVarSchema.optional(),
   secrets: z.array(z.object({ key: z.string(), resource: z.string() })).optional(),
 });
 
 export const dockerBasedBuildPropsSchema = z.object({
-  environment: envVarTransformSchema.optional(),
+  environment: envVarSchema.optional(),
   secrets: z.array(z.object({ key: z.string(), resource: z.string() })).optional(),
   dockerBuildArgs: z.array(z.string()).optional(),
 });
@@ -107,7 +102,7 @@ export const webServiceDomainPropsSchema = z.object({
 
 // Metadata Props: The core configuration for each service type
 export const spaMetadataSchema = z.object({
-  outputDir: z.string(),
+  outputDir: z.string().min(1, 'Output directory is required'),
 });
 
 export const functionMetadataSchema = z.object({
@@ -116,7 +111,7 @@ export const functionMetadataSchema = z.object({
   timeout: z.number().optional(),
   keepWarm: z.boolean().optional(),
   url: z.boolean().optional(),
-  runtime: z.enum(['nodejs20.x', 'nodejs22.x', 'nodejs24.x']).optional(),
+  runtime: z.enum(['nodejs20.x', 'nodejs22.x', 'nodejs24.x']),
   architecture: z.enum(['x86_64', 'ARM_64']).optional(),
   codeDir: z.string().optional(),
   handler: z.string().optional(),
@@ -125,10 +120,11 @@ export const functionMetadataSchema = z.object({
   tracing: z.boolean().optional(),
   reservedConcurrency: z.number().optional(),
   provisionedConcurrency: z.number().optional(),
-  variables: envVarTransformSchema.optional(),
+  variables: envVarSchema.optional(),
   secrets: z.array(z.object({ key: z.string(), resource: z.string() })).optional(),
   dockerBuildArgs: z.array(z.string()).optional(),
   bunLayerArn: z.string().optional(),
+  buildSystem: buildSystemSchema
 });
 
 export const webServiceMetadataSchema = z.object({
@@ -139,7 +135,7 @@ export const webServiceMetadataSchema = z.object({
   port: z.number().optional(),
   buildSystem: buildSystemSchema.optional(),
   architecture: z.enum(['x86_64', 'ARM64']).optional(),
-  variables: envVarTransformSchema.optional(),
+  variables: envVarSchema.optional(),
   secrets: z.array(z.object({ key: z.string(), resource: z.string() })).optional(),
   dockerBuildArgs: z.array(z.string()).optional(),
 });
@@ -156,9 +152,85 @@ export const spaPipelinePropsSchema = basePipelinePropsSchema.extend({
 });
 
 export const functionPipelinePropsSchema = basePipelinePropsSchema.extend({
-  buildProps: nodeBasedBuildPropsSchema.optional(),
+  buildProps: dockerBasedBuildPropsSchema.optional(),
 });
 
 export const webServicePipelinePropsSchema = basePipelinePropsSchema.extend({
   buildProps: dockerBasedBuildPropsSchema.optional(),
 });
+
+// Zod schema for a single service, mirroring the discriminated union in schema.ts
+export const serviceSchema = z.discriminatedUnion('stack_type', [
+  z.object({
+    stack_type: z.literal('SPA'),
+    name: z.string().regex(NAME_REGEX, NAME_ERROR_MESSAGE),
+    display_name: z.string().min(1, 'Display name is required'),
+    stack_version: z.string().optional(),
+    installation_id: z.number(),
+    app_props: appPropsSchema,
+    pipeline_props: spaPipelinePropsSchema,
+    metadata: spaMetadataSchema,
+    domain_props: spaDomainPropsSchema.nullable().optional(),
+    edge_props: edgePropsSchema.nullable().optional(),
+    cdn_props: cloudFrontPropsSchema.nullable().optional(),
+  }),
+  z.object({
+    stack_type: z.literal('FUNCTION'),
+    name: z.string().regex(NAME_REGEX, NAME_ERROR_MESSAGE),
+    display_name: z.string().min(1, 'Display name is required'),
+    stack_version: z.string().optional(),
+    installation_id: z.number(),
+    app_props: appPropsSchema,
+    pipeline_props: functionPipelinePropsSchema,
+    metadata: functionMetadataSchema,
+    domain_props: functionDomainPropsSchema.nullable().optional(),
+    edge_props: edgePropsSchema.nullable().optional(),
+    cdn_props: cloudFrontPropsSchema.nullable().optional(),
+  }),
+  z.object({
+    stack_type: z.literal('WEB_SERVICE'),
+    name: z.string().regex(NAME_REGEX, NAME_ERROR_MESSAGE),
+    display_name: z.string().min(1, 'Display name is required'),
+    stack_version: z.string().optional(),
+    installation_id: z.number(),
+    app_props: appPropsSchema,
+    pipeline_props: webServicePipelinePropsSchema,
+    metadata: webServiceMetadataSchema,
+    domain_props: webServiceDomainPropsSchema.nullable().optional(),
+    edge_props: edgePropsSchema.nullable().optional(),
+    cdn_props: cloudFrontPropsSchema.nullable().optional(),
+  }),
+]);
+
+export const providerSchema = z.object({
+  id: z.string().min(1, 'Provider ID is required'),
+  alias: z.string(),
+  role_arn: z.string().nullable(),
+  account_id: z.string(),
+  region: z.string(),
+  stack_id: z.string().nullable(),
+  stack_name: z.string().nullable(),
+  access_key_id: z.string().nullable(),
+  secret_id: z.string().uuid().nullable(),
+  created_at: z.string().nullable().optional(),
+  updated_at: z.string().nullable().optional(),
+  deleted_at: z.string().nullable().optional(),
+  organization_id: z.string().min(1, 'Organization ID is required'),
+});
+
+export const environmentSchema = z.object({
+  name: z.string().regex(NAME_REGEX, NAME_ERROR_MESSAGE),
+  display_name: z.string().min(1, 'Display name is required'),
+  provider: providerSchema.optional(),
+  region: z.string().min(1, 'Region is required'),
+  user_access_token: z.any().optional(),
+  services: z.array(serviceSchema),
+});
+
+export const applicationInputSchema = z.object({
+  name: z.string().regex(NAME_REGEX, NAME_ERROR_MESSAGE),
+  display_name: z.string().min(1, 'Display name is required'),
+  environments: z.array(environmentSchema),
+});
+
+export type ApplicationInputSchema = z.infer<typeof applicationInputSchema>;

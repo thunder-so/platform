@@ -1,47 +1,16 @@
+import { z } from 'zod';
 import { ref, computed, watchEffect } from 'vue';
-import type { ApplicationInputSchema } from '~/server/trpc/routers/applications.router';
+import type { ApplicationInputSchema, functionMetadataSchema, webServiceMetadataSchema } from '~/server/db/types';
 import type { UserAccessToken, Provider, SpaMetadata, NodeBasedBuildProps, SourceProps, Service, Branch } from '~/server/db/schema';
 
-type ServiceInput = ApplicationInputSchema['environments'][0]['services'][0];
-
-type FunctionMetadataInput = {
-  buildSystem?: 'Nixpacks' | 'Buildpacks' | 'Custom Dockerfile';
-  dockerFile?: string;
-  memorySize?: number;
-  timeout?: number;
-  keepWarm?: boolean;
-  url?: boolean;
-  runtime?: 'nodejs20.x' | 'nodejs22.x' | 'nodejs24.x';
-  architecture?: 'x86_64' | 'ARM_64';
-  codeDir?: string;
-  handler?: string;
-  include?: string[];
-  exclude?: string[];
-  tracing?: boolean;
-  reservedConcurrency?: number;
-  provisionedConcurrency?: number;
-  variables?: { key: string; value: string }[];
-  secrets?: { key: string; resource: string }[];
-  dockerBuildArgs?: string[];
-};
-
-type WebServiceMetadataInput = {
-  buildSystem?: 'Nixpacks' | 'Buildpacks' | 'Custom Dockerfile';
-  dockerFile?: string;
-  desiredCount: number;
-  cpu?: number;
-  memorySize?: number;
-  port?: number;
-  architecture?: 'x86_64' | 'ARM64';
-  variables?: { key: string; value: string }[];
-  secrets?: { key: string; resource: string }[];
-  dockerBuildArgs?: string[];
-};
+type ServiceInputSchema = ApplicationInputSchema['environments'][0]['services'][0];
+type FunctionMetadataInputSchema = z.infer<typeof functionMetadataSchema>;
+type WebServiceMetadataInputSchema = z.infer<typeof webServiceMetadataSchema>;
 
 const STACK_DEFAULTS: {
   SPA: { metadata: SpaMetadata, buildProps: NodeBasedBuildProps },
-  FUNCTION: { metadata: FunctionMetadataInput },
-  WEB_SERVICE: { metadata: WebServiceMetadataInput },
+  FUNCTION: { metadata: FunctionMetadataInputSchema },
+  WEB_SERVICE: { metadata: WebServiceMetadataInputSchema },
 } = {
   SPA: {
     metadata: { outputDir: 'public/' },
@@ -59,7 +28,7 @@ const STACK_DEFAULTS: {
       memorySize: 1792,
       keepWarm: true,
       buildSystem: 'Nixpacks',
-      variables: [],
+      variables: [] as Record<string, string>[],
     },
   },
   WEB_SERVICE: {
@@ -70,7 +39,7 @@ const STACK_DEFAULTS: {
       memorySize: 1792,
       port: 3000,
       buildSystem: 'Nixpacks',
-      variables: [],
+      variables: [] as Record<string, string>[],
     },
   },
 };
@@ -93,7 +62,7 @@ export const useNewApplicationFlow = () => {
   const selectedProviderId = ref<string | null>(null);
   const providerLoading = ref(false);
   const loadError = ref<string | null>(null);
-  const scanError = ref<string | null>(null);
+  const scanError = ref<string | undefined>(undefined);
 
   const currentStep = computed(() => {
     const path = route.path;
@@ -227,7 +196,7 @@ export const useNewApplicationFlow = () => {
     owner: string,
     repo: string,
     installation_id: number
-  ): Promise<ServiceInput> => {
+  ): Promise<ServiceInputSchema> => {
     const baseService = {
       name: stackType,
       display_name: stackType,

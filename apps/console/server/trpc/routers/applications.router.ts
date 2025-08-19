@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 import { protectedProcedure, router } from '../init';
 import { TRPCError } from '@trpc/server';
@@ -9,95 +8,9 @@ import { PlatformLibrary } from '~/server/lib/platform.library';
 import * as ProviderLibrary from '~/server/lib/provider.library';
 import type { BuildRequest } from '@thunder/types';
 import { 
-  appPropsSchema, 
-  spaMetadataSchema, 
-  functionMetadataSchema, 
-  webServiceMetadataSchema, 
-  spaDomainPropsSchema, 
-  functionDomainPropsSchema, 
-  webServiceDomainPropsSchema, 
-  spaPipelinePropsSchema, 
-  functionPipelinePropsSchema, 
-  webServicePipelinePropsSchema, 
-  edgePropsSchema, 
-  cloudFrontPropsSchema 
+  applicationInputSchema,
+  type ApplicationInputSchema
 } from '~/server/db/types';
-
-// Zod schema for a single service, mirroring the discriminated union in schema.ts
-const serviceSchema = z.discriminatedUnion('stack_type', [
-  z.object({
-    stack_type: z.literal('SPA'),
-    name: z.string(),
-    display_name: z.string(),
-    stack_version: z.string().optional(),
-    installation_id: z.number(),
-    app_props: appPropsSchema.nullable().optional(),
-    pipeline_props: spaPipelinePropsSchema.nullable().optional(),
-    metadata: spaMetadataSchema.nullable().optional(),
-    domain_props: spaDomainPropsSchema.nullable().optional(),
-    edge_props: edgePropsSchema.nullable().optional(),
-    cdn_props: cloudFrontPropsSchema.nullable().optional(),
-  }),
-  z.object({
-    stack_type: z.literal('FUNCTION'),
-    name: z.string(),
-    display_name: z.string(),
-    stack_version: z.string().optional(),
-    installation_id: z.number(),
-    app_props: appPropsSchema.nullable().optional(),
-    pipeline_props: functionPipelinePropsSchema.nullable().optional(),
-    metadata: functionMetadataSchema.nullable().optional(),
-    domain_props: functionDomainPropsSchema.nullable().optional(),
-    edge_props: edgePropsSchema.nullable().optional(),
-    cdn_props: cloudFrontPropsSchema.nullable().optional(),
-  }),
-  z.object({
-    stack_type: z.literal('WEB_SERVICE'),
-    name: z.string(),
-    display_name: z.string(),
-    stack_version: z.string().optional(),
-    installation_id: z.number(),
-    app_props: appPropsSchema.nullable().optional(),
-    pipeline_props: webServicePipelinePropsSchema.nullable().optional(),
-    metadata: webServiceMetadataSchema.nullable().optional(),
-    domain_props: webServiceDomainPropsSchema.nullable().optional(),
-    edge_props: edgePropsSchema.nullable().optional(),
-    cdn_props: cloudFrontPropsSchema.nullable().optional(),
-  }),
-]);
-
-const providerSchema = z.object({
-  id: z.string(),
-  alias: z.string().nullable(),
-  role_arn: z.string().nullable(),
-  account_id: z.string().nullable(),
-  region: z.string().nullable(),
-  stack_id: z.string().nullable(),
-  stack_name: z.string().nullable(),
-  access_key_id: z.string().nullable(),
-  secret_id: z.string().uuid().nullable(),
-  created_at: z.string().nullable().optional(),
-  updated_at: z.string().nullable().optional(),
-  deleted_at: z.string().nullable().optional(),
-  organization_id: z.string(),
-});
-
-const environmentSchema = z.object({
-  name: z.string(),
-  display_name: z.string(),
-  provider: providerSchema.optional(),
-  region: z.string(),
-  user_access_token: z.any().optional(),
-  services: z.array(serviceSchema),
-});
-
-const applicationInputSchema = z.object({
-  name: z.string(),
-  display_name: z.string(),
-  environments: z.array(environmentSchema),
-});
-
-export type ApplicationInputSchema = z.infer<typeof applicationInputSchema>;
 
 export const applicationsRouter = router({
   create: protectedProcedure

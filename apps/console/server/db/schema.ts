@@ -109,7 +109,9 @@ export const providers = pgTable('providers', {
   updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }),
   deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
   organization_id: text('organization_id').notNull().references(() => organizations.id),
-});
+}, (table) => ({
+  organizationIdIdx: index('providers_organization_id_idx').on(table.organization_id),
+}));
 
 export const applications = pgTable('applications', {
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
@@ -120,7 +122,9 @@ export const applications = pgTable('applications', {
   deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
   metadata: jsonb('metadata'),
   status: applicationStatusEnum('status').default('PENDING').notNull(),
-});
+}, (table) => ({
+  organizationIdIdx: index('applications_organization_id_idx').on(table.organization_id),
+}));
 
 export const environments = pgTable('environments', {
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
@@ -133,7 +137,10 @@ export const environments = pgTable('environments', {
   deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
   provider_id: text('provider_id').references(() => providers.id),
   application_id: text('application_id').notNull().references(() => applications.id),
-});
+}, (table) => ({
+  applicationIdIdx: index('environments_application_id_idx').on(table.application_id),
+  providerIdIdx: index('environments_provider_id_idx').on(table.provider_id),
+}));
 
 export const services = pgTable('services', {
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
@@ -153,7 +160,10 @@ export const services = pgTable('services', {
   deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
   environment_id: text('environment_id').notNull().references(() => environments.id),
   installation_id: integer('installation_id').references(() => installations.installation_id),
-});
+}, (table) => ({
+  environmentIdIdx: index('services_environment_id_idx').on(table.environment_id),
+  installationIdIdx: index('services_installation_id_idx').on(table.installation_id),
+}));
 
 export const installations = pgTable('installations', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),

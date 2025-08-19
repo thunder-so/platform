@@ -25,8 +25,7 @@
 <script setup lang="ts">
 import type { PropType } from 'vue';
 import { z } from 'zod';
-import type { ApplicationInputSchema } from '~/server/trpc/routers/applications.router';
-import { appPropsSchema, functionMetadataSchema, functionPipelinePropsSchema } from '~/server/db/types';
+import { type ApplicationInputSchema, appPropsSchema, functionMetadataSchema, functionPipelinePropsSchema } from '~/server/db/types';
 import EnvironmentVariables from './EnvironmentVariables.vue';
 
 type ServiceInput = ApplicationInputSchema['environments'][0]['services'][0];
