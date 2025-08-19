@@ -50,6 +50,7 @@ const STACK_DEFAULTS: {
       runtime_version: '24',
       installcmd: 'npm install',
       buildcmd: 'npm run build',
+      environment: {},
     },
   },
   FUNCTION: {
@@ -58,6 +59,7 @@ const STACK_DEFAULTS: {
       memorySize: 1792,
       keepWarm: true,
       buildSystem: 'Nixpacks',
+      variables: [],
     },
   },
   WEB_SERVICE: {
@@ -68,6 +70,7 @@ const STACK_DEFAULTS: {
       memorySize: 1792,
       port: 3000,
       buildSystem: 'Nixpacks',
+      variables: [],
     },
   },
 };

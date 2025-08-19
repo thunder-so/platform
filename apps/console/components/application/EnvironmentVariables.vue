@@ -48,17 +48,21 @@ const removeVariable = (index: number) => {
   variables.value.splice(index, 1);
 };
 
-// watch(variables, (newVal) => {
-//   if (props.dataType === 'object') {
-//     const obj = newVal.reduce((acc, { key, value }) => {
-//       if (key) {
-//         acc[key] = value;
-//       }
-//       return acc;
-//     }, {} as Record<string, string>);
-//     emit('update:modelValue', obj);
-//   } else {
-//     emit('update:modelValue', newVal);
-//   }
-// }, { deep: true });
+watch(variables, (newVal) => {
+  if (props.dataType === 'object') {
+    const obj = newVal.reduce((acc, { key, value }) => {
+      if (key) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {} as Record<string, string>);
+    if (JSON.stringify(obj) !== JSON.stringify(props.modelValue)) {
+      emit('update:modelValue', obj);
+    }
+  } else {
+    if (JSON.stringify(newVal) !== JSON.stringify(props.modelValue)) {
+      emit('update:modelValue', newVal);
+    }
+  }
+}, { deep: true });
 </script>
