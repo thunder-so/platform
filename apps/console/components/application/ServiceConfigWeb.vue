@@ -1,6 +1,6 @@
 <template>
   <ClientOnly>
-    <UForm v-if="service" :state="service" class="space-y-4">
+    <UForm v-if="service" :state="service" :schema="schema" class="space-y-4">
       <UFormField label="Root Directory" name="app_props.rootDir" class="grid grid-cols-3 gap-4">
         <UInput v-model="service.app_props.rootDir" placeholder="./" class="w-96" size="lg" />
       </UFormField>
@@ -22,14 +22,16 @@
       <UFormField label="Port" name="metadata.port" class="grid grid-cols-3 gap-4">
         <UInput v-model.number="service.metadata.port" type="number" placeholder="3000" size="lg" />
       </UFormField>
-      <EnvironmentVariables v-model="service.metadata.variables" data-type="array" />
+      <EnvironmentVariables v-model="service.metadata.variables" name="metadata.variables" />
     </UForm>
   </ClientOnly>
 </template>
 
 <script setup lang="ts">
 import type { PropType } from 'vue';
+import { z } from 'zod';
 import type { ApplicationInputSchema } from '~/server/trpc/routers/applications.router';
+import { webServiceMetadataSchema } from '~/server/db/types';
 import EnvironmentVariables from './EnvironmentVariables.vue';
 
 type ServiceInput = ApplicationInputSchema['environments'][0]['services'][0];
@@ -39,5 +41,9 @@ defineProps({
     type: Object as PropType<ServiceInput>,
     required: true
   }
+});
+
+const schema = z.object({
+  metadata: webServiceMetadataSchema
 });
 </script>

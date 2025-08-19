@@ -1,7 +1,8 @@
 <template>
   <ClientOnly>
-    <UForm v-if="service" :state="service" class="space-y-4">
-      <UFormField label="Root Directory" name="appProps.rootDir" class="grid grid-cols-3 gap-4">
+    <!-- The UForm's state is the entire service object -->
+    <UForm v-if="service" :state="service" :schema="schema" class="space-y-4">
+      <UFormField label="Root Directory" name="app_props.rootDir" class="grid grid-cols-3 gap-4">
         <UInput v-model="service.app_props.rootDir" placeholder="./" class="w-96" size="lg" />
       </UFormField>
       <UFormField label="Build System" name="metadata.buildSystem" class="grid grid-cols-3 gap-4">
@@ -16,14 +17,17 @@
       <UFormField label="Keep Warm" name="metadata.keepWarm" class="grid grid-cols-3 gap-4">
         <USwitch v-model="service.metadata.keepWarm" />
       </UFormField>
-      <EnvironmentVariables v-model="service.metadata.variables" data-type="array" />
+      <!-- The name prop links this component to the form's validation schema -->
+      <EnvironmentVariables v-model="service.metadata.variables" name="metadata.variables" />
     </UForm>
   </ClientOnly>
 </template>
 
 <script setup lang="ts">
 import type { PropType } from 'vue';
+import { z } from 'zod';
 import type { ApplicationInputSchema } from '~/server/trpc/routers/applications.router';
+import { functionMetadataSchema } from '~/server/db/types';
 import EnvironmentVariables from './EnvironmentVariables.vue';
 
 type ServiceInput = ApplicationInputSchema['environments'][0]['services'][0];
@@ -34,4 +38,10 @@ defineProps({
     required: true
   }
 });
+
+// The form schema only needs to include the parts of the service state we want to validate.
+const schema = z.object({
+  metadata: functionMetadataSchema
+});
+
 </script>

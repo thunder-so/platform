@@ -29,6 +29,29 @@ export const sourcePropsSchema = z.object({
 
 export const buildSystemSchema = z.enum(['Nixpacks', 'Buildpacks', 'Custom Dockerfile']);
 
+// Environment Variables Schema with Validation
+export const envVarSchema = z.object({
+  key: z.string().regex(/^[a-zA-Z0-9_]*$/, {
+    message: 'Invalid format. Use only letters, numbers, and underscores.'
+  }),
+  value: z.string(),
+});
+
+export const envVarArraySchema = z.array(envVarSchema).superRefine((items, ctx) => {
+  const seen = new Set();
+  items.forEach((item, index) => {
+    if (!item.key) return;
+    if (seen.has(item.key)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Duplicate key.`,
+        path: [index, 'key'],
+      });
+    }
+    seen.add(item.key);
+  });
+});
+
 // BuildProps: Varied by stack type
 export const nodeBasedBuildPropsSchema = z.object({
   runtime: z.string().optional(),
@@ -37,12 +60,12 @@ export const nodeBasedBuildPropsSchema = z.object({
   buildcmd: z.string().optional(),
   include: z.array(z.string()).optional(),
   exclude: z.array(z.string()).optional(),
-  environment: z.record(z.string()).optional(),
+  environment: envVarArraySchema.optional(),
   secrets: z.array(z.object({ key: z.string(), resource: z.string() })).optional(),
 });
 
 export const dockerBasedBuildPropsSchema = z.object({
-  environment: z.record(z.string()).optional(),
+  environment: envVarArraySchema.optional(),
   secrets: z.array(z.object({ key: z.string(), resource: z.string() })).optional(),
   dockerBuildArgs: z.array(z.string()).optional(),
 });
@@ -87,7 +110,7 @@ export const functionMetadataSchema = z.object({
   tracing: z.boolean().optional(),
   reservedConcurrency: z.number().optional(),
   provisionedConcurrency: z.number().optional(),
-  variables: z.array(z.object({ key: z.string(), value: z.string() })).optional(),
+  variables: envVarArraySchema.optional(),
   secrets: z.array(z.object({ key: z.string(), resource: z.string() })).optional(),
   dockerBuildArgs: z.array(z.string()).optional(),
   bunLayerArn: z.string().optional(),
@@ -101,7 +124,7 @@ export const webServiceMetadataSchema = z.object({
   port: z.number().optional(),
   buildSystem: buildSystemSchema.optional(),
   architecture: z.enum(['x86_64', 'ARM64']).optional(),
-  variables: z.array(z.object({ key: z.string(), value: z.string() })).optional(),
+  variables: envVarArraySchema.optional(),
   secrets: z.array(z.object({ key: z.string(), resource: z.string() })).optional(),
   dockerBuildArgs: z.array(z.string()).optional(),
 });

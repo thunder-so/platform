@@ -50,7 +50,7 @@ const STACK_DEFAULTS: {
       runtime_version: '24',
       installcmd: 'npm install',
       buildcmd: 'npm run build',
-      environment: {},
+      environment: [],
     },
   },
   FUNCTION: {

@@ -3,7 +3,7 @@ import { publicProcedure, protectedProcedure, router } from '../init';
 import { db } from '~/server/db/db';
 import { services } from '~/server/db/schema';
 import { eq } from 'drizzle-orm';
-import { appPropsSchema, edgePropsSchema } from '~/server/trpc/schemas';
+import { appPropsSchema, edgePropsSchema } from '~/server/db/types';
 
 // Helper function to deep merge objects
 function deepMerge(target: any, source: any): any {

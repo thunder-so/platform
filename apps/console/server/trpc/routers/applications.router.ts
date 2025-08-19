@@ -21,7 +21,7 @@ import {
   webServicePipelinePropsSchema, 
   edgePropsSchema, 
   cloudFrontPropsSchema 
-} from '~/server/trpc/schemas';
+} from '~/server/db/types';
 
 // Zod schema for a single service, mirroring the discriminated union in schema.ts
 const serviceSchema = z.discriminatedUnion('stack_type', [

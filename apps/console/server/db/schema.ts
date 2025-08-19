@@ -349,7 +349,7 @@ export interface NodeBasedBuildProps {
   runtime_version?: number | string;
   installcmd?: string;
   buildcmd?: string;
-  environment?: Record<string, string>;
+  environment?: Array<{ key: string; value: string }>;
   include?: string[];
   exclude?: string[];
   secrets?: { key: string; resource: string; }[];
