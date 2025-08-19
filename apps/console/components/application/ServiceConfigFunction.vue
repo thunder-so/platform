@@ -16,8 +16,6 @@
       <UFormField label="Keep Warm" name="metadata.keepWarm" class="grid grid-cols-3 gap-4">
         <USwitch v-model="service.metadata.keepWarm" />
       </UFormField>
-      <!-- The name prop links this component to the form's validation schema -->
-      <EnvironmentVariables v-model="service.metadata.variables" name="metadata.variables" />
     </UForm>
   </ClientOnly>
 </template>
@@ -26,7 +24,6 @@
 import type { PropType } from 'vue';
 import { z } from 'zod';
 import { type ApplicationInputSchema, appPropsSchema, functionMetadataSchema, functionPipelinePropsSchema } from '~/server/db/types';
-import EnvironmentVariables from './EnvironmentVariables.vue';
 
 type ServiceInput = ApplicationInputSchema['environments'][0]['services'][0];
 

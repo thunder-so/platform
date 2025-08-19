@@ -10,6 +10,7 @@
         <ServiceConfigFunction v-else-if="service.stack_type === 'FUNCTION'" ref="serviceForm" :service="service" />
         <ServiceConfigWeb v-else-if="service.stack_type === 'WEB_SERVICE'" ref="serviceForm" :service="service" />
       </div>
+      <EnvironmentVariables v-model="environmentVariablesModel" ref="envVarsForm" />
     </ClientOnly>
   </div>
 </template>
@@ -21,8 +22,9 @@ import type { Service } from '~/server/db/schema';
 import ServiceConfigStatic from './ServiceConfigStatic.vue';
 import ServiceConfigFunction from './ServiceConfigFunction.vue';
 import ServiceConfigWeb from './ServiceConfigWeb.vue';
+import EnvironmentVariables from './EnvironmentVariables.vue';
 
-defineProps({
+const props = defineProps({
   scanError: {
     type: String,
     default: null,
@@ -34,9 +36,36 @@ defineProps({
 });
 
 const serviceForm = ref();
+const envVarsForm = ref();
+
+const environmentVariablesModel = computed({
+  get() {
+    if (!props.service) return [];
+    let vars: Record<string, string>[] = [];
+    if (props.service.stack_type === 'SPA') {
+      vars = props.service.pipeline_props?.buildProps?.environment || [];
+    } else {
+      vars = props.service.metadata?.variables || [];
+    }
+    return vars.map(v => ({ key: Object.keys(v)[0], value: Object.values(v)[0] }));
+  },
+  set(newValue: { key: string; value: string }[]) {
+    if (!props.service) return;
+    const transformedValue = newValue.map(v => ({ [v.key]: v.value }));
+    if (props.service.stack_type === 'SPA') {
+      if (props.service.pipeline_props?.buildProps) {
+        props.service.pipeline_props.buildProps.environment = transformedValue;
+      }
+    } else {
+      if (props.service.metadata) {
+        props.service.metadata.variables = transformedValue;
+      }
+    }
+  }
+});
 
 const hasErrors = computed(() => {
-  return serviceForm.value?.errors?.length > 0;
+  return serviceForm.value?.errors?.length > 0 || envVarsForm.value?.hasErrors;
 });
 
 defineExpose({ hasErrors });

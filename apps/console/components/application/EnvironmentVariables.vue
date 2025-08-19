@@ -1,19 +1,17 @@
 <template>
-  <div>
+  <UForm ref="form" :state="modelValue" :schema="envVarSchema" class="space-y-4">
     <h2 class="text-md font-semibold mt-6 mb-4 pb-4 border-b border-muted">Environment Variables</h2>
     <div v-for="(variable, index) in modelValue" :key="index" class="grid grid-cols-9 gap-x-2 mt-2 items-start">
-      <UFormField :name="`${name}.${index}`" class="col-span-4">
+      <UFormField :name="`${index}.key`" class="col-span-4">
         <UInput 
-          :model-value="getKey(variable)" 
-          @update:model-value="updateKey(index, $event)"
+          v-model="variable.key" 
           placeholder="Key" 
           class="w-full" 
         />
       </UFormField>
-      <UFormField :name="`${name}.${index}`" class="col-span-4">
+      <UFormField :name="`${index}.value`" class="col-span-4">
         <UInput 
-          :model-value="getValue(variable)" 
-          @update:model-value="updateValue(index, $event)"
+          v-model="variable.value" 
           placeholder="Value" 
           class="w-full" 
         />
@@ -23,47 +21,33 @@
       </div>
     </div>
     <UButton color="primary" variant="outline" icon="i-heroicons-plus-circle-20-solid" class="mt-2" @click="addVariable">Add Variable</UButton>
-  </div>
+  </UForm>
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue';
+import { z } from 'zod';
+import { envVarSchema } from '~/server/db/types';
+
 const props = defineProps({
   modelValue: {
-    type: Array as () => Record<string, string>[],
+    type: Array as () => { key: string; value: string }[],
     required: true,
   },
-  name: {
-    type: String,
-    required: true,
-  }
 });
 
 const emit = defineEmits(['update:modelValue']);
 
-const getKey = (variable: Record<string, string>) => {
-  return Object.keys(variable)[0] || '';
-};
+const form = ref();
 
-const getValue = (variable: Record<string, string>) => {
-  return Object.values(variable)[0] || '';
-};
+const hasErrors = computed(() => {
+  return form.value?.errors?.length > 0;
+});
 
-const updateKey = (index: number, newKey: string) => {
-  const updated = [...props.modelValue];
-  const oldValue = getValue(updated[index]);
-  updated[index] = { [newKey]: oldValue };
-  emit('update:modelValue', updated);
-};
-
-const updateValue = (index: number, newValue: string) => {
-  const updated = [...props.modelValue];
-  const oldKey = getKey(updated[index]);
-  updated[index] = { [oldKey]: newValue };
-  emit('update:modelValue', updated);
-};
+defineExpose({ hasErrors });
 
 const addVariable = () => {
-  const updated = [...props.modelValue, { '': '' }];
+  const updated = [...props.modelValue, { key: '', value: '' }];
   emit('update:modelValue', updated);
 };
 

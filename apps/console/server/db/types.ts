@@ -32,48 +32,31 @@ export const buildSystemSchema = z.enum(['Nixpacks', 'Buildpacks', 'Custom Docke
 const NAME_REGEX = /^[a-zA-Z](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$/;
 const NAME_ERROR_MESSAGE = 'Use letters, numbers, and hyphens. Must start with a letter.';
 
-const envVarSchema = z.array(z.record(z.string(), z.string()))
-  .superRefine((items, ctx) => {
-    // Collect all keys with their indices
-    const keyMap = new Map();
-    items.forEach((item, index) => {
-      const keys = Object.keys(item);
-      keys.forEach(key => {
-        const trimmedKey = key.trim();
-        
-        // Format validation
-        if (trimmedKey && !/^[a-zA-Z0-9_]+$/.test(trimmedKey)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: 'Use only letters, numbers, and underscores.',
-            path: [index, 'key'],
-          });
-        }
-
-        // Track key occurrences (case-insensitive)
-        if (trimmedKey) {
-          const lowerKey = trimmedKey.toLowerCase();
-          if (!keyMap.has(lowerKey)) {
-            keyMap.set(lowerKey, []);
-          }
-          keyMap.get(lowerKey).push(index);
-        }
-      });
-    });
-
-    // Add duplicate errors to all occurrences of duplicate keys
-    keyMap.forEach((indices, key) => {
-      if (indices.length > 1) {
-        indices.forEach(index => {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: 'Duplicate key.',
-            path: [index, 'key'],
-          });
-        });
-      }
-    });
+export const envVarSchema = z.array(z.object({
+  key: z.string().min(1, 'Key is required.').regex(/^[a-zA-Z0-9_]+$/, 'Use only letters, numbers, and underscores.'),
+  value: z.string().min(1, 'Value is required.'),
+})).superRefine((items, ctx) => {
+  const keyMap = new Map();
+  items.forEach((item, index) => {
+    const lowerKey = item.key.toLowerCase();
+    if (!keyMap.has(lowerKey)) {
+      keyMap.set(lowerKey, []);
+    }
+    keyMap.get(lowerKey).push(index);
   });
+
+  keyMap.forEach((indices, key) => {
+    if (indices.length > 1) {
+      indices.forEach(index => {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Duplicate key.',
+          path: [index, 'key'],
+        });
+      });
+    }
+  });
+});
 
 // BuildProps: Varied by stack type
 export const nodeBasedBuildPropsSchema = z.object({

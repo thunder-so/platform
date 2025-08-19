@@ -22,7 +22,6 @@
       <UFormField label="Port" name="metadata.port" class="grid grid-cols-3 gap-4">
         <UInput v-model.number="service.metadata.port" type="number" placeholder="3000" size="lg" />
       </UFormField>
-      <EnvironmentVariables v-model="service.metadata.variables" name="metadata.variables" />
     </UForm>
   </ClientOnly>
 </template>
@@ -32,7 +31,6 @@ import { ref, computed } from 'vue';
 import type { PropType } from 'vue';
 import { z } from 'zod';
 import { type ApplicationInputSchema, appPropsSchema, webServiceMetadataSchema, webServicePipelinePropsSchema } from '~/server/db/types';
-import EnvironmentVariables from './EnvironmentVariables.vue';
 
 type ServiceInput = ApplicationInputSchema['environments'][0]['services'][0];
 

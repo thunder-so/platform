@@ -22,32 +22,6 @@
       <UFormField label="Build Command" name="pipeline_props.buildProps.buildcmd" class="grid grid-cols-3 gap-4">
         <UInput v-model="service.pipeline_props.buildProps.buildcmd" placeholder="npm run build" class="w-128" size="lg" />
       </UFormField>
-      <div>
-        <h2 class="text-md font-semibold mt-6 mb-4 pb-4 border-b border-muted">Environment Variables</h2>
-        <div v-for="(variable, index) in service.pipeline_props.buildProps.environment" :key="index" class="grid grid-cols-9 gap-x-2 mt-2 items-start">
-          <UFormField :name="`pipeline_props.buildProps.environment.${index}.key`" class="col-span-4">
-            <UInput 
-              :model-value="getKey(variable)" 
-              @update:model-value="updateKey(index, $event)"
-              placeholder="Key" 
-              class="w-full"
-              :error="getKeyError(index)"
-            />
-          </UFormField>
-          <UFormField :name="`pipeline_props.buildProps.environment.${index}.value`" class="col-span-4">
-            <UInput 
-              :model-value="getValue(variable)" 
-              @update:model-value="updateValue(index, $event)"
-              placeholder="Value" 
-              class="w-full" 
-            />
-          </UFormField>
-          <div class="col-span-1">
-            <UButton icon="heroicons:trash" color="error" variant="ghost" @click="removeVariable(index)" />
-          </div>
-        </div>
-        <UButton color="primary" variant="outline" icon="i-heroicons-plus-circle-20-solid" class="mt-2" @click="addVariable">Add Variable</UButton>
-      </div>
     </UForm>
   </ClientOnly>
 </template>
@@ -69,51 +43,6 @@ const props = defineProps({
 
 const appConfig = useAppConfig();
 const runtimes = ref(appConfig.runtimes);
-
-const getKey = (variable: Record<string, string>) => {
-  return Object.keys(variable)[0] || '';
-};
-
-const getValue = (variable: Record<string, string>) => {
-  return Object.values(variable)[0] || '';
-};
-
-const updateKey = (index: number, newKey: string) => {
-  const oldValue = getValue(props.service.pipeline_props.buildProps.environment[index]);
-  props.service.pipeline_props.buildProps.environment[index] = { [newKey]: oldValue };
-};
-
-const updateValue = (index: number, newValue: string) => {
-  const oldKey = getKey(props.service.pipeline_props.buildProps.environment[index]);
-  props.service.pipeline_props.buildProps.environment[index] = { [oldKey]: newValue };
-};
-
-const addVariable = () => {
-  props.service.pipeline_props.buildProps.environment.push({ '': '' });
-};
-
-const removeVariable = (index: number) => {
-  props.service.pipeline_props.buildProps.environment.splice(index, 1);
-};
-
-const getKeyError = (index: number) => {
-  return computed(() => {
-    const variable = props.service.pipeline_props.buildProps.environment[index];
-    if (!variable) return null;
-    
-    const key = getKey(variable);
-    
-    if (!key.trim()) {
-      return 'Key is required.';
-    }
-    
-    if (key.trim() && !/^[a-zA-Z0-9_]+$/.test(key.trim())) {
-      return 'Use only letters, numbers, and underscores.';
-    }
-    
-    return null;
-  }).value;
-};
 
 const serviceSchema = z.object({
   app_props: appPropsSchema,
