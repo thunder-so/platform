@@ -10,7 +10,7 @@
             Dashboard
           </NuxtLink>
 
-          <h2 class="pt-2 text-xl font-medium">{{ applicationSchema?.name }}</h2>
+          <h2 class="pt-2 text-xl font-medium">{{ applicationSchema?.display_name }}</h2>
         </div>
 
         <UNavigationMenu 
@@ -36,7 +36,69 @@
           }"
         />
       </aside>
-      <main class="main-content"> 
+      <main class="main-content">
+        <div class="border-b border-muted pb-6 mb-6">
+          <UContainer>
+          <ClientOnly>
+            <div class="flex justify-between">
+              <div>
+                <div class="flex items-center gap-4 mb-4">
+                  <h1 class="text-xl tracking-tight text-zinc-100">{{ applicationSchema?.display_name }}</h1>
+                  <UBadge v-if="service?.stack_type === 'SPA'" color="success" variant="subtle">STATIC</UBadge>
+                </div>
+                <div class="flex items-center gap-6">
+                  <div class="flex items-center gap-2">
+                    <span class="flex items-center justify-center gap-1.5">
+                      <Icon name="mdi:github" class="w-4 h-4 text-muted" />
+                      <span class="text-sm text-muted">{{service?.pipeline_props?.sourceProps?.owner}} / {{service?.pipeline_props?.sourceProps?.repo}}</span>
+                    </span>
+                    <span class="flex items-center justify-center gap-1">
+                      <Icon name="mdi:source-branch" class="w-4 h-4 text-muted" />
+                      <span class="text-sm text-muted">{{service?.pipeline_props?.sourceProps?.branchOrRef}}</span>
+                    </span>
+                  </div>
+                  <div class="flex items-center justify-center gap-2">
+                    <Icon name="mdi:aws" class="h-5 w-5 text-muted" />
+                    <span class="text-sm text-muted">{{ provider?.alias }} / {{ environment?.region }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex justify-center items-center">
+                <div>
+                  <UPopover
+                    mode="click"
+                    :content="{
+                      align: 'end',
+                      side: 'bottom',
+                    }"
+                  >
+                    <UButton 
+                      label="Deploy" 
+                      size="lg" 
+                      color="neutral" 
+                      variant="outline" 
+                      trailing-icon="i-lucide-chevron-down"
+                    />
+
+                    <template #content>
+                      <div class="p-2">
+                        <ul class="space-y-1">
+                          <li>
+                            <UButton class="w-full" variant="ghost" label="Deploy latest commit" @click="() => {}" />
+                          </li>
+                          <li>
+                            <UButton class="w-full" variant="ghost" label="Deploy specific commit" @click="() => {}" />
+                          </li>
+                        </ul>
+                      </div>
+                    </template>
+                  </UPopover>
+                </div>
+              </div>
+            </div>
+          </ClientOnly>
+          </UContainer> 
+        </div>
         <UContainer>
           <slot />
         </UContainer>
@@ -56,6 +118,7 @@ if (!applicationSchema.value) {
   navigateTo('/404');
 }
 const environment = applicationSchema.value?.environments?.[0];
+const provider = environment?.provider;
 const service = environment?.services?.[0];
 const appId = applicationSchema.value?.id;
 const envId = environment?.id;

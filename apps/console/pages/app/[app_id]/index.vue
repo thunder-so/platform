@@ -1,6 +1,5 @@
 <template>
   <div>
-    <h3>Activity Stream</h3>
     <div v-if="loading">Loading activities...</div>
     <div v-else-if="error">Error fetching activities: {{ error.message }}</div>
     <div v-else-if="activities.length">
