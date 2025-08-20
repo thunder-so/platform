@@ -34,7 +34,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, provide } from 'vue';
-import GithubRepoSelector from '~/components/application/GithubRepoSelector.vue';
+import GithubRepoSelector from '~/components/new/GithubRepoSelector.vue';
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
 
 definePageMeta({

@@ -54,7 +54,7 @@
 import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
 import type { Provider } from '~/server/db/schema'
 import { useClipboard } from '@vueuse/core'
-import { ProviderCreateStackModal, ProviderCreateCredentialsModal } from '#components'
+import { OrgProviderCreateStackModal, OrgProviderCreateCredentialsModal } from '#components'
 import { computed } from 'vue';
 
 definePageMeta({
@@ -82,10 +82,10 @@ const limitReached = computed(() => providers.value.length >= maxProviders.value
 const UBadge = resolveComponent('UBadge')
 const UDropdownMenu = resolveComponent('UDropdownMenu')
 const UButton = resolveComponent('UButton')
-const providerCreateStackModal = overlay.create(ProviderCreateStackModal);
-const providerCreateCredentialsModal = overlay.create(ProviderCreateCredentialsModal);
-const providerEditModal = resolveComponent('ProviderUpdateModal')
-const providerDeleteModal = resolveComponent('ProviderDeleteModal')
+const providerCreateStackModal = overlay.create(OrgProviderCreateStackModal);
+const providerCreateCredentialsModal = overlay.create(OrgProviderCreateCredentialsModal);
+const providerEditModal = resolveComponent('OrgProviderUpdateModal')
+const providerDeleteModal = resolveComponent('OrgProviderDeleteModal')
 
 const addNewAccountStack = () => {
   providerCreateStackModal.open({ organizationId: orgId })

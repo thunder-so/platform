@@ -60,7 +60,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
-import PricingTable from '~/components/PricingTable.vue';
+import PricingTable from '~/components/org/PricingTable.vue';
 import { usePlans } from '~/composables/usePlans';
 import type { Product } from '~/server/db/schema';
 

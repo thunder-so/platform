@@ -93,7 +93,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
-import ServiceConfiguration from '~/components/application/ServiceConfiguration.vue';
+import ServiceConfiguration from '~/components/new/ServiceConfiguration.vue';
 import { applicationInputSchema } from '~/server/db/types';
 
 definePageMeta({

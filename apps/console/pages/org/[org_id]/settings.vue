@@ -69,7 +69,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, inject } from 'vue';
 import { z } from 'zod';
-import { OrganizationDeleteModal } from '#components'
+import { OrgOrganizationDeleteModal } from '#components'
 
 const { memberships, selectedOrganization, initializeSession } = useMemberships()
 
@@ -102,7 +102,7 @@ const hasChanges = computed(() => {
 const orgId = selectedOrganization.value?.id as string;
 
 const overlay = useOverlay()
-const organizationDeleteModal = overlay.create(OrganizationDeleteModal, {
+const organizationDeleteModal = overlay.create(OrgOrganizationDeleteModal, {
   props: {org: selectedOrganization.value}
 });
 

@@ -92,7 +92,7 @@
 
 <script setup lang="ts">
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
-import type { ApplicationInputSchema } from '~/server/trpc/routers/applications.router';
+import type { ApplicationInputSchema } from '~/server/db/types';
 
 definePageMeta({
   layout: 'new',

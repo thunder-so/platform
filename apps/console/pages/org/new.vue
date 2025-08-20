@@ -24,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-import PricingTable from '~/components/PricingTable.vue';
+import PricingTable from '~/components/org/PricingTable.vue';
 import { usePlans } from '~/composables/usePlans';
 import { useMemberships } from '~/composables/useMemberships';
 
