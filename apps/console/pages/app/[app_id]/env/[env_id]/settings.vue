@@ -27,16 +27,37 @@
         </div>
       </UForm>
     </UCard>
+
+    <UCard color="error" class="mt-8">
+      <template #header>
+        <h3>Danger Zone</h3>
+      </template>
+      <div>
+        <UAlert 
+          color="error" 
+          variant="soft" 
+          class="mb-4"
+          title="Deleting your application is a permanent action and cannot be undone." 
+        />
+        <UButton @click="deleteApplicationModal()" variant="outline" color="error">
+          Delete Application
+        </UButton>
+      </div>
+    </UCard>
   </div>
 </template>
 
 <script setup lang="ts">
+import { AppApplicationDeleteModal } from '#components'
+
 definePageMeta({
   layout: 'app',
 });
 
 const { applicationSchema, refreshApplicationSchema } = useApplications();
 const { $client } = useNuxtApp();
+const router = useRouter();
+const toast = useToast();
 
 if (!applicationSchema.value) {
   throw new Error('Application schema not found.')
@@ -56,6 +77,30 @@ const formState = ref({
 
 const isSaving = ref(false);
 
+const overlay = useOverlay()
+const applicationDeleteModal = overlay.create(AppApplicationDeleteModal, {
+  props: {application: applicationSchema.value}
+});
+
+async function deleteApplicationModal() {
+  const result = await applicationDeleteModal.open().result;
+
+  if (result === applicationSchema.value?.id) {
+    await deleteApplication();
+  }
+}
+
+const deleteApplication = async () => {
+  try {
+    await $client.applications.delete.mutate({ appId: applicationSchema.value.id });
+    toast.add({ title: 'Application deleted successfully', color: 'success' });
+    await router.push('/');
+  } catch (e: any) {
+    console.error("Error deleting application:", e);
+    toast.add({ title: 'Failed to delete application', description: e.message, color: 'error' });
+  }
+};
+
 const saveSettings = async () => {
   isSaving.value = true;
   try {
@@ -71,9 +116,10 @@ const saveSettings = async () => {
         buildProps: formState.value.buildProps
       },
     });
-    console.log('Build settings saved successfully!');
+    toast.add({ title: 'Build settings saved successfully!', color: 'success' });
   } catch (e: any) {
     console.error('Error saving build settings:', e.message);
+    toast.add({ title: 'Error saving build settings', description: e.message, color: 'error' });
   } finally {
     refreshApplicationSchema();
     isSaving.value = false;
