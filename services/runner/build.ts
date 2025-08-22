@@ -1,9 +1,10 @@
+
+
 import type { SQSHandler } from 'aws-lambda';
 import { CodeBuild, StartBuildCommand, BatchGetBuildsCommand, ArtifactsType, EnvironmentVariableType } from '@aws-sdk/client-codebuild';
 import { STSClient, AssumeRoleCommand } from '@aws-sdk/client-sts';
 import { createClient } from '@supabase/supabase-js';
 import { SSMProvider } from '@aws-lambda-powertools/parameters/ssm';
-import type { BuildRequest } from '@thunder/types';
 import { spaBuilder, lambdaBuilder, ecsBuilder } from './builders';
 import type { IStackBuilder } from './builders/types';
 
@@ -44,18 +45,22 @@ export const handler: SQSHandler = async (event) => {
   const record = event.Records[0];
   console.log('Received SQS message:', record);
 
-  let buildRequest: BuildRequest;
-  try {
-    buildRequest = JSON.parse(record.body);
-  } catch (error) {
-    console.error('Failed to parse SQS message body as JSON:', record.body);
-    throw error;
-  }
-  console.log('Parsed Build Request:', buildRequest);
+  const { messageAttributes } = record;
+  const stackType = messageAttributes.stackType?.stringValue;
+  const stackVersion = messageAttributes.stackVersion?.stringValue;
+  const eventId = messageAttributes.eventId?.stringValue;
+  const accessTokenSecretArn = messageAttributes.accessTokenSecretArn?.stringValue;
+  const provider = JSON.parse(messageAttributes.provider?.stringValue || '{}');
+  const props = JSON.parse(record.body);
 
-  const builder = builders[buildRequest.stackType];
+  if (!stackType || !stackVersion || !eventId || !accessTokenSecretArn || !provider) {
+    console.error('Missing required message attributes');
+    throw new Error('Missing required message attributes');
+  }
+
+  const builder = builders[stackType];
   if (!builder) {
-    throw new Error(`No builder found for stack type: ${buildRequest.stackType}`);
+    throw new Error(`No builder found for stack type: ${stackType}`);
   }
 
   // running the build on customer account
@@ -63,11 +68,11 @@ export const handler: SQSHandler = async (event) => {
 
   // Provider role ARN is provided
   // If the roleArn is provided, we assume that role to get the credentials
-  if (buildRequest.provider.roleArn) {
+  if (provider.role_arn) {
     const assumeRoleParams = {
-      RoleArn: buildRequest.provider.roleArn,
+      RoleArn: provider.role_arn,
       RoleSessionName: 'RunnerBuildSession',
-      ExternalId: buildRequest.provider.organizationId,
+      ExternalId: provider.organization_id,
     };
 
     const sts = new STSClient({ region: REGION });
@@ -78,9 +83,9 @@ export const handler: SQSHandler = async (event) => {
   else {
     const parametersProvider = new SSMProvider();
     let secretAccessKey;
-    if (buildRequest.provider.accessKeyId) {
-      const parameterPath = `/thunder/${buildRequest.provider.organizationId}/${buildRequest.provider.accessKeyId}/secretAccessKey`;
-      console.log(`Attempting to retrieve SSM parameter: ${parameterPath} for accessKeyId: ${buildRequest.provider.accessKeyId}`);
+    if (provider.access_key_id) {
+      const parameterPath = `/thunder/${provider.organization_id}/${provider.access_key_id}/secretAccessKey`;
+      console.log(`Attempting to retrieve SSM parameter: ${parameterPath} for accessKeyId: ${provider.access_key_id}`);
       try {
         secretAccessKey = await parametersProvider.get(parameterPath, { decrypt: true });
         console.log(`Successfully retrieved SSM parameter: ${parameterPath}`);
@@ -90,7 +95,7 @@ export const handler: SQSHandler = async (event) => {
       }
     }
     credentials = {
-      AccessKeyId: buildRequest.provider.accessKeyId,
+      AccessKeyId: provider.access_key_id,
       SecretAccessKey: secretAccessKey,
     }
   } 
@@ -99,20 +104,20 @@ export const handler: SQSHandler = async (event) => {
   // Initiate codebuild in our account
   const codebuild = new CodeBuild({ region: REGION });
 
-  const buildSpec = builder.generateBuildSpec(buildRequest);
-  const cdkContext = builder.generateCdkContext(buildRequest);
+  const buildSpec = builder.generateBuildSpec({ ...props, stackVersion, accessTokenSecretArn });
+  const cdkContext = builder.generateCdkContext(props);
 
   const params = {
     projectName: process.env.RUNNER_BUILD,
     artifactsOverride: {
       type: ArtifactsType.S3,
       location: process.env.RUNNER_BUCKET,
-      path: buildRequest.service,
+      path: props.service,
     },
     buildspecOverride: buildSpec,
     environmentVariablesOverride: [
-      { name: 'AWS_ACCOUNT', value: buildRequest.context.env.account, type: EnvironmentVariableType.PLAINTEXT },
-      { name: 'AWS_REGION', value: buildRequest.context.env.region, type: EnvironmentVariableType.PLAINTEXT },
+      { name: 'AWS_ACCOUNT', value: provider.account_id, type: EnvironmentVariableType.PLAINTEXT },
+      { name: 'AWS_REGION', value: provider.region, type: EnvironmentVariableType.PLAINTEXT },
       { name: 'AWS_ACCESS_KEY_ID', value: credentials?.AccessKeyId, type: EnvironmentVariableType.PLAINTEXT },
       { name: 'AWS_SECRET_ACCESS_KEY', value: credentials?.SecretAccessKey, type: EnvironmentVariableType.PLAINTEXT },
       { name: 'AWS_SESSION_TOKEN', value: credentials?.SessionToken, type: EnvironmentVariableType.PLAINTEXT },
@@ -148,7 +153,7 @@ export const handler: SQSHandler = async (event) => {
             build_context: cdkContext,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', buildRequest.eventId);
+          .eq('id', eventId);
 
         if (error) {
           throw error;

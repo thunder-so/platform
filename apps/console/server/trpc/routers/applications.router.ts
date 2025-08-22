@@ -4,22 +4,17 @@ import { TRPCError } from '@trpc/server';
 import { db } from '~/server/db/db';
 import { sql, eq } from 'drizzle-orm';
 import { applications, environments, services, userAccessTokens, builds } from '~/server/db/schema';
+import { applicationInputSchema } from '~/server/db/types';
 import { PlatformLibrary } from '~/server/lib/platform.library';
 import * as ProviderLibrary from '~/server/lib/provider.library';
-import type { BuildRequest } from '@thunder/types';
-import { 
-  applicationInputSchema,
-  type ApplicationInputSchema
-} from '~/server/db/types';
 
 export const applicationsRouter = router({
   create: protectedProcedure
-    .input(z.object({
+    .input(applicationInputSchema.extend({
       organization_id: z.string(),
-      applicationInputSchema
     }))
     .mutation(async ({ ctx, input }) => {
-      const { name, display_name, environments: inputEnvironments } = input.applicationInputSchema;
+      const { name, display_name, environments: inputEnvironments } = input;
       const aws = new PlatformLibrary();
 
       const newApplicationId = await db.transaction(async (tx) => {
@@ -45,7 +40,7 @@ export const applicationsRouter = router({
             application_id: newApplication.id,
             provider_id: env.provider.id,
             region: env.region,
-          }).returning({ id: environments.id, name: environments.name });
+          }).returning({ id: environments.id, name: environments.name, region: environments.region });
 
           const providerDetails = env.provider;
 
@@ -82,7 +77,7 @@ export const applicationsRouter = router({
               domain_props: service.domain_props,
               edge_props: service.edge_props,
               cdn_props: service.cdn_props,
-            }).returning({ id: services.id, name: services.name });
+            }).returning({ id: services.id, name: services.name, stack_type: services.stack_type, stack_version: services.stack_version });
 
             const [newBuild] = await tx.insert(builds).values({
               service_id: newService.id,
@@ -94,88 +89,45 @@ export const applicationsRouter = router({
               throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create build entry.' });
             }
 
-            const baseContext = {
-              env: { account: providerDetails.account_id || '', region: env.region },
-              application: newApplication.name,
-              service: newService.id,
-              environment: newEnvironment.name,
-              rootDir: service.app_props?.rootDir || './',
-              sourceProps: service.pipeline_props?.sourceProps || { owner: '', repo: '', branchOrRef: '' },
-              accessTokenSecretArn: accessTokenSecretArn || '',
-              eventTarget: service.pipeline_props?.eventBus,
-              buildSpecFilePath: service.pipeline_props?.buildSpecFilePath,
-              debug: service.app_props?.debug,
-            };
+            try {
+              const props = {
+                ...service.app_props,
+                ...service.pipeline_props,
+                ...service.domain_props,
+                ...service.edge_props,
+                ...service.cdn_props,
+                ...service.metadata,
+                env: {
+                  account: providerDetails.account_id,
+                  region: newEnvironment.region,
+                },
+                application: newApplication.name,
+                service: newService.name,
+                environment: newEnvironment.name,
+              };
 
-            let buildRequest: BuildRequest;
+              const messageAttributes = {
+                stackType: { DataType: 'String', StringValue: newService.stack_type },
+                stackVersion: { DataType: 'String', StringValue: newService.stack_version },
+                eventId: { DataType: 'String', StringValue: newBuild.id },
+                accessTokenSecretArn: { DataType: 'String', StringValue: accessTokenSecretArn },
+                provider: { DataType: 'String', StringValue: JSON.stringify(providerDetails) },
+              };
 
-            const providerForRequest = {
-              roleArn: providerDetails.role_arn || '',
-              organizationId: providerDetails.organization_id,
-              accountId: providerDetails.account_id || '',
-              region: env.region,
-              accessKeyId: providerDetails.access_key_id || undefined,
-            };
+              const runnerServiceQueueUrl = process.env.RUNNER_SERVICE;
+              if (!runnerServiceQueueUrl) {
+                throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Runner SQS queue URL is not configured.' });
+              }
 
-            switch (service.stack_type) {
-              case 'SPA':
-                buildRequest = {
-                  stackType: 'SPA',
-                  eventId: newBuild.id,
-                  provider: providerForRequest,
-                  stackVersion: service.stack_version || 'latest',
-                  context: {
-                    ...baseContext,
-                    ...service.app_props,
-                    ...service.metadata,
-                    ...service.domain_props,
-                    ...service.cdn_props,
-                    ...service.edge_props,
-                    buildProps: service.pipeline_props?.buildProps,
-                  },
-                };
-                break;
-              case 'FUNCTION':
-                buildRequest = {
-                  stackType: 'FUNCTION',
-                  eventId: newBuild.id,
-                  provider: providerForRequest,
-                  stackVersion: service.stack_version || 'latest',
-                  context: {
-                    ...baseContext,
-                    ...service.app_props,
-                    functionProps: service.metadata,
-                    ...service.domain_props,
-                    buildProps: service.pipeline_props?.buildProps,
-                  },
-                };
-                break;
-              case 'WEB_SERVICE':
-                buildRequest = {
-                  stackType: 'WEB_SERVICE',
-                  eventId: newBuild.id,
-                  provider: providerForRequest,
-                  stackVersion: service.stack_version || 'latest',
-                  context: {
-                    ...baseContext,
-                    ...service.app_props,
-                    serviceProps: service.metadata,
-                    ...service.domain_props,
-                    ...service.cdn_props,
-                    buildProps: service.pipeline_props?.buildProps,
-                  },
-                };
-                break;
-              default:
-                throw new TRPCError({ code: 'BAD_REQUEST', message: `Invalid stack type` });
+              await aws.sendSqsMessage(runnerServiceQueueUrl, JSON.stringify(props), newBuild.id, messageAttributes);
+            } catch (error) {
+              if (error instanceof z.ZodError) {
+                console.error('Zod validation error creating build request:', error.flatten());
+                throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to construct a valid build request.', cause: error });
+              }
+              console.error('Unknown error creating build request:', error);
+              throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred.' });
             }
-
-            const runnerServiceQueueUrl = process.env.RUNNER_SERVICE;
-            if (!runnerServiceQueueUrl) {
-              throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Runner SQS queue URL is not configured.' });
-            }
-
-            await aws.sendSqsMessage(runnerServiceQueueUrl, JSON.stringify(buildRequest), buildRequest.eventId);
           }
         }
 

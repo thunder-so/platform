@@ -1,4 +1,4 @@
-import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
+import { SQSClient, SendMessageCommand, MessageAttributeValue } from '@aws-sdk/client-sqs';
 import { TRPCError } from '@trpc/server';
 import { SSMClient, PutParameterCommand } from '@aws-sdk/client-ssm';
 
@@ -10,7 +10,7 @@ export class PlatformLibrary {
    * @param messageBody 
    * @param messageGroupId 
    */
-  async sendSqsMessage(queueUrl: string, messageBody: string, messageGroupId: string): Promise<void> {
+  async sendSqsMessage(queueUrl: string, messageBody: string, messageGroupId: string, messageAttributes?: Record<string, MessageAttributeValue>): Promise<void> {
     try {
       const sqsClient = new SQSClient({});
 
@@ -19,6 +19,7 @@ export class PlatformLibrary {
         MessageBody: messageBody,
         MessageGroupId: messageGroupId,
         MessageDeduplicationId: messageGroupId, // Using messageGroupId for deduplication
+        MessageAttributes: messageAttributes,
       }));
     } catch (error) {
       console.error('Error sending SQS message:', error);

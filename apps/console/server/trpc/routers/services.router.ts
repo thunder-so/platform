@@ -1,9 +1,19 @@
 import { z } from 'zod';
-import { publicProcedure, protectedProcedure, router } from '../init';
+import { protectedProcedure, router } from '../init';
 import { db } from '~/server/db/db';
 import { services } from '~/server/db/schema';
 import { eq } from 'drizzle-orm';
-import { appPropsSchema, edgePropsSchema } from '~/server/db/types';
+import { 
+  appPropsSchema, 
+  edgePropsSchema, 
+  spaDomainPropsSchema, 
+  functionDomainPropsSchema, 
+  webServiceDomainPropsSchema,
+  spaPipelinePropsSchema,
+  functionPipelinePropsSchema,
+  webServicePipelinePropsSchema,
+  cloudFrontPropsSchema
+} from '~/server/db/types';
 
 // Helper function to deep merge objects
 function deepMerge(target: any, source: any): any {
@@ -34,21 +44,35 @@ function deepMerge(target: any, source: any): any {
   return result;
 }
 
+const propsSchemaMap = {
+  app_props: appPropsSchema,
+  edge_props: edgePropsSchema,
+  cdn_props: cloudFrontPropsSchema,
+  domain_props: {
+    SPA: spaDomainPropsSchema,
+    FUNCTION: functionDomainPropsSchema,
+    WEB_SERVICE: webServiceDomainPropsSchema,
+  },
+  pipeline_props: {
+    SPA: spaPipelinePropsSchema,
+    FUNCTION: functionPipelinePropsSchema,
+    WEB_SERVICE: webServicePipelinePropsSchema,
+  },
+};
+
 export const servicesRouter = router({
   updateServiceProps: protectedProcedure
     .input(z.object({
       serviceId: z.string(),
-      app_props: appPropsSchema.optional(),
-      cdn_props: z.record(z.any()).optional(),
-      edge_props: edgePropsSchema.optional(),
+      app_props: appPropsSchema.partial().optional(),
+      cdn_props: cloudFrontPropsSchema.partial().optional(),
+      edge_props: edgePropsSchema.partial().optional(),
       domain_props: z.record(z.any()).optional(),
       pipeline_props: z.record(z.any()).optional(),
     }))
     .mutation(async ({ input }) => {
       const { serviceId, ...propsToUpdate } = input;
-      console.log('Updating service props for serviceId:', serviceId, 'with data:', propsToUpdate);
 
-      // Get existing service data
       const existingService = await db.query.services.findFirst({
         where: eq(services.id, serviceId),
       });
@@ -57,21 +81,28 @@ export const servicesRouter = router({
         throw new Error(`Service with ID ${serviceId} not found`);
       }
 
-      // Create update object
+      const stackType = existingService.stack_type as 'SPA' | 'FUNCTION' | 'WEB_SERVICE';
       const updateData: Record<string, any> = {};
 
-      // Process each property type
       for (const propKey of Object.keys(propsToUpdate) as Array<keyof typeof propsToUpdate>) {
         if (propsToUpdate[propKey]) {
-          // Get existing props (or empty object if none)
           const existingProps = existingService[propKey] || {};
-          
-          // Deep merge the props
-          updateData[propKey] = deepMerge(existingProps, propsToUpdate[propKey]);
+          let schema;
+          if (propKey === 'domain_props' || propKey === 'pipeline_props') {
+            schema = propsSchemaMap[propKey][stackType];
+          } else if (propKey === 'app_props' || propKey === 'edge_props' || propKey === 'cdn_props') {
+            schema = propsSchemaMap[propKey];
+          }
+
+          if (schema) {
+            const validatedProps = schema.partial().parse(propsToUpdate[propKey]);
+            updateData[propKey] = deepMerge(existingProps, validatedProps);
+          } else {
+            updateData[propKey] = deepMerge(existingProps, propsToUpdate[propKey]);
+          }
         }
       }
 
-      // Only update if we have properties to update
       if (Object.keys(updateData).length > 0) {
         await db.update(services)
           .set(updateData)

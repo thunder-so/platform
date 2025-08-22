@@ -1,15 +1,10 @@
 import type { IStackBuilder } from './types';
-import type { BuildRequest } from '@thunder/types';
 
 export const ecsBuilder: IStackBuilder = {
-  generateBuildSpec(request: BuildRequest): string {
-    if (request.stackType !== 'WEB_SERVICE') {
-      throw new Error('Invalid stack type for ecsBuilder');
-    }
+  generateBuildSpec(request: any): string {
+    const context = this.generateCdkContext(request);
 
-    const { context } = request;
-
-    if (context.serviceProps.buildSystem === 'Buildpacks') {
+    if (request.serviceProps.buildSystem === 'Buildpacks') {
       return `
       version: 0.2
       phases:
@@ -23,10 +18,10 @@ export const ecsBuilder: IStackBuilder = {
             - git clone --depth 1 --branch ${request.sourceProps.branchOrRef} https://x-access-token:${request.accessTokenSecretArn}@github.com/${request.sourceProps.owner}/${request.sourceProps.repo}.git /source
         pre_build:
           commands:
-            - aws ecr get-login-password --region ${request.context.env.region} | docker login --username AWS --password-stdin ${request.context.env.account}.dkr.ecr.${request.context.env.region}.amazonaws.com
+            - aws ecr get-login-password --region ${request.env.region} | docker login --username AWS --password-stdin ${request.env.account}.dkr.ecr.${request.env.region}.amazonaws.com
         build:
           commands:
-            - pack build ${request.context.env.account}.dkr.ecr.${request.context.env.region}.amazonaws.com/${request.service}:${request.sourceProps.branchOrRef} --path /source --builder paketobuildpacks/builder:base
+            - pack build ${request.env.account}.dkr.ecr.${request.env.region}.amazonaws.com/${request.service}:${request.sourceProps.branchOrRef} --path /source --builder paketobuildpacks/builder:base
         post_build:
           commands:
             - git clone --depth 1 --branch v${request.stackVersion} ${this.getStackRepositoryUrl(request.stackVersion)} .
@@ -35,12 +30,7 @@ export const ecsBuilder: IStackBuilder = {
     `;
     }
 
-    if (request.stackType !== 'WEB_SERVICE') {
-      throw new Error('Invalid stack type for ecsBuilder');
-    }
-    const { context } = request;
-
-    if (context.serviceProps.buildSystem === 'Nixpacks') {
+    if (request.serviceProps.buildSystem === 'Nixpacks') {
       return `
       version: 0.2
       phases:
@@ -79,20 +69,14 @@ export const ecsBuilder: IStackBuilder = {
     `;
   },
 
-  generateCdkContext(request: BuildRequest): Record<string, any> {
-    if (request.stackType !== 'WEB_SERVICE') {
-      throw new Error('Invalid stack type for ecsBuilder');
-    }
-
-    const { context } = request;
-
-    if (context.serviceProps.buildSystem === 'Buildpacks' || context.serviceProps.buildSystem === 'Nixpacks') {
-      context.serviceProps.dockerImage = `${request.context.env.account}.dkr.ecr.${request.context.env.region}.amazonaws.com/${request.context.service}:${request.context.sourceProps.branchOrRef}`;
+  generateCdkContext(request: any): Record<string, any> {
+    if (request.serviceProps.buildSystem === 'Buildpacks' || request.serviceProps.buildSystem === 'Nixpacks') {
+      request.serviceProps.dockerImage = `${request.env.account}.dkr.ecr.${request.env.region}.amazonaws.com/${request.service}:${request.sourceProps.branchOrRef}`;
     }
 
     return {
       "@aws-cdk/core:newStyleStackSynthesis": true,
-      ...context,
+      ...request,
     };
   },
 

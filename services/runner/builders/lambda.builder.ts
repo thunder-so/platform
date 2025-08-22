@@ -1,15 +1,10 @@
 import type { IStackBuilder } from './types';
-import type { BuildRequest } from '@thunder/types';
 
 export const lambdaBuilder: IStackBuilder = {
-  generateBuildSpec(request: BuildRequest): string {
-    if (request.stackType !== 'FUNCTION') {
-      throw new Error('Invalid stack type for lambdaBuilder');
-    }
+  generateBuildSpec(request: any): string {
+    const context = this.generateCdkContext(request);
 
-    const { context } = request;
-
-    if (context.functionProps.buildSystem === 'Buildpacks') {
+    if (request.functionProps.buildSystem === 'Buildpacks') {
       return `
       version: 0.2
       phases:
@@ -23,10 +18,10 @@ export const lambdaBuilder: IStackBuilder = {
             - git clone --depth 1 --branch ${request.sourceProps.branchOrRef} https://x-access-token:${request.accessTokenSecretArn}@github.com/${request.sourceProps.owner}/${request.sourceProps.repo}.git /source
         pre_build:
           commands:
-            - aws ecr get-login-password --region ${request.context.env.region} | docker login --username AWS --password-stdin ${request.context.env.account}.dkr.ecr.${request.context.env.region}.amazonaws.com
+            - aws ecr get-login-password --region ${request.env.region} | docker login --username AWS --password-stdin ${request.env.account}.dkr.ecr.${request.env.region}.amazonaws.com
         build:
           commands:
-            - pack build ${request.context.env.account}.dkr.ecr.${request.context.env.region}.amazonaws.com/${request.service}:${request.sourceProps.branchOrRef} --path /source --builder paketobuildpacks/builder:base
+            - pack build ${request.env.account}.dkr.ecr.${request.env.region}.amazonaws.com/${request.service}:${request.sourceProps.branchOrRef} --path /source --builder paketobuildpacks/builder:base
         post_build:
           commands:
             - git clone --depth 1 --branch v${request.stackVersion} ${this.getStackRepositoryUrl(request.stackVersion)} .
@@ -35,12 +30,7 @@ export const lambdaBuilder: IStackBuilder = {
     `;
     }
 
-    if (request.stackType !== 'FUNCTION') {
-      throw new Error('Invalid stack type for lambdaBuilder');
-    }
-    const { context } = request;
-
-    if (context.functionProps.buildSystem === 'Nixpacks') {
+    if (request.functionProps.buildSystem === 'Nixpacks') {
       return `
       version: 0.2
       phases:
@@ -79,20 +69,14 @@ export const lambdaBuilder: IStackBuilder = {
     `;
   },
 
-  generateCdkContext(request: BuildRequest): Record<string, any> {
-    if (request.stackType !== 'FUNCTION') {
-      throw new Error('Invalid stack type for lambdaBuilder');
-    }
-
-    const { context } = request;
-
-    if (context.functionProps.buildSystem === 'Buildpacks' || context.functionProps.buildSystem === 'Nixpacks') {
-      context.functionProps.dockerImage = `${request.context.env.account}.dkr.ecr.${request.context.env.region}.amazonaws.com/${request.context.service}:${request.context.sourceProps.branchOrRef}`;
+  generateCdkContext(request: any): Record<string, any> {
+    if (request.functionProps.buildSystem === 'Buildpacks' || request.functionProps.buildSystem === 'Nixpacks') {
+      request.functionProps.dockerImage = `${request.env.account}.dkr.ecr.${request.env.region}.amazonaws.com/${request.service}:${request.sourceProps.branchOrRef}`;
     }
 
     return {
       "@aws-cdk/core:newStyleStackSynthesis": true,
-      ...context,
+      ...request,
     };
   },
 

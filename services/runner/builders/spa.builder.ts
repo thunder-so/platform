@@ -1,12 +1,7 @@
 import type { IStackBuilder } from './types';
-import type { BuildRequest } from '@thunder/types';
 
 export const spaBuilder: IStackBuilder = {
-  generateBuildSpec(request: BuildRequest): string {
-    if (request.stackType !== 'SPA') {
-      throw new Error('Invalid stack type for spaBuilder');
-    }
-
+  generateBuildSpec(request: any): string {
     const context = this.generateCdkContext(request);
     return `
       version: 0.2
@@ -21,14 +16,10 @@ export const spaBuilder: IStackBuilder = {
     `;
   },
 
-  generateCdkContext(request: BuildRequest): Record<string, any> {
-    if (request.stackType !== 'SPA') {
-      throw new Error('Invalid stack type for spaBuilder');
-    }
-
+  generateCdkContext(request: any): Record<string, any> {
     return {
       "@aws-cdk/core:newStyleStackSynthesis": true,
-      ...request.context,
+      ...request,
     };
   },
 
