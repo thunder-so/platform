@@ -1,7 +1,7 @@
 import { pgTable, pgEnum, uuid, text, timestamp, jsonb, integer, boolean, unique, index, primaryKey, foreignKey } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { cuid2 } from 'drizzle-cuid2/postgres';
-import type { SPA, Function, WebService } from '@thunder/types';
+import type { SPA, Function as FunctionTypes, WebService } from '@thunder/types';
 
 // Enums
 export const buildStatusEnum = pgEnum('BUILD_STATUS', ['NULL', 'IN_PROGRESS', 'SUCCEEDED', 'FAILED', 'FAULT', 'TIMED_OUT', 'STOPPED']);
@@ -327,29 +327,29 @@ export interface Membership {
 
 // Application Schema Interfaces
 // Use shared, cardinal types from @thunder/types to keep a single source of truth
-export type AppProps = SPA.AppProps | Function.AppProps | WebService.AppProps;
+export type AppProps = SPA.AppProps | FunctionTypes.AppProps | WebService.AppProps;
 export type CloudFrontProps = SPA.CloudFrontProps | WebService.CloudFrontProps;
 export type EdgeProps = SPA.EdgeProps;
 
 // Source/build shapes are defined inside the PipelineProps of each module; reuse them
-export type SourceProps = SPA.PipelineProps['sourceProps'] | Function.PipelineProps['sourceProps'] | WebService.PipelineProps['sourceProps'];
+export type SourceProps = SPA.PipelineProps['sourceProps'] | FunctionTypes.PipelineProps['sourceProps'] | WebService.PipelineProps['sourceProps'];
 export type NodeBasedBuildProps = SPA.PipelineProps['buildProps'];
-export type DockerBasedBuildProps = Function.PipelineProps['buildProps'] | WebService.PipelineProps['buildProps'];
+export type DockerBasedBuildProps = FunctionTypes.PipelineProps['buildProps'] | WebService.PipelineProps['buildProps'];
 
 // Domain props per stack
 export type SpaDomainProps = SPA.DomainProps;
-export type FunctionDomainProps = Function.DomainProps;
+export type FunctionDomainProps = FunctionTypes.DomainProps;
 export type WebServiceDomainProps = WebService.DomainProps;
 
 // Metadata
 export type BuildSystem = 'Nixpacks' | 'Buildpacks' | 'Custom Dockerfile';
 export type SpaMetadata = { outputDir: string };
-export type FunctionMetadata = Function.LambdaProps & { buildSystem?: BuildSystem };
+export type FunctionMetadata = FunctionTypes.LambdaProps & { buildSystem?: BuildSystem };
 export type WebServiceMetadata = WebService.ServiceProps & { buildSystem?: BuildSystem };
 
 // Pipeline Props
 export type SpaPipelineProps = SPA.PipelineProps;
-export type FunctionPipelineProps = Function.PipelineProps;
+export type FunctionPipelineProps = FunctionTypes.PipelineProps;
 export type WebServicePipelineProps = WebService.PipelineProps;
 
 // --- Main Discriminated Union for ServiceSchema ---

@@ -79,10 +79,28 @@ export const applicationsRouter = router({
               cdn_props: service.cdn_props,
             }).returning({ id: services.id, name: services.name, stack_type: services.stack_type, stack_version: services.stack_version });
 
+            const props = {
+              ...service.app_props ?? null,
+              ...service.pipeline_props ?? null,
+              ...service.domain_props ?? null,
+              ...service.edge_props ?? null,
+              ...service.cdn_props ?? null,
+              ...(newService.stack_type === 'FUNCTION' && { functionProps: service.metadata ?? null }),
+              ...(newService.stack_type === 'WEB_SERVICE' && { serviceProps: service.metadata ?? null }),
+              env: {
+                account: providerDetails.account_id,
+                region: newEnvironment.region,
+              },
+              application: newApplication.name,
+              service: newService.name,
+              environment: newEnvironment.name,
+            };
+
             const [newBuild] = await tx.insert(builds).values({
               service_id: newService.id,
               environment_id: newEnvironment.id,
               build_status: 'IN_PROGRESS',
+              build_context: props,
             }).returning({ id: builds.id });
 
             if (!newBuild) {
@@ -90,22 +108,6 @@ export const applicationsRouter = router({
             }
 
             try {
-              const props = {
-                ...service.app_props,
-                ...service.pipeline_props,
-                ...service.domain_props,
-                ...service.edge_props,
-                ...service.cdn_props,
-                ...service.metadata,
-                env: {
-                  account: providerDetails.account_id,
-                  region: newEnvironment.region,
-                },
-                application: newApplication.name,
-                service: newService.name,
-                environment: newEnvironment.name,
-              };
-
               const messageAttributes = {
                 stackType: { DataType: 'String', StringValue: newService.stack_type },
                 stackVersion: { DataType: 'String', StringValue: newService.stack_version },

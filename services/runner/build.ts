@@ -1,12 +1,10 @@
-
-
 import type { SQSHandler } from 'aws-lambda';
 import { CodeBuild, StartBuildCommand, BatchGetBuildsCommand, ArtifactsType, EnvironmentVariableType } from '@aws-sdk/client-codebuild';
 import { STSClient, AssumeRoleCommand } from '@aws-sdk/client-sts';
 import { createClient } from '@supabase/supabase-js';
 import { SSMProvider } from '@aws-lambda-powertools/parameters/ssm';
 import { spaBuilder, lambdaBuilder, ecsBuilder } from './builders';
-import type { IStackBuilder } from './builders/types';
+import type { IStackBuilder, RunnerRequest } from './builders/types';
 
 /**
  * Gather the environment
@@ -51,7 +49,7 @@ export const handler: SQSHandler = async (event) => {
   const eventId = messageAttributes.eventId?.stringValue;
   const accessTokenSecretArn = messageAttributes.accessTokenSecretArn?.stringValue;
   const provider = JSON.parse(messageAttributes.provider?.stringValue || '{}');
-  const props = JSON.parse(record.body);
+  const props: RunnerRequest = JSON.parse(record.body);
 
   if (!stackType || !stackVersion || !eventId || !accessTokenSecretArn || !provider) {
     console.error('Missing required message attributes');
