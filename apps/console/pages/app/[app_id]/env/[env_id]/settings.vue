@@ -92,7 +92,10 @@ async function deleteApplicationModal() {
 
 const deleteApplication = async () => {
   try {
-    await $client.applications.delete.mutate({ appId: applicationSchema.value.id });
+    await $client.applications.delete.mutate({ 
+      application_id: applicationSchema.value.id as string,
+      service_id: service?.id as string
+    });
     toast.add({ title: 'Application deleted successfully', color: 'success' });
     await router.push('/');
   } catch (e: any) {

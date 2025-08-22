@@ -44,6 +44,7 @@ export const handler: SQSHandler = async (event) => {
   console.log('Received SQS message:', record);
 
   const { messageAttributes } = record;
+  const command = messageAttributes.command?.stringValue;
   const stackType = messageAttributes.stackType?.stringValue;
   const stackVersion = messageAttributes.stackVersion?.stringValue;
   const eventId = messageAttributes.eventId?.stringValue;
@@ -102,7 +103,9 @@ export const handler: SQSHandler = async (event) => {
   // Initiate codebuild in our account
   const codebuild = new CodeBuild({ region: REGION });
 
-  const buildSpec = builder.generateBuildSpec({ ...props, stackVersion, accessTokenSecretArn });
+  const buildSpec = command === 'delete' 
+    ? builder.generateDestroyBuildSpec({ ...props, stackVersion, accessTokenSecretArn })
+    : builder.generateBuildSpec({ ...props, stackVersion, accessTokenSecretArn });
   const cdkContext = builder.generateCdkContext(props);
 
   const params = {

@@ -3,7 +3,7 @@ import { protectedProcedure, router } from '../init';
 import { TRPCError } from '@trpc/server';
 import { db } from '~/server/db/db';
 import { sql, eq } from 'drizzle-orm';
-import { applications, environments, services, userAccessTokens, builds } from '~/server/db/schema';
+import { applications, environments, services, userAccessTokens, builds, type Ser } from '~/server/db/schema';
 import { applicationInputSchema } from '~/server/db/types';
 import { PlatformLibrary } from '~/server/lib/platform.library';
 import * as ProviderLibrary from '~/server/lib/provider.library';
@@ -137,5 +137,94 @@ export const applicationsRouter = router({
       });
 
       return { newApplicationId };
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({
+      application_id: z.string(),
+      service_id: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { application_id, service_id } = input;
+      const aws = new PlatformLibrary();
+
+      const service = await db.query.services.findFirst({
+        where: eq(services.id, service_id),
+        with: {
+          environment: {
+            with: {
+              provider: true,
+              userAccessTokens: true,
+            },
+          },
+        },
+      });
+
+      if (!service || !service.environment) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Service or environment not found.' });
+      }
+
+      const { environment } = service;
+      const { provider, userAccessTokens: uats } = environment;
+      const accessTokenSecretArn = uats[0]?.resource;
+
+      if (!accessTokenSecretArn) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Access token secret ARN not found.' });
+      }
+
+      const props = {
+        ...service.app_props ?? null,
+        ...service.pipeline_props ?? null,
+        ...service.domain_props ?? null,
+        ...service.edge_props ?? null,
+        ...service.cdn_props ?? null,
+        ...(service.stack_type === 'FUNCTION' && { functionProps: service.metadata ?? null }),
+        ...(service.stack_type === 'WEB_SERVICE' && { serviceProps: service.metadata ?? null }),
+        env: {
+          account: provider.account_id,
+          region: environment.region,
+        },
+        application: application_id,
+        service: service.name,
+        environment: environment.name,
+      };
+
+      const [newBuild] = await db.insert(builds).values({
+        service_id: service.id,
+        environment_id: environment.id,
+        build_status: 'IN_PROGRESS',
+        build_context: props,
+      }).returning({ id: builds.id });
+
+      if (!newBuild) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create build entry.' });
+      }
+
+      try {
+        const messageAttributes = {
+          command: { DataType: 'String', StringValue: 'delete' },
+          stackType: { DataType: 'String', StringValue: service.stack_type },
+          stackVersion: { DataType: 'String', StringValue: service.stack_version },
+          eventId: { DataType: 'String', StringValue: newBuild.id },
+          accessTokenSecretArn: { DataType: 'String', StringValue: accessTokenSecretArn },
+          provider: { DataType: 'String', StringValue: JSON.stringify(provider) },
+        };
+
+        const runnerServiceQueueUrl = process.env.RUNNER_SERVICE;
+        if (!runnerServiceQueueUrl) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Runner SQS queue URL is not configured.' });
+        }
+
+        await aws.sendSqsMessage(runnerServiceQueueUrl, JSON.stringify(props), newBuild.id, messageAttributes);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          console.error('Zod validation error creating build request:', error.flatten());
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to construct a valid build request.', cause: error });
+        }
+        console.error('Unknown error creating build request:', error);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred.' });
+      }
+
+      return { success: true };
     }),
 });
