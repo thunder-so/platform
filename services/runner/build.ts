@@ -145,19 +145,34 @@ export const handler: SQSHandler = async (event) => {
         // Store the event in Supabase
         const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Update Supabase DB
-        const { data, error } = await supabase
-          .from('builds')
-          .update({
-            build_id: buildArn, // using ARN because CodeBuildStateChangeEvent detail['build-id'] uses ARN
-            build_start: startTime?.toISOString(),
-            build_context: cdkContext,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', eventId);
+        if (command === 'delete') {
+          // Update Supabase DB
+          const { data, error } = await supabase
+            .from('destroys')
+            .update({
+              destroy_id: buildArn, // using ARN because CodeBuildStateChangeEvent detail['build-id'] uses ARN
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', eventId);
 
-        if (error) {
-          throw error;
+          if (error) {
+            throw error;
+          }
+        } else {
+          // Update Supabase DB
+          const { data, error } = await supabase
+            .from('builds')
+            .update({
+              build_id: buildArn, // using ARN because CodeBuildStateChangeEvent detail['build-id'] uses ARN
+              build_start: startTime?.toISOString(),
+              build_context: cdkContext,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', eventId);
+
+          if (error) {
+            throw error;
+          }
         }
       }
     }

@@ -306,7 +306,8 @@ export const buildsRelations = relations(builds, ({ one }) => ({
 }));
 
 export const destroys = pgTable('destroys', {
-  destroy_id: text('destroy_id').primaryKey().unique(),
+  id: uuid('id').defaultRandom().primaryKey(),
+  destroy_id: text('destroy_id').unique(),
   destroy_status: buildStatusEnum('destroy_status').default('NULL'),
   destroy_context: jsonb('destroy_context'),
   created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),

@@ -3,7 +3,7 @@ import { protectedProcedure, router } from '../init';
 import { TRPCError } from '@trpc/server';
 import { db } from '~/server/db/db';
 import { sql, eq } from 'drizzle-orm';
-import { applications, environments, services, userAccessTokens, builds, type Service, type Environment, type Provider, type UserAccessToken } from '~/server/db/schema';
+import { applications, environments, services, userAccessTokens, builds, destroys, type Service, type Environment, type Provider, type UserAccessToken } from '~/server/db/schema';
 import { applicationInputSchema } from '~/server/db/types';
 import { PlatformLibrary } from '~/server/lib/platform.library';
 import * as ProviderLibrary from '~/server/lib/provider.library';
@@ -194,15 +194,15 @@ export const applicationsRouter = router({
         environment: environment.name,
       };
 
-      const [newBuild] = await db.insert(builds).values({
+      const [newDestroy] = await db.insert(destroys).values({
         service_id: service.id,
         environment_id: environment.id,
-        build_status: 'IN_PROGRESS',
-        build_context: props,
-      }).returning({ id: builds.id });
+        destroy_status: 'IN_PROGRESS',
+        destroy_context: props,
+      }).returning({ id: destroys.id });
 
-      if (!newBuild) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create build entry.' });
+      if (!newDestroy) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create destroy entry.' });
       }
 
       try {
@@ -210,7 +210,7 @@ export const applicationsRouter = router({
           command: { DataType: 'String', StringValue: 'delete' },
           stackType: { DataType: 'String', StringValue: service.stack_type },
           stackVersion: { DataType: 'String', StringValue: service.stack_version },
-          eventId: { DataType: 'String', StringValue: newBuild.id },
+          eventId: { DataType: 'String', StringValue: newDestroy.id },
           accessTokenSecretArn: { DataType: 'String', StringValue: accessTokenSecretArn },
           provider: { DataType: 'String', StringValue: JSON.stringify(provider) },
         };
@@ -220,7 +220,7 @@ export const applicationsRouter = router({
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Runner SQS queue URL is not configured.' });
         }
 
-        await aws.sendSqsMessage(runnerServiceQueueUrl, JSON.stringify(props), newBuild.id, messageAttributes);
+        await aws.sendSqsMessage(runnerServiceQueueUrl, JSON.stringify(props), newDestroy.id, messageAttributes);
 
         // Soft-delete the service, environment, and application right after
         // the delete request is sent. Use a transaction to keep updates atomic.
