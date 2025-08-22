@@ -3,7 +3,7 @@ import { protectedProcedure, router } from '../init';
 import { TRPCError } from '@trpc/server';
 import { db } from '~/server/db/db';
 import { sql, eq } from 'drizzle-orm';
-import { applications, environments, services, userAccessTokens, builds, type Ser } from '~/server/db/schema';
+import { applications, environments, services, userAccessTokens, builds, type Service, type Environment, type Provider, type UserAccessToken } from '~/server/db/schema';
 import { applicationInputSchema } from '~/server/db/types';
 import { PlatformLibrary } from '~/server/lib/platform.library';
 import * as ProviderLibrary from '~/server/lib/provider.library';
@@ -148,6 +148,11 @@ export const applicationsRouter = router({
       const { application_id, service_id } = input;
       const aws = new PlatformLibrary();
 
+      // Use exported DB types and cast the query result so nested relations
+      type ServiceWithRelations = Service & {
+        environment?: (Environment & { provider?: Provider; userAccessTokens?: UserAccessToken[] }) | null;
+      };
+
       const service = await db.query.services.findFirst({
         where: eq(services.id, service_id),
         with: {
@@ -158,7 +163,7 @@ export const applicationsRouter = router({
             },
           },
         },
-      });
+      }) as ServiceWithRelations | null;
 
       if (!service || !service.environment) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Service or environment not found.' });
@@ -166,7 +171,7 @@ export const applicationsRouter = router({
 
       const { environment } = service;
       const { provider, userAccessTokens: uats } = environment;
-      const accessTokenSecretArn = uats[0]?.resource;
+      const accessTokenSecretArn = uats?.[0]?.resource;
 
       if (!accessTokenSecretArn) {
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Access token secret ARN not found.' });
@@ -181,7 +186,7 @@ export const applicationsRouter = router({
         ...(service.stack_type === 'FUNCTION' && { functionProps: service.metadata ?? null }),
         ...(service.stack_type === 'WEB_SERVICE' && { serviceProps: service.metadata ?? null }),
         env: {
-          account: provider.account_id,
+          account: provider?.account_id,
           region: environment.region,
         },
         application: application_id,
