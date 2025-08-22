@@ -60,10 +60,10 @@ export const envVarSchema = z.array(z.object({
 
 // BuildProps: Varied by stack type
 export const nodeBasedBuildPropsSchema = z.object({
-  runtime: z.string(),
-  runtime_version: z.union([z.string(), z.number()]),
-  installcmd: z.string().min(1, 'Install command is required'),
-  buildcmd: z.string().min(1, 'Build command is required'),
+  runtime: z.string().optional(),
+  runtime_version: z.union([z.string(), z.number()]).optional(),
+  installcmd: z.string().min(1, 'Install command is required').optional(),
+  buildcmd: z.string().min(1, 'Build command is required').optional(),
   include: z.array(z.string()).optional(),
   exclude: z.array(z.string()).optional(),
   environment: envVarSchema.optional(),
@@ -107,7 +107,7 @@ export const functionMetadataSchema = z.object({
   timeout: z.number().optional(),
   keepWarm: z.boolean().optional(),
   url: z.boolean().optional(),
-  runtime: z.enum(['nodejs20.x', 'nodejs22.x', 'nodejs24.x']),
+  runtime: z.enum(['nodejs20.x', 'nodejs22.x', 'nodejs24.x']).optional(),
   architecture: z.enum(['x86_64', 'ARM_64']).optional(),
   codeDir: z.string().optional(),
   handler: z.string().optional(),
@@ -120,7 +120,7 @@ export const functionMetadataSchema = z.object({
   secrets: z.array(z.object({ key: z.string(), resource: z.string() })).optional(),
   dockerBuildArgs: z.array(z.string()).optional(),
   bunLayerArn: z.string().optional(),
-  buildSystem: buildSystemSchema
+  buildSystem: buildSystemSchema.optional()
 });
 
 export const webServiceMetadataSchema = z.object({

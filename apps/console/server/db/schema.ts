@@ -1,7 +1,7 @@
-
 import { pgTable, pgEnum, uuid, text, timestamp, jsonb, integer, boolean, unique, index, primaryKey, foreignKey } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { cuid2 } from 'drizzle-cuid2/postgres';
+import type { SPA, Function, WebService } from '@thunder/types';
 
 // Enums
 export const buildStatusEnum = pgEnum('BUILD_STATUS', ['NULL', 'IN_PROGRESS', 'SUCCEEDED', 'FAILED', 'FAULT', 'TIMED_OUT', 'STOPPED']);
@@ -326,131 +326,31 @@ export interface Membership {
 }
 
 // Application Schema Interfaces
-export interface AppProps {
-  rootDir: string;
-  debug?: boolean;
-}
+// Use shared, cardinal types from @thunder/types to keep a single source of truth
+export type AppProps = SPA.AppProps | Function.AppProps | WebService.AppProps;
+export type CloudFrontProps = SPA.CloudFrontProps | WebService.CloudFrontProps;
+export type EdgeProps = SPA.EdgeProps;
 
-export interface CloudFrontProps {
-  errorPagePath?: string;
-  allowHeaders?: string[];
-  allowCookies?: string[];
-  allowQueryParams?: string[];
-  denyQueryParams?: string[];
-}
+// Source/build shapes are defined inside the PipelineProps of each module; reuse them
+export type SourceProps = SPA.PipelineProps['sourceProps'] | Function.PipelineProps['sourceProps'] | WebService.PipelineProps['sourceProps'];
+export type NodeBasedBuildProps = SPA.PipelineProps['buildProps'];
+export type DockerBasedBuildProps = Function.PipelineProps['buildProps'] | WebService.PipelineProps['buildProps'];
 
-export interface EdgeProps {
-  headers?: Array<{ path: string; name: string; value: string }>;
-  redirects?: Array<{ source: string; destination: string }>;
-  rewrites?: Array<{ source: string; destination: string }>;
-}
+// Domain props per stack
+export type SpaDomainProps = SPA.DomainProps;
+export type FunctionDomainProps = Function.DomainProps;
+export type WebServiceDomainProps = WebService.DomainProps;
 
-export interface SourceProps {
-  owner: string;
-  repo: string;
-  branchOrRef: string;
-}
-
-// --- Stack-Specific Prop Interfaces ---
-
-// Build Props
-export interface NodeBasedBuildProps {
-  runtime?: string;
-  runtime_version?: number | string;
-  installcmd?: string;
-  buildcmd?: string;
-  environment?: Array<{ [key: string]: string }>;
-  include?: string[];
-  exclude?: string[];
-  secrets?: { key: string; resource: string; }[];
-}
-
-export interface DockerBasedBuildProps {
-  include?: string[];
-  exclude?: string[];
-  environment?: Record<string, string>;
-  secrets?: { key: string; resource: string; }[];
-  dockerBuildArgs?: string[];
-}
-
-// Domain Props
-export interface SpaDomainProps {
-  domain?: string;
-  globalCertificateArn?: string;
-  hostedZoneId?: string;
-}
-
-export interface FunctionDomainProps {
-  domain?: string;
-  regionalCertificateArn?: string;
-  hostedZoneId?: string;
-}
-
-export interface WebServiceDomainProps {
-  domain?: string;
-  globalCertificateArn?: string;
-  regionalCertificateArn?: string;
-  hostedZoneId?: string;
-}
-
-// Metadata Props
+// Metadata
 export type BuildSystem = 'Nixpacks' | 'Buildpacks' | 'Custom Dockerfile';
-
-export interface SpaMetadata {
-  outputDir: string;
-}
-
-export interface FunctionMetadata {
-  buildSystem?: BuildSystem;
-  dockerFile?: string;
-  memorySize?: number;
-  timeout?: number;
-  keepWarm?: boolean;
-  url?: boolean;
-  runtime?: 'nodejs20.x' | 'nodejs22.x' | 'nodejs24.x';
-  architecture?: 'x86_64' | 'ARM_64';
-  codeDir?: string;
-  handler?: string;
-  include?: string[];
-  exclude?: string[];
-  tracing?: boolean;
-  reservedConcurrency?: number;
-  provisionedConcurrency?: number;
-  variables?: Array<{ [key: string]: string }>;
-  secrets?: { key: string; resource: string; }[];
-  dockerBuildArgs?: string[];
-}
-
-export interface WebServiceMetadata {
-  buildSystem?: BuildSystem;
-  dockerFile?: string;
-  desiredCount: number;
-  cpu?: number;
-  memorySize?: number;
-  port?: number;
-  architecture?: 'x86_64' | 'ARM64';
-  variables?: Array<{ [key: string]: string; }>;
-  secrets?: { key: string; resource: string; }[];
-  dockerBuildArgs?: string[];
-}
+export type SpaMetadata = { outputDir: string };
+export type FunctionMetadata = Function.LambdaProps & { buildSystem?: BuildSystem };
+export type WebServiceMetadata = WebService.ServiceProps & { buildSystem?: BuildSystem };
 
 // Pipeline Props
-interface BasePipelineProps {
-  sourceProps: SourceProps;
-  eventBus?: string;
-}
-
-export interface SpaPipelineProps extends BasePipelineProps {
-  buildProps?: NodeBasedBuildProps;
-}
-
-export interface FunctionPipelineProps extends BasePipelineProps {
-  buildProps?: DockerBasedBuildProps;
-}
-
-export interface WebServicePipelineProps extends BasePipelineProps {
-  buildProps?: DockerBasedBuildProps;
-}
+export type SpaPipelineProps = SPA.PipelineProps;
+export type FunctionPipelineProps = Function.PipelineProps;
+export type WebServicePipelineProps = WebService.PipelineProps;
 
 // --- Main Discriminated Union for ServiceSchema ---
 
