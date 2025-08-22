@@ -25,6 +25,13 @@ export const users = pgTable('users', {
   website: text('website'),
 });
 
+export const usersRelations = relations(users, ({ many }) => ({
+  memberships: many(memberships),
+  subscriptions: many(subscriptions),
+  installations: many(installations),
+  userAccessTokens: many(userAccessTokens),
+}));
+
 export const organizations = pgTable('organizations', {
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
   name: text('name').notNull(),
@@ -47,6 +54,11 @@ export const memberships = pgTable('memberships', {
   userOrgUnique: unique().on(table.user_id, table.organization_id)
 }));
 
+export const membershipsRelations = relations(memberships, ({ one }) => ({
+  user: one(users, { fields: [memberships.user_id], references: [users.id] }),
+  organization: one(organizations, { fields: [memberships.organization_id], references: [organizations.id] }),
+}));
+
 /**
  * Payment & Subscription Tables
  */
@@ -58,6 +70,11 @@ export const customers = pgTable('customers', {
   pk: primaryKey({ columns: [table.user_id, table.organization_id] }),
   organization_idIdx: index('customers_organization_id_idx').on(table.organization_id),
   polarCustomerIdIdx: index('customers_polar_customer_id_idx').on(table.polar_customer_id),
+}));
+
+export const customersRelations = relations(customers, ({ one }) => ({
+  user: one(users, { fields: [customers.user_id], references: [users.id] }),
+  organization: one(organizations, { fields: [customers.organization_id], references: [organizations.id] }),
 }));
 
 export const products = pgTable('products', {
@@ -90,6 +107,17 @@ export const subscriptions = pgTable('subscriptions', {
   user_idIdx: index('subscriptions_user_id_idx').on(table.user_id),
   organization_idIdx: index('subscriptions_organization_id_idx').on(table.organization_id),
   polarCustomerIdIdx: index('subscriptions_polar_customer_id_idx').on(table.polar_customer_id),
+}));
+
+export const subscriptionsRelations = relations(subscriptions, ({ one }) => ({
+  user: one(users, { fields: [subscriptions.user_id], references: [users.id] }),
+  organization: one(organizations, { fields: [subscriptions.organization_id], references: [organizations.id] }),
+  product: one(products, { fields: [subscriptions.product_id], references: [products.id] }),
+  customer: one(customers, { fields: [subscriptions.user_id, subscriptions.organization_id], references: [customers.user_id, customers.organization_id] }),
+}));
+
+export const productsRelations = relations(products, ({ many }) => ({
+  subscriptions: many(subscriptions),
 }));
 
 /**
@@ -126,6 +154,16 @@ export const applications = pgTable('applications', {
   organizationIdIdx: index('applications_organization_id_idx').on(table.organization_id),
 }));
 
+export const applicationsRelations = relations(applications, ({ one, many }) => ({
+  organization: one(organizations, { fields: [applications.organization_id], references: [organizations.id] }),
+  environments: many(environments),
+}));
+
+export const providersRelations = relations(providers, ({ one, many }) => ({
+  organization: one(organizations, { fields: [providers.organization_id], references: [organizations.id] }),
+  environments: many(environments),
+}));
+
 export const environments = pgTable('environments', {
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
   name: text('name').notNull(),
@@ -140,6 +178,17 @@ export const environments = pgTable('environments', {
 }, (table) => ({
   applicationIdIdx: index('environments_application_id_idx').on(table.application_id),
   providerIdIdx: index('environments_provider_id_idx').on(table.provider_id),
+}));
+
+export const environmentsRelations = relations(environments, ({ one, many }) => ({
+  provider: one(providers, { fields: [environments.provider_id], references: [providers.id] }),
+  application: one(applications, { fields: [environments.application_id], references: [applications.id] }),
+  services: many(services),
+  environmentVariables: many(environmentVariables),
+  userAccessTokens: many(userAccessTokens),
+  builds: many(builds),
+  destroys: many(destroys),
+  events: many(events),
 }));
 
 export const services = pgTable('services', {
@@ -165,6 +214,15 @@ export const services = pgTable('services', {
   installationIdIdx: index('services_installation_id_idx').on(table.installation_id),
 }));
 
+export const servicesRelations = relations(services, ({ one, many }) => ({
+  environment: one(environments, { fields: [services.environment_id], references: [environments.id] }),
+  installation: one(installations, { fields: [services.installation_id], references: [installations.installation_id] }),
+  builds: many(builds),
+  destroys: many(destroys),
+  events: many(events),
+  domains: many(domains),
+}));
+
 export const installations = pgTable('installations', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   installation_id: integer('installation_id').unique().notNull(),
@@ -174,6 +232,10 @@ export const installations = pgTable('installations', {
   user_id: uuid('user_id').notNull().references(() => users.id),
   metadata: jsonb('metadata').notNull(),
 });
+
+export const installationsRelations = relations(installations, ({ one }) => ({
+  user: one(users, { fields: [installations.user_id], references: [users.id] }),
+}));
 
 export const environmentVariables = pgTable('environment_variables', {
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
@@ -186,6 +248,10 @@ export const environmentVariables = pgTable('environment_variables', {
   deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
 });
 
+export const environmentVariablesRelations = relations(environmentVariables, ({ one }) => ({
+  environment: one(environments, { fields: [environmentVariables.environment_id], references: [environments.id] }),
+}));
+
 export const userAccessTokens = pgTable('user_access_tokens', {
   secret_id: uuid('secret_id').primaryKey(),
   resource: text('resource'),
@@ -195,6 +261,11 @@ export const userAccessTokens = pgTable('user_access_tokens', {
   updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
   deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
 });
+
+export const userAccessTokensRelations = relations(userAccessTokens, ({ one }) => ({
+  user: one(users, { fields: [userAccessTokens.user_id], references: [users.id] }),
+  environment: one(environments, { fields: [userAccessTokens.environment_id], references: [environments.id] }),
+}));
 
 export const domains = pgTable('domains', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
@@ -207,6 +278,10 @@ export const domains = pgTable('domains', {
   deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
   service_id: text('service_id').notNull().references(() => services.id),
 });
+
+export const domainsRelations = relations(domains, ({ one }) => ({
+  service: one(services, { fields: [domains.service_id], references: [services.id] }),
+}));
 
 export const builds = pgTable('builds', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -225,6 +300,11 @@ export const builds = pgTable('builds', {
   buildIdIdx: index('builds_build_id_idx').on(table.build_id),
 }));
 
+export const buildsRelations = relations(builds, ({ one }) => ({
+  service: one(services, { fields: [builds.service_id], references: [services.id] }),
+  environment: one(environments, { fields: [builds.environment_id], references: [environments.id] }),
+}));
+
 export const destroys = pgTable('destroys', {
   destroy_id: text('destroy_id').primaryKey().unique(),
   destroy_status: buildStatusEnum('destroy_status').default('NULL'),
@@ -235,6 +315,11 @@ export const destroys = pgTable('destroys', {
   service_id: text('service_id').notNull().references(() => services.id),
   environment_id: text('environment_id').notNull().references(() => environments.id),
 });
+
+export const destroysRelations = relations(destroys, ({ one }) => ({
+  service: one(services, { fields: [destroys.service_id], references: [services.id] }),
+  environment: one(environments, { fields: [destroys.environment_id], references: [environments.id] }),
+}));
 
 export const events = pgTable('events', {
   pipeline_execution_id: text('pipeline_execution_id').primaryKey().unique(),
@@ -249,6 +334,11 @@ export const events = pgTable('events', {
   service_id: text('service_id').notNull().references(() => services.id),
   environment_id: text('environment_id').notNull().references(() => environments.id),
 });
+
+export const eventsRelations = relations(events, ({ one }) => ({
+  service: one(services, { fields: [events.service_id], references: [services.id] }),
+  environment: one(environments, { fields: [events.environment_id], references: [environments.id] }),
+}));
 
 /**
  * Export types for TypeScript
