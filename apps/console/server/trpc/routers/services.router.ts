@@ -113,4 +113,25 @@ export const servicesRouter = router({
         success: true,
       };
     }),
+
+  // updateServiceConfig: protectedProcedure
+  //   .input(updateServiceConfigInput)
+  //   .mutation(async ({ input }) => {
+  //     const { serviceId, stack_type, app_props, metadata, pipeline_props } = input;
+
+  //     const updatedService = await db.update(services)
+  //       .set({
+  //         app_props,
+  //         metadata,
+  //         pipeline_props
+  //       })
+  //       .where(eq(services.id, serviceId))
+  //       .returning();
+
+  //     if (updatedService.length === 0) {
+  //       throw new Error(`Could not update service with ID ${serviceId}`);
+  //     }
+
+  //     return updatedService[0];
+  //   }),
 });

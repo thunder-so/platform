@@ -106,11 +106,7 @@ export const functionMetadataSchema = z.object({
   memorySize: z.number().optional(),
   timeout: z.number().optional(),
   keepWarm: z.boolean().optional(),
-  url: z.boolean().optional(),
-  runtime: z.enum(['nodejs20.x', 'nodejs22.x', 'nodejs24.x']).optional(),
   architecture: z.enum(['x86_64', 'ARM_64']).optional(),
-  codeDir: z.string().optional(),
-  handler: z.string().optional(),
   include: z.array(z.string()).optional(),
   exclude: z.array(z.string()).optional(),
   tracing: z.boolean().optional(),
@@ -118,8 +114,6 @@ export const functionMetadataSchema = z.object({
   provisionedConcurrency: z.number().optional(),
   variables: envVarSchema.optional(),
   secrets: z.array(z.object({ key: z.string(), resource: z.string() })).optional(),
-  dockerBuildArgs: z.array(z.string()).optional(),
-  bunLayerArn: z.string().optional(),
   buildSystem: buildSystemSchema.optional()
 });
 
@@ -133,14 +127,12 @@ export const webServiceMetadataSchema = z.object({
   architecture: z.enum(['x86_64', 'ARM64']).optional(),
   variables: envVarSchema.optional(),
   secrets: z.array(z.object({ key: z.string(), resource: z.string() })).optional(),
-  dockerBuildArgs: z.array(z.string()).optional(),
 });
 
 // PipelineProps: Varied by stack type
 const basePipelinePropsSchema = z.object({
+  accessTokenSecretArn: z.string().optional(),
   sourceProps: sourcePropsSchema,
-  eventBus: z.string().optional(),
-  buildSpecFilePath: z.string().optional(),
 });
 
 export const spaPipelinePropsSchema = basePipelinePropsSchema.extend({
@@ -156,45 +148,37 @@ export const webServicePipelinePropsSchema = basePipelinePropsSchema.extend({
 });
 
 // Zod schema for a single service, mirroring the discriminated union in schema.ts
+const baseServiceSchema = z.object({
+  id: z.string(),
+  name: z.string().regex(NAME_REGEX, NAME_ERROR_MESSAGE),
+  display_name: z.string().min(1, 'Display name is required'),
+  stack_version: z.string(),
+  resources: z.record(z.any()).nullable(),
+  environment_id: z.string(),
+  installation_id: z.number().nullable(),
+  app_props: appPropsSchema,
+  cdn_props: cloudFrontPropsSchema.nullable(),
+  edge_props: edgePropsSchema.nullable(),
+});
+
 export const serviceSchema = z.discriminatedUnion('stack_type', [
-  z.object({
+  baseServiceSchema.extend({
     stack_type: z.literal('SPA'),
-    name: z.string().regex(NAME_REGEX, NAME_ERROR_MESSAGE),
-    display_name: z.string().min(1, 'Display name is required'),
-    stack_version: z.string(),
-    installation_id: z.number(),
-    app_props: appPropsSchema,
-    pipeline_props: spaPipelinePropsSchema,
     metadata: spaMetadataSchema,
-    domain_props: spaDomainPropsSchema.nullable().optional(),
-    edge_props: edgePropsSchema.nullable().optional(),
-    cdn_props: cloudFrontPropsSchema.nullable().optional(),
+    domain_props: spaDomainPropsSchema.nullable(),
+    pipeline_props: spaPipelinePropsSchema
   }),
-  z.object({
+  baseServiceSchema.extend({
     stack_type: z.literal('FUNCTION'),
-    name: z.string().regex(NAME_REGEX, NAME_ERROR_MESSAGE),
-    display_name: z.string().min(1, 'Display name is required'),
-    stack_version: z.string(),
-    installation_id: z.number(),
-    app_props: appPropsSchema,
-    pipeline_props: functionPipelinePropsSchema,
     metadata: functionMetadataSchema,
-    domain_props: functionDomainPropsSchema.nullable().optional(),
-    edge_props: edgePropsSchema.nullable().optional(),
-    cdn_props: cloudFrontPropsSchema.nullable().optional(),
+    domain_props: functionDomainPropsSchema.nullable(),
+    pipeline_props: functionPipelinePropsSchema
   }),
-  z.object({
+  baseServiceSchema.extend({
     stack_type: z.literal('WEB_SERVICE'),
-    name: z.string().regex(NAME_REGEX, NAME_ERROR_MESSAGE),
-    display_name: z.string().min(1, 'Display name is required'),
-    stack_version: z.string(),
-    installation_id: z.number(),
-    app_props: appPropsSchema,
-    pipeline_props: webServicePipelinePropsSchema,
     metadata: webServiceMetadataSchema,
-    domain_props: webServiceDomainPropsSchema.nullable().optional(),
-    edge_props: edgePropsSchema.nullable().optional(),
-    cdn_props: cloudFrontPropsSchema.nullable().optional(),
+    domain_props: webServiceDomainPropsSchema.nullable(),
+    pipeline_props: webServicePipelinePropsSchema
   }),
 ]);
 
@@ -208,9 +192,6 @@ export const providerSchema = z.object({
   stack_name: z.string().nullable(),
   access_key_id: z.string().nullable(),
   secret_id: z.string().uuid().nullable(),
-  created_at: z.string().nullable().optional(),
-  updated_at: z.string().nullable().optional(),
-  deleted_at: z.string().nullable().optional(),
   organization_id: z.string().min(1, 'Organization ID is required'),
 });
 

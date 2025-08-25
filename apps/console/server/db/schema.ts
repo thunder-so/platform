@@ -439,34 +439,33 @@ export type FunctionMetadata = FunctionTypes.LambdaProps & { buildSystem?: Build
 export type WebServiceMetadata = WebService.ServiceProps & { buildSystem?: BuildSystem };
 
 // Pipeline Props
-export type SpaPipelineProps = SPA.PipelineProps;
-export type FunctionPipelineProps = FunctionTypes.PipelineProps;
-export type WebServicePipelineProps = WebService.PipelineProps;
+export type PipelineProps = SPA.PipelineProps | FunctionTypes.PipelineProps | WebService.PipelineProps;
+// export type SpaPipelineProps = SPA.PipelineProps;
+// export type FunctionPipelineProps = FunctionTypes.PipelineProps;
+// export type WebServicePipelineProps = WebService.PipelineProps;
 
 // --- Main Discriminated Union for ServiceSchema ---
 
-export type ServiceSchema = Omit<Service, 'metadata' | 'pipeline_props' | 'domain_props'> & {
-  app_props: AppProps | null;
+export type ServiceSchema = Omit<Service, 'cdn_props' | 'edge_props' | 'domain_props'> & {
+  app_props: AppProps;
   cdn_props: CloudFrontProps | null;
   edge_props: EdgeProps | null;
+  pipeline_props: PipelineProps;
   resources: Record<string, any> | null;
 } & (
   | { 
       stack_type: 'SPA'; 
-      metadata: SpaMetadata | null;
-      pipeline_props: SpaPipelineProps | null;
+      metadata: SpaMetadata;
       domain_props: SpaDomainProps | null;
     }
   | { 
       stack_type: 'FUNCTION'; 
-      metadata: FunctionMetadata | null; 
-      pipeline_props: FunctionPipelineProps | null;
+      metadata: FunctionMetadata; 
       domain_props: FunctionDomainProps | null;
     }
   | { 
       stack_type: 'WEB_SERVICE'; 
-      metadata: WebServiceMetadata | null; 
-      pipeline_props: WebServicePipelineProps | null;
+      metadata: WebServiceMetadata;
       domain_props: WebServiceDomainProps | null;
     }
 );
