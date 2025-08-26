@@ -25,7 +25,7 @@
       <ClientOnly>
       <UCard>
         <template #header>
-          <p>Subcription</p>
+          <p>Subscription</p>
         </template>
 
         <p>This workspace is on the hobby plan.</p>

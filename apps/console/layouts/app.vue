@@ -96,6 +96,7 @@
                 </div>
               </div>
             </div>
+            <!-- <pre>{{ applicationSchema }}</pre> -->
           </ClientOnly>
           </UContainer> 
         </div>
@@ -112,27 +113,24 @@ import type { NavigationMenuItem } from '@nuxt/ui'
 import { useApplications } from '~/composables/useApplications';
 import Header from '~/components/Header.vue';
 
-const { applicationSchema } = useApplications();
+const { applicationSchema, isLoading } = useApplications();
 
-if (!applicationSchema.value) {
-  navigateTo('/404');
-}
-const environment = applicationSchema.value?.environments?.[0];
-const provider = environment?.provider;
-const service = environment?.services?.[0];
-const appId = applicationSchema.value?.id;
-const envId = environment?.id;
-const serviceType = service?.stack_type;
+const environment = computed(() => applicationSchema.value?.environments?.[0] || {});
+const provider = computed(() => environment.value?.provider);
+const service = computed(() => environment.value?.services?.[0]);
+const appId = computed(() => applicationSchema.value?.id);
+const envId = computed(() => environment.value?.id);
+const serviceType = computed(() => service.value?.stack_type);
 
 const primaryLinks = computed<NavigationMenuItem[]>(() => {
   return [
     {
       label: 'Events',
-      to: `/app/${appId}`,
+      to: `/app/${appId.value}`,
     },
     {
       label: 'Settings',
-      to: `/app/${appId}/env/${envId}/settings`,
+      to: `/app/${appId.value}/env/${envId.value}/settings`,
     },
   ];
 });
@@ -141,24 +139,24 @@ const manageLinks = computed<NavigationMenuItem[]>(() => {
   const links = [
     {
       label: 'Environment',
-      to: `/app/${appId}/env/${envId}/variables`,
+      to: `/app/${appId.value}/env/${envId.value}/variables`,
     },
     {
       label: 'Domains',
-      to: `/app/${appId}/env/${envId}/domains`,
+      to: `/app/${appId.value}/env/${envId.value}/domains`,
     }
   ];
   
   // Only add Headers and Redirects for SPA stack type
-  if (serviceType === 'SPA') {
+  if (serviceType.value === 'SPA') {
     links.push(
       {
         label: 'Headers',
-        to: `/app/${appId}/env/${envId}/headers`,
+        to: `/app/${appId.value}/env/${envId.value}/headers`,
       },
       {
         label: 'Redirects',
-        to: `/app/${appId}/env/${envId}/redirects`,
+        to: `/app/${appId.value}/env/${envId.value}/redirects`,
       }
     );
   }

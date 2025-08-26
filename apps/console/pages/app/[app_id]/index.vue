@@ -60,10 +60,6 @@ const supabase = useSupabaseClient();
 const route = useRoute();
 const { applicationSchema } = useApplications();
 
-if (!applicationSchema.value) {
-  throw new Error('Application schema not found.');
-}
-
 const getStatusIcon = (status: string) => {
   const normalizedStatus = status.toUpperCase();
   

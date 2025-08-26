@@ -2,12 +2,12 @@ import type { ApplicationSchema } from '~/server/db/schema';
 
 export const useApplications = () => {
   const supabase = useSupabaseClient();
-  const applicationSchema = useState<ApplicationSchema>('applicationSchema');
-  const isLoading = useState('applications.loading', () => false);
+  const appId = ref<string | null>(null);
 
-  const fetchApplicationSchema = async (appId: string) => {
-    isLoading.value = true;
-    try {
+  const { data: applicationSchema, pending: isLoading, refresh: refreshApplicationSchema } = useAsyncData(
+    'applicationSchema',
+    async () => {
+      if (!appId.value) return null;
       const { data, error } = await supabase
         .from('applications')
         .select(`
@@ -45,35 +45,36 @@ export const useApplications = () => {
             )
           )
         `)
-        .eq('id', appId)
+        .eq('id', appId.value)
         .is('deleted_at', null)
         .is('environments.deleted_at', null)
         .is('environments.services.deleted_at', null)
         .single();
 
       if (error) throw error;
-      applicationSchema.value = data;
-    } catch (e) {
-      console.error('Error fetching application schema:', e);
-    } finally {
-      isLoading.value = false;
+      return data as ApplicationSchema;
+    },
+    {
+      watch: [appId]
     }
+  );
+
+  const setApplicationSchemaById = (id: string) => {
+    appId.value = id;
   };
 
-  const refreshApplicationSchema = async () => {
-    if (applicationSchema.value?.id) {
-      await fetchApplicationSchema(applicationSchema.value.id);
-    }
-  };
-
-  const setApplicationSchemaById = async (appId: string) => {
-    await fetchApplicationSchema(appId);
-  };
+  if (process.client) {
+    const route = useRoute();
+    watch(() => route.params.app_id, (newAppId) => {
+      if (newAppId) {
+        setApplicationSchemaById(newAppId as string);
+      }
+    });
+  }
 
   return {
     applicationSchema,
-    isLoading: readonly(isLoading),
-    fetchApplicationSchema,
+    isLoading,
     refreshApplicationSchema,
     setApplicationSchemaById,
   };

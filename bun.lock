@@ -32,6 +32,7 @@
         "@trpc/server": "^11.4.3",
         "drizzle-cuid2": "^2.1.0",
         "drizzle-orm": "^0.44.3",
+        "lodash-es": "^4.17.21",
         "nuxt": "^4.0.0",
         "pg": "^8.16.3",
         "pinia": "^3.0.3",

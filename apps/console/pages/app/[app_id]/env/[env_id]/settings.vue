@@ -114,6 +114,7 @@ const service = computed(() => applicationSchema.value?.environments?.[0]?.servi
 const localServiceConfig = ref<ServiceSchema | null>(null);
 const isSaving = ref(false);
 const isChanged = ref(false);
+const error = ref<string | null>(null);
 
 const serviceConfigForm = ref<{ hasErrors: boolean } | null>(null);
 const hasValidationErrors = computed(() => serviceConfigForm.value?.hasErrors || false);
@@ -134,13 +135,15 @@ const saveChanges = async () => {
   if (!localServiceConfig.value || !service.value) return;
 
   isSaving.value = true;
+  error.value = null;
   try {
     await $client.services.updateServiceConfig.mutate(localServiceConfig.value as any);
     await refreshApplicationSchema();
     toast.add({ title: 'Settings saved successfully!', color: 'success' });
     isChanged.value = false;
-  } catch (error: any) {
-    toast.add({ title: 'Error saving settings', description: error.message, color: 'error' });
+  } catch (e: any) {
+    error.value = e.message;
+    toast.add({ title: 'Error saving settings', description: e.message, color: 'error' });
   } finally {
     isSaving.value = false;
   }
@@ -160,6 +163,7 @@ async function deleteApplicationModal() {
 }
 
 const deleteApplication = async () => {
+  error.value = null;
   try {
     await $client.applications.delete.mutate({ 
       application_id: applicationSchema.value.id as string,
@@ -168,6 +172,7 @@ const deleteApplication = async () => {
     toast.add({ title: 'Application deleted successfully', color: 'success' });
     await router.push('/');
   } catch (e: any) {
+    error.value = e.message;
     console.error("Error deleting application:", e);
     toast.add({ title: 'Failed to delete application', description: e.message, color: 'error' });
   }

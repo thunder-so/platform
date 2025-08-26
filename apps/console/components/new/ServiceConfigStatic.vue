@@ -1,8 +1,8 @@
 <template>
   <ClientOnly>
-    <UForm ref="form" v-if="service" :state="service" :schema="serviceSchema" :validate-on="['input']" class="space-y-4">
+    <UForm ref="form" v-if="service" :state="props.service" :schema="serviceSchema" :validate-on="['input']" class="space-y-4">
       <UFormField label="Root Directory" name="app_props.rootDir" class="grid grid-cols-3 gap-4">
-        <UInput v-model="service.app_props.rootDir" placeholder="./" class="w-96" size="lg" />
+        <UInput v-model="service.app_props.rootDir" placeholder="/" class="w-96" size="lg" />
       </UFormField>
       <UFormField label="Output Directory" name="metadata.outputDir" class="grid grid-cols-3 gap-4">
         <UInput v-model="service.metadata.outputDir" placeholder="public/" class="w-96" size="lg" />

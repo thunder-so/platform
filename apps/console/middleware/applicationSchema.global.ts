@@ -1,15 +1,19 @@
 import { useApplications } from '~/composables/useApplications';
 
 export default defineNuxtRouteMiddleware(async (to) => {
-  const { applicationSchema, setApplicationSchemaById } = useApplications();
+  const { setApplicationSchemaById } = useApplications();
   const appId = to.params.app_id as string | undefined;
-  const currentAppId = applicationSchema.value?.id;
-  if (appId) {
-    if (appId !== currentAppId) {
-      // console.log('middleware setApplicationSchemaById:', appId);
-      await setApplicationSchemaById(appId);
+
+  if (to.path.startsWith('/app/') && appId) {
+    try {
+      await callOnce(async () => {
+        await setApplicationSchemaById(appId);
+      });
+    } catch (error) {
+      return navigateTo('/404');
     }
   } else {
-    applicationSchema.value = {};
+    const { applicationSchema } = useApplications();
+    applicationSchema.value = null;
   }
 });
