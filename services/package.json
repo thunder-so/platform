@@ -5,19 +5,20 @@
   "scripts": {
     "build": "tsc",
     "cdk": "cdk",
-    "deploy:sandbox": "cdk deploy --all --app \"npx tsx bin/ping.ts && npx tsx bin/provider.ts && npx tsx bin/runner.ts\" --context environment=sandbox",
+    "deploy:sandbox": "dotenv -e .env -- cdk deploy --all --app \"npx tsx bin/ping.ts && npx tsx bin/provider.ts && npx tsx bin/runner.ts\" --context environment=sandbox",
     "deploy:production": "cdk deploy --all --app \"npx tsx bin/ping.ts && npx tsx bin/provider.ts && npx tsx bin/runner.ts\" --context environment=production",
     "synth": "cdk synth",
-    "deploy:provider:sandbox": "cdk deploy --app \"npx tsx bin/provider.ts\" --context environment=sandbox",
+    "deploy:provider:sandbox": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/provider.ts\" --context environment=sandbox",
     "deploy:provider:production": "cdk deploy --app \"npx tsx bin/provider.ts\" --context environment=production",
-    "deploy:runner:sandbox": "cdk deploy --app \"npx tsx bin/runner.ts\" --context environment=sandbox",
+    "deploy:runner:sandbox": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/runner.ts\" --context environment=sandbox",
     "deploy:runner:production": "cdk deploy --app \"npx tsx bin/runner.ts\" --context environment=production",
-    "deploy:ping:sandbox": "cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=sandbox",
+    "deploy:ping:sandbox": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=sandbox",
     "deploy:ping:production": "cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=production"
   },
   "devDependencies": {
     "aws-cdk": "^2.1023.0",
     "aws-cdk-lib": "^2.208.0",
+    "dotenv-cli": "^7.4.2",
     "typescript": "^5.9.2"
   },
   "dependencies": {

@@ -95,10 +95,10 @@ const columns = [
     cell: ({ row }) => {
       if (row.getValue('stack_type') === 'SPA') {
         return h(UBadge, { color: 'success', variant: 'subtle' }, () => 'STATIC')
-      } else if (row.getValue('stack_type') === 'LAMBDA') {
-        return h(UBadge, { color: 'secondary', variant: 'subtle' }, () => row.getValue('stack_type'))
-      } else if (row.getValue('stack_type') === 'ECS') {
-        return h(UBadge, { color: 'info', variant: 'subtle' }, () => 'FARGATE')
+      } else if (row.getValue('stack_type') === 'FUNCTION') {
+        return h(UBadge, { color: 'secondary', variant: 'subtle' }, () => 'LAMBDA')
+      } else if (row.getValue('stack_type') === 'WEB_SERVICE') {
+        return h(UBadge, { color: 'info', variant: 'subtle' }, () => 'WEB SERVICE')
       }
     }
   },

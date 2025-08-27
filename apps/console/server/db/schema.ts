@@ -124,7 +124,7 @@ export const productsRelations = relations(products, ({ many }) => ({
  * Platform Infrastructure Tables
  */
 export const providers = pgTable('providers', {
-  id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
+  id: uuid('id').defaultRandom().primaryKey(),
   alias: text('alias'),
   role_arn: text('role_arn'),
   account_id: text('account_id'),

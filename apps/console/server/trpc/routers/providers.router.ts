@@ -47,7 +47,7 @@ export const providersRouter = router({
 
       try {
         // Store secret access key in Supabase Vault using Drizzle raw query
-        const secretName = `secret_access_key_${organizationId}_${accessKeyId}`;
+        const secretName = `secret_access_key_${accessKeyId}_${Date.now()}`;
         const vaultResult = await db.execute(sql`
           SELECT vault.create_secret(${secretAccessKey}, ${secretName}, ${`AWS Secret Access Key for organization ${organizationId} and Access Key ID ${accessKeyId}`})
         `);
