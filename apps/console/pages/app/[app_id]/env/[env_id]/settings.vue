@@ -97,9 +97,6 @@ definePageMeta({
 const { 
   applicationSchema, 
   refreshApplicationSchema, 
-  // repoError, 
-  // selectedBranchName, 
-  // branchItems 
 } = useApplications();
 const { $client } = useNuxtApp();
 const router = useRouter();

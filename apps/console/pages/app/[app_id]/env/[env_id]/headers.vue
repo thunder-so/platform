@@ -2,39 +2,60 @@
   <div>
     <UCard class="mt-4">
       <template #header>
-        <h2 class="text-xl font-semibold">Header Settings</h2>
+        <h2 class="text-xl font-semibold">Custom HTTP Headers</h2>
       </template>
 
-      <UForm :state="formState" @submit="saveSettings">
-        <div class="">
-          <template v-for="(header, index) in formState.headers" :key="index">
-            <UFormField :label="`Path ${index + 1}`" :name="`header-path-${index}`">
-              <UInput v-model="header.path" />
-            </UFormField>
-            <UFormField :label="`Name ${index + 1}`" :name="`header-name-${index}`">
-              <UInput v-model="header.name" />
-            </UFormField>
-            <UFormField :label="`Value ${index + 1}`" :name="`header-value-${index}`">
-              <UInput v-model="header.value" />
-            </UFormField>
-            <div class="col-span-2">
-              <UButton icon="i-heroicons-minus" color="info" @click="removeHeader(index)">Remove Header</UButton>
-            </div>
-          </template>
-          <div class="col-span-2">
-            <UButton icon="i-heroicons-plus" @click="addHeader">Add Header</UButton>
+      <UForm :state="formState" :schema="headersSchema" @submit="saveSettings" ref="form">
+        <div v-for="(header, index) in formState.headers" :key="index" class="grid grid-cols-12 gap-x-2 mt-2 items-start">
+          <UFormField label="Path" :name="`headers.${index}.path`" class="col-span-3">
+            <UInput
+              v-model="header.path"
+              placeholder="Path"
+              class="w-full"
+            />
+          </UFormField>
+          <UFormField label="Name" :name="`headers.${index}.name`" class="col-span-4">
+            <UInput
+              v-model="header.name"
+              placeholder="Name"
+              class="w-full"
+            />
+          </UFormField>
+          <UFormField label="Value" :name="`headers.${index}.value`" class="col-span-4">
+            <UInput
+              v-model="header.value"
+              placeholder="Value"
+              class="w-full"
+            />
+          </UFormField>
+          <div class="col-span-1 pt-6">
+            <UButton icon="i-heroicons-trash" color="red" variant="ghost" @click="removeHeader(index)" />
           </div>
         </div>
-
-        <div class="mt-4">
-          <UButton type="submit" :loading="isSaving">Save Settings</UButton>
+        <div class="col-span-2">
+          <UButton color="primary" variant="outline" icon="i-heroicons-plus-circle-20-solid" class="mt-2" @click="addHeader">Add Header</UButton>
         </div>
       </UForm>
+      <template #footer>
+        <div class="flex justify-start">
+          <UButton
+            size="lg"
+            :loading="isSaving"
+            @click="submitForm"
+          >
+            Save and Rebuild
+          </UButton>
+        </div>
+      </template>
     </UCard>
   </div>
 </template>
 
 <script setup lang="ts">
+import { z } from 'zod';
+import type { FormSubmitEvent } from '#ui/types'
+import { headersSchema } from '~/server/db/types';
+
 definePageMeta({
   layout: 'app',
 });
@@ -54,6 +75,7 @@ const formState = ref({
 });
 
 const isSaving = ref(false);
+const form = ref<HTMLFormElement | null>(null)
 
 const addHeader = () => {
   formState.value.headers.push({ path: '', name: '', value: '' });
@@ -63,7 +85,11 @@ const removeHeader = (index: number) => {
   formState.value.headers.splice(index, 1);
 };
 
-const saveSettings = async () => {
+const submitForm = () => {
+  form.value?.submit()
+}
+
+const saveSettings = async (event: FormSubmitEvent<z.infer<typeof headersSchema>>) => {
   isSaving.value = true;
   try {
     const serviceId = service?.id;
@@ -74,7 +100,7 @@ const saveSettings = async () => {
 
     await $client.services.updateServiceProps.mutate({
       serviceId: serviceId,
-      edge_props: { headers: formState.value.headers },
+      edge_props: { headers: event.data.headers },
     });
     console.log('Header settings saved successfully!');
   } catch (e: any) {

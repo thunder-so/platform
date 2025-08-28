@@ -20,6 +20,25 @@ export const edgePropsSchema = z.object({
   rewrites: z.array(z.object({ source: z.string(), destination: z.string() })).optional(),
 });
 
+export const headerSchema = z.object({
+  path: z.string()
+    .trim()
+    .min(1, 'Path is required.')
+    .startsWith('/', { message: 'Path must start with /' })
+    .regex(/^(\/[a-zA-Z0-9\-\_\*]*)(\/[a-zA-Z0-9\-\_\*]*)*\/?$/, { message: 'Invalid path format. Use letters, numbers, hyphens, underscores, and wildcards (*).' }),
+  name: z.string()
+    .trim()
+    .min(1, 'Name is required.')
+    .regex(/^[!#$%&'*+-.^_`|~0-9a-zA-Z]+$/, { message: 'Invalid characters in header name.' }),
+  value: z.string()
+    .trim()
+    .min(1, 'Value is required.'),
+});
+
+export const headersSchema = z.object({
+  headers: z.array(headerSchema)
+});
+
 export const sourcePropsSchema = z.object({
   owner: z.string(),
   repo: z.string(),
