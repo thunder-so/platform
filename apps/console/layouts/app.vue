@@ -115,12 +115,17 @@ import type { NavigationMenuItem } from '@nuxt/ui'
 import { useApplications } from '~/composables/useApplications';
 import Header from '~/components/Header.vue';
 
-const { applicationSchema, isLoading } = useApplications();
+const route = useRoute();
+const { applicationSchema, setApplicationSchemaById, isLoading } = useApplications();
 
 const environment = computed(() => applicationSchema.value?.environments?.[0] || {});
 const provider = computed(() => environment.value?.provider);
 const service = computed(() => environment.value?.services?.[0]);
-const appId = computed(() => applicationSchema.value?.id);
+// Use the route param for navigation immediately when present (falls back to loaded schema id).
+const appId = computed(() => {
+  const param = route.params.app_id as string | undefined;
+  return param ?? applicationSchema.value?.id;
+});
 const envId = computed(() => environment.value?.id);
 const serviceType = computed(() => service.value?.stack_type);
 
@@ -165,4 +170,20 @@ const manageLinks = computed<NavigationMenuItem[]>(() => {
   
   return links;
 });
+
+// Ensure SSR renders with the application schema: during server render await fetch once using the current route param.
+if (process.server) {
+  const ssrAppId = route.params.app_id as string | undefined;
+  if (ssrAppId) {
+    // top-level await is supported in <script setup>
+    await setApplicationSchemaById(ssrAppId);
+  }
+}
+
+// Client navigation: watch for changes and update the application schema when app_id changes.
+watch(() => route.params.app_id, async (newAppId, oldAppId) => {
+  if (newAppId && newAppId !== oldAppId) {
+    await setApplicationSchemaById(newAppId as string);
+  }
+}, { immediate: false });
 </script>

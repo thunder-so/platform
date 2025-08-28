@@ -2,12 +2,14 @@ import type { ApplicationSchema } from '~/server/db/schema';
 
 export const useApplications = () => {
   const supabase = useSupabaseClient();
-  const appId = ref<string | null>(null);
+  const appId = useState<string | null>('currentAppId', () => null);
+  const applicationSchema = useState<ApplicationSchema | null>('currentApplicationSchema', () => null);
+  const isLoading = useState<boolean>('currentApplicationSchemaLoading', () => false);
 
-  const { data: applicationSchema, pending: isLoading, refresh: refreshApplicationSchema } = useAsyncData(
-    'applicationSchema',
-    async () => {
-      if (!appId.value) return null;
+  const fetchApplicationSchema = async (id: string | null) => {
+    if (!id) return null;
+    try {
+      isLoading.value = true;
       const { data, error } = await supabase
         .from('applications')
         .select(`
@@ -45,37 +47,51 @@ export const useApplications = () => {
             )
           )
         `)
-        .eq('id', appId.value)
+        .eq('id', id)
         .is('deleted_at', null)
         .is('environments.deleted_at', null)
         .is('environments.services.deleted_at', null)
         .single();
 
       if (error) throw error;
-      return data as ApplicationSchema;
-    },
-    {
-      watch: [appId]
+      applicationSchema.value = data as ApplicationSchema;
+      return applicationSchema.value;
+    } finally {
+      isLoading.value = false;
     }
-  );
-
-  const setApplicationSchemaById = (id: string) => {
-    appId.value = id;
   };
 
-  if (process.client) {
-    const route = useRoute();
-    watch(() => route.params.app_id, (newAppId) => {
-      if (newAppId) {
-        setApplicationSchemaById(newAppId as string);
+  const setApplicationSchemaById = async (id: string) => {
+    const changed = appId.value !== id;
+    appId.value = id;
+    if (changed) {
+      const promise = fetchApplicationSchema(id);
+      if (process.server) {
+        // During SSR we should wait for the fetch so the server-rendered HTML contains the schema
+        try {
+          await promise;
+        } catch (e) {
+          console.error('Failed to fetch application schema during SSR', e);
+        }
+      } else {
+        // Client: don't block, but surface errors
+        promise.catch((e) => {
+          console.error('Failed to fetch application schema', e);
+        });
       }
-    });
-  }
+    }
+    return changed;
+  };
+
+  const refreshApplicationSchema = async () => {
+    return await fetchApplicationSchema(appId.value);
+  };
 
   return {
     applicationSchema,
     isLoading,
     refreshApplicationSchema,
     setApplicationSchemaById,
+    appId,
   };
 };

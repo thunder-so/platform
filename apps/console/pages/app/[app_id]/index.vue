@@ -1,7 +1,19 @@
 <template>
   <div>
-    <div v-if="loading">Loading activities...</div>
-    <div v-else-if="error">Error fetching activities: {{ error.message }}</div>
+    <div v-if="loading">
+      <div class="flex flex-col gap-4 mt-7">
+        <div v-for="i in 3" :key="i" class="space-y-4">
+          <USkeleton class="h-6 w-full" />
+        </div>
+      </div>
+    </div>
+
+    <div v-else-if="error">
+      <UAlert v-if="error" color="warning" variant="soft" class="mb-3">
+        <template #title>{{ error.message }}</template>
+      </UAlert>
+    </div>
+
     <div v-else-if="activities.length">
       <div v-for="activity in activities" :key="activity.id" class="p-4 mb-2 border border-muted rounded flex items-center gap-4">
         <Icon 
@@ -40,12 +52,12 @@
         />
       </div>
     </div>
-    <div v-else>No activities found for this application.</div>
+    <div v-else>No activities found on this application.</div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, h } from 'vue';
+import { ref, computed, h, watch, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useSupabaseClient } from '#imports';
 import { useApplications } from '~/composables/useApplications';
@@ -113,7 +125,7 @@ interface ActivityItem {
 }
 
 const activities = ref<ActivityItem[]>([]);
-const loading = ref(false);
+const loading = ref(true);
 const error = ref<{ message: string } | null>(null);
 
 // const UBadge = resolveComponent('UBadge');
@@ -123,8 +135,8 @@ const transformBuildToActivityItem = (build: Build): ActivityItem => ({
   id: build.id,
   type: 'build',
   timestamp: build.created_at,
-  status: build.build_status,
-  message: `Build ${build.build_status.toLowerCase()} for service ${service.value?.display_name || 'N/A'}`,
+  status: build.build_status as string,
+  message: `Build ${build.build_status?.toLowerCase()} for service ${service.value?.display_name || 'N/A'}`,
   logAvailable: !!build.build_log,
   logId: build.id,
 });
@@ -133,8 +145,8 @@ const transformEventToActivityItem = (event: Event): ActivityItem => ({
   id: event.pipeline_execution_id,
   type: 'event',
   timestamp: event.created_at,
-  status: event.pipeline_state,
-  message: `Pipeline ${event.pipeline_state.toLowerCase()} for service ${service.value?.display_name || 'N/A'}`,
+  status: event.pipeline_state as string,
+  message: `Pipeline ${event.pipeline_state?.toLowerCase()} for service ${service.value?.display_name || 'N/A'}`,
   logAvailable: !!event.pipeline_log,
   logId: event.pipeline_execution_id,
   sourceDetails: event.pipeline_metadata as ActivityItem['sourceDetails'],
@@ -198,7 +210,6 @@ const transformEventToActivityItem = (event: Event): ActivityItem => ({
 // ];
 
 const fetchActivities = async (envId: string) => {
-  loading.value = true;
   try {
     const [buildsResponse, eventsResponse] = await Promise.all([
       supabase.from('builds').select('*').eq('environment_id', envId).is('deleted_at', null).order('created_at', { ascending: false }).limit(50),
@@ -220,61 +231,63 @@ const fetchActivities = async (envId: string) => {
   }
 };
 
-onMounted(() => {
-  if (environment.value?.id) {
-    fetchActivities(environment.value.id);
+// Keep references to created channels so we can remove them when env changes/unmount
+let buildChannel: any = null;
+let eventsChannel: any = null;
 
-    // Setup Realtime Subscriptions
-    supabase
-      .channel(`builds:${environment.value.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'builds', filter: `environment_id=eq.${environment.value.id}` }, (payload) => {
-        const newBuild = payload.new as Build;
-        const oldBuild = payload.old as Build;
-        const transformed = transformBuildToActivityItem(newBuild);
+const setupRealtimeForEnv = (envId: string) => {
+  // cleanup previous channels
+  if (buildChannel) supabase.removeChannel(buildChannel);
+  if (eventsChannel) supabase.removeChannel(eventsChannel);
 
-        if (payload.eventType === 'INSERT') {
-          activities.value.unshift(transformed);
-        } else if (payload.eventType === 'UPDATE') {
-          const index = activities.value.findIndex(item => item.id === transformed.id && item.type === 'build');
-          if (index !== -1) {
-            activities.value[index] = transformed;
-          }
-        }
-        // Keep only the latest 50 activities
-        if (activities.value.length > 50) {
-          activities.value = activities.value.slice(0, 50);
-        }
-      })
-      .subscribe();
+  buildChannel = supabase
+    .channel(`builds:${envId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'builds', filter: `environment_id=eq.${envId}` }, (payload) => {
+      const newBuild = payload.new as Build;
+      const transformed = transformBuildToActivityItem(newBuild);
 
-    supabase
-      .channel(`events:${environment.value.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'events', filter: `environment_id=eq.${environment.value.id}` }, (payload) => {
-        const newEvent = payload.new as Event;
-        const oldEvent = payload.old as Event;
-        const transformed = transformEventToActivityItem(newEvent);
+      if (payload.eventType === 'INSERT') {
+        activities.value.unshift(transformed);
+      } else if (payload.eventType === 'UPDATE') {
+        const index = activities.value.findIndex(item => item.id === transformed.id && item.type === 'build');
+        if (index !== -1) activities.value[index] = transformed;
+      }
+      if (activities.value.length > 50) activities.value = activities.value.slice(0, 50);
+    })
+    .subscribe();
 
-        if (payload.eventType === 'INSERT') {
-          activities.value.unshift(transformed);
-        } else if (payload.eventType === 'UPDATE') {
-          const index = activities.value.findIndex(item => item.id === transformed.id && item.type === 'event');
-          if (index !== -1) {
-            activities.value[index] = transformed;
-          }
-        }
-        // Keep only the latest 50 activities
-        if (activities.value.length > 50) {
-          activities.value = activities.value.slice(0, 50);
-        }
-      })
-      .subscribe();
+  eventsChannel = supabase
+    .channel(`events:${envId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'events', filter: `environment_id=eq.${envId}` }, (payload) => {
+      const newEvent = payload.new as Event;
+      const transformed = transformEventToActivityItem(newEvent);
+
+      if (payload.eventType === 'INSERT') {
+        activities.value.unshift(transformed);
+      } else if (payload.eventType === 'UPDATE') {
+        const index = activities.value.findIndex(item => item.id === transformed.id && item.type === 'event');
+        if (index !== -1) activities.value[index] = transformed;
+      }
+      if (activities.value.length > 50) activities.value = activities.value.slice(0, 50);
+    })
+    .subscribe();
+};
+
+// When environment becomes available (client-side navigation), fetch and setup realtime
+watch(environment, async (env) => {
+  if (env?.id) {
+    loading.value = true;
+    await fetchActivities(env.id);
+    setupRealtimeForEnv(env.id);
+    loading.value = false;
+  } else {
+    // clear state if environment not available
+    activities.value = [];
   }
-});
+}, { immediate: true });
 
 onUnmounted(() => {
-  if (environment.value?.id) {
-    supabase.removeChannel(supabase.channel(`builds:${environment.value.id}`));
-    supabase.removeChannel(supabase.channel(`events:${environment.value.id}`));
-  }
+  if (buildChannel) supabase.removeChannel(buildChannel);
+  if (eventsChannel) supabase.removeChannel(eventsChannel);
 });
 </script>
