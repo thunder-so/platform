@@ -187,7 +187,7 @@ export const providerSchema = z.object({
   alias: z.string(),
   role_arn: z.string().nullable(),
   account_id: z.string(),
-  region: z.string(),
+  region: z.string().nullable(),
   stack_id: z.string().nullable(),
   stack_name: z.string().nullable(),
   access_key_id: z.string().nullable(),
@@ -195,19 +195,55 @@ export const providerSchema = z.object({
   organization_id: z.string().min(1, 'Organization ID is required'),
 });
 
-export const environmentSchema = z.object({
+/**
+ * Input schema for a single service, environment and application
+ */
+const serviceInputBaseSchema = z.object({
+  name: z.string().regex(NAME_REGEX, NAME_ERROR_MESSAGE),
+  display_name: z.string().min(1, 'Display name is required'),
+  stack_version: z.string(),
+  installation_id: z.number().nullable(),
+  app_props: appPropsSchema,
+  cdn_props: cloudFrontPropsSchema.nullable(),
+  edge_props: edgePropsSchema.nullable(),
+  domain_props: z.any().nullable(),
+  pipeline_props: z.any(),
+});
+
+export const serviceInputSchema = z.discriminatedUnion('stack_type', [
+  serviceInputBaseSchema.extend({
+    stack_type: z.literal('SPA'),
+    metadata: spaMetadataSchema,
+    domain_props: spaDomainPropsSchema.nullable(),
+    pipeline_props: spaPipelinePropsSchema
+  }),
+  serviceInputBaseSchema.extend({
+    stack_type: z.literal('FUNCTION'),
+    metadata: functionMetadataSchema,
+    domain_props: functionDomainPropsSchema.nullable(),
+    pipeline_props: functionPipelinePropsSchema
+  }),
+  serviceInputBaseSchema.extend({
+    stack_type: z.literal('WEB_SERVICE'),
+    metadata: webServiceMetadataSchema,
+    domain_props: webServiceDomainPropsSchema.nullable(),
+    pipeline_props: webServicePipelinePropsSchema
+  }),
+]);
+
+export const environmentInputSchema = z.object({
   name: z.string().regex(NAME_REGEX, NAME_ERROR_MESSAGE),
   display_name: z.string().min(1, 'Display name is required'),
   provider: providerSchema.optional(),
   region: z.string().min(1, 'Region is required'),
   user_access_token: z.any().optional(),
-  services: z.array(serviceSchema),
+  services: z.array(serviceInputSchema),
 });
 
 export const applicationInputSchema = z.object({
   name: z.string().regex(NAME_REGEX, NAME_ERROR_MESSAGE),
   display_name: z.string().min(1, 'Display name is required'),
-  environments: z.array(environmentSchema),
+  environments: z.array(environmentInputSchema),
 });
 
 export type ApplicationInputSchema = z.infer<typeof applicationInputSchema>;

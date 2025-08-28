@@ -40,144 +40,146 @@ const builders: Record<string, IStackBuilder> = {
 };
 
 export const handler: SQSHandler = async (event) => {
-  const record = event.Records[0];
-  console.log('Received SQS message:', record);
+  console.log('Received SQS event:', JSON.stringify(event, null, 2));
 
-  const { messageAttributes } = record;
-  const command = messageAttributes.command?.stringValue;
-  const stackType = messageAttributes.stackType?.stringValue;
-  const stackVersion = messageAttributes.stackVersion?.stringValue;
-  const eventId = messageAttributes.eventId?.stringValue;
-  const accessTokenSecretArn = messageAttributes.accessTokenSecretArn?.stringValue;
-  const provider = JSON.parse(messageAttributes.provider?.stringValue || '{}');
-  const props: RunnerRequest = JSON.parse(record.body);
+  for (const record of event.Records) {
+    try {
+      console.log('Processing SQS record:', record);
 
-  if (!stackType || !stackVersion || !eventId || !accessTokenSecretArn || !provider) {
-    console.error('Missing required message attributes');
-    throw new Error('Missing required message attributes');
-  }
+      const { messageAttributes, body } = record;
+      const command = messageAttributes.command?.stringValue;
+      const stackType = messageAttributes.stackType?.stringValue;
+      const stackVersion = messageAttributes.stackVersion?.stringValue;
+      const eventId = messageAttributes.eventId?.stringValue;
+      const accessTokenSecretArn = messageAttributes.accessTokenSecretArn?.stringValue;
+      const provider = JSON.parse(messageAttributes.provider?.stringValue || '{}');
+      const props: RunnerRequest = JSON.parse(body);
 
-  const builder = builders[stackType];
-  if (!builder) {
-    throw new Error(`No builder found for stack type: ${stackType}`);
-  }
+      console.log('Message attributes parsed successfully:', { command, stackType, stackVersion, eventId, provider });
 
-  // running the build on customer account
-  let credentials;
-
-  // Provider role ARN is provided
-  // If the roleArn is provided, we assume that role to get the credentials
-  if (provider.role_arn) {
-    const assumeRoleParams = {
-      RoleArn: provider.role_arn,
-      RoleSessionName: 'RunnerBuildSession',
-      ExternalId: provider.organization_id,
-    };
-
-    const sts = new STSClient({ region: REGION });
-    const assumedRole = await sts.send(new AssumeRoleCommand(assumeRoleParams));
-    credentials = assumedRole.Credentials;
-  } 
-  // If the roleArn is not provided, we use the accessKeyId and secretAccessKey from SSM
-  else {
-    const parametersProvider = new SSMProvider();
-    let secretAccessKey;
-    if (provider.access_key_id) {
-      const parameterPath = `/thunder/${provider.organization_id}/${provider.access_key_id}/secretAccessKey`;
-      console.log(`Attempting to retrieve SSM parameter: ${parameterPath} for accessKeyId: ${provider.access_key_id}`);
-      try {
-        secretAccessKey = await parametersProvider.get(parameterPath, { decrypt: true });
-        console.log(`Successfully retrieved SSM parameter: ${parameterPath}`);
-      } catch (ssmError) {
-        console.error(`Failed to retrieve SSM parameter ${parameterPath}:`, ssmError);
-        throw ssmError; // Re-throw the error after logging
+      if (!stackType || !stackVersion || !eventId || !accessTokenSecretArn || !provider) {
+        console.error('Missing required message attributes');
+        throw new Error('Missing required message attributes');
       }
-    }
-    credentials = {
-      AccessKeyId: provider.access_key_id,
-      SecretAccessKey: secretAccessKey,
-    }
-  } 
 
+      const builder = builders[stackType];
+      if (!builder) {
+        throw new Error(`No builder found for stack type: ${stackType}`);
+      }
 
-  // Initiate codebuild in our account
-  const codebuild = new CodeBuild({ region: REGION });
+      console.log('Builder found for stack type:', stackType);
 
-  const buildSpec = command === 'delete' 
-    ? builder.generateDestroyBuildSpec({ ...props, stackVersion, accessTokenSecretArn })
-    : builder.generateBuildSpec({ ...props, stackVersion, accessTokenSecretArn });
-  const cdkContext = builder.generateCdkContext(props);
+      let credentials;
+      if (provider.role_arn) {
+        console.log('Assuming role:', provider.role_arn);
+        const assumeRoleParams = {
+          RoleArn: provider.role_arn,
+          RoleSessionName: 'RunnerBuildSession',
+          ExternalId: provider.organization_id,
+        };
 
-  const params = {
-    projectName: process.env.RUNNER_BUILD,
-    artifactsOverride: {
-      type: ArtifactsType.S3,
-      location: process.env.RUNNER_BUCKET,
-      path: props.service,
-    },
-    buildspecOverride: buildSpec,
-    environmentVariablesOverride: [
-      { name: 'AWS_ACCOUNT', value: provider.account_id, type: EnvironmentVariableType.PLAINTEXT },
-      { name: 'AWS_REGION', value: provider.region, type: EnvironmentVariableType.PLAINTEXT },
-      { name: 'AWS_ACCESS_KEY_ID', value: credentials?.AccessKeyId, type: EnvironmentVariableType.PLAINTEXT },
-      { name: 'AWS_SECRET_ACCESS_KEY', value: credentials?.SecretAccessKey, type: EnvironmentVariableType.PLAINTEXT },
-      { name: 'AWS_SESSION_TOKEN', value: credentials?.SessionToken, type: EnvironmentVariableType.PLAINTEXT },
-      { name: 'CDK_CONTEXT', value: JSON.stringify(cdkContext), type: EnvironmentVariableType.PLAINTEXT },
-    ].filter(({ value }) => value !== undefined && value !== null),
-  };
-
-  try {
-    const response = await codebuild.startBuild(params);
-
-    const buildArn = response.build?.arn;
-    const buildId = response.build?.id as string;
-
-    if (buildId) {
-      console.log(`Build started with ARN: ${buildArn}`);
-      console.log(`Build started with ID: ${buildId}`);
-
-      const buildDetails = await codebuild.send(new BatchGetBuildsCommand({ ids: [buildId] }));
-      if (buildDetails.builds && buildDetails.builds.length > 0) {
-        const build = buildDetails.builds[0];
-
-        const startTime = build.startTime;
-
-        // Store the event in Supabase
-        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        if (command === 'delete') {
-          // Update Supabase DB
-          const { data, error } = await supabase
-            .from('destroys')
-            .update({
-              destroy_id: buildArn, // using ARN because CodeBuildStateChangeEvent detail['build-id'] uses ARN
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', eventId);
-
-          if (error) {
-            throw error;
+        const sts = new STSClient({ region: REGION });
+        const assumedRole = await sts.send(new AssumeRoleCommand(assumeRoleParams));
+        credentials = assumedRole.Credentials;
+        console.log('Successfully assumed role');
+      } else {
+        console.log('Using access key from SSM');
+        const parametersProvider = new SSMProvider();
+        let secretAccessKey;
+        if (provider.access_key_id) {
+          const parameterPath = `/thunder/${provider.organization_id}/${provider.access_key_id}/secretAccessKey`;
+          console.log(`Attempting to retrieve SSM parameter: ${parameterPath}`);
+          try {
+            secretAccessKey = await parametersProvider.get(parameterPath, { decrypt: true });
+            console.log(`Successfully retrieved SSM parameter: ${parameterPath}`);
+          } catch (ssmError) {
+            console.error(`Failed to retrieve SSM parameter ${parameterPath}:`, ssmError);
+            throw ssmError;
           }
-        } else {
-          // Update Supabase DB
-          const { data, error } = await supabase
-            .from('builds')
-            .update({
-              build_id: buildArn, // using ARN because CodeBuildStateChangeEvent detail['build-id'] uses ARN
-              build_start: startTime?.toISOString(),
-              build_context: cdkContext,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', eventId);
+        }
+        credentials = {
+          AccessKeyId: provider.access_key_id,
+          SecretAccessKey: secretAccessKey,
+        };
+        console.log('Successfully retrieved credentials from SSM');
+      }
 
-          if (error) {
-            throw error;
+      const codebuild = new CodeBuild({ region: REGION });
+      const buildSpec = command === 'delete'
+        ? builder.generateDestroyBuildSpec({ ...props, stackVersion, accessTokenSecretArn })
+        : builder.generateBuildSpec({ ...props, stackVersion, accessTokenSecretArn });
+      const cdkContext = builder.generateCdkContext(props);
+
+      const params = {
+        projectName: process.env.RUNNER_BUILD,
+        artifactsOverride: {
+          type: ArtifactsType.S3,
+          location: process.env.RUNNER_BUCKET,
+          path: props.service,
+        },
+        buildspecOverride: buildSpec,
+        environmentVariablesOverride: [
+          { name: 'AWS_ACCOUNT', value: provider.account_id, type: EnvironmentVariableType.PLAINTEXT },
+          { name: 'AWS_REGION', value: provider.region, type: EnvironmentVariableType.PLAINTEXT },
+          { name: 'AWS_ACCESS_KEY_ID', value: credentials?.AccessKeyId, type: EnvironmentVariableType.PLAINTEXT },
+          { name: 'AWS_SECRET_ACCESS_KEY', value: credentials?.SecretAccessKey, type: EnvironmentVariableType.PLAINTEXT },
+          { name: 'AWS_SESSION_TOKEN', value: credentials?.SessionToken, type: EnvironmentVariableType.PLAINTEXT },
+          { name: 'CDK_CONTEXT', value: JSON.stringify(cdkContext), type: EnvironmentVariableType.PLAINTEXT },
+        ].filter(({ value }) => value !== undefined && value !== null),
+      };
+
+      console.log('Starting CodeBuild project with params:', JSON.stringify(params, null, 2));
+      const response = await codebuild.startBuild(params);
+      console.log('CodeBuild project started successfully:', response);
+
+      const buildArn = response.build?.arn;
+      const buildId = response.build?.id as string;
+
+      if (buildId) {
+        console.log(`Build started with ARN: ${buildArn}`);
+        console.log(`Build started with ID: ${buildId}`);
+
+        const buildDetails = await codebuild.send(new BatchGetBuildsCommand({ ids: [buildId] }));
+        if (buildDetails.builds && buildDetails.builds.length > 0) {
+          const build = buildDetails.builds[0];
+          const startTime = build.startTime;
+          const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+          if (command === 'delete') {
+            console.log('Updating Supabase for delete command');
+            const { data, error } = await supabase
+              .from('destroys')
+              .update({
+                destroy_id: buildArn,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', eventId);
+            if (error) throw error;
+            console.log('Supabase update for delete successful');
+          } else {
+            console.log('Updating Supabase for build command');
+            const { data, error } = await supabase
+              .from('builds')
+              .update({
+                build_id: buildArn,
+                build_start: startTime?.toISOString(),
+                build_context: cdkContext,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', eventId);
+            if (error) throw error;
+            console.log('Supabase update for build successful');
           }
         }
       }
+    } catch (error) {
+      console.error('Runner failed for record:', record);
+      console.error('Error:', JSON.stringify(error, null, 2));
+      // Decide if you want to re-throw the error. Re-throwing will cause the message to be re-processed
+      // according to the SQS queue's redrive policy. If you don't re-throw, the message will be considered
+      // successfully processed and will be deleted from the queue.
+      // For debugging, it might be useful to not re-throw to avoid a flood of logs.
+      // throw error;
     }
-  } catch (error) {
-    console.error('Runner failed', JSON.stringify(error));
-    throw error;
   }
 };

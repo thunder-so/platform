@@ -139,7 +139,7 @@ const installApplication = async () => {
   try {
     const result = await $client.applications.create.mutate({
       organization_id: selectedOrganization.value?.id as string,
-      applicationInputSchema: applicationSchema.value as ApplicationInputSchema
+      ...(applicationSchema.value as ApplicationInputSchema)
     });
     if (result.newApplicationId) {
       clearApplicationSchema();

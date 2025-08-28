@@ -145,6 +145,7 @@ export const useNewApplicationFlow = () => {
     if (applicationSchema.value.environments?.[0]) {
       const providerForInput: ApplicationInputSchema['environments'][0]['provider'] = {
         ...provider,
+        region: provider.region || 'us-east-1',
         created_at: new Date(provider.created_at).toISOString(),
         updated_at: provider.updated_at ? new Date(provider.updated_at).toISOString() : null,
         deleted_at: provider.deleted_at ? new Date(provider.deleted_at).toISOString() : null,
@@ -198,8 +199,9 @@ export const useNewApplicationFlow = () => {
     installation_id: number
   ): Promise<ServiceInputSchema> => {
     const baseService = {
-      name: stackType,
+      name: stackType.toLowerCase(),
       display_name: stackType,
+      stack_version: '1.0',
       installation_id: installation_id,
       app_props: { rootDir: '/' },
       cdn_props: null,
@@ -302,6 +304,7 @@ export const useNewApplicationFlow = () => {
               services: [serviceSchema],
               provider: initialProvider ? {
                   ...initialProvider,
+                  region: initialProvider.region || 'us-east-1',
                   created_at: new Date(initialProvider.created_at).toISOString(),
                   updated_at: initialProvider.updated_at ? new Date(initialProvider.updated_at).toISOString() : null,
                   deleted_at: initialProvider.deleted_at ? new Date(initialProvider.deleted_at).toISOString() : null,
