@@ -175,11 +175,7 @@ export const handler: SQSHandler = async (event) => {
     } catch (error) {
       console.error('Runner failed for record:', record);
       console.error('Error:', JSON.stringify(error, null, 2));
-      // Decide if you want to re-throw the error. Re-throwing will cause the message to be re-processed
-      // according to the SQS queue's redrive policy. If you don't re-throw, the message will be considered
-      // successfully processed and will be deleted from the queue.
-      // For debugging, it might be useful to not re-throw to avoid a flood of logs.
-      // throw error;
+      // throw error; // Re-throw to trigger SQS retry mechanism
     }
   }
 };

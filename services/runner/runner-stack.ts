@@ -5,7 +5,7 @@ import { Queue } from 'aws-cdk-lib/aws-sqs';
 import { Role, ServicePrincipal, ManagedPolicy, PolicyStatement, CompositePrincipal } from 'aws-cdk-lib/aws-iam';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
-import { Project, BuildSpec, Source, Artifacts, LinuxBuildImage, ComputeType } from 'aws-cdk-lib/aws-codebuild';
+import { Project, BuildSpec, Source, Artifacts, LinuxBuildImage, LinuxArmBuildImage, ComputeType } from 'aws-cdk-lib/aws-codebuild';
 import { Rule } from 'aws-cdk-lib/aws-events';
 import { LambdaFunction } from 'aws-cdk-lib/aws-events-targets';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
@@ -24,10 +24,22 @@ export class RunnerService extends Stack {
       autoDeleteObjects: true,
     });
 
+    // Dead Letter Queue
+    const runnerDlq = new Queue(this, 'RunnerDlq', {
+      queueName: `RunnerDlq-${environment}.fifo`,
+      fifo: true,
+      retentionPeriod: Duration.days(14),
+    });
+
     // SQS Queue
     const runnerQueue = new Queue(this, 'RunnerQueue', {
       queueName: `RunnerQueue-${environment}.fifo`,
       fifo: true,
+      visibilityTimeout: Duration.minutes(15),
+      deadLetterQueue: {
+        queue: runnerDlq,
+        maxReceiveCount: 1,
+      },
     });
 
     // IAM Role for Lambda and CodeBuild
@@ -82,7 +94,7 @@ export class RunnerService extends Stack {
         path: 'artifacts/',
       }),
       environment: {
-        buildImage: LinuxBuildImage.STANDARD_7_0,
+        buildImage: LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_3_0,
         computeType: ComputeType.SMALL,
       },
       role: runnerRole,      
@@ -106,7 +118,7 @@ export class RunnerService extends Stack {
       depsLockFilePath: path.join(__dirname, '../../bun.lock'),
       runtime: Runtime.NODEJS_22_X,
       memorySize: 1536,
-      timeout: Duration.seconds(10),
+      timeout: Duration.minutes(15),
       role: runnerRole,
       environment: {
         NODE_OPTIONS: '--enable-source-maps false',
@@ -115,7 +127,11 @@ export class RunnerService extends Stack {
         RUNNER_BUILD: runnerBuild.projectName,
       },
     });
-    runnerFunction.addEventSource(new SqsEventSource(runnerQueue, { batchSize: 1, enabled: true }));
+    runnerFunction.addEventSource(new SqsEventSource(runnerQueue, { 
+      batchSize: 1, 
+      enabled: true,
+      reportBatchItemFailures: true,
+    }));
 
     // Lambda: status
     const runnerStatusFunction = new NodejsFunction(this, 'RunnerStatusFunction', {
@@ -158,6 +174,10 @@ export class RunnerService extends Stack {
     new CfnOutput(this, 'RunnerQueueUrl', {
       description: 'URL of the SQS queue for runner',
       value: runnerQueue.queueUrl,
+    });
+    new CfnOutput(this, 'RunnerDlqUrl', {
+      description: 'URL of the Dead Letter Queue for runner',
+      value: runnerDlq.queueUrl,
     });
     new CfnOutput(this, 'RunnerRoleArn', {
       description: 'ARN of the IAM Role for runner',
