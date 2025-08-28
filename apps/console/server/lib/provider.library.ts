@@ -18,7 +18,21 @@ async function getCredentials(provider: Provider | ManualProvider) {
             RoleSessionName: `thunder-session-${Date.now()}`,
             ExternalId: provider.organization_id || undefined
         }));
-        return assumedRole.Credentials;
+
+        const c = assumedRole.Credentials;
+        if (!c || !c.AccessKeyId || !c.SecretAccessKey) {
+            throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'Failed to assume role or received invalid temporary credentials.',
+            });
+        }
+
+        return {
+            accessKeyId: c.AccessKeyId,
+            secretAccessKey: c.SecretAccessKey,
+            sessionToken: c.SessionToken,
+            expiration: c.Expiration ? new Date(c.Expiration) : undefined,
+        };
     }
 
     // Scenario 2: Key-based provider where the secret is in the vault
