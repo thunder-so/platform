@@ -29,7 +29,7 @@
             />
           </UFormField>
           <div class="col-span-1 pt-6">
-            <UButton icon="i-heroicons-trash" color="red" variant="ghost" @click="removeHeader(index)" />
+            <UButton icon="i-heroicons-trash" color="error" variant="ghost" @click="removeHeader(index)" />
           </div>
         </div>
         <div class="col-span-2">
@@ -92,16 +92,24 @@ const submitForm = () => {
 const saveSettings = async (event: FormSubmitEvent<z.infer<typeof headersSchema>>) => {
   isSaving.value = true;
   try {
-    const serviceId = service?.id;
-    if (!serviceId) {
-      console.error('Service ID not found.');
+    if (!service) {
+      console.error('Service not found.');
       return;
     }
 
-    await $client.services.updateServiceProps.mutate({
-      serviceId: serviceId,
-      edge_props: { headers: event.data.headers },
-    });
+    const updatedService = {
+      ...service,
+      app_props: {
+        ...service.app_props,
+        rootDir: service.app_props?.rootDir,
+      },
+      edge_props: {
+        ...service.edge_props,
+        headers: event.data.headers,
+      },
+    };
+
+    await $client.services.updateServiceConfig.mutate(updatedService as any);
     console.log('Header settings saved successfully!');
   } catch (e: any) {
     console.error('Error saving header settings:', e.message);
