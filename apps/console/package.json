@@ -43,6 +43,7 @@
   },
   "devDependencies": {
     "@nuxt/types": "^2.18.1",
+    "@types/lodash-es": "^4.17.12",
     "@types/pg": "^8.15.4",
     "dotenv": "^17.2.0",
     "dotenv-cli": "^8.0.0",

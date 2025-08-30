@@ -133,8 +133,31 @@ const saveChanges = async () => {
 
   isSaving.value = true;
   error.value = null;
+
   try {
-    await $client.services.updateServiceConfig.mutate(localServiceConfig.value as any);
+    const { id, app_props, metadata, pipeline_props, stack_type } = localServiceConfig.value;
+
+    let partialPipelineProps: any = {};
+    if (stack_type === 'SPA') {
+      partialPipelineProps = {
+        sourceProps: {
+          branchOrRef: pipeline_props.sourceProps.branchOrRef,
+        },
+        buildProps: {
+          runtime_version: pipeline_props.buildProps.runtime_version,
+          installcmd: pipeline_props.buildProps.installcmd,
+          buildcmd: pipeline_props.buildProps.buildcmd,
+        },
+      };
+    }
+
+    await $client.services.updateServiceConfig.mutate({
+      id,
+      app_props,
+      metadata,
+      pipeline_props: partialPipelineProps,
+    });
+
     await refreshApplicationSchema();
     toast.add({ title: 'Settings saved successfully!', color: 'success' });
     isChanged.value = false;

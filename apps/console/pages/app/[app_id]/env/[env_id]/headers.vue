@@ -2,7 +2,7 @@
   <div>
     <UCard class="mt-4">
       <template #header>
-        <h2 class="text-xl font-semibold">Custom HTTP Headers</h2>
+        <h3>Custom HTTP Headers</h3>
       </template>
 
       <UForm :state="formState" :schema="headersSchema" @submit="saveSettings" ref="form">
@@ -62,6 +62,7 @@ definePageMeta({
 
 const { applicationSchema, refreshApplicationSchema } = useApplications();
 const { $client } = useNuxtApp();
+const toast = useToast();
 
 if (!applicationSchema.value) {
   throw Error('Application schema not found.')
@@ -97,20 +98,14 @@ const saveSettings = async (event: FormSubmitEvent<z.infer<typeof headersSchema>
       return;
     }
 
-    const updatedService = {
-      ...service,
-      app_props: {
-        ...service.app_props,
-        rootDir: service.app_props?.rootDir,
-      },
+    await $client.services.updateServiceConfig.mutate({
+      id: service.id,
       edge_props: {
         ...service.edge_props,
         headers: event.data.headers,
       },
-    };
-
-    await $client.services.updateServiceConfig.mutate(updatedService as any);
-    console.log('Header settings saved successfully!');
+    });
+    toast.add({ title: 'Application headers updated', color: 'success' });
   } catch (e: any) {
     console.error('Error saving header settings:', e.message);
   } finally {
