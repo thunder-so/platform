@@ -155,7 +155,7 @@ export interface AppProps extends StackProps {
    * The path to the root directory of your application.
    * Defaults to '.'
    */
-  readonly rootDir?: string;
+  readonly rootDir: string;
 
   /**
    * The output directory of the app.

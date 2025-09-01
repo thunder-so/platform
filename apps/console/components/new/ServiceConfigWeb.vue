@@ -4,10 +4,10 @@
       <UFormField label="Root Directory" name="app_props.rootDir" class="grid grid-cols-3 gap-4">
         <UInput v-model="service.app_props.rootDir" placeholder="./" class="w-96" size="lg" />
       </UFormField>
-      <UFormField label="Build System" name="metadata.buildSystem" class="grid grid-cols-3 gap-4">
-        <USelect v-model="service.metadata.buildSystem" :items="['Nixpacks', 'Buildpacks', 'Custom Dockerfile']" class="w-96" size="lg" />
+      <UFormField label="Build System" name="metadata.build_system" class="grid grid-cols-3 gap-4">
+        <USelect v-model="service.metadata.build_system" :items="['Nixpacks', 'Buildpacks', 'Custom Dockerfile']" class="w-96" size="lg" />
       </UFormField>
-      <UFormField v-if="service.metadata.buildSystem === 'Custom Dockerfile'" label="Docker File" name="metadata.dockerFile" class="grid grid-cols-3 gap-4">
+      <UFormField v-if="service.metadata.build_system === 'Custom Dockerfile'" label="Docker File" name="metadata.dockerFile" class="grid grid-cols-3 gap-4">
         <UInput v-model="service.metadata.dockerFile" placeholder="Dockerfile" class="w-96" size="lg" />
       </UFormField>
       <UFormField label="Desired Count" name="metadata.desiredCount" class="grid grid-cols-3 gap-4">

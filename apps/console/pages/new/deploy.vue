@@ -10,11 +10,11 @@
           <div>
             <h3 class="text-md font-medium">{{ applicationSchema.display_name }}</h3>
             <a 
-              :href="`https://github.com/${applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.owner}/${applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.repo}`"
+              :href="`https://github.com/${applicationSchema.environments?.[0]?.services?.[0]?.owner}/${applicationSchema.environments?.[0]?.services?.[0]?.repo}`"
               target="_blank"
               class="text-sm text-gray-600 hover:underline"
             >
-              {{ applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.owner }}/{{ applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.repo }}
+              {{ applicationSchema.environments?.[0]?.services?.[0]?.owner }}/{{ applicationSchema.environments?.[0]?.services?.[0]?.repo }}
             </a>
           </div>
         </div>
@@ -92,7 +92,7 @@
 
 <script setup lang="ts">
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
-import type { ApplicationInputSchema } from '~/server/db/types';
+import { type ApplicationInputSchema } from '~/server/validators/new';
 
 definePageMeta({
   layout: 'new',

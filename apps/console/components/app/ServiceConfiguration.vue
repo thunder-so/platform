@@ -1,14 +1,13 @@
 <template>
   <div v-if="service">
-    <h2 class="text-lg font-semibold leading-7 text-gray-900 dark:text-white mb-4">Service Configuration</h2>
-    <component :is="serviceComponent" :service="service" ref="serviceForm" />
+    <component :is="serviceComponent" :configuration="service.metadata" ref="serviceForm" v-if="service.metadata" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, shallowRef } from 'vue';
 import type { PropType } from 'vue';
-import type { Service } from '~/server/db/schema';
+import type { ServiceSchema as Service } from '~/server/db/schema';
 import ServiceConfigStatic from './ServiceConfigStatic.vue';
 import ServiceConfigFunction from './ServiceConfigFunction.vue';
 import ServiceConfigWeb from './ServiceConfigWeb.vue';

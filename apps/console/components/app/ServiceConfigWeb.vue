@@ -1,26 +1,26 @@
 <template>
   <ClientOnly>
-    <UForm ref="form" v-if="service" :state="service" :schema="serviceSchema" :validate-on="['input']" class="space-y-4">
-      <UFormField label="Root Directory" name="app_props.rootDir" class="grid grid-cols-3 gap-4">
-        <UInput v-model="service.app_props.rootDir" placeholder="./" class="w-96" size="lg" />
+    <UForm ref="form" v-if="configuration" :state="configuration" :schema="WebServiceMetadataSchema" :validate-on="['input']" class="space-y-4">
+      <UFormField label="Root Directory" name="rootDir" class="grid grid-cols-3 gap-4">
+        <UInput v-model="configuration.rootDir" placeholder="./" class="w-96" size="lg" />
       </UFormField>
-      <UFormField label="Build System" name="metadata.buildSystem" class="grid grid-cols-3 gap-4">
-        <USelect v-model="service.metadata.buildSystem" :items="['Nixpacks', 'Buildpacks', 'Custom Dockerfile']" class="w-96" size="lg" />
+      <UFormField label="Build System" name="build_system" class="grid grid-cols-3 gap-4">
+        <USelect v-model="configuration.build_system" :items="['Nixpacks', 'Buildpacks', 'Custom Dockerfile']" class="w-96" size="lg" />
       </UFormField>
-      <UFormField v-if="service.metadata.buildSystem === 'Custom Dockerfile'" label="Docker File" name="metadata.dockerFile" class="grid grid-cols-3 gap-4">
-        <UInput v-model="service.metadata.dockerFile" placeholder="Dockerfile" class="w-96" size="lg" />
+      <UFormField v-if="configuration.build_system === 'Custom Dockerfile'" label="Docker File" name="dockerFile" class="grid grid-cols-3 gap-4">
+        <UInput v-model="configuration.dockerFile" placeholder="Dockerfile" class="w-96" size="lg" />
       </UFormField>
-      <UFormField label="Desired Count" name="metadata.desiredCount" class="grid grid-cols-3 gap-4">
-        <UInputNumber v-model="service.metadata.desiredCount" :default-value="1" :min="1" :max="25" size="lg" />
+      <UFormField label="Desired Count" name="desiredCount" class="grid grid-cols-3 gap-4">
+        <UInputNumber v-model="configuration.desiredCount" :default-value="1" :min="1" :max="25" size="lg" />
       </UFormField>
-      <UFormField label="CPU" name="metadata.cpu" class="grid grid-cols-3 gap-4">
-        <UInputNumber v-model="service.metadata.cpu" :default-value="0.25" :min="0.25" :max="192" :step="0.25" size="lg" />
+      <UFormField label="CPU" name="cpu" class="grid grid-cols-3 gap-4">
+        <UInputNumber v-model="configuration.cpu" :default-value="0.25" :min="0.25" :max="192" :step="0.25" size="lg" />
       </UFormField>
-      <UFormField label="Memory Size (MB)" name="metadata.memorySize" class="grid grid-cols-3 gap-4">
-        <UInputNumber v-model="service.metadata.memorySize" :default-value="1792" :min="128" :max="10240" size="lg" />
+      <UFormField label="Memory Size (MB)" name="memorySize" class="grid grid-cols-3 gap-4">
+        <UInputNumber v-model="configuration.memorySize" :default-value="1792" :min="128" :max="10240" size="lg" />
       </UFormField>
-      <UFormField label="Port" name="metadata.port" class="grid grid-cols-3 gap-4">
-        <UInput v-model.number="service.metadata.port" type="number" placeholder="3000" size="lg" />
+      <UFormField label="Port" name="port" class="grid grid-cols-3 gap-4">
+        <UInput v-model.number="configuration.port" type="number" placeholder="3000" size="lg" />
       </UFormField>
     </UForm>
   </ClientOnly>
@@ -30,20 +30,15 @@
 import { ref, computed } from 'vue';
 import type { PropType } from 'vue';
 import { z } from 'zod';
-import type { Service } from '~/server/db/schema';
-import { appPropsSchema, webServiceMetadataSchema, webServicePipelinePropsSchema } from '~/server/db/types';
+import { WebServiceMetadataSchema } from '~/server/validators/common';
+
+type Configuration = z.infer<typeof WebServiceMetadataSchema>;
 
 defineProps({
-  service: {
-    type: Object as PropType<Service>,
+  configuration: {
+    type: Object as PropType<Configuration>,
     required: true
   }
-});
-
-const serviceSchema = z.object({
-  app_props: appPropsSchema,
-  metadata: webServiceMetadataSchema,
-  pipeline_props: webServicePipelinePropsSchema
 });
 
 const form = ref();

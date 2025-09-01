@@ -5,7 +5,7 @@
         <h2 class="text-xl font-semibold">Environment Variables</h2>
       </template>
 
-      <UForm :state="formState" @submit="saveVariable">
+      <UForm :state="formState" @submit="saveVariables">
         <div class="grid grid-cols-2 gap-4">
           <template v-for="(variable, index) in formState.variables" :key="variable.id || `new-${index}`">
             <UFormField :label="`Key ${index + 1}`" :name="`variable-key-${index}`">
@@ -32,40 +32,30 @@
 </template>
 
 <script setup lang="ts">
+import { ref, watch } from 'vue';
+import type { ServiceVariable } from '~/server/db/schema';
+
 definePageMeta({
   layout: 'app',
 });
 
-const supabase = useSupabaseClient();
-const { applicationSchema } = useApplications();
+const { applicationSchema, refreshApplicationSchema } = useApplications();
 const { $client } = useNuxtApp();
+const toast = useToast();
 
-if (!applicationSchema.value) {
-  throw Error('Application schema not found.')
-}
+const service = computed(() => applicationSchema.value?.environments?.[0]?.services?.[0]);
 
-const environment = applicationSchema.value?.environments?.[0];
-
-const formState = ref({
-  variables: [] as { id?: string; key: string; value: string }[],
-});
-
+const formState = ref<{ variables: Partial<ServiceVariable>[] }>({ variables: [] });
 const isSaving = ref(false);
 
-const fetchVariables = async (envId: string) => {
-  try {
-    const { data, error } = await supabase
-      .from('environment_variables')
-      .select('*')
-      .eq('environment_id', envId)
-      .is('deleted_at', null);
-    
-    if (error) throw error;
-    formState.value.variables = data || [];
-  } catch (e: any) {
-    console.error('Error fetching environment variables:', e.message);
+// Initialize form state from the application schema
+watch(service, (currentService) => {
+  if (currentService?.serviceVariables) {
+    formState.value.variables = JSON.parse(JSON.stringify(currentService.serviceVariables));
+  } else {
+    formState.value.variables = [];
   }
-};
+}, { immediate: true });
 
 const addVariable = () => {
   formState.value.variables.push({ key: '', value: '' });
@@ -73,39 +63,42 @@ const addVariable = () => {
 
 const removeVariable = async (index: number) => {
   const variable = formState.value.variables[index];
-  if (variable?.id) {
-    await $client.environments.deleteEnvironmentVariable.mutate({ id: variable?.id as string });
-  }
   formState.value.variables.splice(index, 1);
+  if (variable?.id) {
+    try {
+      await $client.services.deleteServiceVariable.mutate({ id: variable.id });
+      toast.add({ title: 'Variable removed.', color: 'success' });
+      await refreshApplicationSchema();
+    } catch (e: any) {
+      toast.add({ title: 'Error removing variable.', description: e.message, color: 'error' });
+      // If the delete fails, add the variable back to the form for the user to see
+      formState.value.variables.splice(index, 0, variable);
+    }
+  }
 };
 
-const saveVariable = async () => {
+const saveVariables = async () => {
+  if (!service.value) return;
+
   isSaving.value = true;
+  const variableType = service.value.stack_type === 'SPA' ? 'build' : 'runtime';
+
   try {
-    for (const variable of formState.value.variables) {
-      await $client.environments.upsertEnvironmentVariable.mutate({
-        id: variable.id,
-        environment_id: environment?.id as string,
-        key: variable.key,
-        value: variable.value,
+    await Promise.all(formState.value.variables.map(variable => {
+      return $client.services.upsertServiceVariable.mutate({
+        ...variable,
+  service_id: service.value!.id,
+        type: variableType,
       });
-    }
-    console.log('Environment variables saved successfully!');
+    }));
+
+    toast.add({ title: 'Environment variables saved successfully!', color: 'success' });
+    await refreshApplicationSchema();
+
   } catch (e: any) {
-    console.error('Error saving environment variables:', e.message);
+    toast.add({ title: 'Error saving variables.', description: e.message, color: 'error' });
   } finally {
     isSaving.value = false;
-    // Re-fetch to ensure IDs are populated for newly added variables
-    fetchVariables(environment?.id as string);
   }
 };
-
-onMounted(() => {
-  if (!applicationSchema) {
-    return
-  }
-  if (environment?.id) {
-    fetchVariables(environment.id);
-  }
-});
 </script>

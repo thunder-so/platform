@@ -1,7 +1,7 @@
-import { pgTable, pgEnum, uuid, text, timestamp, jsonb, integer, boolean, unique, index, primaryKey, foreignKey } from 'drizzle-orm/pg-core';
+import { pgTable, pgEnum, uuid, text, timestamp, jsonb, integer, boolean, unique, index, primaryKey, foreignKey, decimal } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { cuid2 } from 'drizzle-cuid2/postgres';
-import type { SPA, Function as FunctionTypes, WebService } from '@thunder/types';
+import { redirects, rewrites, headers, SPABuildPropsSchema, DockerBasedBuildPropsSchema, SPAServiceMetadataSchema, FunctionServiceMetadataSchema, WebServiceMetadataSchema } from '../validators/common';
 
 // Enums
 export const buildStatusEnum = pgEnum('BUILD_STATUS', ['NULL', 'IN_PROGRESS', 'SUCCEEDED', 'FAILED', 'FAULT', 'TIMED_OUT', 'STOPPED']);
@@ -12,6 +12,8 @@ export const stackTypeEnum = pgEnum('STACK_TYPE', ['SPA', 'FUNCTION', 'WEB_SERVI
 export const pricingTypeEnum = pgEnum('PRICING_TYPE', ['one_time', 'recurring']);
 export const pricingPlanIntervalEnum = pgEnum('PRICING_PLAN_INTERVAL', ['month', 'year']);
 export const subscriptionStatusEnum = pgEnum('SUBSCRIPTION_STATUS', ['trialing', 'active', 'canceled', 'incomplete', 'incomplete_expired', 'past_due', 'unpaid', 'paused']);
+export const variableTypeEnum = pgEnum('VARIABLE_TYPE', ['build', 'runtime']);
+export const buildSystemEnum = pgEnum('BUILD_SYSTEM', ['Nixpacks', 'Buildpacks', 'Custom Dockerfile']);
 
 /**
  * Core Tables: Users, Organizations, Memberships
@@ -57,6 +59,20 @@ export const memberships = pgTable('memberships', {
 export const membershipsRelations = relations(memberships, ({ one }) => ({
   user: one(users, { fields: [memberships.user_id], references: [users.id] }),
   organization: one(organizations, { fields: [memberships.organization_id], references: [organizations.id] }),
+}));
+
+export const installations = pgTable('installations', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  installation_id: integer('installation_id').unique().notNull(),
+  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
+  deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
+  user_id: uuid('user_id').notNull().references(() => users.id),
+  metadata: jsonb('metadata').notNull(),
+});
+
+export const installationsRelations = relations(installations, ({ one }) => ({
+  user: one(users, { fields: [installations.user_id], references: [users.id] }),
 }));
 
 /**
@@ -141,6 +157,11 @@ export const providers = pgTable('providers', {
   organizationIdIdx: index('providers_organization_id_idx').on(table.organization_id),
 }));
 
+export const providersRelations = relations(providers, ({ one, many }) => ({
+  organization: one(organizations, { fields: [providers.organization_id], references: [organizations.id] }),
+  environments: many(environments),
+}));
+
 export const applications = pgTable('applications', {
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
   name: text('name').notNull(),
@@ -156,11 +177,6 @@ export const applications = pgTable('applications', {
 
 export const applicationsRelations = relations(applications, ({ one, many }) => ({
   organization: one(organizations, { fields: [applications.organization_id], references: [organizations.id] }),
-  environments: many(environments),
-}));
-
-export const providersRelations = relations(providers, ({ one, many }) => ({
-  organization: one(organizations, { fields: [providers.organization_id], references: [organizations.id] }),
   environments: many(environments),
 }));
 
@@ -184,72 +200,10 @@ export const environmentsRelations = relations(environments, ({ one, many }) => 
   provider: one(providers, { fields: [environments.provider_id], references: [providers.id] }),
   application: one(applications, { fields: [environments.application_id], references: [applications.id] }),
   services: many(services),
-  environmentVariables: many(environmentVariables),
   userAccessTokens: many(userAccessTokens),
   builds: many(builds),
   destroys: many(destroys),
   events: many(events),
-}));
-
-export const services = pgTable('services', {
-  id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
-  name: text('name').notNull(),
-  display_name: text('display_name').notNull(),
-  stack_type: stackTypeEnum('stack_type').default('SPA').notNull(),
-  stack_version: text('stack_version').notNull(),
-  resources: jsonb('resources'),
-  metadata: jsonb('metadata'),
-  app_props: jsonb('app_props'),
-  cdn_props: jsonb('cdn_props'),
-  edge_props: jsonb('edge_props'),
-  domain_props: jsonb('domain_props'),
-  pipeline_props: jsonb('pipeline_props'),
-  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
-  deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
-  environment_id: text('environment_id').notNull().references(() => environments.id),
-  installation_id: integer('installation_id').references(() => installations.installation_id),
-}, (table) => ({
-  environmentIdIdx: index('services_environment_id_idx').on(table.environment_id),
-  installationIdIdx: index('services_installation_id_idx').on(table.installation_id),
-}));
-
-export const servicesRelations = relations(services, ({ one, many }) => ({
-  environment: one(environments, { fields: [services.environment_id], references: [environments.id] }),
-  installation: one(installations, { fields: [services.installation_id], references: [installations.installation_id] }),
-  builds: many(builds),
-  destroys: many(destroys),
-  events: many(events),
-  domains: many(domains),
-}));
-
-export const installations = pgTable('installations', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  installation_id: integer('installation_id').unique().notNull(),
-  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
-  deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
-  user_id: uuid('user_id').notNull().references(() => users.id),
-  metadata: jsonb('metadata').notNull(),
-});
-
-export const installationsRelations = relations(installations, ({ one }) => ({
-  user: one(users, { fields: [installations.user_id], references: [users.id] }),
-}));
-
-export const environmentVariables = pgTable('environment_variables', {
-  id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
-  key: text('key').notNull(),
-  value: text('value').notNull(),
-  resource: text('resource'),
-  environment_id: text('environment_id').notNull().references(() => environments.id),
-  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
-  updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
-  deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
-});
-
-export const environmentVariablesRelations = relations(environmentVariables, ({ one }) => ({
-  environment: one(environments, { fields: [environmentVariables.environment_id], references: [environments.id] }),
 }));
 
 export const userAccessTokens = pgTable('user_access_tokens', {
@@ -267,12 +221,78 @@ export const userAccessTokensRelations = relations(userAccessTokens, ({ one }) =
   environment: one(environments, { fields: [userAccessTokens.environment_id], references: [environments.id] }),
 }));
 
+export const services = pgTable('services', {
+  id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  display_name: text('display_name').notNull(),
+  stack_type: stackTypeEnum('stack_type').default('SPA').notNull(),
+  stack_version: text('stack_version').notNull(),
+  owner: text('owner'),
+  repo: text('repo'),
+  branch: text('branch'),
+  metadata: jsonb('metadata'),
+  resources: jsonb('resources'),
+  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
+  deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
+  environment_id: text('environment_id').notNull().references(() => environments.id),
+  installation_id: integer('installation_id').references(() => installations.installation_id),
+}, (table) => ({
+  environmentIdIdx: index('services_environment_id_idx').on(table.environment_id),
+  installationIdIdx: index('services_installation_id_idx').on(table.installation_id),
+}));
+
+export const servicesRelations = relations(services, ({ one, many }) => ({
+  environment: one(environments, { fields: [services.environment_id], references: [environments.id] }),
+  installation: one(installations, { fields: [services.installation_id], references: [installations.installation_id] }),
+  builds: many(builds),
+  destroys: many(destroys),
+  events: many(events),
+  domains: many(domains),
+  serviceVariables: many(serviceVariables),
+  serviceSecrets: many(serviceSecrets),
+  // serviceSpa: one(serviceSpa, { fields: [services.id], references: [serviceSpa.service_id] }),
+  // serviceFunction: one(serviceFunction, { fields: [services.id], references: [serviceFunction.service_id] }),
+  // serviceWebservice: one(serviceWebservice, { fields: [services.id], references: [serviceWebservice.service_id] }),
+}));
+
+export const serviceVariables = pgTable('service_variables', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  key: text('key').notNull(),
+  value: text('value').notNull(),
+  type: variableTypeEnum('type').notNull(),
+  service_id: text('service_id').notNull().references(() => services.id),
+  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
+  deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
+});
+
+export const serviceVariablesRelations = relations(serviceVariables, ({ one }) => ({
+  service: one(services, { fields: [serviceVariables.service_id], references: [services.id] }),
+}));
+
+export const serviceSecrets = pgTable('service_secrets', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  key: text('key').notNull(),
+  value: text('value').notNull(),
+  resource_arn: text('resource_arn'),
+  type: variableTypeEnum('type').notNull(),
+  service_id: text('service_id').notNull().references(() => services.id),
+  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
+  deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
+});
+
+export const serviceSecretsRelations = relations(serviceSecrets, ({ one }) => ({
+  service: one(services, { fields: [serviceSecrets.service_id], references: [services.id] }),
+}));
+
 export const domains = pgTable('domains', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  id: uuid('id').defaultRandom().primaryKey(),
   domain: text('domain').notNull(),
-  hostedZoneId: text('hostedZoneId').notNull(),
-  globalCertificateArn: text('globalCertificateArn').notNull(),
-  regionalCertificateArn: text('regionalCertificateArn'),
+  hosted_zone_id: text('hosted_zone_id').notNull(),
+  global_certificate_arn: text('global_certificate_arn'),
+  regional_certificate_arn: text('regional_certificate_arn'),
   created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
   deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
@@ -283,6 +303,61 @@ export const domainsRelations = relations(domains, ({ one }) => ({
   service: one(services, { fields: [domains.service_id], references: [services.id] }),
 }));
 
+// // Stack Specific Tables
+// export const serviceSpa = pgTable('service_spa', {
+//   service_id: text('service_id').primaryKey().references(() => services.id),
+//   root_dir: text('root_dir'),
+//   output_dir: text('output_dir'),
+//   runtime: text('runtime'),
+//   runtime_version: text('runtime_version'),
+//   install_command: text('install_command'),
+//   build_command: text('build_command'),
+//   error_page_path: text('error_page_path'),
+//   redirects: jsonb('redirects'),
+//   rewrites: jsonb('rewrites'),
+//   headers: jsonb('headers'),
+//   allow_headers: text('allow_headers').array(),
+//   allow_cookies: text('allow_cookies').array(),
+//   allow_query_params: text('allow_query_params').array(),
+//   deny_query_params: text('deny_query_params').array(),
+// });
+
+// export const serviceSpaRelations = relations(serviceSpa, ({ one }) => ({
+//   service: one(services, { fields: [serviceSpa.service_id], references: [services.id] }),
+// }));
+
+// export const serviceFunction = pgTable('service_function', {
+//   service_id: text('service_id').primaryKey().references(() => services.id),
+//   root_dir: text('root_dir'),
+//   memory_size: integer('memory_size'),
+//   timeout: integer('timeout'),
+//   keep_warm: boolean('keep_warm'),
+//   reserved_concurrency: integer('reserved_concurrency'),
+//   provisioned_concurrency: integer('provisioned_concurrency'),
+//   build_system: buildSystemEnum('build_system'),
+//   dockerfile_path: text('dockerfile_path'),
+// });
+
+// export const serviceFunctionRelations = relations(serviceFunction, ({ one }) => ({
+//   service: one(services, { fields: [serviceFunction.service_id], references: [services.id] }),
+// }));
+
+// export const serviceWebservice = pgTable('service_webservice', {
+//   service_id: text('service_id').primaryKey().references(() => services.id),
+//   root_dir: text('root_dir'),
+//   port: integer('port'),
+//   desired_count: integer('desired_count'),
+//   cpu: decimal('cpu', { precision: 10, scale: 2 }),
+//   memory_size: integer('memory_size'),
+//   build_system: buildSystemEnum('build_system'),
+//   dockerfile_path: text('dockerfile_path'),
+// });
+
+// export const serviceWebserviceRelations = relations(serviceWebservice, ({ one }) => ({
+//   service: one(services, { fields: [serviceWebservice.service_id], references: [services.id] }),
+// }));
+
+// Build and Deploy Tables
 export const builds = pgTable('builds', {
   id: uuid('id').primaryKey().defaultRandom(),
   build_id: text('build_id').unique(),
@@ -361,9 +436,16 @@ export type NewBuild = typeof builds.$inferInsert;
 export type Event = typeof events.$inferSelect;
 export type NewEvent = typeof events.$inferInsert;
 export type UserAccessToken = typeof userAccessTokens.$inferSelect;
-export type EnvironmentVariable = typeof environmentVariables.$inferSelect;
-export type EnvironmentVariables = Partial<EnvironmentVariable>[];
-export type NewEnvironmentVariable = typeof environmentVariables.$inferInsert;
+export type ServiceVariable = typeof serviceVariables.$inferSelect;
+export type NewServiceVariable = typeof serviceVariables.$inferInsert;
+export type ServiceSecret = typeof serviceSecrets.$inferSelect;
+export type NewServiceSecret = typeof serviceSecrets.$inferInsert;
+// export type ServiceSpa = typeof serviceSpa.$inferSelect;
+// export type NewServiceSpa = typeof serviceSpa.$inferInsert;
+// export type ServiceFunction = typeof serviceFunction.$inferSelect;
+// export type NewServiceFunction = typeof serviceFunction.$inferInsert;
+// export type ServiceWebservice = typeof serviceWebservice.$inferSelect;
+// export type NewServiceWebservice = typeof serviceWebservice.$inferInsert;
 
 // Types for Polar Payment Integration
 export interface Price {
@@ -416,64 +498,86 @@ export interface Membership {
   }>;
 }
 
-// Application Schema Interfaces
-// Use shared, cardinal types from @thunder/types to keep a single source of truth
-export type AppProps = SPA.AppProps | FunctionTypes.AppProps | WebService.AppProps;
-export type CloudFrontProps = SPA.CloudFrontProps | WebService.CloudFrontProps;
-export type EdgeProps = SPA.EdgeProps;
-
-// Source/build shapes are defined inside the PipelineProps of each module; reuse them
-export type SourceProps = SPA.PipelineProps['sourceProps'] | FunctionTypes.PipelineProps['sourceProps'] | WebService.PipelineProps['sourceProps'];
-export type NodeBasedBuildProps = SPA.PipelineProps['buildProps'];
-export type DockerBasedBuildProps = FunctionTypes.PipelineProps['buildProps'] | WebService.PipelineProps['buildProps'];
-
-// Domain props per stack
-export type SpaDomainProps = SPA.DomainProps;
-export type FunctionDomainProps = FunctionTypes.DomainProps;
-export type WebServiceDomainProps = WebService.DomainProps;
-
-// Metadata
-export type BuildSystem = 'Nixpacks' | 'Buildpacks' | 'Custom Dockerfile';
-export type SpaMetadata = { outputDir: string };
-export type FunctionMetadata = FunctionTypes.LambdaProps & { buildSystem?: BuildSystem };
-export type WebServiceMetadata = WebService.ServiceProps & { buildSystem?: BuildSystem };
-
-// Pipeline Props
-export type PipelineProps = SPA.PipelineProps | FunctionTypes.PipelineProps | WebService.PipelineProps;
-// export type SpaPipelineProps = SPA.PipelineProps;
-// export type FunctionPipelineProps = FunctionTypes.PipelineProps;
-// export type WebServicePipelineProps = WebService.PipelineProps;
-
 // --- Main Discriminated Union for ServiceSchema ---
 
-export type ServiceSchema = Omit<Service, 'cdn_props' | 'edge_props' | 'domain_props'> & {
-  app_props: AppProps;
-  cdn_props: CloudFrontProps | null;
-  edge_props: EdgeProps | null;
-  pipeline_props: PipelineProps;
-  resources: Record<string, any> | null;
-} & (
-  | { 
-      stack_type: 'SPA'; 
-      metadata: SpaMetadata;
-      domain_props: SpaDomainProps | null;
+// type SPABuildProps = {
+//   runtime: string;
+//   runtime_version: string|number;
+//   installcmd: string;
+//   buildcmd: string;
+//   include: string[];
+//   exclude: string[];
+// }
+
+// type DockerBasedBuildProps = {
+//   include: string[];
+//   exclude: string[];
+// }
+
+// type SPAServiceMetadata = {
+//   debug: boolean;
+//   rootDir: string;
+//   outputDir: string;
+//   buildProps: typeof SPABuildPropsSchema;
+//   redirects: typeof redirects;
+//   rewrites: typeof rewrites;
+//   headers: typeof headers;
+//   errorPagePath: string;
+//   allowHeaders: string[];
+//   allowCookies: string[];
+//   allowQueryParams: string[];
+//   denyQueryParams: string[];
+// }
+
+// type FunctionServiceMetadata = {
+//   debug: boolean;
+//   rootDir: string;
+//   buildProps: DockerBasedBuildProps;
+//   dockerFile: string;
+//   memorySize: number;
+//   timeout: number;
+//   keepWarm: boolean;
+//   reservedConcurrency: number;
+//   provisionedConcurrency: number;
+// }
+
+// type WebServiceMetadata = {
+//   debug: boolean;
+//   rootDir: string;
+//   buildProps: DockerBasedBuildProps;
+//   desiredCount: number;
+//   cpu: number;
+//   memorySize: number;
+//   port: number;
+//   dockerFile: string;
+// }
+
+// Base service with its direct relations
+type ServiceWithRelations = Service & {
+  service_variables?: ServiceVariable[];
+  service_secrets?: ServiceSecret[];
+  domains?: (typeof domains.$inferSelect)[];
+};
+
+// Discriminated union based on stack_type
+export type ServiceSchema = ServiceWithRelations & (
+  | {
+      stack_type: 'SPA';
+      metadata: typeof SPAServiceMetadataSchema;
     }
-  | { 
-      stack_type: 'FUNCTION'; 
-      metadata: FunctionMetadata; 
-      domain_props: FunctionDomainProps | null;
+  | {
+      stack_type: 'FUNCTION';
+      metadata: typeof FunctionServiceMetadataSchema;
     }
-  | { 
-      stack_type: 'WEB_SERVICE'; 
-      metadata: WebServiceMetadata;
-      domain_props: WebServiceDomainProps | null;
+  | {
+      stack_type: 'WEB_SERVICE';
+      metadata: typeof WebServiceMetadataSchema;
     }
 );
 
 export type ProviderSchema = Partial<Provider>;
 
 export type EnvironmentSchema = Partial<Environment> & {
-  environment_variables?: EnvironmentVariables[];
   provider?: ProviderSchema;
   services?: ServiceSchema[];
   user_access_token?: UserAccessToken;

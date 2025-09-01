@@ -5,27 +5,38 @@ export const useApplications = () => {
   const appId = useState<string | null>('currentAppId', () => null);
   const applicationSchema = useState<ApplicationSchema | null>('currentApplicationSchema', () => null);
   const isLoading = useState<boolean>('currentApplicationSchemaLoading', () => false);
+  const isError = useState<boolean>('currentApplicationSchemaError', () => false);
 
   const fetchApplicationSchema = async (id: string | null) => {
     if (!id) return null;
     try {
       isLoading.value = true;
+      isError.value = false;
       const { data, error } = await supabase
         .from('applications')
         .select(`
-          id,
           name,
           display_name,
-          organization_id,
           environments (
-            id,
             name,
             display_name,
             region,
-            provider:providers!inner (
+            user_access_token:user_access_tokens(
+              secret_id
+            ),
+            provider:providers (
               id,
               alias,
-              account_id
+              role_arn,
+              account_id,
+              region,
+              stack_id,
+              stack_name,
+              access_key_id,
+              secret_id,
+              organization_id,
+              created_at,
+              updated_at
             ),
             services (
               id,
@@ -33,15 +44,11 @@ export const useApplications = () => {
               display_name,
               stack_type,
               stack_version,
-              resources,
+              owner,
+              repo,
+              branch,
               metadata,
-              app_props,
-              cdn_props,
-              edge_props,
-              domain_props,
-              pipeline_props,
-              created_at,
-              updated_at,
+              resources,
               environment_id,
               installation_id
             )
@@ -54,9 +61,15 @@ export const useApplications = () => {
         .single();
 
       if (error) throw error;
+      
       applicationSchema.value = data as ApplicationSchema;
       return applicationSchema.value;
-    } finally {
+    } catch (e) {
+      isError.value = true;
+      console.error("Failed to fetch or validate application schema", e);
+      return null;
+    }
+    finally {
       isLoading.value = false;
     }
   };
@@ -71,12 +84,13 @@ export const useApplications = () => {
         try {
           await promise;
         } catch (e) {
+          // Error is already handled in fetchApplicationSchema, but we log it here for SSR context
           console.error('Failed to fetch application schema during SSR', e);
         }
       } else {
         // Client: don't block, but surface errors
         promise.catch((e) => {
-          console.error('Failed to fetch application schema', e);
+          // Error is already handled in fetchApplicationSchema
         });
       }
     }
@@ -90,6 +104,7 @@ export const useApplications = () => {
   return {
     applicationSchema,
     isLoading,
+    isError,
     refreshApplicationSchema,
     setApplicationSchemaById,
     appId,

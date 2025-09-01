@@ -11,16 +11,16 @@
           <UInput v-model="formState.domain" />
         </UFormField>
 
-        <UFormField v-if="service?.stack_type === 'SPA' || service?.stack_type === 'WEB_SERVICE'" label="Global Certificate ARN (for CloudFront)" name="globalCertificateArn">
-          <UInput v-model="formState.globalCertificateArn" />
+        <UFormField v-if="service?.stack_type === 'SPA' || service?.stack_type === 'WEB_SERVICE'" label="Global Certificate ARN (for CloudFront)" name="global_certificate_arn">
+          <UInput v-model="formState.global_certificate_arn" />
         </UFormField>
 
-        <UFormField v-if="service?.stack_type === 'FUNCTION' || service?.stack_type === 'WEB_SERVICE'" label="Regional Certificate ARN (for API Gateway/ALB)" name="regionalCertificateArn">
-          <UInput v-model="formState.regionalCertificateArn" />
+        <UFormField v-if="service?.stack_type === 'FUNCTION' || service?.stack_type === 'WEB_SERVICE'" label="Regional Certificate ARN (for API Gateway/ALB)" name="regional_certificate_arn">
+          <UInput v-model="formState.regional_certificate_arn" />
         </UFormField>
 
-        <UFormField label="Hosted Zone ID" name="hostedZoneId">
-          <UInput v-model="formState.hostedZoneId" />
+        <UFormField label="Hosted Zone ID" name="hosted_zone_id">
+          <UInput v-model="formState.hosted_zone_id" />
         </UFormField>
 
         <div class="mt-4">
@@ -32,25 +32,28 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue';
+
 definePageMeta({
   layout: 'app',
 });
 
 const { applicationSchema, refreshApplicationSchema } = useApplications();
 const { $client } = useNuxtApp();
+const toast = useToast();
 
 if (!applicationSchema.value) {
   throw Error('Application schema not found.')
 }
 
-const environment = applicationSchema.value?.environments?.[0];
-const service = environment?.services?.[0];
+const service = computed(() => applicationSchema.value?.environments?.[0]?.services?.[0]);
+const domain = computed(() => service.value?.domains?.[0]);
 
 const formState = ref({
-  domain: service?.domain_props?.domain,
-  globalCertificateArn: (service?.domain_props as any)?.globalCertificateArn,
-  regionalCertificateArn: (service?.domain_props as any)?.regionalCertificateArn,
-  hostedZoneId: service?.domain_props?.hostedZoneId,
+  domain: domain.value?.domain ?? '',
+  global_certificate_arn: domain.value?.globalCertificateArn ?? '',
+  regional_certificate_arn: domain.value?.regionalCertificateArn ?? '',
+  hosted_zone_id: domain.value?.hostedZoneId ?? '',
 });
 
 const isSaving = ref(false);
@@ -58,21 +61,23 @@ const isSaving = ref(false);
 const saveSettings = async () => {
   isSaving.value = true;
   try {
-    const serviceId = service?.id;
+    const serviceId = service.value?.id;
     if (!serviceId) {
-      console.error('Service ID not found.');
-      return;
+      throw new Error('Service ID not found.');
     }
 
-    await $client.services.updateServiceProps.mutate({
-      serviceId: serviceId,
-      domain_props: formState.value,
+    await $client.services.upsertDomain.mutate({
+      service_id: serviceId,
+      domain: formState.value.domain,
+      hosted_zone_id: formState.value.hosted_zone_id,
+      global_certificate_arn: formState.value.global_certificate_arn || null,
+      regional_certificate_arn: formState.value.regional_certificate_arn || null,
     });
-    console.log('Domain settings saved successfully!');
+    toast.add({ title: 'Domain settings saved successfully!', color: 'success' });
+    await refreshApplicationSchema();
   } catch (e: any) {
-    console.error('Error saving domain settings:', e.message);
+    toast.add({ title: 'Error saving domain settings', description: e.message, color: 'error' });
   } finally {
-    refreshApplicationSchema();
     isSaving.value = false;
   }
 };

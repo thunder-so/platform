@@ -51,24 +51,32 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, watch } from 'vue';
+
 definePageMeta({
   layout: 'app',
 });
 
 const { applicationSchema, refreshApplicationSchema } = useApplications();
 const { $client } = useNuxtApp();
+const toast = useToast();
 
-if (!applicationSchema.value) {
-  throw Error('Application schema not found.')
-}
-
-const environment = applicationSchema.value?.environments?.[0];
-const service = environment?.services?.[0];
+const service = computed(() => applicationSchema.value?.environments?.[0]?.services?.[0]);
 
 const formState = ref({
-  redirects: service?.edge_props?.redirects || [],
-  rewrites: service?.edge_props?.rewrites || [],
+  redirects: [] as { source: string; destination: string }[],
+  rewrites: [] as { source: string; destination: string }[],
 });
+
+watch(service, (currentService) => {
+  if (currentService?.stackType === 'SPA' && currentService.metadata) {
+  formState.value.redirects = JSON.parse(JSON.stringify(currentService.metadata.redirects || []));
+  formState.value.rewrites = JSON.parse(JSON.stringify(currentService.metadata.rewrites || []));
+  } else {
+    formState.value.redirects = [];
+    formState.value.rewrites = [];
+  }
+}, { immediate: true, deep: true });
 
 const isSaving = ref(false);
 
@@ -81,7 +89,7 @@ const removeRedirect = (index: number) => {
 };
 
 const addRewrite = () => {
-  formState.value.rewrites.push({ source: '', destination: '', });
+  formState.value.rewrites.push({ source: '', destination: '' });
 };
 
 const removeRewrite = (index: number) => {
@@ -91,24 +99,20 @@ const removeRewrite = (index: number) => {
 const saveSettings = async () => {
   isSaving.value = true;
   try {
-    const serviceId = service?.id;
-    if (!serviceId) {
-      console.error('Service ID not found.');
-      return;
+    if (!service.value) {
+      throw new Error('Service not found.');
     }
 
-    await $client.services.updateServiceProps.mutate({
-      serviceId: serviceId,
-      edge_props: {
-        redirects: formState.value.redirects,
-        rewrites: formState.value.rewrites,
-      },
+    await $client.services.updateServiceSpa.mutate({
+  service_id: service.value.id,
+      redirects: formState.value.redirects,
+      rewrites: formState.value.rewrites,
     });
-    console.log('Edge settings saved successfully!');
+    toast.add({ title: 'Edge settings saved successfully!', color: 'success' });
+    await refreshApplicationSchema();
   } catch (e: any) {
-    console.error('Error saving edge settings:', e.message);
+    toast.add({ title: 'Error saving edge settings', description: e.message, color: 'error' });
   } finally {
-    refreshApplicationSchema();
     isSaving.value = false;
   }
 };

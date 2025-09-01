@@ -1,8 +1,8 @@
 <template>
     <ClientOnly v-if="!isLoading">
-      <!-- <UCard>
+      <UCard>
         <pre>{{ applicationSchema }}</pre>
-      </UCard> -->
+      </UCard>
       <UCard class="mt-6">
         <template #header>
           <h1>Configure application</h1>
@@ -23,7 +23,7 @@
                   <template #leading>
                     <p class="flex items-center">
                       <Icon name="mdi:github" class="w-5 h-5 text-muted mr-2" />
-                      <span class="text-sm text-muted">{{applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.owner}}/{{applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.repo}}</span>
+                      <span class="text-sm text-muted">{{applicationSchema.environments?.[0]?.services?.[0]?.owner}}/{{applicationSchema.environments?.[0]?.services?.[0]?.repo}}</span>
                     </p>
                   </template>
                 </UInput>
@@ -94,7 +94,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
 import ServiceConfiguration from '~/components/new/ServiceConfiguration.vue';
-import { applicationInputSchema } from '~/server/db/types';
+import { applicationInputSchema } from '~/server/validators/new';
 
 definePageMeta({
   layout: 'new'

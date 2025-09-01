@@ -1,75 +1,118 @@
 import { z } from 'zod';
 import { protectedProcedure, router } from '../init';
 import { db } from '~/server/db/db';
-import { services } from '~/server/db/schema';
+import {
+  services,
+  serviceVariables,
+  serviceSecrets,
+  domains,
+} from '~/server/db/schema';
 import { eq } from 'drizzle-orm';
 import {
-  appPropsSchema,
-  cloudFrontPropsSchema,
-  edgePropsSchema,
-  spaMetadataSchema,
-  functionMetadataSchema,
-  webServiceMetadataSchema,
-  spaDomainPropsSchema,
-  functionDomainPropsSchema,
-  webServiceDomainPropsSchema,
-  spaPipelinePropsSchema,
-  functionPipelinePropsSchema,
-  webServicePipelinePropsSchema,
-} from '~/server/db/types';
-import { merge } from 'lodash-es';
+  serviceVariableSchema,
+  serviceSecretSchema,
+  domainSchema,
+  SPAServiceMetadataSchema,
+  FunctionServiceMetadataSchema,
+  WebServiceMetadataSchema,
+} from '~/server/validators/common';
 
 export const servicesRouter = router({
-  updateServiceConfig: protectedProcedure
+  // Mutation to update the core service details
+  updateService: protectedProcedure
     .input(
       z.object({
         id: z.string(),
-        app_props: appPropsSchema.optional(),
-        metadata: z.union([
-          spaMetadataSchema,
-          functionMetadataSchema,
-          webServiceMetadataSchema,
-        ]).optional(),
-        pipeline_props: z.union([
-          spaPipelinePropsSchema.deepPartial(),
-          functionPipelinePropsSchema.deepPartial(),
-          webServicePipelinePropsSchema.deepPartial(),
-        ]).optional(),
-        domain_props: z.union([
-          spaDomainPropsSchema,
-          functionDomainPropsSchema,
-          webServiceDomainPropsSchema,
-        ]).nullable().optional(),
-        edge_props: edgePropsSchema.nullable().optional(),
-        cdn_props: cloudFrontPropsSchema.nullable().optional(),
+        display_name: z.string().optional(),
+        // any other fields on the core 'services' table
       })
     )
-    .mutation(async ({ input, ctx }) => {
-      const { id, ...propsToUpdate } = input;
+    .mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      return await db.update(services).set(data).where(eq(services.id, id)).returning();
+    }),
 
-      // TODO: Add authorization checks here
+  updateServiceMetadata: protectedProcedure
+    .input(
+      z.object({
+        serviceId: z.string(),
+        stack_type: z.enum(['SPA', 'FUNCTION', 'WEB_SERVICE']),
+        metadata: z.any(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { serviceId, stack_type, metadata } = input;
 
-      let finalProps: any = { ...propsToUpdate };
-
-      if (propsToUpdate.pipeline_props) {
-        const [currentService] = await db.select().from(services).where(eq(services.id, id));
-        if (!currentService) {
-          throw new Error(`Service with ID ${id} not found`);
-        }
-        const mergedPipelineProps = merge({}, currentService.pipeline_props, propsToUpdate.pipeline_props);
-        finalProps.pipeline_props = mergedPipelineProps;
+      let validationSchema;
+      switch (stack_type) {
+        case 'SPA':
+          validationSchema = SPAServiceMetadataSchema;
+          break;
+        case 'FUNCTION':
+          validationSchema = FunctionServiceMetadataSchema;
+          break;
+        case 'WEB_SERVICE':
+          validationSchema = WebServiceMetadataSchema;
+          break;
       }
 
-      const updatedService = await db
+      const parsedMetadata = validationSchema.parse(metadata);
+
+      return await db
         .update(services)
-        .set(finalProps)
-        .where(eq(services.id, id))
+        .set({ metadata: parsedMetadata, updated_at: new Date() })
+        .where(eq(services.id, serviceId))
         .returning();
+    }),
 
-      if (updatedService.length === 0) {
-        throw new Error(`Could not update service with ID ${id}`);
+  // Mutations for Service Variables
+  upsertServiceVariable: protectedProcedure
+    .input(serviceVariableSchema)
+    .mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      if (id) {
+        return await db.update(serviceVariables).set(data).where(eq(serviceVariables.id, id)).returning();
       }
+      return await db.insert(serviceVariables).values(data).returning();
+    }),
 
-      return updatedService[0];
+  deleteServiceVariable: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input }) => {
+      return await db.delete(serviceVariables).where(eq(serviceVariables.id, input.id)).returning();
+    }),
+
+  // Mutations for Service Secrets
+  upsertServiceSecret: protectedProcedure
+    .input(serviceSecretSchema)
+    .mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      // Here you would add logic to encrypt the secret value before saving
+      if (id) {
+        return await db.update(serviceSecrets).set(data).where(eq(serviceSecrets.id, id)).returning();
+      }
+      return await db.insert(serviceSecrets).values(data).returning();
+    }),
+
+  deleteServiceSecret: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input }) => {
+      // Here you would add logic to delete from AWS Secrets Manager
+      return await db.delete(serviceSecrets).where(eq(serviceSecrets.id, input.id)).returning();
+    }),
+
+  // Mutations for Domains
+  upsertDomain: protectedProcedure
+    .input(domainSchema.omit({ id: true }))
+    .mutation(async ({ input }) => {
+      const { service_id, ...data } = input;
+      const existingDomain = await db.query.domains.findFirst({
+        where: eq(domains.service_id, service_id),
+      });
+
+      if (existingDomain) {
+        return await db.update(domains).set(data).where(eq(domains.id, existingDomain.id)).returning();
+      }
+      return await db.insert(domains).values(input).returning();
     }),
 });

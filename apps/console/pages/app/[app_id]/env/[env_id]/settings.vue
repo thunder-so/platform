@@ -1,50 +1,5 @@
 <template>
   <div>
-    <!-- <UCard class="mt-4">
-      <template #header>
-        <h1>Repository settings</h1>
-      </template>
-
-      <div class="space-y-4">
-        <UAlert v-if="repoError" color="error" variant="subtle" class="mb-4" :title="repoError" />
-
-        <div v-if="applicationSchema.environments" class="space-y-4">
-          <UForm ref="form" :state="applicationSchema" :schema="applicationSchema.environments?.[0]?.services" :validate-on="['input']" class="space-y-4">
-            <UFormField label="Repository" class="grid grid-cols-3 gap-4">
-              <UInput 
-                disabled 
-                size="lg" 
-                variant="outline"
-                class="w-full"
-              > 
-                <template #leading>
-                  <p class="flex items-center">
-                    <Icon name="mdi:github" class="w-5 h-5 text-muted mr-2" />
-                    <span class="text-sm text-muted">{{applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.owner}}/{{applicationSchema.environments?.[0]?.services?.[0]?.pipeline_props?.sourceProps?.repo}}</span>
-                  </p>
-                </template>
-              </UInput>
-            </UFormField>
-
-            <UFormField label="Branch" class="grid grid-cols-3 gap-4">
-              <USelect 
-                v-model="selectedBranchName" 
-                :items="branchItems" 
-                class="w-96" size="lg"
-              />
-            </UFormField>
-          </UForm>
-        </div>
-      </div>
-      <template #footer>
-        <div class="flex justify-start">
-          <UButton size="lg">
-            Continue
-          </UButton>
-        </div>
-      </template>
-    </UCard> -->
-
     <UCard v-if="localServiceConfig" class="mt-4">
       <template #header>
         <h2 class="text-xl font-semibold">Service Configuration</h2>
@@ -129,38 +84,32 @@ watch(localServiceConfig, (newConfig) => {
 }, { deep: true });
 
 const saveChanges = async () => {
-  if (!localServiceConfig.value || !service.value) return;
+  if (!localServiceConfig.value?.metadata) return;
 
   isSaving.value = true;
   error.value = null;
 
   try {
-    const { id, app_props, metadata, pipeline_props, stack_type } = localServiceConfig.value;
+    const { stack_type, id } = localServiceConfig.value;
+    const configData = {
+      ...localServiceConfig.value.metadata,
+      service_id: id,
+    };
 
-    let partialPipelineProps: any = {};
-    if (stack_type === 'SPA') {
-      partialPipelineProps = {
-        sourceProps: {
-          branchOrRef: pipeline_props.sourceProps.branchOrRef,
-        },
-        buildProps: {
-          runtime_version: pipeline_props.buildProps.runtime_version,
-          installcmd: pipeline_props.buildProps.installcmd,
-          buildcmd: pipeline_props.buildProps.buildcmd,
-        },
-      };
+    switch (stack_type) {
+      case 'SPA':
+        await $client.services.updateServiceSpa.mutate(configData);
+        break;
+      case 'FUNCTION':
+        await $client.services.updateServiceFunction.mutate(configData);
+        break;
+      case 'WEB_SERVICE':
+        await $client.services.updateServiceWebservice.mutate(configData);
+        break;
     }
-
-    await $client.services.updateServiceConfig.mutate({
-      id,
-      app_props,
-      metadata,
-      pipeline_props: partialPipelineProps,
-    });
 
     await refreshApplicationSchema();
     toast.add({ title: 'Settings saved successfully!', color: 'success' });
-    isChanged.value = false;
   } catch (e: any) {
     error.value = e.message;
     toast.add({ title: 'Error saving settings', description: e.message, color: 'error' });

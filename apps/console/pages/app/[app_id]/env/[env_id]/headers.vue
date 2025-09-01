@@ -5,7 +5,7 @@
         <h3>Custom HTTP Headers</h3>
       </template>
 
-      <UForm :state="formState" :schema="headersSchema" @submit="saveSettings" ref="form">
+      <UForm :state="formState" @submit="saveSettings" ref="form">
         <div v-for="(header, index) in formState.headers" :key="index" class="grid grid-cols-12 gap-x-2 mt-2 items-start">
           <UFormField label="Path" :name="`headers.${index}.path`" class="col-span-3">
             <UInput
@@ -52,9 +52,8 @@
 </template>
 
 <script setup lang="ts">
-import { z } from 'zod';
-import type { FormSubmitEvent } from '#ui/types'
-import { headersSchema } from '~/server/db/types';
+import { ref, computed, watch } from 'vue';
+import type { FormSubmitEvent } from '#ui/types';
 
 definePageMeta({
   layout: 'app',
@@ -64,16 +63,19 @@ const { applicationSchema, refreshApplicationSchema } = useApplications();
 const { $client } = useNuxtApp();
 const toast = useToast();
 
-if (!applicationSchema.value) {
-  throw Error('Application schema not found.')
-}
-
-const environment = applicationSchema.value?.environments?.[0];
-const service = environment?.services?.[0];
+const service = computed(() => applicationSchema.value?.environments?.[0]?.services?.[0]);
 
 const formState = ref({
-  headers: service?.edge_props?.headers || []
+  headers: [] as { path: string; name: string; value: string }[],
 });
+
+watch(service, (currentService) => {
+  if (currentService?.stack_type === 'SPA' && currentService.metadata?.headers) {
+    formState.value.headers = JSON.parse(JSON.stringify(currentService.metadata.headers));
+  } else {
+    formState.value.headers = [];
+  }
+}, { immediate: true, deep: true });
 
 const isSaving = ref(false);
 const form = ref<HTMLFormElement | null>(null)
@@ -90,26 +92,22 @@ const submitForm = () => {
   form.value?.submit()
 }
 
-const saveSettings = async (event: FormSubmitEvent<z.infer<typeof headersSchema>>) => {
+const saveSettings = async (event: FormSubmitEvent<{ headers: { path: string; name: string; value: string }[] }>) => {
   isSaving.value = true;
   try {
-    if (!service) {
-      console.error('Service not found.');
-      return;
+    if (!service.value) {
+      throw new Error('Service not found.');
     }
 
-    await $client.services.updateServiceConfig.mutate({
-      id: service.id,
-      edge_props: {
-        ...service.edge_props,
-        headers: event.data.headers,
-      },
+    await $client.services.updateServiceSpa.mutate({
+      service_id: service.value.id,
+      headers: event.data.headers,
     });
     toast.add({ title: 'Application headers updated', color: 'success' });
+    await refreshApplicationSchema();
   } catch (e: any) {
-    console.error('Error saving header settings:', e.message);
+    toast.add({ title: 'Error saving header settings', description: e.message, color: 'error' });
   } finally {
-    refreshApplicationSchema();
     isSaving.value = false;
   }
 };

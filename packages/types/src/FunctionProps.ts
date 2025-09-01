@@ -182,7 +182,7 @@ export interface AppProps extends StackProps {
    * The path to the root directory of the app (at which the `package.json` file is located).
    * Defaults to '.'.
    */
-  readonly rootDir?: string;
+  readonly rootDir: string;
 }
 
 /**

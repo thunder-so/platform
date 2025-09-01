@@ -4,7 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { db } from '~/server/db/db';
 import { sql, eq } from 'drizzle-orm';
 import { applications, environments, services, userAccessTokens, builds, destroys, type Service, type Environment, type Provider, type UserAccessToken } from '~/server/db/schema';
-import { applicationInputSchema } from '~/server/db/types';
+import { applicationInputSchema } from '~/server/validators/new';
 import { PlatformLibrary } from '~/server/lib/platform.library';
 import * as ProviderLibrary from '~/server/lib/provider.library';
 
@@ -71,22 +71,11 @@ export const applicationsRouter = router({
               stack_version: service.stack_version,
               installation_id: service.installation_id,
               environment_id: newEnvironment.id,
-              app_props: service.app_props,
-              pipeline_props: service.pipeline_props,
               metadata: service.metadata,
-              domain_props: service.domain_props,
-              edge_props: service.edge_props,
-              cdn_props: service.cdn_props,
-            }).returning({ id: services.id, name: services.name, stack_type: services.stack_type, stack_version: services.stack_version });
+            }).returning({ id: services.id, name: services.name, stack_type: services.stack_type, stack_version: services.stack_version, metadata: services.metadata });
 
             const props = {
-              ...service.app_props ?? null,
-              ...service.pipeline_props ?? null,
-              ...service.domain_props ?? null,
-              ...service.edge_props ?? null,
-              ...service.cdn_props ?? null,
-              ...(newService.stack_type === 'FUNCTION' && { functionProps: service.metadata ?? null }),
-              ...(newService.stack_type === 'WEB_SERVICE' && { serviceProps: service.metadata ?? null }),
+              ...service.metadata,
               env: {
                 account: providerDetails.account_id,
                 region: newEnvironment.region,
@@ -178,13 +167,7 @@ export const applicationsRouter = router({
       }
 
       const props = {
-        ...service.app_props ?? null,
-        ...service.pipeline_props ?? null,
-        ...service.domain_props ?? null,
-        ...service.edge_props ?? null,
-        ...service.cdn_props ?? null,
-        ...(service.stack_type === 'FUNCTION' && { functionProps: service.metadata ?? null }),
-        ...(service.stack_type === 'WEB_SERVICE' && { serviceProps: service.metadata ?? null }),
+        ...service.metadata,
         env: {
           account: provider?.account_id,
           region: environment.region,

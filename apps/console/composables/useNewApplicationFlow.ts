@@ -1,46 +1,62 @@
 import { z } from 'zod';
-import { ref, computed, watchEffect } from 'vue';
-import type { ApplicationInputSchema, functionMetadataSchema, webServiceMetadataSchema } from '~/server/db/types';
-import type { UserAccessToken, Provider, SpaMetadata, NodeBasedBuildProps, SourceProps, Service, Branch } from '~/server/db/schema';
+import { ref, computed, watch } from 'vue';
+import type { ApplicationInputSchema } from '~/server/validators/new';
+import type { Provider, Branch, UserAccessToken } from '~/server/db/schema';
 
-type ServiceInputSchema = ApplicationInputSchema['environments'][0]['services'][0];
-type FunctionMetadataInputSchema = z.infer<typeof functionMetadataSchema>;
-type WebServiceMetadataInputSchema = z.infer<typeof webServiceMetadataSchema>;
+type ServiceInput = z.infer<typeof import('~/server/validators/new').serviceInputSchema>;
+type SpaMetadataInput = ServiceInput['stack_type'] extends 'SPA' ? ServiceInput['metadata'] : never;
+type FunctionMetadataInput = ServiceInput['stack_type'] extends 'FUNCTION' ? ServiceInput['metadata'] : never;
+type WebServiceMetadataInput = ServiceInput['stack_type'] extends 'WEB_SERVICE' ? ServiceInput['metadata'] : never;
 
 const STACK_DEFAULTS: {
-  SPA: { metadata: SpaMetadata, buildProps: NodeBasedBuildProps },
-  FUNCTION: { metadata: FunctionMetadataInputSchema },
-  WEB_SERVICE: { metadata: WebServiceMetadataInputSchema },
+  SPA: SpaMetadataInput,
+  FUNCTION: FunctionMetadataInput,
+  WEB_SERVICE: WebServiceMetadataInput,
 } = {
   SPA: {
-    metadata: { outputDir: 'public/' },
+    sourceProps: { owner: '', repo: '', branch: '' }, // Placeholder
+    debug: false,
+    rootDir: '/',
+    outputDir: 'public/',
+    errorPagePath: '404.html',
+    redirects: [],
+    rewrites: [],
+    headers: [],
+    allowHeaders: [],
+    allowCookies: [],
+    allowQueryParams: [],
+    denyQueryParams: [],
     buildProps: {
       runtime: 'nodejs',
       runtime_version: '24',
       installcmd: 'npm install',
       buildcmd: 'npm run build',
-      environment: [],
     },
   },
   FUNCTION: {
-    metadata: {
-      dockerFile: 'Dockerfile',
-      memorySize: 1792,
-      keepWarm: true,
-      buildSystem: 'Nixpacks',
-      variables: [] as Record<string, string>[],
-    },
+    sourceProps: { owner: '', repo: '', branch: '' }, // Placeholder
+    debug: false,
+    rootDir: '/',
+    dockerFile: 'Dockerfile',
+    memorySize: 1792,
+    timeout: 30,
+    keepWarm: true,
+    reservedConcurrency: 0,
+    provisionedConcurrency: 0,
+    build_system: 'Nixpacks',
+    buildProps: {},
   },
   WEB_SERVICE: {
-    metadata: {
-      dockerFile: 'Dockerfile',
-      desiredCount: 1,
-      cpu: 0.25,
-      memorySize: 1792,
-      port: 3000,
-      buildSystem: 'Nixpacks',
-      variables: [] as Record<string, string>[],
-    },
+    sourceProps: { owner: '', repo: '', branch: '' }, // Placeholder
+    debug: false,
+    rootDir: '/',
+    dockerFile: 'Dockerfile',
+    desiredCount: 1,
+    cpu: 0.25,
+    memorySize: 1792,
+    port: 3000,
+    build_system: 'Nixpacks',
+    buildProps: {},
   },
 };
 
@@ -49,7 +65,6 @@ type ValidStackType = keyof typeof STACK_DEFAULTS;
 export const useNewApplicationFlow = () => {
   const { $client } = useNuxtApp();
   const route = useRoute();
-  const router = useRouter();
   const applicationSchema = useCookie<Partial<ApplicationInputSchema>>('newApplicationSchema', { default: () => ({}) });
   const oAuthError = useState<boolean>('newApplicationOAuthError', () => false);
 
@@ -57,7 +72,6 @@ export const useNewApplicationFlow = () => {
   const branches = ref<Branch[]>([]);
   const selectedBranchName = ref<string>();
   const branchesLoading = ref(false);
-  const scannedBuildProps = ref<Partial<NodeBasedBuildProps> | null>(null);
   const providers = ref<Provider[]>([]);
   const selectedProviderId = ref<string | null>(null);
   const providerLoading = ref(false);
@@ -71,10 +85,7 @@ export const useNewApplicationFlow = () => {
     return 1;
   });
 
-  /**
-   * Fetch branches and scan the selected repository
-   */
-  const fetchBranches = async (owner: string, repo: string, installation_id: number, stack_type: string) => {
+  const fetchBranches = async (owner: string, repo: string, installation_id: number) => {
     try {
       const fetchedBranches = await $client.github.getBranches.query({
         owner,
@@ -100,14 +111,11 @@ export const useNewApplicationFlow = () => {
   watch(selectedBranchName, (newBranchName) => {
     if (!newBranchName) return;
     const service = applicationSchema.value.environments?.[0]?.services?.[0];
-    if (service?.pipeline_props?.sourceProps) {
-      service.pipeline_props.sourceProps.branchOrRef = newBranchName;
+    if (service) {
+      service.branch = newBranchName;
     }
   });
 
-  /**
-   * Handle provider fetching and selection
-   */
   const supabase = useSupabaseClient();
   const { selectedOrganization } = useMemberships();
 
@@ -130,7 +138,6 @@ export const useNewApplicationFlow = () => {
 
       providers.value = supabaseProviders || [];
       if (providers.value.length > 0) {
-        // set first provider as selected by default
         selectedProviderId.value = providers.value[0]?.id as string;
       }
     } catch (err: any) {
@@ -143,14 +150,7 @@ export const useNewApplicationFlow = () => {
 
   const setProvider = (provider: Provider) => {
     if (applicationSchema.value.environments?.[0]) {
-      const providerForInput: ApplicationInputSchema['environments'][0]['provider'] = {
-        ...provider,
-        region: provider.region || 'us-east-1',
-        created_at: new Date(provider.created_at).toISOString(),
-        updated_at: provider.updated_at ? new Date(provider.updated_at).toISOString() : null,
-        deleted_at: provider.deleted_at ? new Date(provider.deleted_at).toISOString() : null,
-      };
-      applicationSchema.value.environments[0].provider = providerForInput;
+      applicationSchema.value.environments[0].provider = provider;
     }
   };
 
@@ -165,104 +165,54 @@ export const useNewApplicationFlow = () => {
     }
   });
 
-  /**
-   * Scan the repository for build settings
-   */
-  const scanRepository = async (owner: string, repo: string, installation_id: number) => {
-    const buildSettings = await $client.github.scanRepository.query({
-      owner,
-      repo,
-      installation_id,
-    });
-    if (buildSettings) {
-      scannedBuildProps.value = buildSettings;
-    }
-  }
-
-  const scanForDockerfile = async (owner: string, repo: string, installation_id: number) => {
-    const result = await $client.github.scanForDockerfile.query({
-      owner,
-      repo,
-      installation_id,
-    });
-
-    return result
-  }
-
-  /**
-   * Create a service schema based on the selected stack type
-   */
   const createServiceSchema = async (
     stackType: ValidStackType,
     owner: string,
     repo: string,
     installation_id: number
-  ): Promise<ServiceInputSchema> => {
+  ): Promise<ServiceInput> => {
+    
+    await fetchBranches(owner, repo, installation_id);
+
+    const sourceProps = {
+      owner,
+      repo,
+      branch: selectedBranchName.value || 'main',
+    };
+
     const baseService = {
-      name: stackType.toLowerCase(),
-      display_name: stackType,
+      name: repo.toLowerCase().replace(/[^a-z0-9]/g, ''),
+      display_name: repo,
+      stack_type: stackType,
       stack_version: '1.0',
       installation_id: installation_id,
-      app_props: { rootDir: '/' },
-      cdn_props: null,
-      edge_props: null,
-      domain_props: null,
     };
+
+    let metadata = STACK_DEFAULTS[stackType];
+    metadata.sourceProps = sourceProps;
 
     if (stackType === 'SPA') {
       try {
-        await scanRepository(owner, repo, installation_id);
+        const buildSettings = await $client.github.scanRepository.query({ owner, repo, installation_id });
+        if (buildSettings) {
+          metadata.buildProps = { ...metadata.buildProps, ...buildSettings };
+        }
       } catch (e: any) {
         console.error("scan error:", e);
         scanError.value = e.message || e;
       }
-    }
-    else if (stackType === 'FUNCTION' || stackType === 'WEB_SERVICE') {
+    } else if (stackType === 'FUNCTION' || stackType === 'WEB_SERVICE') {
       try {
-        const dockerFileStatus = await scanForDockerfile(owner, repo, installation_id);
+        const dockerFileStatus = await $client.github.scanForDockerfile.query({ owner, repo, installation_id });
         if (dockerFileStatus.success) {
-          STACK_DEFAULTS[stackType].metadata.buildSystem = 'Custom Dockerfile';
+          (metadata as FunctionMetadataInput | WebServiceMetadataInput).build_system = 'Custom Dockerfile';
         }
       } catch (e: any) {
         console.error("scan error:", e);
-        // scanError.value = e.message || e;
       }
     }
 
-    await fetchBranches(owner, repo, installation_id, stackType);
-
-    const sourceProps: SourceProps = {
-      owner,
-      repo,
-      branchOrRef: selectedBranchName.value || 'main',
-    };
-
-    switch (stackType) {
-      case 'SPA':
-        return {
-          ...baseService,
-          stack_type: 'SPA',
-          metadata: STACK_DEFAULTS.SPA.metadata,
-          pipeline_props: {
-            sourceProps,
-            buildProps: { ...STACK_DEFAULTS.SPA.buildProps, ...scannedBuildProps.value },
-          },
-        };
-      case 'FUNCTION':
-        return {
-          ...baseService,
-          stack_type: 'FUNCTION',
-          metadata: STACK_DEFAULTS.FUNCTION.metadata,
-          pipeline_props: { sourceProps },
-        };
-      case 'WEB_SERVICE':
-        return {
-          ...baseService,
-          stack_type: 'WEB_SERVICE',
-          metadata: STACK_DEFAULTS.WEB_SERVICE.metadata,
-          pipeline_props: { sourceProps },
-        };
-    }
+    return { ...baseService, metadata };
   };
 
   const setApplicationSchema = async (owner: string, repo: string, installation_id: number, stack_type: string | null) => {
@@ -279,19 +229,13 @@ export const useNewApplicationFlow = () => {
         
         const validStackType = getValidStackType();
 
-        const [serviceSchema] = await Promise.all([
-            createServiceSchema(validStackType, owner, repo, installation_id),
-            fetchProviders(selectedOrganization.value?.id),
-        ]);
-
-        // Now that providers are fetched, we can get the default one
+        await fetchProviders(selectedOrganization.value?.id);
         const initialProvider = providers.value[0] || undefined;
         if (initialProvider) {
             selectedProviderId.value = initialProvider.id;
         }
 
-        // Fetch branches after service schema is ready
-        // await fetchBranches(owner, repo, installation_id, validStackType);
+        const serviceSchema = await createServiceSchema(validStackType, owner, repo, installation_id);
 
         applicationSchema.value = {
           name: repo.replace(/[-_]/g, '').substring(0, 12),
@@ -300,15 +244,9 @@ export const useNewApplicationFlow = () => {
             {
               name: 'preview',
               display_name: 'preview',
-              region: 'us-east-1',
+              region: initialProvider?.region || 'us-east-1',
               services: [serviceSchema],
-              provider: initialProvider ? {
-                  ...initialProvider,
-                  region: initialProvider.region || 'us-east-1',
-                  created_at: new Date(initialProvider.created_at).toISOString(),
-                  updated_at: initialProvider.updated_at ? new Date(initialProvider.updated_at).toISOString() : null,
-                  deleted_at: initialProvider.deleted_at ? new Date(initialProvider.deleted_at).toISOString() : null,
-              } : undefined,
+              provider: initialProvider,
             },
           ],
         };
@@ -326,6 +264,8 @@ export const useNewApplicationFlow = () => {
 
   const setUat = (uat: UserAccessToken | undefined) => {
     if (applicationSchema.value.environments?.[0]) {
+      // This seems to expect a string, but the type is UserAccessToken
+      // @ts-ignore
       applicationSchema.value.environments[0].user_access_token = uat;
     }
   };
