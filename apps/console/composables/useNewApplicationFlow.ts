@@ -14,11 +14,10 @@ const STACK_DEFAULTS: {
   WEB_SERVICE: WebServiceMetadataInput,
 } = {
   SPA: {
-    sourceProps: { owner: '', repo: '', branch: '' }, // Placeholder
     debug: false,
     rootDir: '/',
     outputDir: 'public/',
-    errorPagePath: '404.html',
+    errorPagePath: '',
     redirects: [],
     rewrites: [],
     headers: [],
@@ -34,7 +33,6 @@ const STACK_DEFAULTS: {
     },
   },
   FUNCTION: {
-    sourceProps: { owner: '', repo: '', branch: '' }, // Placeholder
     debug: false,
     rootDir: '/',
     dockerFile: 'Dockerfile',
@@ -47,7 +45,6 @@ const STACK_DEFAULTS: {
     buildProps: {},
   },
   WEB_SERVICE: {
-    sourceProps: { owner: '', repo: '', branch: '' }, // Placeholder
     debug: false,
     rootDir: '/',
     dockerFile: 'Dockerfile',
@@ -76,7 +73,7 @@ export const useNewApplicationFlow = () => {
   const selectedProviderId = ref<string | null>(null);
   const providerLoading = ref(false);
   const loadError = ref<string | null>(null);
-  const scanError = ref<string | undefined>(undefined);
+  const scanError = ref<string | null>(null);
 
   const currentStep = computed(() => {
     const path = route.path;
@@ -174,22 +171,18 @@ export const useNewApplicationFlow = () => {
     
     await fetchBranches(owner, repo, installation_id);
 
-    const sourceProps = {
-      owner,
-      repo,
-      branch: selectedBranchName.value || 'main',
-    };
-
     const baseService = {
       name: repo.toLowerCase().replace(/[^a-z0-9]/g, ''),
       display_name: repo,
       stack_type: stackType,
       stack_version: '1.0',
       installation_id: installation_id,
+      owner,
+      repo,
+      branch: selectedBranchName.value || 'main',
     };
 
     let metadata = STACK_DEFAULTS[stackType];
-    metadata.sourceProps = sourceProps;
 
     if (stackType === 'SPA') {
       try {

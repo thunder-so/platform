@@ -1,8 +1,8 @@
 <template>
   <ClientOnly>
     <UForm ref="form" v-if="service" :state="service" :schema="serviceSchema" :validate-on="['input']" class="space-y-4">
-      <UFormField label="Root Directory" name="app_props.rootDir" class="grid grid-cols-3 gap-4">
-        <UInput v-model="service.app_props.rootDir" placeholder="./" class="w-96" size="lg" />
+      <UFormField label="Root Directory" name="metadata.rootDir" class="grid grid-cols-3 gap-4">
+        <UInput v-model="service.metadata.rootDir" placeholder="./" class="w-96" size="lg" />
       </UFormField>
       <UFormField label="Build System" name="metadata.build_system" class="grid grid-cols-3 gap-4">
         <USelect v-model="service.metadata.build_system" :items="['Nixpacks', 'Buildpacks', 'Custom Dockerfile']" class="w-96" size="lg" />
@@ -23,22 +23,19 @@
 <script setup lang="ts">
 import type { PropType } from 'vue';
 import { z } from 'zod';
-import { type ApplicationInputSchema, appPropsSchema, functionMetadataSchema, functionPipelinePropsSchema } from '~/server/db/types';
-
-type ServiceInput = ApplicationInputSchema['environments'][0]['services'][0];
+import { FunctionServiceMetadataSchema } from '~/server/validators/common';
+import type { Service } from '~/server/db/schema';
 
 defineProps({
   service: {
-    type: Object as PropType<ServiceInput>,
+    type: Object as PropType<Service>,
     required: true
   }
 });
 
 // The form schema only needs to include the parts of the service state we want to validate.
 const serviceSchema = z.object({
-  app_props: appPropsSchema,
-  metadata: functionMetadataSchema,
-  pipeline_props: functionPipelinePropsSchema
+  metadata: FunctionServiceMetadataSchema,
 });
 
 const form = ref();

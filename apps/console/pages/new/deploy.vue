@@ -92,7 +92,6 @@
 
 <script setup lang="ts">
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
-import { type ApplicationInputSchema } from '~/server/validators/new';
 
 definePageMeta({
   layout: 'new',
@@ -139,7 +138,7 @@ const installApplication = async () => {
   try {
     const result = await $client.applications.create.mutate({
       organization_id: selectedOrganization.value?.id as string,
-      ...(applicationSchema.value as ApplicationInputSchema)
+      ...(applicationSchema.value as any)
     });
     if (result.newApplicationId) {
       clearApplicationSchema();

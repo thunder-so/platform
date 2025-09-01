@@ -1,8 +1,8 @@
 <template>
   <ClientOnly>
     <UForm ref="form" v-if="service" :state="service" :schema="serviceSchema" :validate-on="['input']" class="space-y-4">
-      <UFormField label="Root Directory" name="app_props.rootDir" class="grid grid-cols-3 gap-4">
-        <UInput v-model="service.app_props.rootDir" placeholder="./" class="w-96" size="lg" />
+      <UFormField label="Root Directory" name="metadata.rootDir" class="grid grid-cols-3 gap-4">
+        <UInput v-model="service.metadata.rootDir" placeholder="./" class="w-96" size="lg" />
       </UFormField>
       <UFormField label="Build System" name="metadata.build_system" class="grid grid-cols-3 gap-4">
         <USelect v-model="service.metadata.build_system" :items="['Nixpacks', 'Buildpacks', 'Custom Dockerfile']" class="w-96" size="lg" />
@@ -30,21 +30,18 @@
 import { ref, computed } from 'vue';
 import type { PropType } from 'vue';
 import { z } from 'zod';
-import { type ApplicationInputSchema, appPropsSchema, webServiceMetadataSchema, webServicePipelinePropsSchema } from '~/server/db/types';
-
-type ServiceInput = ApplicationInputSchema['environments'][0]['services'][0];
+import { WebServiceMetadataSchema } from '~/server/validators/common';
+import type { Service } from '~/server/db/schema';
 
 defineProps({
   service: {
-    type: Object as PropType<ServiceInput>,
+    type: Object as PropType<Service>,
     required: true
   }
 });
 
 const serviceSchema = z.object({
-  app_props: appPropsSchema,
-  metadata: webServiceMetadataSchema,
-  pipeline_props: webServicePipelinePropsSchema
+  metadata: WebServiceMetadataSchema
 });
 
 const form = ref();

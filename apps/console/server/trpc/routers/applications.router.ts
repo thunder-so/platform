@@ -71,14 +71,22 @@ export const applicationsRouter = router({
               stack_version: service.stack_version,
               installation_id: service.installation_id,
               environment_id: newEnvironment.id,
+              owner: service.owner,
+              repo: service.repo,
+              branch: service.branch,
               metadata: service.metadata,
-            }).returning({ id: services.id, name: services.name, stack_type: services.stack_type, stack_version: services.stack_version, metadata: services.metadata });
+            }).returning({ id: services.id, name: services.name, stack_type: services.stack_type, stack_version: services.stack_version, owner: services.owner, repo: services.repo, branch: services.branch, metadata: services.metadata });
 
-            const props = {
+            const context = {
               ...service.metadata,
               env: {
                 account: providerDetails.account_id,
                 region: newEnvironment.region,
+              },
+              sourceProps: {
+                owner: newService.owner,
+                repo: newService.repo,
+                branchOrRef: newService.branch,
               },
               application: newApplication.name,
               service: newService.name,
@@ -89,7 +97,7 @@ export const applicationsRouter = router({
               service_id: newService.id,
               environment_id: newEnvironment.id,
               build_status: 'IN_PROGRESS',
-              build_context: props,
+              build_context: context,
             }).returning({ id: builds.id });
 
             if (!newBuild) {
@@ -110,7 +118,7 @@ export const applicationsRouter = router({
                 throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Runner SQS queue URL is not configured.' });
               }
 
-              await aws.sendSqsMessage(runnerServiceQueueUrl, JSON.stringify(props), newBuild.id, messageAttributes);
+              await aws.sendSqsMessage(runnerServiceQueueUrl, JSON.stringify(context), newBuild.id, messageAttributes);
             } catch (error) {
               if (error instanceof z.ZodError) {
                 console.error('Zod validation error creating build request:', error.flatten());
@@ -168,6 +176,9 @@ export const applicationsRouter = router({
 
       const props = {
         ...service.metadata,
+        owner: service.owner,
+        repo: service.repo,
+        branch: service.branch,
         env: {
           account: provider?.account_id,
           region: environment.region,
