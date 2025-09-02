@@ -119,7 +119,7 @@ export const FunctionServiceMetadataSchema = z.object({
   debug: z.boolean(),
   rootDir: z.string(),
   buildProps: DockerBasedBuildPropsSchema,
-  functionprops: functionPropsSchema,
+  functionProps: functionPropsSchema,
 });
 
 export const WebServicePropsSchema = z.object({
@@ -135,7 +135,7 @@ export const WebServiceMetadataSchema = z.object({
   debug: z.boolean(),
   rootDir: z.string(),
   buildProps: DockerBasedBuildPropsSchema,
-  serviceprops: WebServicePropsSchema,
+  serviceProps: WebServicePropsSchema,
 });
 
 export const domainSchema = z.object({

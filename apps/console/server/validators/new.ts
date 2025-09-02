@@ -22,7 +22,6 @@ const serviceInputBaseSchema = z.object({
   branch: z.string().nullable(),
   installation_id: z.number().nullable(),
   service_variables: z.array(serviceVariableSchema).optional(),
-  service_variables: z.array(serviceVariableSchema).optional(),
 });
 
 export const serviceInputSchema = z.discriminatedUnion('stack_type', [

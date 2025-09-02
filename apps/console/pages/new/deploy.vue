@@ -1,8 +1,8 @@
 <template>
   <div>
-    <UCard>
+    <!-- <UCard>
       <ClientOnly><pre>{{ applicationSchema }}</pre></ClientOnly>
-    </UCard>
+    </UCard> -->
     <UCard>
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-3">

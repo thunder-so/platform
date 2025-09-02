@@ -35,25 +35,29 @@ const STACK_DEFAULTS: {
   FUNCTION: {
     debug: false,
     rootDir: '/',
-    dockerFile: 'Dockerfile',
-    memorySize: 1792,
-    timeout: 30,
-    keepWarm: true,
-    reservedConcurrency: 0,
-    provisionedConcurrency: 0,
-    build_system: 'Nixpacks',
     buildProps: {},
+    functionProps: {
+      memorySize: 1792,
+      timeout: 30,
+      keepWarm: true,
+      reservedConcurrency: 0,
+      provisionedConcurrency: 0,
+      build_system: 'Nixpacks',
+      dockerFile: 'Dockerfile',
+    },
   },
   WEB_SERVICE: {
     debug: false,
     rootDir: '/',
-    dockerFile: 'Dockerfile',
-    desiredCount: 1,
-    cpu: 0.25,
-    memorySize: 1792,
-    port: 3000,
-    build_system: 'Nixpacks',
     buildProps: {},
+    serviceProps: {
+      desiredCount: 1,
+      cpu: 0.25,
+      memorySize: 1792,
+      port: 3000,
+      build_system: 'Nixpacks',
+      dockerFile: 'Dockerfile',
+    }
   },
 };
 
@@ -199,7 +203,11 @@ export const useNewApplicationFlow = () => {
       try {
         const dockerFileStatus = await $client.github.scanForDockerfile.query({ owner, repo, installation_id });
         if (dockerFileStatus.success) {
-          (metadata as FunctionMetadataInput | WebServiceMetadataInput).build_system = 'Custom Dockerfile';
+          if (stackType === 'FUNCTION') {
+            (metadata as FunctionMetadataInput).functionProps.build_system = 'Custom Dockerfile';
+          } else {
+            (metadata as WebServiceMetadataInput).serviceProps.build_system = 'Custom Dockerfile';
+          }
         }
       } catch (e: any) {
         console.error("scan error:", e);
