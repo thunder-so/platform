@@ -251,9 +251,6 @@ export const servicesRelations = relations(services, ({ one, many }) => ({
   domains: many(domains),
   serviceVariables: many(serviceVariables),
   serviceSecrets: many(serviceSecrets),
-  // serviceSpa: one(serviceSpa, { fields: [services.id], references: [serviceSpa.service_id] }),
-  // serviceFunction: one(serviceFunction, { fields: [services.id], references: [serviceFunction.service_id] }),
-  // serviceWebservice: one(serviceWebservice, { fields: [services.id], references: [serviceWebservice.service_id] }),
 }));
 
 export const serviceVariables = pgTable('service_variables', {
@@ -302,60 +299,6 @@ export const domains = pgTable('domains', {
 export const domainsRelations = relations(domains, ({ one }) => ({
   service: one(services, { fields: [domains.service_id], references: [services.id] }),
 }));
-
-// // Stack Specific Tables
-// export const serviceSpa = pgTable('service_spa', {
-//   service_id: text('service_id').primaryKey().references(() => services.id),
-//   root_dir: text('root_dir'),
-//   output_dir: text('output_dir'),
-//   runtime: text('runtime'),
-//   runtime_version: text('runtime_version'),
-//   install_command: text('install_command'),
-//   build_command: text('build_command'),
-//   error_page_path: text('error_page_path'),
-//   redirects: jsonb('redirects'),
-//   rewrites: jsonb('rewrites'),
-//   headers: jsonb('headers'),
-//   allow_headers: text('allow_headers').array(),
-//   allow_cookies: text('allow_cookies').array(),
-//   allow_query_params: text('allow_query_params').array(),
-//   deny_query_params: text('deny_query_params').array(),
-// });
-
-// export const serviceSpaRelations = relations(serviceSpa, ({ one }) => ({
-//   service: one(services, { fields: [serviceSpa.service_id], references: [services.id] }),
-// }));
-
-// export const serviceFunction = pgTable('service_function', {
-//   service_id: text('service_id').primaryKey().references(() => services.id),
-//   root_dir: text('root_dir'),
-//   memory_size: integer('memory_size'),
-//   timeout: integer('timeout'),
-//   keep_warm: boolean('keep_warm'),
-//   reserved_concurrency: integer('reserved_concurrency'),
-//   provisioned_concurrency: integer('provisioned_concurrency'),
-//   build_system: buildSystemEnum('build_system'),
-//   dockerfile_path: text('dockerfile_path'),
-// });
-
-// export const serviceFunctionRelations = relations(serviceFunction, ({ one }) => ({
-//   service: one(services, { fields: [serviceFunction.service_id], references: [services.id] }),
-// }));
-
-// export const serviceWebservice = pgTable('service_webservice', {
-//   service_id: text('service_id').primaryKey().references(() => services.id),
-//   root_dir: text('root_dir'),
-//   port: integer('port'),
-//   desired_count: integer('desired_count'),
-//   cpu: decimal('cpu', { precision: 10, scale: 2 }),
-//   memory_size: integer('memory_size'),
-//   build_system: buildSystemEnum('build_system'),
-//   dockerfile_path: text('dockerfile_path'),
-// });
-
-// export const serviceWebserviceRelations = relations(serviceWebservice, ({ one }) => ({
-//   service: one(services, { fields: [serviceWebservice.service_id], references: [services.id] }),
-// }));
 
 // Build and Deploy Tables
 export const builds = pgTable('builds', {
@@ -440,12 +383,6 @@ export type ServiceVariable = typeof serviceVariables.$inferSelect;
 export type NewServiceVariable = typeof serviceVariables.$inferInsert;
 export type ServiceSecret = typeof serviceSecrets.$inferSelect;
 export type NewServiceSecret = typeof serviceSecrets.$inferInsert;
-// export type ServiceSpa = typeof serviceSpa.$inferSelect;
-// export type NewServiceSpa = typeof serviceSpa.$inferInsert;
-// export type ServiceFunction = typeof serviceFunction.$inferSelect;
-// export type NewServiceFunction = typeof serviceFunction.$inferInsert;
-// export type ServiceWebservice = typeof serviceWebservice.$inferSelect;
-// export type NewServiceWebservice = typeof serviceWebservice.$inferInsert;
 
 // Types for Polar Payment Integration
 export interface Price {

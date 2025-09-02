@@ -7,6 +7,7 @@ import {
   FunctionServiceMetadataSchema,
   WebServiceMetadataSchema,
   userAccessTokenSchema,
+  serviceVariableSchema
 } from './common';
 
 /**
@@ -20,6 +21,8 @@ const serviceInputBaseSchema = z.object({
   repo: z.string().nullable(),
   branch: z.string().nullable(),
   installation_id: z.number().nullable(),
+  service_variables: z.array(serviceVariableSchema).optional(),
+  service_variables: z.array(serviceVariableSchema).optional(),
 });
 
 export const serviceInputSchema = z.discriminatedUnion('stack_type', [

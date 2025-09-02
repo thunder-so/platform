@@ -29,7 +29,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { z } from 'zod';
-import { envVarSchema } from '~/server/db/types';
+import { envVarSchema } from '~/server/validators/common';
 
 const props = defineProps({
   modelValue: {

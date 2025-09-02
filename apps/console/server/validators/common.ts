@@ -4,6 +4,32 @@ import { z } from 'zod';
 export const NAME_REGEX = /^[a-zA-Z](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$/;
 export const NAME_ERROR_MESSAGE = 'Use letters, numbers, and hyphens. Must start with a letter.';
 
+export const envVarSchema = z.array(z.object({
+  key: z.string().min(1, 'Key is required.').regex(/^[a-zA-Z0-9_]+$/, 'Use only letters, numbers, and underscores.'),
+  value: z.string().min(1, 'Value is required.'),
+})).superRefine((items, ctx) => {
+  const keyMap = new Map();
+  items.forEach((item, index) => {
+    const lowerKey = item.key.toLowerCase();
+    if (!keyMap.has(lowerKey)) {
+      keyMap.set(lowerKey, []);
+    }
+    keyMap.get(lowerKey).push(index);
+  });
+
+  keyMap.forEach((indices, key) => {
+    if (indices.length > 1) {
+      indices.forEach(index => {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Duplicate key.',
+          path: [index, 'key'],
+        });
+      });
+    }
+  });
+});
+
 export const userAccessTokenSchema = z.object({
   secret_id: z.string().uuid(),
   resource: z.string().nullable().optional(),
@@ -25,7 +51,7 @@ export const serviceVariableSchema = z.object({
   key: z.string().min(1, 'Key is required.').regex(/^[a-zA-Z0-9_]+$/, 'Use only letters, numbers, and underscores.'),
   value: z.string().min(1, 'Value is required.'),
   type: z.enum(['build', 'runtime']),
-  service_id: z.string(),
+  service_id: z.string().optional(),
 });
 
 export const serviceSecretSchema = z.object({
@@ -79,29 +105,37 @@ export const SPAServiceMetadataSchema = z.object({
   denyQueryParams: z.array(z.string()),
 });
 
-export const FunctionServiceMetadataSchema = z.object({
-  debug: z.boolean(),
-  rootDir: z.string(),
-  buildProps: DockerBasedBuildPropsSchema,
-  dockerFile: z.string(),
+export const functionPropsSchema = z.object({
   memorySize: z.number(),
   timeout: z.number(),
   keepWarm: z.boolean(),
   reservedConcurrency: z.number(),
   provisionedConcurrency: z.number(),
   build_system: z.enum(['Nixpacks', 'Buildpacks', 'Custom Dockerfile']),
+  dockerFile: z.string(),
+});
+
+export const FunctionServiceMetadataSchema = z.object({
+  debug: z.boolean(),
+  rootDir: z.string(),
+  buildProps: DockerBasedBuildPropsSchema,
+  functionprops: functionPropsSchema,
+});
+
+export const WebServicePropsSchema = z.object({
+  desiredCount: z.number(),
+  cpu: z.number(),
+  memorySize: z.number(),
+  port: z.number(),
+  build_system: z.enum(['Nixpacks', 'Buildpacks', 'Custom Dockerfile']),
+  dockerFile: z.string(),
 });
 
 export const WebServiceMetadataSchema = z.object({
   debug: z.boolean(),
   rootDir: z.string(),
   buildProps: DockerBasedBuildPropsSchema,
-  desiredCount: z.number(),
-  cpu: z.number(),
-  memorySize: z.number(),
-  port: z.number(),
-  dockerFile: z.string(),
-  build_system: z.enum(['Nixpacks', 'Buildpacks', 'Custom Dockerfile']),
+  serviceprops: WebServicePropsSchema,
 });
 
 export const domainSchema = z.object({

@@ -180,6 +180,7 @@ export const useNewApplicationFlow = () => {
       owner,
       repo,
       branch: selectedBranchName.value || 'main',
+      service_variables: [],
     };
 
     let metadata = STACK_DEFAULTS[stackType];

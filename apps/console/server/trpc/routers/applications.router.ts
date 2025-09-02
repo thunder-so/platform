@@ -3,7 +3,7 @@ import { protectedProcedure, router } from '../init';
 import { TRPCError } from '@trpc/server';
 import { db } from '~/server/db/db';
 import { sql, eq } from 'drizzle-orm';
-import { applications, environments, services, userAccessTokens, builds, destroys, type Service, type Environment, type Provider, type UserAccessToken } from '~/server/db/schema';
+import { applications, environments, services, serviceVariables, userAccessTokens, builds, destroys, type Service, type Environment, type Provider, type UserAccessToken } from '~/server/db/schema';
 import { applicationInputSchema } from '~/server/validators/new';
 import { PlatformLibrary } from '~/server/lib/platform.library';
 import * as ProviderLibrary from '~/server/lib/provider.library';
@@ -81,6 +81,17 @@ export const applicationsRouter = router({
               metadata: service.metadata,
             }).returning({ id: services.id, name: services.name, stack_type: services.stack_type, stack_version: services.stack_version, owner: services.owner, repo: services.repo, branch: services.branch, metadata: services.metadata });
 
+            if (service.service_variables && service.service_variables.length > 0) {
+              await tx.insert(serviceVariables).values(
+                service.service_variables.map(v => ({
+                  key: v.key,
+                  value: v.value,
+                  type: v.type,
+                  service_id: newService.id,
+                }))
+              );
+            }
+
             const context = {
               ...service.metadata,
               env: {
@@ -96,6 +107,20 @@ export const applicationsRouter = router({
               service: newService.name,
               environment: newEnvironment.name,
             };
+
+            if (service.service_variables && service.service_variables.length > 0) {
+              const buildVars = service.service_variables.filter(v => v.type === 'build').map(v => ({ [v.key]: v.value }));
+              const runtimeVars = service.service_variables.filter(v => v.type === 'runtime').map(v => ({ [v.key]: v.value }));
+
+              if (newService.stack_type === 'SPA') {
+                if(!context.buildProps) context.buildProps = {};
+                context.buildProps.environment = buildVars;
+              } else if (newService.stack_type === 'FUNCTION') {
+                context.functionProps = { variables: runtimeVars };
+              } else if (newService.stack_type === 'WEB_SERVICE') {
+                context.serviceProps = { variables: runtimeVars };
+              }
+            }
 
             const [newBuild] = await tx.insert(builds).values({
               service_id: newService.id,
@@ -224,6 +249,7 @@ export const applicationsRouter = router({
         // the delete request is sent. Use a transaction to keep updates atomic.
         try {
           await db.transaction(async (tx) => {
+            await tx.update(serviceVariables).set({ deleted_at: new Date() }).where(eq(serviceVariables.service_id, service.id));
             await tx.update(services).set({ deleted_at: new Date() }).where(eq(services.id, service.id));
             await tx.update(environments).set({ deleted_at: new Date() }).where(eq(environments.id, environment.id));
             await tx.update(applications).set({ deleted_at: new Date() }).where(eq(applications.id, application_id));

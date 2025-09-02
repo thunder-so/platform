@@ -10,6 +10,7 @@
         <ServiceConfigFunction v-else-if="service.stack_type === 'FUNCTION'" ref="serviceForm" :service="service" />
         <ServiceConfigWeb v-else-if="service.stack_type === 'WEB_SERVICE'" ref="serviceForm" :service="service" />
       </div>
+      <EnvironmentVariables v-model="environmentVariablesModel" ref="envVarsForm" />
     </ClientOnly>
   </div>
 </template>
@@ -21,6 +22,7 @@ import type { Service } from '~/server/db/schema';
 import ServiceConfigStatic from './ServiceConfigStatic.vue';
 import ServiceConfigFunction from './ServiceConfigFunction.vue';
 import ServiceConfigWeb from './ServiceConfigWeb.vue';
+import EnvironmentVariables from './EnvironmentVariables.vue';
 
 const props = defineProps({
   scanError: {
@@ -33,7 +35,31 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits(['update:service']);
+
 const serviceForm = ref();
+const envVarsForm = ref();
+
+const environmentVariablesModel = computed({
+  get() {
+    if (!props.service || !props.service.service_variables) return [];
+    return props.service.service_variables.map(v => ({ key: v.key, value: v.value }));
+  },
+  set(newValue: { key: string; value: string }[]) {
+    if (!props.service) return;
+    
+    const updatedService = { ...props.service };
+    const variableType = updatedService.stack_type === 'SPA' ? 'build' : 'runtime';
+
+    updatedService.service_variables = newValue.map(v => ({
+      key: v.key,
+      value: v.value,
+      type: variableType,
+    }));
+
+    emit('update:service', updatedService);
+  }
+});
 
 const hasErrors = computed(() => {
   return serviceForm.value?.errors?.length > 0;
