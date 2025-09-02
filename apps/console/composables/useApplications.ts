@@ -17,7 +17,9 @@ export const useApplications = () => {
         .select(`
           name,
           display_name,
+          organization_id,
           environments (
+            id,
             name,
             display_name,
             region,

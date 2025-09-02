@@ -52,11 +52,11 @@
                   <div class="flex items-center gap-2">
                     <span class="flex items-center justify-center items-center gap-1.5">
                       <Icon name="mdi:github" class="w-4 h-4 mt-1 text-muted" />
-                      <span class="text-sm text-muted">{{service?.pipeline_props?.sourceProps?.owner}} / {{service?.pipeline_props?.sourceProps?.repo}}</span>
+                      <span class="text-sm text-muted">{{service?.owner}} / {{service?.repo}}</span>
                     </span>
                     <span class="flex items-center justify-center gap-1">
                       <Icon name="mdi:source-branch" class="w-4 h-4 mt-1 text-muted" />
-                      <span class="text-sm text-muted">{{service?.pipeline_props?.sourceProps?.branchOrRef}}</span>
+                      <span class="text-sm text-muted">{{service?.branch}}</span>
                     </span>
                   </div>
                   <div class="flex items-center justify-center gap-2">
