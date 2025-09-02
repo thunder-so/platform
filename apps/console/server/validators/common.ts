@@ -4,6 +4,22 @@ import { z } from 'zod';
 export const NAME_REGEX = /^[a-zA-Z](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$/;
 export const NAME_ERROR_MESSAGE = 'Use letters, numbers, and hyphens. Must start with a letter.';
 
+export const userAccessTokenSchema = z.object({
+  secret_id: z.string().uuid(),
+  resource: z.string().nullable().optional(),
+  user_id: z.string().uuid(),
+  environment_id: z.string().nullable().optional(),
+  created_at: z.preprocess((arg) => {
+    if (typeof arg == 'string' || arg instanceof Date) return new Date(arg);
+  }, z.date()),
+  updated_at: z.preprocess((arg) => {
+    if (typeof arg == 'string' || arg instanceof Date) return new Date(arg);
+  }, z.date()),
+  deleted_at: z.preprocess((arg) => {
+    if (typeof arg == 'string' || arg instanceof Date) return new Date(arg);
+  }, z.date()).nullable().optional(),
+});
+
 export const serviceVariableSchema = z.object({
   id: z.string().optional(),
   key: z.string().min(1, 'Key is required.').regex(/^[a-zA-Z0-9_]+$/, 'Use only letters, numbers, and underscores.'),
@@ -99,12 +115,22 @@ export const domainSchema = z.object({
 
 export const providerSchema = z.object({
   id: z.string().min(1, 'Provider ID is required'),
-  alias: z.string(),
+  alias: z.string().nullable(),
   role_arn: z.string().nullable(),
-  account_id: z.string(),
+  account_id: z.string().nullable(),
+  region: z.string().nullable(),
   stack_id: z.string().nullable(),
   stack_name: z.string().nullable(),
   access_key_id: z.string().nullable(),
-  secret_id: z.string().uuid().nullable(),
+  secret_id: z.string().nullable(),
   organization_id: z.string().min(1, 'Organization ID is required'),
+  created_at: z.preprocess((arg) => {
+    if (typeof arg == 'string' || arg instanceof Date) return new Date(arg);
+  }, z.date()),
+  updated_at: z.preprocess((arg) => {
+    if (typeof arg == 'string' || arg instanceof Date) return new Date(arg);
+  }, z.date()).nullable(),
+  deleted_at: z.preprocess((arg) => {
+    if (typeof arg == 'string' || arg instanceof Date) return new Date(arg);
+  }, z.date()).nullable(),
 });

@@ -44,7 +44,11 @@ export const applicationsRouter = router({
 
           const providerDetails = env.provider;
 
-          const vaultSecretId = env.user_access_token.secret_id;
+          const vaultSecretId = env.user_access_token?.secret_id;
+          if (!vaultSecretId) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'User Access Token is missing.' });
+          }
+
           const tokenResult = await tx.execute(sql`SELECT decrypted_secret FROM vault.decrypted_secrets WHERE id = ${vaultSecretId}::uuid`);
           const decryptedToken = tokenResult.rows[0]?.decrypted_secret as string | undefined;
           if (!decryptedToken) {
@@ -61,7 +65,7 @@ export const applicationsRouter = router({
 
           await tx.update(userAccessTokens)
             .set({ environment_id: newEnvironment.id, resource: accessTokenSecretArn })
-            .where(eq(userAccessTokens.secret_id, env.user_access_token.secret_id));
+            .where(eq(userAccessTokens.secret_id, vaultSecretId));
 
           for (const service of env.services) {
             const [newService] = await tx.insert(services).values({
@@ -117,8 +121,8 @@ export const applicationsRouter = router({
               if (!runnerServiceQueueUrl) {
                 throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Runner SQS queue URL is not configured.' });
               }
-
-              await aws.sendSqsMessage(runnerServiceQueueUrl, JSON.stringify(context), newBuild.id, messageAttributes);
+              console.log("context", context);
+              // await aws.sendSqsMessage(runnerServiceQueueUrl, JSON.stringify(context), newBuild.id, messageAttributes);
             } catch (error) {
               if (error instanceof z.ZodError) {
                 console.error('Zod validation error creating build request:', error.flatten());

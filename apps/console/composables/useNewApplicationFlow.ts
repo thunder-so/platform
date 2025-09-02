@@ -257,8 +257,6 @@ export const useNewApplicationFlow = () => {
 
   const setUat = (uat: UserAccessToken | undefined) => {
     if (applicationSchema.value.environments?.[0]) {
-      // This seems to expect a string, but the type is UserAccessToken
-      // @ts-ignore
       applicationSchema.value.environments[0].user_access_token = uat;
     }
   };

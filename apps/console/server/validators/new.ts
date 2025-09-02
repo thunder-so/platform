@@ -6,6 +6,7 @@ import {
   SPAServiceMetadataSchema,
   FunctionServiceMetadataSchema,
   WebServiceMetadataSchema,
+  userAccessTokenSchema,
 } from './common';
 
 /**
@@ -41,7 +42,7 @@ export const environmentInputSchema = z.object({
   display_name: z.string().min(1, 'Display name is required'),
   provider: providerSchema.optional(),
   region: z.string().min(1, 'Region is required'),
-  user_access_token: z.string().nullable(),
+  user_access_token: userAccessTokenSchema.optional(),
   services: z.array(serviceInputSchema),
 });
 

@@ -3,13 +3,13 @@ import { SSMClient, PutParameterCommand } from '@aws-sdk/client-ssm';
 import { SecretsManagerClient, CreateSecretCommand, UpdateSecretCommand } from '@aws-sdk/client-secrets-manager';
 import { TRPCError } from '@trpc/server';
 import { db } from '~/server/db/db';
-import { type Provider } from '~/server/db/schema';
+import { type ProviderSchema } from '~/server/db/schema';
 import { sql } from 'drizzle-orm';
 
 // A type for the initial validation scenario where the secret is not yet in the vault
-type ManualProvider = Provider & { secret_access_key: string };
+type ManualProvider = ProviderSchema & { secret_access_key: string };
 
-async function getCredentials(provider: Provider | ManualProvider) {
+async function getCredentials(provider: ProviderSchema | ManualProvider) {
     // Scenario 1: Role-based provider
     if (provider.role_arn) {
         const stsClient = new STSClient({});
@@ -68,7 +68,7 @@ async function getCredentials(provider: Provider | ManualProvider) {
 
 async function getAwsClient<TClient>(
     clientConstructor: new (config: any) => TClient,
-    provider: Provider | ManualProvider
+    provider: ProviderSchema | ManualProvider
 ): Promise<TClient> {
     const credentials = await getCredentials(provider);
     return new clientConstructor({ credentials });
@@ -111,7 +111,7 @@ export async function getCallerIdentity(provider: ManualProvider) {
 //     }
 // }
 
-export async function createOrUpdateSecret(provider: Provider, name: string, secretString: string, description: string): Promise<string> {
+export async function createOrUpdateSecret(provider: ProviderSchema, name: string, secretString: string, description: string): Promise<string> {
     const secretsManagerClient = await getAwsClient(SecretsManagerClient, provider);
     try {
         const response = await secretsManagerClient.send(new CreateSecretCommand({
