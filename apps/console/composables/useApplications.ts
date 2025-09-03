@@ -15,6 +15,7 @@ export const useApplications = () => {
       const { data, error } = await supabase
         .from('applications')
         .select(`
+          id,
           name,
           display_name,
           organization_id,

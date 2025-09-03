@@ -9,6 +9,19 @@ import { PlatformLibrary } from '~/server/lib/platform.library';
 import * as ProviderLibrary from '~/server/lib/provider.library';
 
 export const applicationsRouter = router({
+  update: protectedProcedure
+    .input(
+      z.object({
+        application_id: z.string(),
+        display_name: z.string().optional(),
+        // any other fields on the core 'applications' table
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { application_id, ...data } = input;
+      return await db.update(applications).set(data).where(eq(applications.id, application_id)).returning();
+    }),
+
   create: protectedProcedure
     .input(applicationInputSchema.extend({
       organization_id: z.string(),

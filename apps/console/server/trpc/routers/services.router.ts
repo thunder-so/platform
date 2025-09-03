@@ -25,30 +25,29 @@ const updateServiceVariableSchema = serviceVariableSchema.extend({
 });
 
 export const servicesRouter = router({
-  // Mutation to update the core service details
   updateService: protectedProcedure
     .input(
       z.object({
-        id: z.string(),
+        service_id: z.string(),
         display_name: z.string().optional(),
         // any other fields on the core 'services' table
       })
     )
     .mutation(async ({ input }) => {
-      const { id, ...data } = input;
-      return await db.update(services).set(data).where(eq(services.id, id)).returning();
+      const { service_id, ...data } = input;
+      return await db.update(services).set(data).where(eq(services.id, service_id)).returning();
     }),
 
   updateServiceMetadata: protectedProcedure
     .input(
       z.object({
-        serviceId: z.string(),
+        service_id: z.string(),
         stack_type: z.enum(['SPA', 'FUNCTION', 'WEB_SERVICE']),
         metadata: z.any(),
       })
     )
     .mutation(async ({ input }) => {
-      const { serviceId, stack_type, metadata } = input;
+      const { service_id, stack_type, metadata } = input;
 
       let validationSchema;
       switch (stack_type) {
@@ -68,7 +67,7 @@ export const servicesRouter = router({
       return await db
         .update(services)
         .set({ metadata: parsedMetadata, updated_at: new Date() })
-        .where(eq(services.id, serviceId))
+        .where(eq(services.id, service_id))
         .returning();
     }),
 

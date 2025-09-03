@@ -1,20 +1,49 @@
 <template>
   <div>
+    <UCard>
+      <template #header>
+        <h3>Application settings</h3>
+      </template>
+      <ClientOnly>
+        <UForm ref="ApplicationSettingsForm" v-if="applicationSchema" :state="applicationSchema" :validate-on="['input']" class="space-y-4">
+          <UFormField label="Application name" name="name" class="grid grid-cols-3 gap-4">
+            <UInput v-model="applicationSchema.display_name" class="w-96" size="lg" />
+          </UFormField>
+        </UForm>
+      </ClientOnly>
+      <template #footer>
+        <div class="flex justify-start">
+          <ClientOnly>
+            <UButton
+              size="lg"
+              :loading="isAppSaving"
+              :disabled="!isAppChanged"
+              @click="saveAppChanges"
+            >
+              Save Changes
+            </UButton>
+          </ClientOnly>
+        </div>
+      </template>
+    </UCard>
+
     <UCard v-if="localServiceConfig" class="mt-4">
       <template #header>
-        <h3>Service Configuration</h3>
+        <h3>Service settings</h3>
       </template>
       <AppServiceConfiguration :service="localServiceConfig" ref="serviceConfigForm" />
       <template #footer>
         <div class="flex justify-start">
-          <UButton
-            size="lg"
-            :loading="isSaving"
-            :disabled="!isChanged || hasValidationErrors"
-            @click="saveChanges"
-          >
-            Save Changes
-          </UButton>
+          <ClientOnly>
+            <UButton
+              size="lg"
+              :loading="isSaving"
+              :disabled="!isChanged || hasValidationErrors"
+              @click="saveChanges"
+            >
+              Save Changes
+            </UButton>
+          </ClientOnly>
         </div>
       </template>
     </UCard>
@@ -62,6 +91,9 @@ const service = computed(() => applicationSchema.value?.environments?.[0]?.servi
 const localServiceConfig = ref<ServiceSchema | null>(null);
 const isSaving = ref(false);
 const isChanged = ref(false);
+const isAppSaving = ref(false);
+const isAppChanged = ref(false);
+const originalDisplayName = ref<string>('');
 const error = ref<string | null>(null);
 
 const serviceConfigForm = ref<{ hasErrors: boolean } | null>(null);
@@ -72,6 +104,16 @@ watch(service, (newService) => {
     localServiceConfig.value = JSON.parse(JSON.stringify(newService));
   }
 }, { immediate: true });
+
+watch(applicationSchema, (newApp) => {
+  if (newApp?.display_name) {
+    originalDisplayName.value = newApp.display_name;
+  }
+}, { immediate: true });
+
+watch(() => applicationSchema.value?.display_name, (newName) => {
+  isAppChanged.value = newName !== originalDisplayName.value;
+});
 
 watch(localServiceConfig, (newConfig) => {
   if (service.value && newConfig) {
@@ -89,7 +131,7 @@ const saveChanges = async () => {
     const { stack_type, id } = localServiceConfig.value;
 
     await $client.services.updateServiceMetadata.mutate({
-      serviceId: id,
+      service_id: id,
       stack_type,
       metadata: localServiceConfig.value.metadata,
     });
@@ -101,6 +143,28 @@ const saveChanges = async () => {
     toast.add({ title: 'Error saving settings', description: e.message, color: 'error' });
   } finally {
     isSaving.value = false;
+  }
+};
+
+const saveAppChanges = async () => {
+  if (!applicationSchema.value?.id || !applicationSchema.value?.display_name) return;
+
+  isAppSaving.value = true;
+  error.value = null;
+
+  try {
+    await $client.applications.update.mutate({
+      application_id: applicationSchema.value.id,
+      display_name: applicationSchema.value.display_name,
+    });
+
+    await refreshApplicationSchema();
+    toast.add({ title: 'Application settings saved successfully!', color: 'success' });
+  } catch (e: any) {
+    error.value = e.message;
+    toast.add({ title: 'Error saving application settings', description: e.message, color: 'error' });
+  } finally {
+    isAppSaving.value = false;
   }
 };
 
@@ -121,7 +185,7 @@ const deleteApplication = async () => {
   error.value = null;
   try {
     await $client.applications.delete.mutate({ 
-      application_id: applicationSchema.value.id as string,
+      application_id: applicationSchema.value?.id as string,
       service_id: service.value?.id as string
     });
     toast.add({ title: 'Application deleted successfully', color: 'success' });
