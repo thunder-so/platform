@@ -9,7 +9,7 @@
       </UFormField>
       <UFormField label="Runtime" name="buildProps.runtime" class="grid grid-cols-3 gap-4">
         <USelect 
-          v-model="configuration.buildProps.runtime" 
+          v-model="configuration.buildProps.runtime_version" 
           :items="runtimes" 
           option-attribute="label" 
           value-key="value" 

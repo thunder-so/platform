@@ -57,10 +57,6 @@ const { $client } = useNuxtApp();
 const router = useRouter();
 const toast = useToast();
 
-if (!applicationSchema.value) {
-  throw new Error('Application schema not found.')
-}
-
 const service = computed(() => applicationSchema.value?.environments?.[0]?.services?.[0] as ServiceSchema | undefined);
 
 const localServiceConfig = ref<ServiceSchema | null>(null);
@@ -91,22 +87,12 @@ const saveChanges = async () => {
 
   try {
     const { stack_type, id } = localServiceConfig.value;
-    const configData = {
-      ...localServiceConfig.value.metadata,
-      service_id: id,
-    };
 
-    switch (stack_type) {
-      case 'SPA':
-        await $client.services.updateServiceSpa.mutate(configData);
-        break;
-      case 'FUNCTION':
-        await $client.services.updateServiceFunction.mutate(configData);
-        break;
-      case 'WEB_SERVICE':
-        await $client.services.updateServiceWebservice.mutate(configData);
-        break;
-    }
+    await $client.services.updateServiceMetadata.mutate({
+      serviceId: id,
+      stack_type,
+      metadata: localServiceConfig.value.metadata,
+    });
 
     await refreshApplicationSchema();
     toast.add({ title: 'Settings saved successfully!', color: 'success' });

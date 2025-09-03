@@ -99,10 +99,10 @@ const saveSettings = async (event: FormSubmitEvent<{ headers: { path: string; na
       throw new Error('Service not found.');
     }
 
-    await $client.services.updateServiceSpa.mutate({
-      service_id: service.value.id,
-      headers: event.data.headers,
-    });
+    // await $client.services.updateServiceSpa.mutate({
+    //   service_id: service.value.id,
+    //   headers: event.data.headers,
+    // });
     toast.add({ title: 'Application headers updated', color: 'success' });
     await refreshApplicationSchema();
   } catch (e: any) {

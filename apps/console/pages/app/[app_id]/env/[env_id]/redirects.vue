@@ -103,11 +103,11 @@ const saveSettings = async () => {
       throw new Error('Service not found.');
     }
 
-    await $client.services.updateServiceSpa.mutate({
-  service_id: service.value.id,
-      redirects: formState.value.redirects,
-      rewrites: formState.value.rewrites,
-    });
+  //   await $client.services.updateServiceSpa.mutate({
+  // service_id: service.value.id,
+  //     redirects: formState.value.redirects,
+  //     rewrites: formState.value.rewrites,
+  //   });
     toast.add({ title: 'Edge settings saved successfully!', color: 'success' });
     await refreshApplicationSchema();
   } catch (e: any) {
