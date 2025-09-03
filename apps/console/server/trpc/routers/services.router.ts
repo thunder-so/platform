@@ -17,6 +17,13 @@ import {
   WebServiceMetadataSchema,
 } from '~/server/validators/common';
 
+// Schema for creating a variable (omits id)
+const createServiceVariableSchema = serviceVariableSchema.omit({ id: true });
+// Schema for updating a variable (requires id)
+const updateServiceVariableSchema = serviceVariableSchema.extend({
+  id: z.string(),
+});
+
 export const servicesRouter = router({
   // Mutation to update the core service details
   updateService: protectedProcedure
@@ -66,39 +73,23 @@ export const servicesRouter = router({
     }),
 
   // Mutations for Service Variables
-  upsertServiceVariable: protectedProcedure
-    .input(serviceVariableSchema)
+  createServiceVariable: protectedProcedure
+    .input(createServiceVariableSchema)
+    .mutation(async ({ input }) => {
+      return await db.insert(serviceVariables).values(input).returning();
+    }),
+
+  updateServiceVariable: protectedProcedure
+    .input(updateServiceVariableSchema)
     .mutation(async ({ input }) => {
       const { id, ...data } = input;
-      if (id) {
-        return await db.update(serviceVariables).set(data).where(eq(serviceVariables.id, id)).returning();
-      }
-      return await db.insert(serviceVariables).values(data).returning();
+      return await db.update(serviceVariables).set(data).where(eq(serviceVariables.id, id)).returning();
     }),
 
   deleteServiceVariable: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       return await db.delete(serviceVariables).where(eq(serviceVariables.id, input.id)).returning();
-    }),
-
-  // Mutations for Service Secrets
-  upsertServiceSecret: protectedProcedure
-    .input(serviceSecretSchema)
-    .mutation(async ({ input }) => {
-      const { id, ...data } = input;
-      // Here you would add logic to encrypt the secret value before saving
-      if (id) {
-        return await db.update(serviceSecrets).set(data).where(eq(serviceSecrets.id, id)).returning();
-      }
-      return await db.insert(serviceSecrets).values(data).returning();
-    }),
-
-  deleteServiceSecret: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      // Here you would add logic to delete from AWS Secrets Manager
-      return await db.delete(serviceSecrets).where(eq(serviceSecrets.id, input.id)).returning();
     }),
 
   // Mutations for Domains

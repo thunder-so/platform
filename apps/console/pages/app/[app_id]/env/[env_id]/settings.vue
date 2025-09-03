@@ -2,7 +2,7 @@
   <div>
     <UCard v-if="localServiceConfig" class="mt-4">
       <template #header>
-        <h2 class="text-xl font-semibold">Service Configuration</h2>
+        <h3>Service Configuration</h3>
       </template>
       <AppServiceConfiguration :service="localServiceConfig" ref="serviceConfigForm" />
       <template #footer>
