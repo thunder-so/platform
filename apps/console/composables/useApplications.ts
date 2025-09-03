@@ -77,26 +77,7 @@ export const useApplications = () => {
   };
 
   const setApplicationSchemaById = async (id: string) => {
-    const changed = appId.value !== id;
-    appId.value = id;
-    if (changed) {
-      const promise = fetchApplicationSchema(id);
-      if (process.server) {
-        // During SSR we should wait for the fetch so the server-rendered HTML contains the schema
-        try {
-          await promise;
-        } catch (e) {
-          // Error is already handled in fetchApplicationSchema, but we log it here for SSR context
-          console.error('Failed to fetch application schema during SSR', e);
-        }
-      } else {
-        // Client: don't block, but surface errors
-        promise.catch((e) => {
-          // Error is already handled in fetchApplicationSchema
-        });
-      }
-    }
-    return changed;
+    return await fetchApplicationSchema(id);
   };
 
   const refreshApplicationSchema = async () => {

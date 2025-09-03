@@ -171,19 +171,12 @@ const manageLinks = computed<NavigationMenuItem[]>(() => {
   return links;
 });
 
-// Ensure SSR renders with the application schema: during server render await fetch once using the current route param.
-if (process.server) {
-  const ssrAppId = route.params.app_id as string | undefined;
-  if (ssrAppId) {
-    // top-level await is supported in <script setup>
-    await setApplicationSchemaById(ssrAppId);
+watch(() => route.params.app_id, (newAppId) => {
+  if (newAppId) {
+    const found = setApplicationSchemaById(newAppId as string);
+    if (!found) {
+      navigateTo('/404');
+    }
   }
-}
-
-// Client navigation: watch for changes and update the application schema when app_id changes.
-watch(() => route.params.app_id, async (newAppId, oldAppId) => {
-  if (newAppId && newAppId !== oldAppId) {
-    await setApplicationSchemaById(newAppId as string);
-  }
-}, { immediate: false });
+}, { immediate: true });
 </script>
