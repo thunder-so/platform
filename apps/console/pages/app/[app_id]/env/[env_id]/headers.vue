@@ -7,28 +7,28 @@
 
       <UForm :state="formState" @submit="saveSettings" ref="form">
         <div v-for="(header, index) in formState.headers" :key="index" class="grid grid-cols-12 gap-x-2 mt-2 items-start">
-          <UFormField label="Path" :name="`headers.${index}.path`" class="col-span-3">
+          <UFormField :name="`headers.${index}.path`" class="col-span-3">
             <UInput
               v-model="header.path"
               placeholder="Path"
               class="w-full"
             />
           </UFormField>
-          <UFormField label="Name" :name="`headers.${index}.name`" class="col-span-4">
+          <UFormField :name="`headers.${index}.name`" class="col-span-4">
             <UInput
               v-model="header.name"
               placeholder="Name"
               class="w-full"
             />
           </UFormField>
-          <UFormField label="Value" :name="`headers.${index}.value`" class="col-span-4">
+          <UFormField :name="`headers.${index}.value`" class="col-span-4">
             <UInput
               v-model="header.value"
               placeholder="Value"
               class="w-full"
             />
           </UFormField>
-          <div class="col-span-1 pt-6">
+          <div class="col-span-1">
             <UButton icon="i-heroicons-trash" color="error" variant="ghost" @click="removeHeader(index)" />
           </div>
         </div>
@@ -95,14 +95,20 @@ const submitForm = () => {
 const saveSettings = async (event: FormSubmitEvent<{ headers: { path: string; name: string; value: string }[] }>) => {
   isSaving.value = true;
   try {
-    if (!service.value) {
-      throw new Error('Service not found.');
+    if (!service.value || service.value.stack_type !== 'SPA') {
+      throw new Error('SPA service not found.');
     }
 
-    // await $client.services.updateServiceSpa.mutate({
-    //   service_id: service.value.id,
-    //   headers: event.data.headers,
-    // });
+    const updatedMetadata = {
+      ...service.value.metadata,
+      headers: event.data.headers,
+    };
+
+    await $client.services.updateServiceMetadata.mutate({
+      service_id: service.value.id,
+      stack_type: service.value.stack_type,
+      metadata: updatedMetadata,
+    });
     toast.add({ title: 'Application headers updated', color: 'success' });
     await refreshApplicationSchema();
   } catch (e: any) {

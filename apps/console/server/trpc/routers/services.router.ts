@@ -4,13 +4,11 @@ import { db } from '~/server/db/db';
 import {
   services,
   serviceVariables,
-  serviceSecrets,
   domains,
 } from '~/server/db/schema';
 import { eq } from 'drizzle-orm';
 import {
   serviceVariableSchema,
-  serviceSecretSchema,
   domainSchema,
   SPAServiceMetadataSchema,
   FunctionServiceMetadataSchema,

@@ -66,6 +66,7 @@ export const useApplications = () => {
       if (error) throw error;
       
       applicationSchema.value = data as ApplicationSchema;
+      appId.value = applicationSchema.value.id;
       return applicationSchema.value;
     } catch (e) {
       isError.value = true;

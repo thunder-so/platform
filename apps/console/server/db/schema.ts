@@ -1,7 +1,6 @@
 import { pgTable, pgEnum, uuid, text, timestamp, jsonb, integer, boolean, unique, index, primaryKey, foreignKey, decimal } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { cuid2 } from 'drizzle-cuid2/postgres';
-import { redirects, rewrites, headers, SPABuildPropsSchema, DockerBasedBuildPropsSchema, SPAServiceMetadataSchema, FunctionServiceMetadataSchema, WebServiceMetadataSchema } from '../validators/common';
 
 // Enums
 export const buildStatusEnum = pgEnum('BUILD_STATUS', ['NULL', 'IN_PROGRESS', 'SUCCEEDED', 'FAILED', 'FAULT', 'TIMED_OUT', 'STOPPED']);

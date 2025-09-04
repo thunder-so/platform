@@ -77,7 +77,7 @@ export const DockerBasedBuildPropsSchema = z.object({
   exclude: z.array(z.string()).optional(),
 });
 
-export const redirects = z.array(
+export const RedirectsSchema = z.array(
   z.object({ 
     source: z.string().min(1, 'Source is required')
       .regex(/^\/.*$/, 'Source must start with a forward slash (/)')
@@ -87,17 +87,17 @@ export const redirects = z.array(
       .regex(/^[a-zA-Z0-9_/-]+$/, 'Invalid characters.'),
   })
 );
-export const rewrites = z.array(z.object({ source: z.string(), destination: z.string() }));
-export const headers = z.array(z.object({ path: z.string(), name: z.string(), value: z.string() }));
+export const RewritesSchema = z.array(z.object({ source: z.string(), destination: z.string() }));
+export const HeadersSchema = z.array(z.object({ path: z.string(), name: z.string(), value: z.string() }));
 
 export const SPAServiceMetadataSchema = z.object({
   debug: z.boolean(),
   rootDir: z.string(),
   outputDir: z.string(),
   buildProps: SPABuildPropsSchema,
-  redirects: redirects,
-  rewrites: rewrites,
-  headers: headers,
+  redirects: RedirectsSchema,
+  rewrites: RewritesSchema,
+  headers: HeadersSchema,
   errorPagePath: z.string(),
   allowHeaders: z.array(z.string()),
   allowCookies: z.array(z.string()),

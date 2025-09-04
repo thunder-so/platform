@@ -57,6 +57,7 @@ export const environmentSchema = z.object({
 });
 
 export const applicationSchema = z.object({
+  id: z.string(),
   name: z.string().regex(NAME_REGEX, NAME_ERROR_MESSAGE),
   display_name: z.string().min(1, 'Display name is required'),
   environments: z.array(environmentSchema),
