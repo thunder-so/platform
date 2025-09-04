@@ -105,7 +105,7 @@ export const SPAServiceMetadataSchema = z.object({
   denyQueryParams: z.array(z.string()),
 });
 
-export const functionPropsSchema = z.object({
+export const FunctionPropsSchema = z.object({
   memorySize: z.number(),
   timeout: z.number(),
   keepWarm: z.boolean(),
@@ -119,7 +119,7 @@ export const FunctionServiceMetadataSchema = z.object({
   debug: z.boolean(),
   rootDir: z.string(),
   buildProps: DockerBasedBuildPropsSchema,
-  functionProps: functionPropsSchema,
+  functionProps: FunctionPropsSchema,
 });
 
 export const WebServicePropsSchema = z.object({

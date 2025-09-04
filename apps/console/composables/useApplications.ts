@@ -1,4 +1,4 @@
-import type { ApplicationSchema } from '~/server/db/schema';
+import type { ApplicationSchema } from '~/server/validators/app';
 
 export const useApplications = () => {
   const supabase = useSupabaseClient();
