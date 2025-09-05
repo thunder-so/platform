@@ -2,43 +2,39 @@
   <div>
     <Header />
     
-    <UDashboardGroup storage-key="app-dashboard" class="mt-14">
-      <UDashboardSidebar collapsible class="border-muted">
-        <div class="pb-2 border-b border-muted mt-4 mb-4">
-          <NuxtLink :to="`/org/${applicationSchema?.organization_id}`" class="text-sm button flex items-center gap-1">
-            <UIcon name="i-lucide-arrow-left" />
-            Dashboard
-          </NuxtLink>
+    <UMain>
+      <div class="grid grid-cols-6 gap-0 min-h-[calc(100vh-4rem)]">
+        <div class="col-span-1 p-6 border-r border-muted lg:block hidden">
+          <div class="pb-2">
+            <UButton :to="`/org/${applicationSchema?.organization_id}`" variant="ghost" size="sm" leading-icon="i-lucide-arrow-left">
+              Dashboard
+            </UButton>
+          </div>
 
-          <h2 class="pt-2 text-xl font-medium">{{ applicationSchema?.display_name }}</h2>
+          <UNavigationMenu 
+            v-if="applicationSchema"
+            :items="primaryLinks"
+            orientation="vertical" 
+            class="mb-4"
+            :ui="{
+              link: 'p-3'
+            }"
+          />
+
+          <h3 class="text-xs uppercase p-3">
+            Manage
+          </h3>
+          <UNavigationMenu 
+            v-if="applicationSchema"
+            :items="manageLinks"
+            orientation="vertical" 
+            class="mb-4"
+            :ui="{
+              link: 'p-3'
+            }"
+          />
         </div>
-
-        <UNavigationMenu 
-          v-if="applicationSchema"
-          :items="primaryLinks"
-          orientation="vertical" 
-          class="mb-4"
-          :ui="{
-            link: 'p-3'
-          }"
-        />
-
-        <h3 class="text-xs uppercase pl-3 pr-3 mb-2">
-          Manage
-        </h3>
-        <UNavigationMenu 
-          v-if="applicationSchema"
-          :items="manageLinks"
-          orientation="vertical" 
-          class="mb-4"
-          :ui="{
-            link: 'p-3'
-          }"
-        />
-      </UDashboardSidebar>
-
-      <UDashboardPanel>
-        <template #body>
+        <div class="p-6 lg:col-span-5 col-span-10">
           <div class="border-b border-muted pb-6 mb-6">
             <UContainer>
             <ClientOnly>
@@ -107,9 +103,9 @@
           <UContainer>
             <slot />
           </UContainer>
-        </template>
-      </UDashboardPanel>
-    </UDashboardGroup>
+        </div>
+      </div>
+    </UMain>
   </div>
 </template>
 

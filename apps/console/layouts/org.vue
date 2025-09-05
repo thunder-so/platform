@@ -1,28 +1,25 @@
 <template>
   <div>
     <Header />
-
-    <UDashboardGroup storage-key="org-dashboard" class="mt-14">
-      <UDashboardSidebar collapsible class="border-muted">
-        <UNavigationMenu 
-          v-if="selectedOrganization"
-          :items="links"
-          orientation="vertical" 
-          :ui="{
-            link: 'p-3'
-          }"
-          class="mt-4"
-        />
-      </UDashboardSidebar>
-
-      <UDashboardPanel>
-        <template #body>
+    <UMain>
+      <div class="grid grid-cols-6 gap-0 min-h-[calc(100vh-4rem)]">
+        <div class="col-span-1 p-6 border-r border-muted lg:block hidden">
+          <UNavigationMenu 
+            v-if="selectedOrganization"
+            :items="links"
+            orientation="vertical" 
+            :ui="{
+              link: 'p-3'
+            }"
+          />
+        </div>
+        <div class="p-6 lg:col-span-5 col-span-6">
           <UContainer>
             <slot />
           </UContainer>
-        </template>
-      </UDashboardPanel>
-    </UDashboardGroup>
+        </div>
+      </div>
+    </UMain>
   </div>
 </template>
 

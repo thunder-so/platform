@@ -1,18 +1,14 @@
 <template>
-  <header class="flex justify-between items-center py-2 px-4 border-b border-muted">
-    <div class="flex items-center space-x-2">
-      <NuxtLink to="/" class="text-xl font-bold">
-        <UButton icon="custom:thunderso" size="sm" color="neutral" variant="ghost" class="p-3"></UButton>
+  <UHeader class="[&>div]:max-w-none border-muted" :ui="{ container: 'lg:px-6' }">
+    <template #left>
+      <NuxtLink to="/">
+        <UButton icon="custom:thunderso" size="sm" color="neutral" variant="ghost" class="p-3" />
       </NuxtLink>
-
-      <!-- Organizations Menu -->
+      
       <UPopover
         v-model:open="isOrgPopoverOpen"
         mode="click"
-        :content="{
-          align: 'start',
-          side: 'bottom',
-        }"
+        :content="{ align: 'start', side: 'bottom' }"
       >
         <UButton 
           size="lg"
@@ -47,17 +43,13 @@
           </div>
         </template>
       </UPopover>
-    </div>
-    <div class="flex items-center space-x-2">
+    </template>
 
-      <!-- New Menu -->
+    <template #right>
       <UPopover
         v-model:open="isNewPopoverOpen"
         mode="click"
-        :content="{
-          align: 'end',
-          side: 'bottom',
-        }"
+        :content="{ align: 'end', side: 'bottom' }"
       >
         <UButton size="lg" icon="i-heroicons-plus-20-solid" color="neutral" variant="outline">
           New
@@ -78,14 +70,10 @@
         </template>
       </UPopover>
 
-      <!-- Help Menu -->
       <UPopover
         v-model:open="isHelpPopoverOpen"
         mode="click"
-        :content="{
-          align: 'end',
-          side: 'bottom',
-        }"
+        :content="{ align: 'end', side: 'bottom' }"
       >
         <UButton size="lg" icon="i-heroicons-question-mark-circle" color="neutral" variant="outline" />
         
@@ -108,14 +96,10 @@
         </template>
       </UPopover>
 
-      <!-- User Menu -->
       <UPopover
         v-model:open="isUserPopoverOpen"
         mode="click"
-        :content="{
-          align: 'end',
-          side: 'bottom',
-        }"
+        :content="{ align: 'end', side: 'bottom' }"
       >
         <UButton size="lg" color="neutral" variant="ghost">
           <UAvatar :src="user?.user_metadata.avatar_url" :alt="user?.user_metadata.full_name" size="xs" class="h-5 w-5" />
@@ -147,8 +131,8 @@
           </div>
         </template>
       </UPopover>
-    </div>
-  </header>
+    </template>
+  </UHeader>
 </template>
 
 <script setup lang="ts">
