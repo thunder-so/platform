@@ -2,24 +2,27 @@
   <div>
     <Header />
 
-    <div class="app-container">
-      <aside class="sidebar border-r border-muted">
+    <UDashboardGroup storage-key="org-dashboard" class="mt-14">
+      <UDashboardSidebar collapsible class="border-muted">
         <UNavigationMenu 
           v-if="selectedOrganization"
           :items="links"
           orientation="vertical" 
-          class="mb-4"
           :ui="{
             link: 'p-3'
           }"
+          class="mt-4"
         />
-      </aside>
-      <main class="main-content"> 
-        <UContainer>
-          <slot />
-        </UContainer>
-      </main>
-    </div>
+      </UDashboardSidebar>
+
+      <UDashboardPanel>
+        <template #body>
+          <UContainer>
+            <slot />
+          </UContainer>
+        </template>
+      </UDashboardPanel>
+    </UDashboardGroup>
   </div>
 </template>
 

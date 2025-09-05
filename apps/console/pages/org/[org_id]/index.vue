@@ -61,7 +61,7 @@ const columns = [
     }
   },
   { 
-    accessorKey: 'name', 
+    accessorKey: 'display_name', 
     meta: {
       style: {
         th: 'width: 50%',
@@ -87,7 +87,7 @@ const columns = [
     cell: ({ row }) => h(resolveComponent('NuxtLink'), { 
       to: `/app/${row.getValue('id')}`, 
       class: 'font-medium text-highlighted hover:underline' 
-    }, () => row.getValue('name'))
+    }, () => row.getValue('display_name'))
   },
   { 
     accessorKey: 'stack_type', 
@@ -165,7 +165,7 @@ onMounted(async () => {
   try {
     const { data: appData, error: appError } = await supabase
       .from('applications')
-      .select(`id, name, created_at,
+      .select(`id, name, display_name, created_at,
         environments(region,
           services(stack_type, updated_at)
         )
@@ -179,7 +179,7 @@ onMounted(async () => {
       app.environments.flatMap(env => 
         env.services.map(service => ({
           id: app.id,
-          name: app.name,
+          display_name: app.display_name,
           created_at: app.created_at,
           region: env.region,
           stack_type: service.stack_type,

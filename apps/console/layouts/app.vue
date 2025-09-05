@@ -2,9 +2,9 @@
   <div>
     <Header />
     
-    <div class="app-container">
-      <aside class="sidebar border-r border-muted">
-        <div class="pb-2 border-b border-muted mb-4">
+    <UDashboardGroup storage-key="app-dashboard" class="mt-14">
+      <UDashboardSidebar collapsible class="border-muted">
+        <div class="pb-2 border-b border-muted mt-4 mb-4">
           <NuxtLink :to="`/org/${applicationSchema?.organization_id}`" class="text-sm button flex items-center gap-1">
             <UIcon name="i-lucide-arrow-left" />
             Dashboard
@@ -35,78 +35,81 @@
             link: 'p-3'
           }"
         />
-      </aside>
-      <main class="main-content">
-        <div class="border-b border-muted pb-6 mb-6">
-          <UContainer>
-          <ClientOnly>
-            <div class="flex justify-between">
-              <div>
-                <div class="flex items-center gap-4 mb-4">
-                  <h1 class="text-xl tracking-tight text-zinc-100">{{ applicationSchema?.display_name }}</h1>
-                  <UBadge v-if="service?.stack_type === 'SPA'" color="success" variant="subtle">STATIC</UBadge>
-                  <UBadge v-if="service?.stack_type === 'FUNCTION'" color="secondary" variant="subtle">LAMBDA</UBadge>
-                  <UBadge v-if="service?.stack_type === 'WEB_SERVICE'" color="info" variant="subtle">WEB SERVICE</UBadge>
-                </div>
-                <div class="flex items-center gap-6">
-                  <div class="flex items-center gap-2">
-                    <span class="flex items-center justify-center items-center gap-1.5">
-                      <Icon name="mdi:github" class="w-4 h-4 mt-1 text-muted" />
-                      <span class="text-sm text-muted">{{service?.owner}} / {{service?.repo}}</span>
-                    </span>
-                    <span class="flex items-center justify-center gap-1">
-                      <Icon name="mdi:source-branch" class="w-4 h-4 mt-1 text-muted" />
-                      <span class="text-sm text-muted">{{service?.branch}}</span>
-                    </span>
-                  </div>
-                  <div class="flex items-center justify-center gap-2">
-                    <Icon name="mdi:aws" class="h-5 w-5 mt-1 text-muted" />
-                    <span class="text-sm text-muted">{{ provider?.alias }} / {{ environment?.region }}</span>
-                  </div>
-                </div>
-              </div>
-              <div class="flex justify-center items-center">
-                <div>
-                  <UPopover
-                    mode="click"
-                    :content="{
-                      align: 'end',
-                      side: 'bottom',
-                    }"
-                  >
-                    <UButton 
-                      label="Deploy" 
-                      size="lg" 
-                      color="neutral" 
-                      variant="outline" 
-                      trailing-icon="i-lucide-chevron-down"
-                    />
+      </UDashboardSidebar>
 
-                    <template #content>
-                      <div class="p-2">
-                        <ul class="space-y-1">
-                          <li>
-                            <UButton class="w-full" variant="ghost" label="Deploy latest commit" @click="() => {}" />
-                          </li>
-                          <li>
-                            <UButton class="w-full" variant="ghost" label="Deploy specific commit" @click="() => {}" />
-                          </li>
-                        </ul>
-                      </div>
-                    </template>
-                  </UPopover>
+      <UDashboardPanel>
+        <template #body>
+          <div class="border-b border-muted pb-6 mb-6">
+            <UContainer>
+            <ClientOnly>
+              <div class="flex justify-between">
+                <div>
+                  <div class="flex items-center gap-4 mb-4">
+                    <h1 class="text-xl tracking-tight text-zinc-100">{{ applicationSchema?.display_name }}</h1>
+                    <UBadge v-if="service?.stack_type === 'SPA'" color="success" variant="subtle">STATIC</UBadge>
+                    <UBadge v-if="service?.stack_type === 'FUNCTION'" color="secondary" variant="subtle">LAMBDA</UBadge>
+                    <UBadge v-if="service?.stack_type === 'WEB_SERVICE'" color="info" variant="subtle">WEB SERVICE</UBadge>
+                  </div>
+                  <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-2">
+                      <span class="flex items-center justify-center items-center gap-1.5">
+                        <Icon name="mdi:github" class="w-4 h-4 mt-1 text-muted" />
+                        <span class="text-sm text-muted">{{service?.owner}} / {{service?.repo}}</span>
+                      </span>
+                      <span class="flex items-center justify-center gap-1">
+                        <Icon name="mdi:source-branch" class="w-4 h-4 mt-1 text-muted" />
+                        <span class="text-sm text-muted">{{service?.branch}}</span>
+                      </span>
+                    </div>
+                    <div class="flex items-center justify-center gap-2">
+                      <Icon name="mdi:aws" class="h-5 w-5 mt-1 text-muted" />
+                      <span class="text-sm text-muted">{{ provider?.alias }} / {{ environment?.region }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex justify-center items-center">
+                  <div>
+                    <UPopover
+                      mode="click"
+                      :content="{
+                        align: 'end',
+                        side: 'bottom',
+                      }"
+                    >
+                      <UButton 
+                        label="Deploy" 
+                        size="lg" 
+                        color="neutral" 
+                        variant="outline" 
+                        trailing-icon="i-lucide-chevron-down"
+                      />
+
+                      <template #content>
+                        <div class="p-2">
+                          <ul class="space-y-1">
+                            <li>
+                              <UButton class="w-full" variant="ghost" label="Deploy latest commit" @click="() => {}" />
+                            </li>
+                            <li>
+                              <UButton class="w-full" variant="ghost" label="Deploy specific commit" @click="() => {}" />
+                            </li>
+                          </ul>
+                        </div>
+                      </template>
+                    </UPopover>
+                  </div>
                 </div>
               </div>
-            </div>
-            <!-- <pre>{{ applicationSchema }}</pre> -->
-          </ClientOnly>
-          </UContainer> 
-        </div>
-        <UContainer>
-          <slot />
-        </UContainer>
-      </main>
-    </div>
+              <!-- <pre>{{ applicationSchema }}</pre> -->
+            </ClientOnly>
+            </UContainer> 
+          </div>
+          <UContainer>
+            <slot />
+          </UContainer>
+        </template>
+      </UDashboardPanel>
+    </UDashboardGroup>
   </div>
 </template>
 
