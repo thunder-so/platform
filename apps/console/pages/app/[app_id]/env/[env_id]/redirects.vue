@@ -129,7 +129,7 @@ async function handleSave() {
   if (!service.value || !state.value || !form.value) return;
 
   try {
-    await form.value.validate(state.value, { silent: true });
+    await form.value.validate();
   }
   catch (e) {
     return;
