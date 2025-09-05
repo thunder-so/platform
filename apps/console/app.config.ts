@@ -1,9 +1,9 @@
 export default defineAppConfig({
   regions: [
-    { name: "us-east-1", label: "US East (N. Virginia)" },
-    { name: "us-east-2", label: "US East (Ohio)" },
-    { name: "us-west-1", label: "US West (N. California)" },
-    { name: "us-west-2", label: "US West (Oregon)" },
+    { name: "us-east-1", label: "US East 1 (N. Virginia)" },
+    { name: "us-east-2", label: "US East 2 (Ohio)" },
+    { name: "us-west-1", label: "US West 1 (N. California)" },
+    { name: "us-west-2", label: "US West 2 (Oregon)" },
     { name: "ca-central-1", label: "Canada (Central)" },
     { name: "af-south-1", label: "Africa (Cape Town)" },
     { name: "ap-east-1", label: "Asia Pacific (Hong Kong)" },

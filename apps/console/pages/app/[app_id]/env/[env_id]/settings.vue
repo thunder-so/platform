@@ -71,7 +71,7 @@
 import { AppApplicationDeleteModal } from '#components'
 import { ref, computed, watch } from 'vue';
 import AppServiceConfiguration from '~/components/app/ServiceConfiguration.vue';
-import type { ServiceSchema } from '~/server/db/schema';
+import type { ServiceSchema } from '~/server/validators/app';
 import { isEqual } from 'lodash-es';
 
 definePageMeta({

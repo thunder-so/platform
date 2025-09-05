@@ -2,50 +2,60 @@
   <div>
     <UCard class="mt-4">
       <template #header>
-        <h2 class="text-xl font-semibold">Redirect Settings</h2>
+        <h3>Redirects and Rewrites</h3>
       </template>
 
+      <h2 class="text-md font-semibold mb-4 pb-4 border-b border-muted">Redirects</h2>
+
       <UForm :state="formState" @submit="saveSettings">
-        <div class="grid grid-cols-2 gap-4">
-          <template v-for="(redirect, index) in formState.redirects" :key="`redirect-${index}`">
-            <UFormField :label="`Source ${index + 1}`" :name="`redirect-source-${index}`">
-              <UInput v-model="redirect.source" />
-            </UFormField>
-            <UFormField :label="`Destination ${index + 1}`" :name="`redirect-destination-${index}`">
-              <UInput v-model="redirect.destination" />
-            </UFormField>
-            <div class="col-span-2">
-              <UButton icon="i-heroicons-minus" color="info" @click="removeRedirect(index)">Remove Redirect</UButton>
-            </div>
-          </template>
-          <div class="col-span-2">
-            <UButton icon="i-heroicons-plus" @click="addRedirect">Add Redirect</UButton>
+        <div v-for="(redirect, index) in formState.redirects" :key="`redirect-${index}`" class="grid grid-cols-9 gap-x-2 mt-2 items-start">
+          <UFormField :name="`redirect-source-${index}`" class="col-span-4">
+            <UInput 
+              v-model="redirect.source" 
+              placeholder="Source path"
+              class="w-full" 
+            />
+          </UFormField>
+          <UFormField :name="`redirect-destination-${index}`" class="col-span-4">
+            <UInput 
+              v-model="redirect.destination" 
+              placeholder="Destination path"
+              class="w-full" 
+            />
+          </UFormField>
+          <div class="col-span-1">
+            <UButton icon="heroicons:trash" color="error" variant="ghost" @click="removeRedirect(index)" />
           </div>
         </div>
+        <UButton color="primary" variant="outline" icon="i-heroicons-plus-circle-20-solid" class="mt-2" @click="addRedirect">Add Redirect</UButton>
 
-        <h2 class="text-xl font-semibold mb-4">Rewrite Settings</h2>
+        <h2 class="text-md font-semibold mt-6 mb-4 pb-4 border-b border-muted">Rewrites</h2>
 
-        <div class="grid grid-cols-2 gap-4">
-          <template v-for="(rewrite, index) in formState.rewrites" :key="`rewrite-${index}`">
-            <UFormField :label="`Source ${index + 1}`" :name="`rewrite-source-${index}`">
-              <UInput v-model="rewrite.source" />
-            </UFormField>
-            <UFormField :label="`Destination ${index + 1}`" :name="`rewrite-destination-${index}`">
-              <UInput v-model="rewrite.destination" />
-            </UFormField>
-            <div class="col-span-2">
-              <UButton icon="i-heroicons-minus" color="info" @click="removeRewrite(index)">Remove Rewrite</UButton>
-            </div>
-          </template>
-          <div class="col-span-2">
-            <UButton icon="i-heroicons-plus" @click="addRewrite">Add Rewrite</UButton>
+        <div v-for="(rewrite, index) in formState.rewrites" :key="`rewrite-${index}`" class="grid grid-cols-9 gap-x-2 mt-2 items-start">
+          <UFormField :name="`rewrite-source-${index}`" class="col-span-4">
+            <UInput 
+              v-model="rewrite.source" 
+              placeholder="Source path"
+              class="w-full" 
+            />
+          </UFormField>
+          <UFormField :name="`rewrite-destination-${index}`" class="col-span-4">
+            <UInput 
+              v-model="rewrite.destination" 
+              placeholder="Destination path"
+              class="w-full" 
+            />
+          </UFormField>
+          <div class="col-span-1">
+            <UButton icon="heroicons:trash" color="error" variant="ghost" @click="removeRewrite(index)" />
           </div>
         </div>
-
-        <div class="mt-4">
-          <UButton type="submit" :loading="isSaving">Save Settings</UButton>
-        </div>
+        <UButton color="primary" variant="outline" icon="i-heroicons-plus-circle-20-solid" class="mt-2" @click="addRewrite">Add Rewrite</UButton>
       </UForm>
+
+      <template #footer>
+        <UButton :loading="isSaving" color="primary" @click="saveSettings">Save Settings</UButton>
+      </template>
     </UCard>
   </div>
 </template>

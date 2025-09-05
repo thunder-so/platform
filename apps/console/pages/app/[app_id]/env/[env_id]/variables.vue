@@ -37,9 +37,7 @@
       </UForm>
 
       <template #footer>
-        <div class="flex justify-end">
-          <UButton :loading="isSaving" color="primary" @click="saveVariables">Save Variables</UButton>
-        </div>
+        <UButton :loading="isSaving" color="primary" @click="saveVariables">Save Variables</UButton>
       </template>
     </UCard>
   </div>

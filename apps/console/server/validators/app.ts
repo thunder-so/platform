@@ -63,4 +63,5 @@ export const applicationSchema = z.object({
   environments: z.array(environmentSchema),
 });
 
+export type ServiceSchema = z.infer<typeof serviceSchema>;
 export type ApplicationSchema = z.infer<typeof applicationSchema>;
