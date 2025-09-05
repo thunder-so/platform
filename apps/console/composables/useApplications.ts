@@ -86,6 +86,18 @@ export const useApplications = () => {
     return await fetchApplicationSchema(appId.value);
   };
 
+  const route = useRoute();
+
+  const currentEnvironment = computed(() => {
+    if (!applicationSchema.value || !route.params.env_id) return null;
+    return applicationSchema.value.environments.find(e => e.id === route.params.env_id);
+  });
+
+  const currentService = computed(() => {
+    if (!currentEnvironment.value) return null;
+    return currentEnvironment.value.services[0] ?? null;
+  });
+
   return {
     applicationSchema,
     isLoading,
@@ -93,5 +105,7 @@ export const useApplications = () => {
     refreshApplicationSchema,
     setApplicationSchemaById,
     appId,
+    currentEnvironment,
+    currentService,
   };
 };

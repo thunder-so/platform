@@ -105,6 +105,8 @@ export const SPAServiceMetadataSchema = z.object({
   denyQueryParams: z.array(z.string()),
 });
 
+export type SPAServiceMetadata = z.infer<typeof SPAServiceMetadataSchema>;
+
 export const FunctionPropsSchema = z.object({
   memorySize: z.number(),
   timeout: z.number(),
@@ -122,6 +124,8 @@ export const FunctionServiceMetadataSchema = z.object({
   functionProps: FunctionPropsSchema,
 });
 
+export type FunctionServiceMetadata = z.infer<typeof FunctionServiceMetadataSchema>;
+
 export const WebServicePropsSchema = z.object({
   desiredCount: z.number(),
   cpu: z.number(),
@@ -137,6 +141,8 @@ export const WebServiceMetadataSchema = z.object({
   buildProps: DockerBasedBuildPropsSchema,
   serviceProps: WebServicePropsSchema,
 });
+
+export type WebServiceMetadata = z.infer<typeof WebServiceMetadataSchema>;
 
 export const domainSchema = z.object({
   id: z.string(),

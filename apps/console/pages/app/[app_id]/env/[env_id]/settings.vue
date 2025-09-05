@@ -80,13 +80,12 @@ definePageMeta({
 
 const { 
   applicationSchema, 
-  refreshApplicationSchema, 
+  refreshApplicationSchema,
+  currentService: service,
 } = useApplications();
 const { $client } = useNuxtApp();
 const router = useRouter();
 const toast = useToast();
-
-const service = computed(() => applicationSchema.value?.environments?.[0]?.services?.[0] as ServiceSchema | undefined);
 
 const localServiceConfig = ref<ServiceSchema | null>(null);
 const isSaving = ref(false);

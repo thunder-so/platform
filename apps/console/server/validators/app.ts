@@ -48,6 +48,7 @@ export const serviceSchema = z.discriminatedUnion('stack_type', [
 ]);
 
 export const environmentSchema = z.object({
+  id: z.string(),
   name: z.string().regex(NAME_REGEX, NAME_ERROR_MESSAGE),
   display_name: z.string().min(1, 'Display name is required'),
   provider: providerSchema.optional(),
