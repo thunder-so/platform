@@ -9,7 +9,7 @@
       </p>
     </template>
 
-    <UForm v-if="state" :schema="SPAServiceMetadataSchema" :state="state" class="space-y-4" ref="form" :validate-on="['input']">
+    <UForm v-if="state" :schema="SPAServiceMetadataSchema" :state="state" class="space-y-4" ref="form" :validate-on="['blur']">
       <div v-for="(header, index) in state.headers" :key="index" class="grid grid-cols-12 gap-x-2 items-start">
         <UFormField :name="`headers.${index}.path`" class="col-span-3">
           <UInput v-model="header.path" placeholder="Path Pattern (e.g., /*)" class="w-full" />
@@ -40,7 +40,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { isEqual } from 'lodash-es';
-import type { FormSubmitEvent } from '#ui/types';
+import type { Form } from '#ui/types';
 import { type SPAServiceMetadata, SPAServiceMetadataSchema } from '~/server/validators/common';
 
 definePageMeta({
@@ -51,6 +51,7 @@ const { currentService: service, refreshApplicationSchema } = useApplications();
 const { $client } = useNuxtApp();
 const toast = useToast();
 
+const form = ref<Form<SPAServiceMetadata> | null>(null);
 const state = ref<SPAServiceMetadata | null>(null);
 const isLoading = ref(false);
 const isDirty = ref(false);
@@ -85,7 +86,15 @@ const removeHeader = (index: number) => {
 };
 
 async function handleSave() {
-  if (!service.value || !state.value) return;
+  if (!service.value || !state.value || !form.value) return;
+
+  try {
+    await form.value.validate(state.value, { silent: true });
+  }
+  catch (e) {
+    return;
+  }
+
   isLoading.value = true;
   try {
     await $client.services.updateServiceMetadata.mutate({

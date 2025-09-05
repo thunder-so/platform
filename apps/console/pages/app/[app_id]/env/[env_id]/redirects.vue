@@ -9,7 +9,7 @@
       </p>
     </template>
 
-    <UForm v-if="state" :schema="SPAServiceMetadataSchema" :state="state" class="space-y-8" ref="form" :validate-on="['input']">
+    <UForm v-if="state" :schema="SPAServiceMetadataSchema" :state="state" class="space-y-8" ref="form" :validate-on="['blur']">
       <!-- REDIRECTS -->
       <div>
         <h3 class="text-lg font-medium text-gray-900 dark:text-white">Redirects</h3>
@@ -65,7 +65,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { isEqual } from 'lodash-es';
-import type { FormSubmitEvent } from '#ui/types';
+import type { Form } from '#ui/types';
 import { type SPAServiceMetadata, SPAServiceMetadataSchema } from '~/server/validators/common';
 
 definePageMeta({
@@ -79,7 +79,7 @@ const toast = useToast();
 const state = ref<SPAServiceMetadata | null>(null);
 const isLoading = ref(false);
 const isDirty = ref(false);
-const form = ref();
+const form = ref<Form<SPAServiceMetadata> | null>(null);
 
 watch(service, (newVal) => {
   if (newVal && newVal.stack_type === 'SPA') {
@@ -126,8 +126,15 @@ const removeRewrite = (index: number) => {
 };
 
 async function handleSave() {
-  console.log('submit', state.value);
-  if (!service.value) return;
+  if (!service.value || !state.value || !form.value) return;
+
+  try {
+    await form.value.validate(state.value, { silent: true });
+  }
+  catch (e) {
+    return;
+  }
+
   isLoading.value = true;
   try {
     await $client.services.updateServiceMetadata.mutate({
