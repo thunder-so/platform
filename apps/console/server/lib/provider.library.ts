@@ -3,7 +3,7 @@ import { SSMClient, PutParameterCommand } from '@aws-sdk/client-ssm';
 import { SecretsManagerClient, CreateSecretCommand, UpdateSecretCommand } from '@aws-sdk/client-secrets-manager';
 import { TRPCError } from '@trpc/server';
 import { db } from '~/server/db/db';
-import { type ProviderSchema } from '~/server/db/schema';
+import { type ProviderSchema } from '~/server/validators/common';
 import { sql } from 'drizzle-orm';
 
 // A type for the initial validation scenario where the secret is not yet in the vault

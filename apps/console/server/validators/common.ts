@@ -193,3 +193,5 @@ export const providerSchema = z.object({
     if (typeof arg == 'string' || arg instanceof Date) return new Date(arg);
   }, z.date()).nullable(),
 });
+
+export type ProviderSchema = z.infer<typeof providerSchema>;

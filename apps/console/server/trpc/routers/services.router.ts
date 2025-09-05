@@ -14,6 +14,8 @@ import {
   FunctionServiceMetadataSchema,
   WebServiceMetadataSchema,
 } from '~/server/validators/common';
+import { PlatformLibrary } from '~/server/lib/platform.library';
+import { TRPCError } from '@trpc/server';
 
 // Schema for creating a variable (omits id)
 const createServiceVariableSchema = serviceVariableSchema.omit({ id: true });
@@ -62,11 +64,21 @@ export const servicesRouter = router({
 
       const parsedMetadata = validationSchema.parse(metadata);
 
-      return await db
+      const [updatedService] = await db
         .update(services)
         .set({ metadata: parsedMetadata, updated_at: new Date() })
         .where(eq(services.id, service_id))
         .returning();
+
+      if (!updatedService) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found.' });
+      }
+
+      // Trigger the build with the service ID
+      const platformLib = new PlatformLibrary();
+      await platformLib.triggerBuild(updatedService.id);
+
+      return updatedService;
     }),
 
   // Mutations for Service Variables
