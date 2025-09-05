@@ -87,8 +87,27 @@ export const RedirectsSchema = z.array(
       .regex(/^[a-zA-Z0-9_/-]+$/, 'Invalid characters.'),
   })
 );
-export const RewritesSchema = z.array(z.object({ source: z.string(), destination: z.string() }));
-export const HeadersSchema = z.array(z.object({ path: z.string(), name: z.string(), value: z.string() }));
+export const RewritesSchema = z.array(
+  z.object({
+    source: z.string().min(1, 'Source is required')
+      .regex(/^\/.*$/, 'Source must start with a forward slash (/)')
+      .regex(/^[a-zA-Z0-9_/-]+$/, 'Invalid characters.'),
+    destination: z.string().min(1, 'Destination is required')
+      .regex(/^\/.*$/, 'Destination must start with a forward slash (/)')
+      .regex(/^[a-zA-Z0-9_/-]+$/, 'Invalid characters.'),
+  })
+);
+
+export const HeadersSchema = z.array(
+  z.object({
+    path: z.string().min(1, 'Path is required')
+      .regex(/^\/.*$/, 'Path must start with a forward slash (/)')
+      .regex(/^[a-zA-Z0-9_*/-]+$/, 'Invalid characters.'),
+    name: z.string().min(1, 'Name is required')
+      .regex(/^[a-zA-Z0-9-]+$/, 'Invalid characters in header name.'),
+    value: z.string().min(1, 'Value is required'),
+  })
+);
 
 export const SPAServiceMetadataSchema = z.object({
   debug: z.boolean(),

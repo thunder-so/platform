@@ -9,7 +9,7 @@
       </p>
     </template>
 
-    <UForm v-if="state" :schema="SPAServiceMetadataSchema" :state="state" class="space-y-8" @submit="onSubmit" ref="form">
+    <UForm v-if="state" :schema="SPAServiceMetadataSchema" :state="state" class="space-y-8" ref="form" :validate-on="['input']">
       <!-- REDIRECTS -->
       <div>
         <h3 class="text-lg font-medium text-gray-900 dark:text-white">Redirects</h3>
@@ -125,18 +125,15 @@ const removeRewrite = (index: number) => {
   }
 };
 
-const handleSave = () => {
-  form.value?.submit();
-};
-
-async function onSubmit(event: FormSubmitEvent<SPAServiceMetadata>) {
+async function handleSave() {
+  console.log('submit', state.value);
   if (!service.value) return;
   isLoading.value = true;
   try {
     await $client.services.updateServiceMetadata.mutate({
       service_id: service.value.id,
       stack_type: 'SPA',
-      metadata: event.data
+      metadata: state.value
     });
     toast.add({ title: 'Settings updated successfully!', color: 'success' });
     await refreshApplicationSchema();

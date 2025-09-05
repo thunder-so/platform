@@ -9,7 +9,7 @@
       </p>
     </template>
 
-    <UForm v-if="state" :schema="SPAServiceMetadataSchema" :state="state" class="space-y-4" @submit="onSubmit" ref="form">
+    <UForm v-if="state" :schema="SPAServiceMetadataSchema" :state="state" class="space-y-4" ref="form" :validate-on="['input']">
       <div v-for="(header, index) in state.headers" :key="index" class="grid grid-cols-12 gap-x-2 items-start">
         <UFormField :name="`headers.${index}.path`" class="col-span-3">
           <UInput v-model="header.path" placeholder="Path Pattern (e.g., /*)" class="w-full" />
@@ -54,7 +54,6 @@ const toast = useToast();
 const state = ref<SPAServiceMetadata | null>(null);
 const isLoading = ref(false);
 const isDirty = ref(false);
-const form = ref();
 
 watch(service, (newVal) => {
   if (newVal && newVal.stack_type === 'SPA') {
@@ -85,18 +84,14 @@ const removeHeader = (index: number) => {
   }
 };
 
-const handleSave = () => {
-  form.value?.submit();
-};
-
-async function onSubmit(event: FormSubmitEvent<SPAServiceMetadata>) {
-  if (!service.value) return;
+async function handleSave() {
+  if (!service.value || !state.value) return;
   isLoading.value = true;
   try {
     await $client.services.updateServiceMetadata.mutate({
       service_id: service.value.id,
       stack_type: 'SPA',
-      metadata: event.data
+      metadata: state.value
     });
     toast.add({ title: 'Headers updated successfully!', color: 'success' });
     await refreshApplicationSchema();
