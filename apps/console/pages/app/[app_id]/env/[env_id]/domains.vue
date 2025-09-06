@@ -6,7 +6,7 @@
         <h2 class="text-xl font-semibold">Domain Settings</h2>
       </template>
 
-      <UForm :state="formState" @submit="saveSettings" class="space-y-4">
+      <UForm ref="form" :schema="validationSchema" :state="formState" @submit="saveSettings" class="space-y-4">
         <UFormField label="Domain" name="domain">
           <UInput v-model="formState.domain" />
         </UFormField>
@@ -24,7 +24,7 @@
         </UFormField>
 
         <div class="mt-4">
-          <UButton type="submit" :loading="isSaving">Save Settings</UButton>
+          <UButton type="submit" :loading="isSaving" :disabled="!isDirty">Save Settings</UButton>
         </div>
       </UForm>
     </UCard>
@@ -33,6 +33,16 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch, computed } from 'vue';
+import { isEqual } from 'lodash-es';
+import { z } from 'zod';
+import type { Form } from '#ui/types';
+
+const validationSchema = z.object({
+  domain: z.string().min(1, 'Domain is required.').regex(/^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$/, 'Invalid domain format.').nullable(),
+  hosted_zone_id: z.string().min(1, 'Hosted Zone ID is required.').nullable(),
+  global_certificate_arn: z.string().optional().nullable(),
+  regional_certificate_arn: z.string().optional().nullable(),
+});
 
 definePageMeta({
   layout: 'app',
@@ -43,6 +53,7 @@ const { $client } = useNuxtApp();
 const supabase = useSupabaseClient();
 const toast = useToast();
 
+const form = ref<Form<z.infer<typeof validationSchema>> | null>(null);
 const formState = reactive({
   domain: '' as string | null,
   global_certificate_arn: '' as string | null,
@@ -50,8 +61,14 @@ const formState = reactive({
   hosted_zone_id: '' as string | null,
 });
 
+const originalState = ref({});
 const isSaving = ref(false);
 const isLoading = ref(true);
+const isDirty = ref(false);
+
+watch(formState, (newState) => {
+  isDirty.value = !isEqual(originalState.value, newState);
+}, { deep: true });
 
 const fetchDomain = async (serviceId: string) => {
   isLoading.value = true;
@@ -69,14 +86,11 @@ const fetchDomain = async (serviceId: string) => {
       formState.global_certificate_arn = data.global_certificate_arn || '';
       formState.regional_certificate_arn = data.regional_certificate_arn || '';
       formState.hosted_zone_id = data.hosted_zone_id || '';
-    } else {
-      formState.domain = '';
-      formState.global_certificate_arn = '';
-      formState.regional_certificate_arn = '';
-      formState.hosted_zone_id = '';
     }
+    originalState.value = JSON.parse(JSON.stringify(formState));
+    isDirty.value = false;
   } catch (e: any) {
-    toast.add({ title: 'Error fetching domain settings', description: e.message, color: 'red' });
+    toast.add({ title: 'Error fetching domain settings', description: e.message, color: 'error' });
   } finally {
     isLoading.value = false;
   }
@@ -91,6 +105,13 @@ watch(() => currentService.value?.id, (serviceId) => {
 const service = computed(() => currentService.value);
 
 const saveSettings = async () => {
+  if (!form.value) return;
+  try {
+    await form.value.validate();
+  } catch (e) {
+    return;
+  }
+
   isSaving.value = true;
   try {
     const serviceId = service.value?.id;
