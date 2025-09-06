@@ -12,7 +12,7 @@
           <UAlert v-if="loadError" color="error" variant="subtle" class="mb-4" :title="loadError" />
 
           <div v-if="applicationSchema.environments" class="space-y-4">
-            <UForm ref="form" :state="applicationSchema" :schema="applicationInputSchema" :validate-on="['input']" class="space-y-4">
+            <UForm ref="form" :state="applicationSchema" :schema="applicationInputSchema" :validate-on="['blur']" class="space-y-4">
               <UFormField label="Repository" class="grid grid-cols-3 gap-4">
                 <UInput 
                   disabled 

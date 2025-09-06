@@ -32,31 +32,63 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, reactive, watch, computed } from 'vue';
 
 definePageMeta({
   layout: 'app',
 });
 
-const { applicationSchema, refreshApplicationSchema } = useApplications();
+const { currentService } = useApplications();
 const { $client } = useNuxtApp();
+const supabase = useSupabaseClient();
 const toast = useToast();
 
-if (!applicationSchema.value) {
-  throw Error('Application schema not found.')
-}
-
-const service = computed(() => applicationSchema.value?.environments?.[0]?.services?.[0]);
-const domain = computed(() => service.value?.domains?.[0]);
-
-const formState = ref({
-  domain: domain.value?.domain ?? '',
-  global_certificate_arn: domain.value?.globalCertificateArn ?? '',
-  regional_certificate_arn: domain.value?.regionalCertificateArn ?? '',
-  hosted_zone_id: domain.value?.hostedZoneId ?? '',
+const formState = reactive({
+  domain: '' as string | null,
+  global_certificate_arn: '' as string | null,
+  regional_certificate_arn: '' as string | null,
+  hosted_zone_id: '' as string | null,
 });
 
 const isSaving = ref(false);
+const isLoading = ref(true);
+
+const fetchDomain = async (serviceId: string) => {
+  isLoading.value = true;
+  try {
+    const { data, error } = await supabase
+      .from('domains')
+      .select('domain, global_certificate_arn, regional_certificate_arn, hosted_zone_id')
+      .eq('service_id', serviceId)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (data) {
+      formState.domain = data.domain || '';
+      formState.global_certificate_arn = data.global_certificate_arn || '';
+      formState.regional_certificate_arn = data.regional_certificate_arn || '';
+      formState.hosted_zone_id = data.hosted_zone_id || '';
+    } else {
+      formState.domain = '';
+      formState.global_certificate_arn = '';
+      formState.regional_certificate_arn = '';
+      formState.hosted_zone_id = '';
+    }
+  } catch (e: any) {
+    toast.add({ title: 'Error fetching domain settings', description: e.message, color: 'red' });
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+watch(() => currentService.value?.id, (serviceId) => {
+  if (serviceId) {
+    fetchDomain(serviceId);
+  }
+}, { immediate: true });
+
+const service = computed(() => currentService.value);
 
 const saveSettings = async () => {
   isSaving.value = true;
@@ -68,13 +100,13 @@ const saveSettings = async () => {
 
     await $client.services.upsertDomain.mutate({
       service_id: serviceId,
-      domain: formState.value.domain,
-      hosted_zone_id: formState.value.hosted_zone_id,
-      global_certificate_arn: formState.value.global_certificate_arn || null,
-      regional_certificate_arn: formState.value.regional_certificate_arn || null,
+      domain: formState.domain,
+      hosted_zone_id: formState.hosted_zone_id,
+      global_certificate_arn: formState.global_certificate_arn || null,
+      regional_certificate_arn: formState.regional_certificate_arn || null,
     });
     toast.add({ title: 'Domain settings saved successfully!', color: 'success' });
-    await refreshApplicationSchema();
+    await fetchDomain(serviceId);
   } catch (e: any) {
     toast.add({ title: 'Error saving domain settings', description: e.message, color: 'error' });
   } finally {

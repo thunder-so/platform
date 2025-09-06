@@ -13,16 +13,16 @@
         <p class="text-red-500">{{ error.message }}</p>
       </div>
       
-      <UForm ref="form" :state="formState" class="space-y-4" @submit="saveVariables">
+      <UForm ref="form" :schema="envVarSchema" :state="formState.variables" class="space-y-4"  :validate-on="['blur']">
         <div v-for="(variable, index) in formState.variables" :key="variable.id || `new-${index}`" class="grid grid-cols-9 gap-x-2 mt-2 items-start">
-          <UFormField :name="`variables[${index}].key`" class="col-span-4">
+          <UFormField :name="`${index}.key`" class="col-span-4">
             <UInput 
               v-model="variable.key" 
               placeholder="Key" 
               class="w-full" 
             />
           </UFormField>
-          <UFormField :name="`variables[${index}].value`" class="col-span-4">
+          <UFormField :name="`${index}.value`" class="col-span-4">
             <UInput 
               v-model="variable.value" 
               placeholder="Value" 
@@ -37,7 +37,7 @@
       </UForm>
 
       <template #footer>
-        <UButton :loading="isSaving" color="primary" @click="saveVariables">Save Variables</UButton>
+        <UButton :loading="isSaving" :disabled="!isDirty" color="primary" @click="saveVariables">Save Variables</UButton>
       </template>
     </UCard>
   </div>
@@ -46,6 +46,10 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue';
 import type { ServiceVariable } from '~/server/db/schema';
+import { isEqual } from 'lodash-es';
+import { z } from 'zod';
+import { envVarSchema } from '~/server/validators/common';
+import type { Form } from '#ui/types';
 
 definePageMeta({
   layout: 'app',
@@ -58,10 +62,19 @@ const toast = useToast();
 
 const service = computed(() => applicationSchema.value?.environments?.[0]?.services?.[0]);
 
+const form = ref<Form<z.infer<typeof envVarSchema>> | null>(null);
 const formState = ref<{ variables: Partial<ServiceVariable>[] }>({ variables: [] });
+const originalState = ref<{ variables: Partial<ServiceVariable>[] }>({ variables: [] });
 const isSaving = ref(false);
 const loading = ref(true);
 const error = ref<Error | null>(null);
+const isDirty = ref(false);
+
+watch(formState, (newState) => {
+  if (originalState.value.variables) {
+    isDirty.value = !isEqual(originalState.value.variables, newState.variables);
+  }
+}, { deep: true });
 
 const fetchVariables = async () => {
   if (!service.value?.id) return;
@@ -77,6 +90,8 @@ const fetchVariables = async () => {
 
     if (fetchError) throw fetchError;
     formState.value.variables = data || [];
+    originalState.value.variables = JSON.parse(JSON.stringify(data || []));
+    isDirty.value = false;
   } catch (e: any) {
     error.value = e;
     toast.add({ title: 'Error fetching variables.', description: e.message, color: 'error' });
@@ -113,6 +128,13 @@ const removeVariable = async (index: number) => {
 };
 
 const saveVariables = async () => {
+  if (!form.value) return;
+  try {
+    await form.value.validate();
+  } catch (e) {
+    return;
+  }
+
   if (!service.value) return;
 
   isSaving.value = true;
