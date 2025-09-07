@@ -51,6 +51,7 @@ import { z } from 'zod';
 import { envVarSchema } from '~/server/validators/common';
 import type { Form } from '#ui/types';
 import { AppVariableDeleteModal } from '#components';
+import { useNavigationGuard } from '~/composables/useNavigationGuard';
 
 definePageMeta({
   layout: 'app',
@@ -71,6 +72,8 @@ const isSaving = ref(false);
 const loading = ref(true);
 const error = ref<Error | null>(null);
 const isDirty = ref(false);
+
+useNavigationGuard(isDirty);
 
 watch(formState, (newState) => {
   if (originalState.value.variables) {
@@ -102,7 +105,9 @@ const fetchVariables = async () => {
   }
 };
 
-onMounted(fetchVariables);
+onMounted(() => {
+  fetchVariables();
+});
 
 watch(() => service.value?.id, (newId, oldId) => {
   if (newId && newId !== oldId) {

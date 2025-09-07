@@ -73,6 +73,7 @@ import { ref, computed, watch } from 'vue';
 import AppServiceConfiguration from '~/components/app/ServiceConfiguration.vue';
 import type { ServiceSchema } from '~/server/validators/app';
 import { isEqual } from 'lodash-es';
+import { useNavigationGuard } from '~/composables/useNavigationGuard';
 
 definePageMeta({
   layout: 'app',
@@ -97,6 +98,10 @@ const error = ref<string | null>(null);
 
 const serviceConfigForm = ref<{ hasErrors: boolean } | null>(null);
 const hasValidationErrors = computed(() => serviceConfigForm.value?.hasErrors || false);
+
+const isDirty = computed(() => isChanged.value || isAppChanged.value);
+
+useNavigationGuard(isDirty);
 
 watch(service, (newService) => {
   if (newService) {

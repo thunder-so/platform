@@ -42,6 +42,7 @@ import { ref, watch } from 'vue';
 import { isEqual } from 'lodash-es';
 import type { Form } from '#ui/types';
 import { type SPAServiceMetadata, SPAServiceMetadataSchema } from '~/server/validators/common';
+import { useNavigationGuard } from '~/composables/useNavigationGuard';
 
 definePageMeta({
   layout: 'app'
@@ -55,6 +56,8 @@ const form = ref<Form<SPAServiceMetadata> | null>(null);
 const state = ref<SPAServiceMetadata | null>(null);
 const isLoading = ref(false);
 const isDirty = ref(false);
+
+useNavigationGuard(isDirty);
 
 watch(service, (newVal) => {
   if (newVal && newVal.stack_type === 'SPA') {
