@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { ref, computed, watch } from 'vue';
 import type { ApplicationInputSchema } from '~/server/validators/new';
 import type { Provider, Branch, UserAccessToken } from '~/server/db/schema';
+import appConfig from '~/app.config';
 
 type ServiceInput = z.infer<typeof import('~/server/validators/new').serviceInputSchema>;
 type SpaMetadataInput = ServiceInput['stack_type'] extends 'SPA' ? ServiceInput['metadata'] : never;
@@ -62,6 +63,11 @@ const STACK_DEFAULTS: {
 };
 
 type ValidStackType = keyof typeof STACK_DEFAULTS;
+
+const stackVersionMap = appConfig.stacks.reduce((acc, stack) => {
+  acc[stack.type as ValidStackType] = stack.version;
+  return acc;
+}, {} as Record<ValidStackType, string>);
 
 export const useNewApplicationFlow = () => {
   const { $client } = useNuxtApp();
@@ -179,7 +185,7 @@ export const useNewApplicationFlow = () => {
       name: repo.toLowerCase().replace(/[^a-z0-9]/g, ''),
       display_name: repo,
       stack_type: stackType,
-      stack_version: '1.0',
+      stack_version: stackVersionMap[stackType],
       installation_id: installation_id,
       owner,
       repo,
