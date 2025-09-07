@@ -50,6 +50,7 @@ import { isEqual } from 'lodash-es';
 import { z } from 'zod';
 import { envVarSchema } from '~/server/validators/common';
 import type { Form } from '#ui/types';
+import { AppVariableDeleteModal } from '#components';
 
 definePageMeta({
   layout: 'app',
@@ -59,6 +60,7 @@ const { applicationSchema } = useApplications();
 const { $client } = useNuxtApp();
 const supabase = useSupabaseClient();
 const toast = useToast();
+const overlay = useOverlay();
 
 const service = computed(() => applicationSchema.value?.environments?.[0]?.services?.[0]);
 
@@ -114,16 +116,30 @@ const addVariable = () => {
 
 const removeVariable = async (index: number) => {
   const variable = formState.value.variables[index];
-  formState.value.variables.splice(index, 1);
   
-  if (variable?.id) {
-    try {
-      await $client.services.deleteServiceVariable.mutate({ id: variable.id });
-      toast.add({ title: 'Variable removed.', color: 'success' });
-    } catch (e: any) {
-      toast.add({ title: 'Error removing variable.', description: e.message, color: 'error' });
-      formState.value.variables.splice(index, 0, variable);
-    }
+  if (!variable?.id) {
+    formState.value.variables.splice(index, 1);
+    return;
+  }
+
+  const deleteModal = overlay.create(AppVariableDeleteModal, {
+    props: { variable }
+  });
+
+  const result = await deleteModal.open().result;
+  
+  if (result === variable.id) {
+    await deleteVariable(variable.id, index);
+  }
+};
+
+const deleteVariable = async (id: string, index: number) => {
+  try {
+    await $client.services.deleteServiceVariable.mutate({ id });
+    formState.value.variables.splice(index, 1);
+    toast.add({ title: 'Variable removed.', color: 'success' });
+  } catch (e: any) {
+    toast.add({ title: 'Error removing variable.', description: e.message, color: 'error' });
   }
 };
 
