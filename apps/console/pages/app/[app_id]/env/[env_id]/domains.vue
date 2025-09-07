@@ -3,7 +3,7 @@
   <div>
     <UCard class="mt-4">
       <template #header>
-        <h2 class="text-xl font-semibold">Domain Settings</h2>
+        <h2>Domain Settings</h2>
       </template>
 
       <UForm ref="form" :schema="validationSchema" :state="formState" @submit="saveSettings" class="space-y-4">

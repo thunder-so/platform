@@ -1,9 +1,7 @@
 <template>
   <UCard v-if="service && service.stack_type === 'SPA'">
     <template #header>
-      <h2 class="font-semibold text-xl text-gray-900 dark:text-white leading-tight">
-        Redirects & Rewrites
-      </h2>
+      <h2>Redirects & Rewrites</h2>
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
         Manage redirects and rewrites for your service.
       </p>
@@ -12,7 +10,7 @@
     <UForm v-if="state" :schema="SPAServiceMetadataSchema" :state="state" class="space-y-8" ref="form" :validate-on="['blur']">
       <!-- REDIRECTS -->
       <div>
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Redirects</h3>
+        <h3 class="text-md font-medium text-gray-900 dark:text-white">Redirects</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Permanent (301) or temporary (302) redirects.</p>
         <div class="mt-4 space-y-3">
           <div v-for="(redirect, index) in state.redirects" :key="index" class="grid grid-cols-12 gap-x-2 items-start">
@@ -34,7 +32,7 @@
 
       <!-- REWRITES -->
       <div>
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Rewrites</h3>
+        <h3 class="text-md font-medium text-gray-900 dark:text-white">Rewrites</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Rewrite a path to another path without changing the URL.</p>
         <div class="mt-4 space-y-3">
           <div v-for="(rewrite, index) in state.rewrites" :key="index" class="grid grid-cols-12 gap-x-2 items-start">

@@ -1,9 +1,7 @@
 <template>
   <UCard v-if="service && service.stack_type === 'SPA'">
     <template #header>
-      <h2 class="font-semibold text-xl text-gray-900 dark:text-white leading-tight">
-        Headers
-      </h2>
+      <h2>Custom HTTP Headers</h2>
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
         Manage custom headers for your service.
       </p>

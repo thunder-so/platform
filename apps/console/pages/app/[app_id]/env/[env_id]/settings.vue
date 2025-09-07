@@ -2,7 +2,7 @@
   <div>
     <UCard>
       <template #header>
-        <h3>Application settings</h3>
+        <h2>Application settings</h2>
       </template>
       <ClientOnly>
         <UForm ref="ApplicationSettingsForm" v-if="applicationSchema" :state="applicationSchema" :validate-on="['input']" class="space-y-4">

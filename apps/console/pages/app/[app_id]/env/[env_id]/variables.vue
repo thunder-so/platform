@@ -2,7 +2,7 @@
   <div>
     <UCard class="mt-4">
       <template #header>
-        <h3>Environment Variables</h3>
+        <h2>Environment Variables</h2>
       </template>
 
       <div v-if="loading" class="flex items-center space-x-4">
