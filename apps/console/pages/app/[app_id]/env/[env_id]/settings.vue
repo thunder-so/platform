@@ -48,6 +48,36 @@
       </template>
     </UCard>
 
+    <UCard v-if="service" class="mt-4">
+      <template #header>
+        <h3>Github settings</h3>
+      </template>
+      <UForm :state="{}" class="space-y-4">
+        <UFormField label="Repository" name="repo" class="grid grid-cols-3 gap-4">
+          <UInput :model-value="`${service.owner}/${service.repo}`" class="w-96" size="lg" disabled />
+        </UFormField>
+        <UFormField label="Branch" name="branch" class="grid grid-cols-3 gap-4">
+          <ClientOnly>
+            <USelectMenu v-model="selectedBranch" :items="branchItems" class="w-96" size="lg" />
+          </ClientOnly>
+        </UFormField>
+      </UForm>
+      <template #footer>
+        <div class="flex justify-start">
+          <ClientOnly>
+            <UButton
+              size="lg"
+              :loading="isBranchSaving"
+              :disabled="!isBranchChanged"
+              @click="saveBranch"
+            >
+              Save Changes
+            </UButton>
+          </ClientOnly>
+        </div>
+      </template>
+    </UCard>
+
     <UCard color="error" class="mt-8">
       <template #header>
         <h3>Danger Zone</h3>
@@ -69,11 +99,12 @@
 
 <script setup lang="ts">
 import { AppApplicationDeleteModal } from '#components'
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import AppServiceConfiguration from '~/components/app/ServiceConfiguration.vue';
 import type { ServiceSchema } from '~/server/validators/app';
 import { isEqual } from 'lodash-es';
 import { useNavigationGuard } from '~/composables/useNavigationGuard';
+import type { Branch } from '~/server/db/schema';
 
 definePageMeta({
   layout: 'app',
@@ -99,13 +130,23 @@ const error = ref<string | null>(null);
 const serviceConfigForm = ref<{ hasErrors: boolean } | null>(null);
 const hasValidationErrors = computed(() => serviceConfigForm.value?.hasErrors || false);
 
-const isDirty = computed(() => isChanged.value || isAppChanged.value);
+const isBranchSaving = ref(false);
+const isBranchChanged = ref(false);
+const branches = ref<Branch[]>([]);
+const branchItems = computed(() => branches.value.map(b => ({ value: b.name, label: b.name })));
+const selectedBranch = ref<string>('');
+
+const isDirty = computed(() => isChanged.value || isAppChanged.value || isBranchChanged.value);
 
 useNavigationGuard(isDirty);
 
-watch(service, (newService) => {
+watch(service, async (newService) => {
   if (newService) {
     localServiceConfig.value = JSON.parse(JSON.stringify(newService));
+    if (newService.branch) {
+      selectedBranch.value = newService.branch;
+    }
+    await fetchBranches();
   }
 }, { immediate: true });
 
@@ -124,6 +165,32 @@ watch(localServiceConfig, (newConfig) => {
     isChanged.value = !isEqual(service.value, newConfig);
   }
 }, { deep: true });
+
+watch(selectedBranch, (newBranch) => {
+  if (service.value?.branch) {
+    isBranchChanged.value = newBranch !== service.value.branch;
+  }
+});
+
+const fetchBranches = async () => {
+  if (service.value?.owner && service.value?.repo && service.value?.installation_id) {
+    try {
+      const branchData = await $client.github.getBranches.query({
+        owner: service.value.owner,
+        repo: service.value.repo,
+        installation_id: service.value.installation_id,
+      });
+      branches.value = branchData;
+    } catch (e) {
+      console.error('Failed to fetch branches', e);
+      toast.add({ title: 'Error fetching branches', color: 'error' });
+    }
+  }
+};
+
+onMounted(() => {
+  fetchBranches();
+});
 
 const saveChanges = async () => {
   if (!localServiceConfig.value?.metadata) return;
@@ -147,6 +214,24 @@ const saveChanges = async () => {
     toast.add({ title: 'Error saving settings', description: e.message, color: 'error' });
   } finally {
     isSaving.value = false;
+  }
+};
+
+const saveBranch = async () => {
+  if (!service.value?.id || !selectedBranch.value) return;
+
+  isBranchSaving.value = true;
+  try {
+    await $client.services.updateService.mutate({
+      service_id: service.value.id,
+      branch: selectedBranch.value,
+    });
+    await refreshApplicationSchema();
+    toast.add({ title: 'Branch updated successfully!', color: 'success' });
+  } catch (e: any) {
+    toast.add({ title: 'Error updating branch', description: e.message, color: 'error' });
+  } finally {
+    isBranchSaving.value = false;
   }
 };
 

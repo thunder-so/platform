@@ -48,10 +48,12 @@
                   </div>
                   <div class="flex items-center gap-6">
                     <div class="flex items-center gap-2">
-                      <span class="flex items-center justify-center items-center gap-1.5">
-                        <Icon name="mdi:github" class="w-4 h-4 mt-1 text-muted" />
-                        <span class="text-sm text-muted">{{service?.owner}} / {{service?.repo}}</span>
-                      </span>
+                      <NuxtLink :to="`https://github.com/${service?.owner}/${service?.repo}`" target="_blank" class="text-muted hover:text-white transition-colors">
+                        <span class="flex items-center justify-center gap-1">
+                          <Icon name="mdi:github" class="w-4 h-4 mt-1 text-muted" />
+                          <span class="text-sm">{{service?.owner}} / {{service?.repo}}</span>
+                        </span>
+                      </NuxtLink>
                       <span class="flex items-center justify-center gap-1">
                         <Icon name="mdi:source-branch" class="w-4 h-4 mt-1 text-muted" />
                         <span class="text-sm text-muted">{{service?.branch}}</span>

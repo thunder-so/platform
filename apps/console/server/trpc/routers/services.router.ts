@@ -30,6 +30,7 @@ export const servicesRouter = router({
       z.object({
         service_id: z.string(),
         display_name: z.string().optional(),
+        branch: z.string().optional(),
         // any other fields on the core 'services' table
       })
     )

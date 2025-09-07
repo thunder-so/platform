@@ -77,7 +77,7 @@ export class PlatformLibrary {
         MessageAttributes: messageAttributes,
       }));
 
-      this.logger.info('SQS message sent successfully', { messageGroupId });
+      this.logger.info('SQS message sent successfully', { messageGroupId, messageBody });
     } catch (error) {
       this.logger.error('Failed to send SQS message', { messageGroupId, error: error instanceof Error ? error.message : 'Unknown error' });
       throw new TRPCError({
