@@ -140,6 +140,22 @@ const isDirty = computed(() => isChanged.value || isAppChanged.value || isBranch
 
 useNavigationGuard(isDirty);
 
+const fetchBranches = async () => {
+  if (service.value?.owner && service.value?.repo && service.value?.installation_id) {
+    try {
+      const branchData = await $client.github.getBranches.query({
+        owner: service.value.owner,
+        repo: service.value.repo,
+        installation_id: service.value.installation_id,
+      });
+      branches.value = branchData;
+    } catch (e) {
+      console.error('Failed to fetch branches', e);
+      toast.add({ title: 'Error fetching branches', color: 'error' });
+    }
+  }
+};
+
 watch(service, async (newService) => {
   if (newService) {
     localServiceConfig.value = JSON.parse(JSON.stringify(newService));
@@ -171,22 +187,6 @@ watch(selectedBranch, (newBranch) => {
     isBranchChanged.value = newBranch !== service.value.branch;
   }
 });
-
-const fetchBranches = async () => {
-  if (service.value?.owner && service.value?.repo && service.value?.installation_id) {
-    try {
-      const branchData = await $client.github.getBranches.query({
-        owner: service.value.owner,
-        repo: service.value.repo,
-        installation_id: service.value.installation_id,
-      });
-      branches.value = branchData;
-    } catch (e) {
-      console.error('Failed to fetch branches', e);
-      toast.add({ title: 'Error fetching branches', color: 'error' });
-    }
-  }
-};
 
 onMounted(() => {
   fetchBranches();
