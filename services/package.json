@@ -10,9 +10,9 @@
     "synth": "cdk synth",
     "deploy:provider:sandbox": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/provider.ts\" --context environment=sandbox",
     "deploy:provider:production": "cdk deploy --app \"npx tsx bin/provider.ts\" --context environment=production",
-    "deploy:runner:sandbox": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/runner.ts\" --context environment=sandbox",
+    "deploy:runner:sandbox": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/runner.ts\" --context environment=sandbox --profile burner",
     "deploy:runner:production": "cdk deploy --app \"npx tsx bin/runner.ts\" --context environment=production",
-    "deploy:ping:sandbox": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=sandbox",
+    "deploy:ping:sandbox": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=sandbox --profile burner",
     "deploy:ping:production": "cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=production"
   },
   "devDependencies": {

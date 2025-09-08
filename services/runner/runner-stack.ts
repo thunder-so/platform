@@ -18,7 +18,7 @@ export class RunnerService extends Stack {
 
     // S3 Bucket for artifacts
     const runnerBucket = new Bucket(this, 'RunnerBucket', {
-      bucketName: `thunder-runner-${environment}`,
+      // bucketName: `thunder-runner-${environment}`,
       lifecycleRules: [{ expiration: Duration.days(30) }],
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,

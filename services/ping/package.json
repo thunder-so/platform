@@ -1,0 +1,6 @@
+{
+  "name": "ping-service",
+  "version": "0.0.0",
+  "description": "Pipeline events from customer accounts.",
+  "type": "module"
+}
