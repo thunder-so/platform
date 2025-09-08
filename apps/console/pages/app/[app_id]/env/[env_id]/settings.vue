@@ -227,6 +227,7 @@ const saveBranch = async () => {
       branch: selectedBranch.value,
     });
     await refreshApplicationSchema();
+    isBranchChanged.value = false;
     toast.add({ title: 'Branch updated successfully!', color: 'success' });
   } catch (e: any) {
     toast.add({ title: 'Error updating branch', description: e.message, color: 'error' });
