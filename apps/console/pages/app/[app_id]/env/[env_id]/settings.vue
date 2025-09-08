@@ -58,7 +58,7 @@
         </UFormField>
         <UFormField label="Branch" name="branch" class="grid grid-cols-3 gap-4">
           <ClientOnly>
-            <USelectMenu v-model="selectedBranch" :items="branchItems" class="w-96" size="lg" />
+            <USelect v-model="selectedBranch" :items="branchItems" class="w-96" size="lg" />
           </ClientOnly>
         </UFormField>
       </UForm>
