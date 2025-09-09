@@ -117,22 +117,7 @@ export class PingStack extends Stack {
       environment: {
         NODE_OPTIONS: '--enable-source-maps false',
         REGION: this.region,
-      },
-      bundling: {
-        minify: true,
-        target: 'esnext',
-        sourceMap: false,
-        externalModules: [
-          '@aws-sdk/*',
-          '@supabase/supabase-js',
-          'uuid',
-          '@plunk/node',
-          '@react-email/components',
-          '@react-email/render',
-          'react',
-          'react-dom',
-        ],
-      },
+      }
     });
 
     // Resource: AWS::Events::Rule (PingEventsRule)

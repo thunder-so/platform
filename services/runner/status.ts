@@ -196,7 +196,7 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
     // Fetch application where environment belongs
     const application = environment.application;
 
-    const stackPrefix = `${application.name.toLowerCase().replace(/[-\s._]/g, '')}-${service.name.toLowerCase().replace(/[-\s._]/g, '')}-${environment.id}`;
+    const stackPrefix = `${application.name}-${service.name}-${environment.name}`;
 
     // Log the fetched data for debugging
     // console.log('eventSchema:', eventSchema);
