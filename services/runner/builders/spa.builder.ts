@@ -1,8 +1,7 @@
 import type { IStackBuilder } from './types';
 
 export const spaBuilder: IStackBuilder = {
-  generateBuildSpec(request: any): string {
-    const context = this.generateCdkContext(request);
+  generateBuildSpec(context: any, stackVersion: string): string {
     return `
       version: 0.2
       phases:
@@ -10,14 +9,14 @@ export const spaBuilder: IStackBuilder = {
           runtime-versions:
             nodejs: 20
           commands:
-            - git clone --depth 1 --branch v${request.stackVersion} ${this.getStackRepositoryUrl(request.stackVersion)} .
+            - git clone --depth 1 --branch v${stackVersion} ${this.getStackRepositoryUrl(stackVersion)} .
+            - npm install
             - echo '${JSON.stringify(context)}' > cdk.context.json
             - npx cdk deploy --app "npx tsx bin/app.ts" --require-approval never --verbose
     `;
   },
 
-  generateDestroyBuildSpec(request: any): string {
-    const context = this.generateCdkContext(request);
+  generateDestroyBuildSpec(context: any, stackVersion: string): string {
     return `
       version: 0.2
       phases:
@@ -25,17 +24,11 @@ export const spaBuilder: IStackBuilder = {
           runtime-versions:
             nodejs: 20
           commands:
-            - git clone --depth 1 --branch v${request.stackVersion} ${this.getStackRepositoryUrl(request.stackVersion)} .
+            - git clone --depth 1 --branch v${stackVersion} ${this.getStackRepositoryUrl(stackVersion)} .
+            - npm install
             - echo '${JSON.stringify(context)}' > cdk.context.json
             - npx cdk destroy --app "npx tsx bin/app.ts" --require-approval never --force --verbose
     `;
-  },
-
-  generateCdkContext(request: any): Record<string, any> {
-    return {
-      "@aws-cdk/core:newStyleStackSynthesis": true,
-      ...request,
-    };
   },
 
   getStackRepositoryUrl(version: string): string {

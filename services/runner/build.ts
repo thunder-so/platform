@@ -105,17 +105,21 @@ export const handler: SQSHandler = async (event) => {
       }
 
       const codebuild = new CodeBuild({ region: REGION });
+      const cdkContext = {
+        ...props,
+        metadata: { ...props.metadata, eventTarget: EVENT_TARGET },
+      }
       const buildSpec = command === 'delete'
-        ? builder.generateDestroyBuildSpec({ ...props, stackVersion, accessTokenSecretArn })
-        : builder.generateBuildSpec({ ...props, stackVersion, accessTokenSecretArn });
-      const cdkContext = builder.generateCdkContext(props);
+        ? builder.generateDestroyBuildSpec(cdkContext, stackVersion)
+        : builder.generateBuildSpec(cdkContext, stackVersion);
+      // const cdkContext = builder.generateCdkContext({ ...props, stackVersion, accessTokenSecretArn, eventTarget: EVENT_TARGET });
 
       const params = {
         projectName: process.env.RUNNER_BUILD,
         artifactsOverride: {
           type: ArtifactsType.S3,
           location: process.env.RUNNER_BUCKET,
-          path: props.service,
+          path: props.metadata.service,
         },
         buildspecOverride: buildSpec,
         environmentVariablesOverride: [
@@ -124,7 +128,7 @@ export const handler: SQSHandler = async (event) => {
           { name: 'AWS_ACCESS_KEY_ID', value: credentials?.AccessKeyId, type: EnvironmentVariableType.PLAINTEXT },
           { name: 'AWS_SECRET_ACCESS_KEY', value: credentials?.SecretAccessKey, type: EnvironmentVariableType.PLAINTEXT },
           { name: 'AWS_SESSION_TOKEN', value: credentials?.SessionToken, type: EnvironmentVariableType.PLAINTEXT },
-          { name: 'CDK_CONTEXT', value: JSON.stringify(cdkContext), type: EnvironmentVariableType.PLAINTEXT },
+          // { name: 'CDK_CONTEXT', value: JSON.stringify(cdkContext), type: EnvironmentVariableType.PLAINTEXT },
         ].filter(({ value }) => value !== undefined && value !== null),
       };
 

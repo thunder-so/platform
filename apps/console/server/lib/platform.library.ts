@@ -8,19 +8,21 @@ import { ServiceSchema } from '../validators/app';
 
 // Types for better type safety
 interface BuildContext {
-  env: {
-    account: string;
-    region: string;
-  };
-  sourceProps: {
-    owner: string;
-    repo: string;
-    branchOrRef: string;
-  };
-  application: string;
-  service: string;
-  environment: string;
-  [key: string]: any;
+  metadata: {
+    env: {
+      account: string;
+      region: string;
+    };
+    sourceProps: {
+      owner: string;
+      repo: string;
+      branchOrRef: string;
+    };
+    application: string;
+    service: string;
+    environment: string;
+    [key: string]: any;
+  }
 }
 
 // Logger interface for better abstraction
@@ -128,21 +130,25 @@ export class PlatformLibrary {
     environment: Environment,
     service: Service,
     provider: Provider,
-  ): BuildContext {
+    accessTokenSecretArn: string,
+  ): BuildContext {    
     const context: BuildContext = {
-      ...service.metadata,
-      env: {
-        account: provider.account_id as string,
-        region: environment.region as string,
+      metadata: {
+        ...service.metadata,
+        env: {
+          region: environment.region as string,
+          account: provider.account_id as string,
+        },
+        application: application.name,
+        service: service.name,
+        environment: environment.name,
+        sourceProps: {
+          owner: service.owner as string,
+          repo: service.repo as string,
+          branchOrRef: service.branch as string,
+        },
+        accessTokenSecretArn: accessTokenSecretArn,
       },
-      sourceProps: {
-        owner: service.owner as string,
-        repo: service.repo as string,
-        branchOrRef: service.branch as string,
-      },
-      application: application.name,
-      service: service.name,
-      environment: environment.name,
     };
 
     if (service.serviceVariables?.length > 0) {
@@ -160,13 +166,13 @@ export class PlatformLibrary {
 
       switch (service.stack_type) {
         case 'SPA':
-          context.buildProps = { environment: buildVars };
+          context.metadata.buildProps = { ...context.metadata.buildProps, environment: buildVars };
           break;
         case 'FUNCTION':
-          context.functionProps = { variables: runtimeVars };
+          context.metadata.functionProps = { variables: runtimeVars };
           break;
         case 'WEB_SERVICE':
-          context.serviceProps = { variables: runtimeVars };
+          context.metadata.serviceProps = { variables: runtimeVars };
           break;
       }
     }
@@ -226,7 +232,7 @@ export class PlatformLibrary {
     }
 
     const { environment, environment: { application, provider } } = serviceData;
-    const context = this.createBuildContext(application, environment, serviceData as Service, provider);
+    const context = this.createBuildContext(application, environment, serviceData as Service, provider, accessTokenSecretArn);
 
     // Create build record
     const [newBuild] = await db.insert(builds).values({
