@@ -68,7 +68,7 @@
                       <span class="text-sm text-muted">{{ provider?.alias }} / {{ environment?.region }}</span>
                     </div>
                   </div>
-                  <div v-if="service.resources.CloudFrontDistributionUrl" class="mt-2 text-left">
+                  <div v-if="service?.resources.CloudFrontDistributionUrl" class="mt-2 text-left">
                     <NuxtLink 
                       :to="`${service.resources.CloudFrontDistributionUrl}`" 
                       target="_blank" 
@@ -82,7 +82,7 @@
                   </div>
                 </div>
                 <div class="flex justify-center items-center">
-                  <div v-if="service.resources">
+                  <div v-if="service?.resources">
                     <UPopover
                       mode="click"
                       :content="{
@@ -96,13 +96,14 @@
                         color="neutral" 
                         variant="outline" 
                         trailing-icon="i-lucide-chevron-down"
+                        :loading="isDeploying"
                       />
 
                       <template #content>
                         <div class="p-2">
                           <ul class="space-y-1">
                             <li>
-                              <UButton class="w-full" variant="ghost" label="Deploy latest commit" @click="() => {}" />
+                              <UButton class="w-full" variant="ghost" label="Deploy latest commit" @click="deployLatestCommit" />
                             </li>
                             <li>
                               <UButton class="w-full" variant="ghost" label="Deploy specific commit" @click="() => {}" />
@@ -134,6 +135,8 @@ import Header from '~/components/Header.vue';
 
 const route = useRoute();
 const { applicationSchema, setApplicationSchemaById, isLoading } = useApplications();
+const { $client } = useNuxtApp();
+const toast = useToast();
 
 const environment = computed(() => applicationSchema.value?.environments?.[0] || {});
 const provider = computed(() => environment.value?.provider);
@@ -145,6 +148,7 @@ const appId = computed(() => {
 });
 const envId = computed(() => environment.value?.id);
 const serviceType = computed(() => service.value?.stack_type);
+const isDeploying = ref(false);
 
 const primaryLinks = computed<NavigationMenuItem[]>(() => {
   return [
@@ -187,6 +191,21 @@ const manageLinks = computed<NavigationMenuItem[]>(() => {
   
   return links;
 });
+
+async function deployLatestCommit() {
+  isDeploying.value = true;
+  try {
+    const executionId = await $client.services.triggerPipeline.mutate({
+      providerId: provider.value.id,
+      serviceId: service.value.id,
+    });
+    toast.add({ title: 'Success', description: 'Deployment started' });
+  } catch (error: any) {
+    toast.add({ title: 'Error', description: error.message || 'Failed to start deployment.', color: 'error' });
+  } finally {
+    isDeploying.value = false;
+  }
+}
 
 watch(() => route.params.app_id, (newAppId) => {
   if (newAppId) {

@@ -1,7 +1,7 @@
 import { SQSClient, SendMessageCommand, MessageAttributeValue } from '@aws-sdk/client-sqs';
 import { SSMClient, PutParameterCommand } from '@aws-sdk/client-ssm';
 import { TRPCError } from '@trpc/server';
-import { Build, builds, services, type Application, type Environment, type Provider, type ServiceVariable } from '../db/schema';
+import { builds, services, type Build, type Application, type Environment, type Provider, type ServiceVariable } from '../db/schema';
 import { db } from '../db/db';
 import { eq } from 'drizzle-orm';
 import { ServiceSchema } from '../validators/app';

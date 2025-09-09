@@ -15,6 +15,7 @@ import {
   WebServiceMetadataSchema,
 } from '~/server/validators/common';
 import { PlatformLibrary } from '~/server/lib/platform.library';
+import { triggerPipeline } from '~/server/lib/provider.library';
 import { TRPCError } from '@trpc/server';
 
 // Schema for creating a variable (omits id)
@@ -25,6 +26,19 @@ const updateServiceVariableSchema = serviceVariableSchema.extend({
 });
 
 export const servicesRouter = router({
+  triggerPipeline: protectedProcedure
+    .input(
+      z.object({
+        providerId: z.string(),
+        serviceId: z.string(),
+        sha: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { providerId, serviceId, sha } = input;
+      return await triggerPipeline(providerId, serviceId, sha);
+    }),
+
   updateService: protectedProcedure
     .input(
       z.object({

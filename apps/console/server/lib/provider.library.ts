@@ -1,10 +1,12 @@
 import { STSClient, GetCallerIdentityCommand, AssumeRoleCommand } from '@aws-sdk/client-sts';
 import { SSMClient, PutParameterCommand } from '@aws-sdk/client-ssm';
+import { CodePipelineClient, StartPipelineExecutionCommand } from '@aws-sdk/client-codepipeline';
 import { SecretsManagerClient, CreateSecretCommand, UpdateSecretCommand } from '@aws-sdk/client-secrets-manager';
 import { TRPCError } from '@trpc/server';
 import { db } from '~/server/db/db';
+import { providers, services } from '../db/schema';
 import { type ProviderSchema } from '~/server/validators/common';
-import { sql } from 'drizzle-orm';
+import { sql, eq } from 'drizzle-orm';
 
 // A type for the initial validation scenario where the secret is not yet in the vault
 type ManualProvider = ProviderSchema & { secret_access_key: string };
@@ -136,4 +138,50 @@ export async function createOrUpdateSecret(provider: ProviderSchema, name: strin
             });
         }
     }
+}
+
+export async function triggerPipeline(providerId: string, serviceId: string, sha?: string) {
+  const provider = await db.query.providers.findFirst({
+    where: eq(providers.id, providerId),
+  });
+
+  const codePipelineClient = await getAwsClient(CodePipelineClient, provider as ProviderSchema);
+
+  const serviceData = await db.query.services.findFirst({
+    where: eq(services.id, serviceId),
+  });
+  // @ts-expect-error
+  const pipelineName = serviceData?.resources?.CodePipelineName;
+
+  if (!pipelineName) {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message: 'Pipeline name not found for this service.',
+    });
+  }
+
+  try {
+    const command = new StartPipelineExecutionCommand({
+      name: pipelineName,
+      ...(sha && {
+        sourceRevisions: [
+          {
+            actionName: 'GithubSourceAction',
+            revisionType: 'COMMIT_ID',
+            revisionValue: sha
+          }
+        ]
+      })
+    });
+    const response = await codePipelineClient.send(command);
+
+    console.log('Pipeline triggered successfully:', response.pipelineExecutionId);
+    return response.pipelineExecutionId;
+  } catch (error) {
+    console.error('Error triggering pipeline:', error);
+    throw new TRPCError({
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Failed to trigger pipeline.',
+    });
+  }
 }
