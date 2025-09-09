@@ -48,7 +48,11 @@
                   </div>
                   <div class="flex items-center gap-6">
                     <div class="flex items-center gap-2">
-                      <NuxtLink :to="`https://github.com/${service?.owner}/${service?.repo}`" target="_blank" class="text-muted hover:text-white transition-colors">
+                      <NuxtLink 
+                        :to="`https://github.com/${service?.owner}/${service?.repo}`" 
+                        target="_blank" 
+                        class="text-muted hover:text-white transition-colors"
+                      >
                         <span class="flex items-center justify-center gap-1">
                           <Icon name="mdi:github" class="w-4 h-4 mt-1 text-muted" />
                           <span class="text-sm">{{service?.owner}} / {{service?.repo}}</span>
@@ -64,9 +68,21 @@
                       <span class="text-sm text-muted">{{ provider?.alias }} / {{ environment?.region }}</span>
                     </div>
                   </div>
+                  <div v-if="service.resources.CloudFrontDistributionUrl" class="mt-2 text-left">
+                    <NuxtLink 
+                      :to="`${service.resources.CloudFrontDistributionUrl}`" 
+                      target="_blank" 
+                      class="inline-block text-sm text-muted hover:text-white transition-colors"
+                    >
+                      <span class="flex items-center gap-1">
+                        <Icon name="mdi:link" class="w-4 h-4 mt-1 text-muted" />
+                        <span>{{service.resources.CloudFrontDistributionUrl}}</span>
+                      </span>
+                    </NuxtLink>
+                  </div>
                 </div>
                 <div class="flex justify-center items-center">
-                  <div>
+                  <div v-if="service.resources">
                     <UPopover
                       mode="click"
                       :content="{
