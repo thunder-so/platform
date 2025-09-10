@@ -122,7 +122,7 @@ export const handler = async (event: CodePipelineEvent, context: Context) => {
     const buildStage = state.stageStates?.find(stage => stage.stageName === "Build");
     const buildAction = buildStage?.actionStates?.find(action => action.actionName === "BuildAction");
     let buildId = buildAction?.latestExecution?.externalExecutionId as string;
-    let buildLogs = null;
+    let buildLogs = {};
 
     /**
      * Check Pipeline State
