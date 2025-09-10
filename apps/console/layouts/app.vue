@@ -68,7 +68,7 @@
                       <span class="text-sm text-muted">{{ provider?.alias }} / {{ environment?.region }}</span>
                     </div>
                   </div>
-                  <div v-if="service?.resources.CloudFrontDistributionUrl" class="mt-2 text-left">
+                  <div v-if="service?.resources?.CloudFrontDistributionUrl" class="mt-2 text-left">
                     <NuxtLink 
                       :to="`${service.resources.CloudFrontDistributionUrl}`" 
                       target="_blank" 

@@ -25,7 +25,8 @@ export const useApplications = () => {
             display_name,
             region,
             user_access_token:user_access_tokens(
-              secret_id
+              secret_id,
+              resource
             ),
             provider:providers (
               id,

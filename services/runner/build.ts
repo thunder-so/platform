@@ -47,13 +47,27 @@ export const handler: SQSHandler = async (event) => {
       console.log('Processing SQS record:', record);
 
       const { messageAttributes, body } = record;
-      const command = messageAttributes.command?.stringValue;
+      const command = messageAttributes.command?.stringValue || 'build'; // Default to 'build'
       const stackType = messageAttributes.stackType?.stringValue;
       const stackVersion = messageAttributes.stackVersion?.stringValue;
       const eventId = messageAttributes.eventId?.stringValue;
       const accessTokenSecretArn = messageAttributes.accessTokenSecretArn?.stringValue;
-      const provider = JSON.parse(messageAttributes.provider?.stringValue || '{}');
-      const props: RunnerRequest = JSON.parse(body);
+      
+      let provider;
+      try {
+        provider = JSON.parse(messageAttributes.provider?.stringValue || '{}');
+      } catch (parseError) {
+        console.error('Failed to parse provider JSON:', parseError);
+        throw new Error(`Invalid provider JSON: ${parseError}`);
+      }
+      
+      let props: RunnerRequest;
+      try {
+        props = JSON.parse(body);
+      } catch (parseError) {
+        console.error('Failed to parse message body:', parseError);
+        throw new Error(`Invalid message body JSON: ${parseError}`);
+      }
 
       console.log('Message attributes parsed successfully:', { command, stackType, stackVersion, eventId, provider });
 
@@ -106,9 +120,13 @@ export const handler: SQSHandler = async (event) => {
 
       const codebuild = new CodeBuild({ region: REGION });
       const cdkContext = {
-        ...props,
+        ...props.metadata,
+        stackVersion,
+        accessTokenSecretArn,
         metadata: { ...props.metadata, eventTarget: EVENT_TARGET },
       }
+      console.log('CDK Context:', JSON.stringify(cdkContext, null, 2));
+
       const buildSpec = command === 'delete'
         ? builder.generateDestroyBuildSpec(cdkContext, stackVersion)
         : builder.generateBuildSpec(cdkContext, stackVersion);
@@ -178,7 +196,11 @@ export const handler: SQSHandler = async (event) => {
       }
     } catch (error) {
       console.error('Runner failed for record:', record);
-      console.error('Error:', JSON.stringify(error, null, 2));
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        error: error
+      });
       // throw error; // Re-throw to trigger SQS retry mechanism
     }
   }

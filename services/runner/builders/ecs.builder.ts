@@ -2,7 +2,7 @@ import type { IStackBuilder } from './types';
 
 export const ecsBuilder: IStackBuilder = {
   generateBuildSpec(context: any, stackVersion: string): string {
-    if (context.serviceProps.buildSystem === 'Buildpacks') {
+    if (context.serviceProps.build_system === 'Buildpacks') {
       return `
       version: 0.2
       phases:
@@ -28,7 +28,7 @@ export const ecsBuilder: IStackBuilder = {
     `;
     }
 
-    if (context.serviceProps.buildSystem === 'Nixpacks') {
+    if (context.serviceProps.build_system === 'Nixpacks') {
       return `
       version: 0.2
       phases:
@@ -82,7 +82,7 @@ export const ecsBuilder: IStackBuilder = {
   },
 
   // generateCdkContext(context: any): Record<string, any> {
-  //   if (context.serviceProps.buildSystem === 'Buildpacks' || context.serviceProps.buildSystem === 'Nixpacks') {
+  //   if (context.serviceProps.build_system === 'Buildpacks' || context.serviceProps.build_system === 'Nixpacks') {
   //     context.serviceProps.dockerImage = `${context.env.account}.dkr.ecr.${context.env.region}.amazonaws.com/${context.service}:${context.sourceProps.branchOrRef}`;
   //   }
 

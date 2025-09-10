@@ -2,7 +2,7 @@ import type { IStackBuilder } from './types';
 
 export const lambdaBuilder: IStackBuilder = {
   generateBuildSpec(context: any, stackVersion: string): string {
-    if (context.functionProps.buildSystem === 'Buildpacks') {
+    if (context.functionProps.build_system === 'Buildpacks') {
       return `
       version: 0.2
       phases:
@@ -28,7 +28,7 @@ export const lambdaBuilder: IStackBuilder = {
     `;
     }
 
-    if (context.functionProps.buildSystem === 'Nixpacks') {
+    if (context.functionProps.build_system === 'Nixpacks') {
       return `
       version: 0.2
       phases:
@@ -62,6 +62,7 @@ export const lambdaBuilder: IStackBuilder = {
             nodejs: 20
           commands:
             - git clone --depth 1 --branch v${context.stackVersion} ${this.getStackRepositoryUrl(context.stackVersion)} .
+            - npm install
             - echo '${JSON.stringify(context)}' > cdk.context.json
             - npx cdk deploy --app "npx tsx bin/app.ts" --require-approval never --verbose
     `;
@@ -76,13 +77,14 @@ export const lambdaBuilder: IStackBuilder = {
             nodejs: 20
           commands:
             - git clone --depth 1 --branch v${stackVersion} ${this.getStackRepositoryUrl(stackVersion)} .
+            - npm install
             - echo '${JSON.stringify(context)}' > cdk.context.json
             - npx cdk destroy --app "npx tsx bin/app.ts" --require-approval never --force --verbose
     `;
   },
 
   // generateCdkContext(request: any): Record<string, any> {
-  //   if (request.functionProps.buildSystem === 'Buildpacks' || request.functionProps.buildSystem === 'Nixpacks') {
+  //   if (request.functionProps.build_system === 'Buildpacks' || request.functionProps.build_system === 'Nixpacks') {
   //     request.functionProps.dockerImage = `${request.env.account}.dkr.ecr.${request.env.region}.amazonaws.com/${request.service}:${request.sourceProps.branchOrRef}`;
   //   }
 
