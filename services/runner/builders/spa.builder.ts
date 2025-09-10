@@ -7,9 +7,9 @@ export const spaBuilder: IStackBuilder = {
       phases:
         install:
           runtime-versions:
-            nodejs: 20
+            nodejs: 22
           commands:
-            - git clone --depth 1 --branch v${stackVersion} ${this.getStackRepositoryUrl(stackVersion)} .
+            - git clone --depth 1 --branch v${stackVersion} ${this.getStackRepositoryUrl()} .
             - npm install
             - echo '${JSON.stringify(context)}' > cdk.context.json
             - npx cdk deploy --app "npx tsx bin/app.ts" --require-approval never --verbose
@@ -22,16 +22,16 @@ export const spaBuilder: IStackBuilder = {
       phases:
         install:
           runtime-versions:
-            nodejs: 20
+            nodejs: 22
           commands:
-            - git clone --depth 1 --branch v${stackVersion} ${this.getStackRepositoryUrl(stackVersion)} .
+            - git clone --depth 1 --branch v${stackVersion} ${this.getStackRepositoryUrl()} .
             - npm install
             - echo '${JSON.stringify(context)}' > cdk.context.json
             - npx cdk destroy --app "npx tsx bin/app.ts" --require-approval never --force --verbose
     `;
   },
 
-  getStackRepositoryUrl(version: string): string {
+  getStackRepositoryUrl(): string {
     return 'https://github.com/thunder-so/cdk-spa.git';
   },
 };

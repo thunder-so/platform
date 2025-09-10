@@ -267,7 +267,13 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
 
     // Trim the app name from the keys and keep only the specified keys
     const trimmedOutputs: Record<string, string> = {};
-    const keysToKeep = ['CodePipelineName', 'CloudFrontDistributionUrl', 'CloudFrontDistributionId'];
+    const keysToKeep = [
+      'CodePipelineName', 
+      'CloudFrontDistributionUrl', 
+      'CloudFrontDistributionId',
+      'ApiGatewayUrl',
+      'LambdaFunction'
+    ];
 
     for (const [key, value] of Object.entries(outputs)) {
         const trimmedKey = keysToKeep.find(k => key.endsWith(k));

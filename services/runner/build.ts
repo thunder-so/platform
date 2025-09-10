@@ -120,17 +120,17 @@ export const handler: SQSHandler = async (event) => {
 
       const codebuild = new CodeBuild({ region: REGION });
       const cdkContext = {
-        ...props.metadata,
-        stackVersion,
-        accessTokenSecretArn,
-        metadata: { ...props.metadata, eventTarget: EVENT_TARGET },
+        metadata: { 
+          ...props.metadata, 
+          accessTokenSecretArn,
+          eventTarget: EVENT_TARGET 
+        },
       }
       console.log('CDK Context:', JSON.stringify(cdkContext, null, 2));
 
       const buildSpec = command === 'delete'
         ? builder.generateDestroyBuildSpec(cdkContext, stackVersion)
         : builder.generateBuildSpec(cdkContext, stackVersion);
-      // const cdkContext = builder.generateCdkContext({ ...props, stackVersion, accessTokenSecretArn, eventTarget: EVENT_TARGET });
 
       const params = {
         projectName: process.env.RUNNER_BUILD,
