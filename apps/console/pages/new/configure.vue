@@ -1,8 +1,8 @@
 <template>
     <ClientOnly v-if="!isLoading">
-      <UCard>
+      <!-- <UCard>
         <pre>{{ applicationSchema }}</pre>
-      </UCard>
+      </UCard> -->
       <UCard class="mt-6">
         <template #header>
           <h1>Configure application</h1>

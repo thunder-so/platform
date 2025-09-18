@@ -115,10 +115,10 @@
                         <div class="p-2">
                           <ul class="space-y-1">
                             <li>
-                              <UButton class="w-full" variant="ghost" label="Deploy latest commit" @click="deployLatestCommit" />
+                              <UButton class="w-full" variant="ghost" label="Deploy latest commit" @click="deployCommit()" />
                             </li>
                             <li>
-                              <UButton class="w-full" variant="ghost" label="Deploy specific commit" @click="() => {}" />
+                              <UButton class="w-full" variant="ghost" label="Deploy specific commit" @click="openDeployCommitModal" />
                             </li>
                           </ul>
                         </div>
@@ -144,11 +144,13 @@
 import type { NavigationMenuItem } from '@nuxt/ui'
 import { useApplications } from '~/composables/useApplications';
 import Header from '~/components/Header.vue';
+import { AppDeployCommitModal } from '#components';
 
 const route = useRoute();
 const { applicationSchema, setApplicationSchemaById, isLoading } = useApplications();
 const { $client } = useNuxtApp();
 const toast = useToast();
+const overlay = useOverlay();
 
 const environment = computed(() => applicationSchema.value?.environments?.[0] || {});
 const provider = computed(() => environment.value?.provider);
@@ -204,14 +206,30 @@ const manageLinks = computed<NavigationMenuItem[]>(() => {
   return links;
 });
 
-async function deployLatestCommit() {
+async function openDeployCommitModal() {
+  const deployCommitModal = overlay.create(AppDeployCommitModal, {
+    props: {
+      service: service.value,
+      environment: environment.value
+    }
+  });
+
+  const sha = await deployCommitModal.open().result;
+  if (sha) {
+    await deployCommit(sha);
+  }
+}
+
+async function deployCommit(sha?: string) {
   isDeploying.value = true;
   try {
-    const executionId = await $client.services.triggerPipeline.mutate({
+    await $client.services.triggerPipeline.mutate({
       providerId: provider.value.id,
       serviceId: service.value.id,
+      sha: sha,
     });
-    toast.add({ title: 'Success', description: 'Deployment started' });
+    const message = sha ? `Deployment started for commit ${sha.substring(0,7)}` : 'Deployment started for latest commit';
+    toast.add({ title: 'Success', description: message });
   } catch (error: any) {
     toast.add({ title: 'Error', description: error.message || 'Failed to start deployment.', color: 'error' });
   } finally {

@@ -7,6 +7,7 @@ type GetInstallationRepositoriesResponse = Endpoints['GET /installation/reposito
 type ListBranchesResponse = Endpoints['GET /repos/{owner}/{repo}/branches']['response'];
 type GetRepoResponse = Endpoints['GET /repos/{owner}/{repo}']['response'];
 type GetContentResponse = Endpoints['GET /repos/{owner}/{repo}/contents/{path}']['response'];
+type ListCommitsResponse = Endpoints['GET /repos/{owner}/{repo}/commits']['response'];
 
 export default class GithubLibrary {
     private appId = process.env.GITHUB_APP_ID;
@@ -124,6 +125,40 @@ export default class GithubLibrary {
       }));
 
       return result;
+    }
+
+    /**
+     * Get commits for a repository branch
+     * @param owner string
+     * @param repo string
+     * @param branch string
+     * @param installation_id number
+     * @returns Array of commits
+     */
+    async getCommits(
+      owner: string,
+      repo: string,
+      branch: string,
+      installation_id: number
+    ): Promise<ListCommitsResponse['data']> {
+      const app = new App({
+        appId: this.appId as string,
+        privateKey: this.privateKey as string
+      });
+
+      const octokit = await app.getInstallationOctokit(installation_id);
+
+      const commitsResponse: OctokitResponse<ListCommitsResponse['data']> = await octokit.request('GET /repos/{owner}/{repo}/commits', {
+        owner,
+        repo,
+        sha: branch,
+        per_page: 10,
+        headers: {
+          'X-GitHub-Api-Version': '2022-11-28'
+        }
+      });
+
+      return commitsResponse.data;
     }
 
     async getFileContent(

@@ -65,4 +65,5 @@ export const applicationSchema = z.object({
 });
 
 export type ServiceSchema = z.infer<typeof serviceSchema>;
+export type EnvironmentSchema = z.infer<typeof environmentSchema>;
 export type ApplicationSchema = z.infer<typeof applicationSchema>;

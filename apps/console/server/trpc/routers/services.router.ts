@@ -17,6 +17,7 @@ import {
 import { PlatformLibrary } from '~/server/lib/platform.library';
 import { triggerPipeline } from '~/server/lib/provider.library';
 import { TRPCError } from '@trpc/server';
+import GithubLibrary from '~/server/lib/github.library';
 
 // Schema for creating a variable (omits id)
 const createServiceVariableSchema = serviceVariableSchema.omit({ id: true });
@@ -26,6 +27,21 @@ const updateServiceVariableSchema = serviceVariableSchema.extend({
 });
 
 export const servicesRouter = router({
+  getCommits: protectedProcedure
+    .input(
+      z.object({
+        owner: z.string(),
+        repo: z.string(),
+        branch: z.string(),
+        installation_id: z.number(),
+      })
+    )
+    .query(async ({ input }) => {
+      const { owner, repo, branch, installation_id } = input;
+      const github = new GithubLibrary();
+      return await github.getCommits(owner, repo, branch, installation_id);
+    }),
+
   triggerPipeline: protectedProcedure
     .input(
       z.object({
