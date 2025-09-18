@@ -1,8 +1,8 @@
 <template>
     <ClientOnly v-if="!isLoading">
-      <!-- <UCard>
+      <UCard>
         <pre>{{ applicationSchema }}</pre>
-      </UCard> -->
+      </UCard>
       <UCard class="mt-6">
         <template #header>
           <h1>Configure application</h1>
@@ -41,9 +41,9 @@
                 <UInput v-model="applicationSchema.display_name" size="lg" class="w-96" />
               </UFormField>
 
-              <UFormField label="Environment Name" name="environments.0.display_name" class="grid grid-cols-3 gap-4">
+              <!-- <UFormField label="Environment Name" name="environments.0.display_name" class="grid grid-cols-3 gap-4">
                 <UInput v-model="applicationSchema.environments[0].display_name" size="lg" class="w-96" />
-              </UFormField>
+              </UFormField> -->
 
               <UFormField label="AWS Account" class="grid grid-cols-3 gap-4">
                 <USelect 

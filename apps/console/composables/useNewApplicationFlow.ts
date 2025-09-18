@@ -176,10 +176,11 @@ export const useNewApplicationFlow = () => {
   ): Promise<ServiceInputSchema> => {
     
     await fetchBranches(owner, repo, installation_id);
+    const name = Math.random().toString(36).substring(2, 9).toUpperCase()
 
     const baseService = {
-      name: repo.toLowerCase().replace(/[^a-z0-9]/g, ''),
-      display_name: repo,
+      name: name,
+      display_name: name,
       installation_id: installation_id,
       owner,
       repo,
@@ -265,7 +266,7 @@ export const useNewApplicationFlow = () => {
         const serviceSchema = await createServiceSchema(validStackType, owner, repo, installation_id);
 
         applicationSchema.value = {
-          name: repo.replace(/[-_]/g, '').substring(0, 12),
+          name: repo.replace(/[-_]/g, '').substring(0, 7).toLowerCase(),
           display_name: repo,
           environments: [
             {
