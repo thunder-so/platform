@@ -1,18 +1,14 @@
 import { z } from 'zod';
 import { ref, computed, watch } from 'vue';
-import type { ApplicationInputSchema } from '~/server/validators/new';
+import type { SPAServiceMetadata, FunctionServiceMetadata, WebServiceMetadata } from '~/server/validators/common';
+import type { ServiceInputSchema, ApplicationInputSchema } from '~/server/validators/new';
 import type { Provider, Branch, UserAccessToken } from '~/server/db/schema';
 import appConfig from '~/app.config';
 
-type ServiceInput = z.infer<typeof import('~/server/validators/new').serviceInputSchema>;
-type SpaMetadataInput = ServiceInput['stack_type'] extends 'SPA' ? ServiceInput['metadata'] : never;
-type FunctionMetadataInput = ServiceInput['stack_type'] extends 'FUNCTION' ? ServiceInput['metadata'] : never;
-type WebServiceMetadataInput = ServiceInput['stack_type'] extends 'WEB_SERVICE' ? ServiceInput['metadata'] : never;
-
 const STACK_DEFAULTS: {
-  SPA: SpaMetadataInput,
-  FUNCTION: FunctionMetadataInput,
-  WEB_SERVICE: WebServiceMetadataInput,
+  SPA: SPAServiceMetadata,
+  FUNCTION: FunctionServiceMetadata,
+  WEB_SERVICE: WebServiceMetadata,
 } = {
   SPA: {
     debug: false,
@@ -177,15 +173,13 @@ export const useNewApplicationFlow = () => {
     owner: string,
     repo: string,
     installation_id: number
-  ): Promise<ServiceInput> => {
+  ): Promise<ServiceInputSchema> => {
     
     await fetchBranches(owner, repo, installation_id);
 
     const baseService = {
       name: repo.toLowerCase().replace(/[^a-z0-9]/g, ''),
       display_name: repo,
-      stack_type: stackType,
-      stack_version: stackVersionMap[stackType],
       installation_id: installation_id,
       owner,
       repo,
@@ -193,9 +187,8 @@ export const useNewApplicationFlow = () => {
       service_variables: [],
     };
 
-    let metadata = STACK_DEFAULTS[stackType];
-
     if (stackType === 'SPA') {
+      let metadata = { ...STACK_DEFAULTS.SPA };
       try {
         const buildSettings = await $client.github.scanRepository.query({ owner, repo, installation_id });
         if (buildSettings) {
@@ -205,22 +198,48 @@ export const useNewApplicationFlow = () => {
         console.error("scan error:", e);
         scanError.value = e.message || e;
       }
-    } else if (stackType === 'FUNCTION' || stackType === 'WEB_SERVICE') {
+      return {
+        ...baseService,
+        stack_type: 'SPA',
+        stack_version: stackVersionMap.SPA,
+        metadata
+      };
+    }
+
+    if (stackType === 'FUNCTION') {
+      let metadata = { ...STACK_DEFAULTS.FUNCTION };
       try {
         const dockerFileStatus = await $client.github.scanForDockerfile.query({ owner, repo, installation_id });
         if (dockerFileStatus.success) {
-          if (stackType === 'FUNCTION') {
-            (metadata as FunctionMetadataInput).functionProps.build_system = 'Custom Dockerfile';
-          } else {
-            (metadata as WebServiceMetadataInput).serviceProps.build_system = 'Custom Dockerfile';
-          }
+          metadata.functionProps.build_system = 'Custom Dockerfile';
         }
       } catch (e: any) {
         console.error("scan error:", e);
       }
+      return {
+        ...baseService,
+        stack_type: 'FUNCTION',
+        stack_version: stackVersionMap.FUNCTION,
+        metadata
+      };
     }
 
-    return { ...baseService, metadata };
+    // WEB_SERVICE case
+    let metadata = { ...STACK_DEFAULTS.WEB_SERVICE };
+    try {
+      const dockerFileStatus = await $client.github.scanForDockerfile.query({ owner, repo, installation_id });
+      if (dockerFileStatus.success) {
+        metadata.serviceProps.build_system = 'Custom Dockerfile';
+      }
+    } catch (e: any) {
+      console.error("scan error:", e);
+    }
+    return {
+      ...baseService,
+      stack_type: 'WEB_SERVICE',
+      stack_version: stackVersionMap.WEB_SERVICE,
+      metadata
+    };
   };
 
   const setApplicationSchema = async (owner: string, repo: string, installation_id: number, stack_type: string | null) => {
@@ -272,7 +291,10 @@ export const useNewApplicationFlow = () => {
 
   const setUat = (uat: UserAccessToken | undefined) => {
     if (applicationSchema.value.environments?.[0]) {
-      applicationSchema.value.environments[0].user_access_token = uat;
+      applicationSchema.value.environments[0].user_access_token = uat ? {
+        ...uat,
+        updated_at: uat.updated_at || new Date()
+      } : uat;
     }
   };
 

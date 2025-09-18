@@ -39,6 +39,8 @@ export const serviceInputSchema = z.discriminatedUnion('stack_type', [
   }),
 ]);
 
+export type ServiceInputSchema = z.infer<typeof serviceInputSchema>;
+
 export const environmentInputSchema = z.object({
   name: z.string().regex(NAME_REGEX, NAME_ERROR_MESSAGE),
   display_name: z.string().min(1, 'Display name is required'),
