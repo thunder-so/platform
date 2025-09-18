@@ -9,6 +9,7 @@ export type RunnerRequestBase = {
     stackVersion?: string;
     accessTokenSecretArn?: string;
     env?: Record<string, any>;
+    rootDir?: string;
     // sourceProps lives on the pipeline objects in cardinal types
     sourceProps?: SPA.PipelineProps['sourceProps'] | FunctionTypes.PipelineProps['sourceProps'] | WebService.PipelineProps['sourceProps'];
   }
@@ -24,5 +25,5 @@ export interface IStackBuilder {
   generateBuildSpec(request: RunnerRequest, stackVersion: string): string;
   generateDestroyBuildSpec(request: RunnerRequest, stackVersion: string): string;
   // generateCdkContext(request: RunnerRequest): Record<string, any>;
-  getStackRepositoryUrl(version: string): string;
+  getStackRepositoryUrl(): string;
 }

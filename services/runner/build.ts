@@ -1,3 +1,4 @@
+import path from 'path';
 import type { SQSHandler } from 'aws-lambda';
 import { CodeBuild, StartBuildCommand, BatchGetBuildsCommand, ArtifactsType, EnvironmentVariableType } from '@aws-sdk/client-codebuild';
 import { STSClient, AssumeRoleCommand } from '@aws-sdk/client-sts';
@@ -47,7 +48,7 @@ export const handler: SQSHandler = async (event) => {
       console.log('Processing SQS record:', record);
 
       const { messageAttributes, body } = record;
-      const command = messageAttributes.command?.stringValue || 'build'; // Default to 'build'
+      const command = messageAttributes.command?.stringValue || 'build'; // [install, build, delete]
       const stackType = messageAttributes.stackType?.stringValue;
       const stackVersion = messageAttributes.stackVersion?.stringValue;
       const eventId = messageAttributes.eventId?.stringValue;
@@ -119,12 +120,18 @@ export const handler: SQSHandler = async (event) => {
       }
 
       const codebuild = new CodeBuild({ region: REGION });
+
+      const originalRootDir = props.metadata.rootDir || '';
+      const newRootDir = stackType === 'FUNCTION' ? path.join('code', originalRootDir) : props.metadata.rootDir;
+
       const cdkContext = {
+        ...props,
         metadata: { 
           ...props.metadata, 
           accessTokenSecretArn,
-          eventTarget: EVENT_TARGET 
-        },
+          eventTarget: EVENT_TARGET,
+          rootDir: newRootDir,
+        }
       }
       console.log('CDK Context:', JSON.stringify(cdkContext, null, 2));
 
@@ -146,6 +153,7 @@ export const handler: SQSHandler = async (event) => {
           { name: 'AWS_ACCESS_KEY_ID', value: credentials?.AccessKeyId, type: EnvironmentVariableType.PLAINTEXT },
           { name: 'AWS_SECRET_ACCESS_KEY', value: credentials?.SecretAccessKey, type: EnvironmentVariableType.PLAINTEXT },
           { name: 'AWS_SESSION_TOKEN', value: credentials?.SessionToken, type: EnvironmentVariableType.PLAINTEXT },
+          // ...(command === 'install' ? [{ name: 'BOOTSTRAP', value: 'true', type: EnvironmentVariableType.PLAINTEXT }] : []),
           // { name: 'CDK_CONTEXT', value: JSON.stringify(cdkContext), type: EnvironmentVariableType.PLAINTEXT },
         ].filter(({ value }) => value !== undefined && value !== null),
       };

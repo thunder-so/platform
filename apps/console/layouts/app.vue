@@ -80,6 +80,18 @@
                       </span>
                     </NuxtLink>
                   </div>
+                  <div v-if="service?.resources?.ApiGatewayUrl" class="mt-2 text-left">
+                    <NuxtLink 
+                      :to="`${service.resources.ApiGatewayUrl}`" 
+                      target="_blank" 
+                      class="inline-block text-sm text-muted hover:text-white transition-colors"
+                    >
+                      <span class="flex items-center gap-1">
+                        <Icon name="mdi:link" class="w-4 h-4 mt-1 text-muted" />
+                        <span>{{service.resources.ApiGatewayUrl}}</span>
+                      </span>
+                    </NuxtLink>
+                  </div>
                 </div>
                 <div class="flex justify-center items-center">
                   <div v-if="service?.resources">
