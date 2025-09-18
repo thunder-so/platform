@@ -272,7 +272,9 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
       'CloudFrontDistributionUrl', 
       'CloudFrontDistributionId',
       'ApiGatewayUrl',
-      'LambdaFunction'
+      'LambdaFunction',
+      'LambdaFunctionUrl',
+      'LoadBalancerDNS'
     ];
 
     for (const [key, value] of Object.entries(outputs)) {

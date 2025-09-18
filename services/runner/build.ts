@@ -122,7 +122,7 @@ export const handler: SQSHandler = async (event) => {
       const codebuild = new CodeBuild({ region: REGION });
 
       const originalRootDir = props.metadata.rootDir || '';
-      const newRootDir = stackType === 'FUNCTION' ? path.join('code', originalRootDir) : props.metadata.rootDir;
+      const newRootDir = (stackType === 'FUNCTION' || stackType === 'WEB_SERVICE') ? path.join('code', originalRootDir) : props.metadata.rootDir;
 
       const cdkContext = {
         ...props,
@@ -153,8 +153,6 @@ export const handler: SQSHandler = async (event) => {
           { name: 'AWS_ACCESS_KEY_ID', value: credentials?.AccessKeyId, type: EnvironmentVariableType.PLAINTEXT },
           { name: 'AWS_SECRET_ACCESS_KEY', value: credentials?.SecretAccessKey, type: EnvironmentVariableType.PLAINTEXT },
           { name: 'AWS_SESSION_TOKEN', value: credentials?.SessionToken, type: EnvironmentVariableType.PLAINTEXT },
-          // ...(command === 'install' ? [{ name: 'BOOTSTRAP', value: 'true', type: EnvironmentVariableType.PLAINTEXT }] : []),
-          // { name: 'CDK_CONTEXT', value: JSON.stringify(cdkContext), type: EnvironmentVariableType.PLAINTEXT },
         ].filter(({ value }) => value !== undefined && value !== null),
       };
 
