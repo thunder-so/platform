@@ -1,9 +1,9 @@
 <template>
-  <div class="bg-gray-900 text-white font-mono rounded-md h-full flex flex-col">
-    <div class="flex-shrink-0 p-2 bg-gray-800 flex justify-between items-center">
+  <div class="text-white font-mono rounded-md h-full flex flex-col">
+    <!-- <div class="flex-shrink-0 p-2 bg-gray-800 flex justify-between items-center">
       <span class="text-sm">CloudWatch Logs</span>
       <UButton v-if="deepLink" :to="deepLink" target="_blank" size="xs" color="gray">View in AWS Console</UButton>
-    </div>
+    </div> -->
     <div ref="logsContainer" class="p-4 overflow-y-auto flex-grow">
       <div v-if="loading && logEvents.length === 0" class="flex items-center justify-center h-full">
         <p>Loading logs...</p>

@@ -74,7 +74,7 @@ const getStatusIcon = (status: string) => {
   const normalizedStatus = status.toUpperCase();
   
   if (['STARTED'].includes(normalizedStatus)) {
-    return 'ix:rocket';
+    return 'line-md:loading-loop';
   }
   if (['IN_PROGRESS'].includes(normalizedStatus)) {
     return 'line-md:loading-loop';

@@ -65,8 +65,17 @@ export const servicesRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Log group or stream name not found.' });
       }
 
-      const logs = await getCloudWatchLogs(environment.provider as ProviderSchema, logGroupName, logStreamName, input.nextToken);
-      return { ...logs, deepLink };
+      // const logs = await getCloudWatchLogs(environment.provider as ProviderSchema, logGroupName, logStreamName, input.nextToken);
+      return { 
+        // ...logs, 
+        deepLink,
+        build: {
+          id: build.id,
+          build_start: build.build_start,
+          build_end: build.build_end,
+          build_status: build.build_status
+        }
+      };
     }),
 
   getDeployLogs: protectedProcedure
@@ -105,7 +114,18 @@ export const servicesRouter = router({
       }
 
       const logs = await getCloudWatchLogs(environment.provider as ProviderSchema, logGroupName, logStreamName, input.nextToken);
-      return { ...logs, deepLink };
+      return { 
+        ...logs, 
+        deepLink,
+        deploy: {
+          pipeline_execution_id: deploy.pipeline_execution_id,
+          pipeline_start: deploy.pipeline_start,
+          pipeline_end: deploy.pipeline_end,
+          pipeline_state: deploy.pipeline_state,
+          created_at: deploy.created_at,
+          updated_at: deploy.updated_at
+        }
+      };
     }),
 
   getCommits: protectedProcedure
