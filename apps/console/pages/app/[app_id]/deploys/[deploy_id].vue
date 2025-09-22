@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 
 definePageMeta({
   layout: 'app',
@@ -37,9 +37,13 @@ const { data, pending, error, execute } = useAsyncData(`deploy-logs-${deployId.v
     });
   },
   {
-    immediate: true,
+    server: false,
   }
 );
+
+onMounted(() => {
+  execute();
+});
 
 watch(data, (newData) => {
   if (newData) {
