@@ -2,6 +2,7 @@ import { STSClient, GetCallerIdentityCommand, AssumeRoleCommand } from '@aws-sdk
 import { SSMClient, PutParameterCommand } from '@aws-sdk/client-ssm';
 import { CodePipelineClient, StartPipelineExecutionCommand } from '@aws-sdk/client-codepipeline';
 import { SecretsManagerClient, CreateSecretCommand, UpdateSecretCommand } from '@aws-sdk/client-secrets-manager';
+import { CloudWatchLogsClient, GetLogEventsCommand } from '@aws-sdk/client-cloudwatch-logs';
 import { TRPCError } from '@trpc/server';
 import { db } from '~/server/db/db';
 import { providers, services } from '../db/schema';
@@ -184,4 +185,28 @@ export async function triggerPipeline(providerId: string, serviceId: string, sha
       message: 'Failed to trigger pipeline.',
     });
   }
+}
+
+export async function getCloudWatchLogs(provider: ProviderSchema, logGroupName: string, logStreamName: string, nextToken?: string) {
+    const cloudWatchLogsClient = await getAwsClient(CloudWatchLogsClient, provider);
+
+    try {
+        const command = new GetLogEventsCommand({
+            logGroupName: logGroupName,
+            logStreamName: logStreamName,
+            startFromHead: true,
+            nextToken: nextToken,
+        });
+        const response = await cloudWatchLogsClient.send(command);
+        return {
+            events: response.events || [],
+            nextForwardToken: response.nextForwardToken,
+        };
+    } catch (error) {
+        console.error('Error fetching logs from CloudWatch:', error);
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to fetch logs from CloudWatch.',
+        });
+    }
 }

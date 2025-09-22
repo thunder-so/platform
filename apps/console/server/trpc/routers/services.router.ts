@@ -5,6 +5,8 @@ import {
   services,
   serviceVariables,
   domains,
+  builds,
+  events,
 } from '~/server/db/schema';
 import { eq } from 'drizzle-orm';
 import {
@@ -13,9 +15,10 @@ import {
   SPAServiceMetadataSchema,
   FunctionServiceMetadataSchema,
   WebServiceMetadataSchema,
+  type ProviderSchema,
 } from '~/server/validators/common';
 import { PlatformLibrary } from '~/server/lib/platform.library';
-import { triggerPipeline } from '~/server/lib/provider.library';
+import { triggerPipeline, getCloudWatchLogs } from '~/server/lib/provider.library';
 import { TRPCError } from '@trpc/server';
 import GithubLibrary from '~/server/lib/github.library';
 
@@ -27,6 +30,84 @@ const updateServiceVariableSchema = serviceVariableSchema.extend({
 });
 
 export const servicesRouter = router({
+  getBuildLogs: protectedProcedure
+    .input(
+      z.object({
+        build_id: z.string(),
+        nextToken: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      const build = await db.query.builds.findFirst({
+        where: eq(builds.id, input.build_id),
+        with: {
+          environment: {
+            with: {
+              provider: true,
+            },
+          },
+        },
+      });
+
+      if (!build || !build.build_log) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Build not found or logs not available.' });
+      }
+
+      const { environment } = build;
+      if (!environment || !environment.provider) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Provider not found for this build.' });
+      }
+
+      // @ts-expect-error
+      const { 'group-name': logGroupName, 'stream-name': logStreamName, 'deep-link': deepLink } = build.build_log;
+
+      if (!logGroupName || !logStreamName) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Log group or stream name not found.' });
+      }
+
+      const logs = await getCloudWatchLogs(environment.provider as ProviderSchema, logGroupName, logStreamName, input.nextToken);
+      return { ...logs, deepLink };
+    }),
+
+  getDeployLogs: protectedProcedure
+    .input(
+      z.object({
+        deploy_id: z.string(),
+        nextToken: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      const deploy = await db.query.events.findFirst({
+        where: eq(events.pipeline_execution_id, input.deploy_id),
+        with: {
+          environment: {
+            with: {
+              provider: true,
+            },
+          },
+        },
+      });
+
+      if (!deploy || !deploy.pipeline_log) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Deploy not found or logs not available.' });
+      }
+
+      const { environment } = deploy;
+      if (!environment || !environment.provider) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Provider not found for this deploy.' });
+      }
+
+      // @ts-expect-error
+      const { 'group-name': logGroupName, 'stream-name': logStreamName, 'deep-link': deepLink } = deploy.pipeline_log;
+
+      if (!logGroupName || !logStreamName) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Log group or stream name not found.' });
+      }
+
+      const logs = await getCloudWatchLogs(environment.provider as ProviderSchema, logGroupName, logStreamName, input.nextToken);
+      return { ...logs, deepLink };
+    }),
+
   getCommits: protectedProcedure
     .input(
       z.object({

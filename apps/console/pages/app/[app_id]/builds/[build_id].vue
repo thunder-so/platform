@@ -1,7 +1,7 @@
 <template>
   <div class="p-4 h-full">
     <h1 class="text-2xl font-bold mb-4">
-      Deploy Details
+      Build Details
     </h1>
     <div class="h-[calc(100vh-10rem)]">
         <AppLogViewer 
@@ -24,15 +24,15 @@ definePageMeta({
 
 const { $client } = useNuxtApp();
 const route = useRoute();
-const deployId = computed(() => route.params.deploy_id as string);
+const buildId = computed(() => route.params.build_id as string);
 const nextToken = ref<string | undefined>(undefined);
 const allLogEvents = ref<any[]>([]);
 const deepLink = ref<string | undefined>(undefined);
 
-const { data, pending, error, execute } = useAsyncData(`deploy-logs-${deployId.value}`,
+const { data, pending, error, execute } = useAsyncData(`build-logs-${buildId.value}`,
   () => {
-    return $client.services.getDeployLogs.query({
-      deploy_id: deployId.value,
+    return $client.services.getBuildLogs.query({
+      build_id: buildId.value,
       nextToken: nextToken.value,
     });
   },
@@ -58,6 +58,9 @@ const handleRequestMore = () => {
 };
 
 const isPollingActive = computed(() => {
+  // This logic determines if polling should continue.
+  // For example, you might stop polling if the build is complete.
+  // This requires getting the build status.
   return !!nextToken.value;
 });
 

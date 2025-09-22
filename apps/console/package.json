@@ -16,6 +16,7 @@
     "@aws-sdk/client-sqs": "^3.882.0",
     "@aws-sdk/client-ssm": "^3.882.0",
     "@aws-sdk/client-sts": "^3.882.0",
+    "@aws-sdk/client-cloudwatch-logs": "^3.882.0",
     "@aws-sdk/core": "^3.882.0",
     "@nuxt/icon": "2.0.0",
     "@nuxt/kit": "^4.1.0",

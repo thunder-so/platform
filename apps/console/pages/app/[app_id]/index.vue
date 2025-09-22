@@ -22,25 +22,23 @@
           size="24"
         />
         <div class="flex-1">
-          <p v-if="activity.type === 'build' && activity.status === 'IN_PROGRESS'">
-            Build started
-          </p>
-          <p v-if="activity.type === 'build' && activity.status === 'SUCCEEDED'">
-            Build completed successfully
-          </p>
-          <p v-if="activity.type === 'build' && activity.status === 'FAILED' || activity.status === 'FAULT' || activity.status === 'TIMED_OUT'">
-            Build failed
-          </p>
+          <NuxtLink v-if="activity.type === 'build'" :to="`/app/${applicationSchema?.id}/builds/${activity.id}`">
+            <span v-if="activity.status === 'IN_PROGRESS'">Build started</span>
+            <span v-if="activity.status === 'SUCCEEDED'">Build completed successfully</span>
+            <span v-if="activity.status === 'FAILED' || activity.status === 'FAULT' || activity.status === 'TIMED_OUT'">Build failed</span>
+          </NuxtLink>
 
-          <p v-if="activity.type === 'event' && activity.status === 'STARTED'">
-            Deploy started for {{ activity.sourceDetails?.revisionId?.substring(0, 7) }}
-          </p>
-          <p v-if="activity.type === 'event' && activity.status === 'SUCCEEDED'">
-            Deploy success for {{ activity.sourceDetails?.revisionId?.substring(0, 7) }}
-          </p>
-          <p v-if="activity.type === 'event' && activity.status === 'FAILED'">
-            Deploy failed for {{ activity.sourceDetails?.revisionId?.substring(0, 7) }}
-          </p>
+          <NuxtLink v-if="activity.type === 'event'" :to="`/app/${applicationSchema?.id}/deploys/${activity.id}`">
+            <span v-if="activity.status === 'STARTED'">
+              Deploy started for {{ activity.sourceDetails?.revisionId?.substring(0, 7) }}
+            </span>
+            <span v-if="activity.status === 'SUCCEEDED'">
+              Deploy success for {{ activity.sourceDetails?.revisionId?.substring(0, 7) }}
+            </span>
+            <span v-if="activity.status === 'FAILED'">
+              Deploy failed for {{ activity.sourceDetails?.revisionId?.substring(0, 7) }}
+            </span>
+          </NuxtLink>
 
           <p class="text-gray-500 text-sm mt-1">{{ useTimeAgo(new Date(activity.timestamp)).value }}</p>
         </div>
@@ -128,9 +126,6 @@ const activities = ref<ActivityItem[]>([]);
 const loading = ref(true);
 const error = ref<{ message: string } | null>(null);
 
-// const UBadge = resolveComponent('UBadge');
-// const UButton = resolveComponent('UButton');
-
 const transformBuildToActivityItem = (build: Build): ActivityItem => ({
   id: build.id,
   type: 'build',
@@ -151,63 +146,6 @@ const transformEventToActivityItem = (event: Event): ActivityItem => ({
   logId: event.pipeline_execution_id,
   sourceDetails: event.pipeline_metadata as ActivityItem['sourceDetails'],
 });
-
-// const columns = [
-//   {
-//     accessorKey: 'type',
-//     header: 'Type',
-//     cell: ({ row }: { row: ActivityItem }) => h('div', {}, row.type === 'build' ? 'Build' : 'Pipeline Event'),
-//   },
-//   {
-//     accessorKey: 'message',
-//     header: 'Description',
-//   },
-//   {
-//     accessorKey: 'status',
-//     header: 'Status',
-//     cell: ({ row }: { row: ActivityItem }) => h(UBadge, { color: 'primary', variant: 'subtle' }, () => row.status),
-//   },
-//   {
-//     accessorKey: 'source',
-//     header: 'Source',
-//     cell: ({ row }: { row: ActivityItem }) => {
-//       if (row.type === 'event' && row.sourceDetails?.revisionUrl) {
-//         return h('a', { href: row.sourceDetails.revisionUrl, target: '_blank', class: 'text-blue-500 hover:underline' }, row.sourceDetails.revisionSummary || 'View Source');
-//       }
-//       return '';
-//     },
-//   },
-//   {
-//     accessorKey: 'timestamp',
-//     header: 'Timestamp',
-//     cell: ({ row }: { row: ActivityItem }) => {
-//       const date = new Date(row.timestamp).toLocaleString('en-US', {
-//         day: 'numeric',
-//         month: 'short',
-//         hour: '2-digit',
-//         minute: '2-digit',
-//         hour12: false,
-//       });
-//       return h('div', { class: 'font-medium' }, date);
-//     },
-//   },
-//   {
-//     accessorKey: 'logs',
-//     header: 'Logs',
-//     cell: ({ row }: { row: ActivityItem }) => {
-//       return h(UButton, {
-//         size: 'sm',
-//         variant: 'ghost',
-//         icon: 'i-heroicons-document-text',
-//         disabled: !row.logAvailable,
-//         onClick: () => {
-//           // TODO: Navigate to log details page
-//           console.log(`View logs for ${row.type} with ID: ${row.logId}`);
-//         },
-//       }, () => 'View Logs');
-//     },
-//   },
-// ];
 
 const fetchActivities = async (envId: string) => {
   try {
