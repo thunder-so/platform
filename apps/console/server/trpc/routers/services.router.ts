@@ -65,9 +65,9 @@ export const servicesRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Log group or stream name not found.' });
       }
 
-      // const logs = await getCloudWatchLogs(environment.provider as ProviderSchema, logGroupName, logStreamName, input.nextToken);
+      const logs = await getCloudWatchLogs(environment.provider as ProviderSchema, logGroupName, logStreamName, input.nextToken);
       return { 
-        // ...logs, 
+        ...logs, 
         deepLink,
         build: {
           id: build.id,

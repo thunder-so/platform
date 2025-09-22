@@ -24,13 +24,13 @@
 
   <div class="mt-4 h-full">
     <div class="h-[calc(100vh-10rem)]">
-      <!-- <AppLogViewer 
+      <AppLogViewer 
         :log-events="allLogEvents" 
         :deep-link="deepLink" 
         :loading="pending && allLogEvents.length === 0"
         :polling="isPollingActive"
         @request-more="handleRequestMore"
-      /> -->
+      />
     </div>
   </div>
 </template>
@@ -69,8 +69,8 @@ onMounted(() => {
 
 watch(data, (newData) => {
   if (newData) {
-    // allLogEvents.value.push(...newData.events);
-    // nextToken.value = newData.nextForwardToken;
+    allLogEvents.value.push(...newData.events);
+    nextToken.value = newData.nextForwardToken;
     if (!deepLink.value) {
       deepLink.value = newData.deepLink;
     }
