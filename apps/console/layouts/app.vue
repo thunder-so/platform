@@ -5,34 +5,42 @@
     <UMain>
       <div class="grid grid-cols-6 gap-0 min-h-[calc(100vh-4rem)]">
         <div class="col-span-1 p-6 border-r border-muted lg:block hidden">
-          <div class="pb-2">
-            <UButton :to="`/org/${applicationSchema?.organization_id}`" variant="ghost" size="sm" leading-icon="i-lucide-arrow-left">
-              Dashboard
-            </UButton>
+          <div v-if="applicationSchema">
+            <div class="pb-2">
+              <UButton :to="`/org/${applicationSchema?.organization_id}`" variant="ghost" size="sm" leading-icon="i-lucide-arrow-left">
+                Dashboard
+              </UButton>
+            </div>
+
+            <UNavigationMenu 
+              :items="primaryLinks"
+              orientation="vertical" 
+              class="mb-4"
+              :ui="{
+                link: 'p-3'
+              }"
+            />
+
+            <h3 class="text-xs uppercase p-3">
+              Manage
+            </h3>
+            <UNavigationMenu 
+              :items="manageLinks"
+              orientation="vertical" 
+              class="mb-4"
+              :ui="{
+                link: 'p-3'
+              }"
+            />
           </div>
-
-          <UNavigationMenu 
-            v-if="applicationSchema"
-            :items="primaryLinks"
-            orientation="vertical" 
-            class="mb-4"
-            :ui="{
-              link: 'p-3'
-            }"
-          />
-
-          <h3 class="text-xs uppercase p-3">
-            Manage
-          </h3>
-          <UNavigationMenu 
-            v-if="applicationSchema"
-            :items="manageLinks"
-            orientation="vertical" 
-            class="mb-4"
-            :ui="{
-              link: 'p-3'
-            }"
-          />
+          <div v-else class="space-y-4">
+            <USkeleton class="h-6 w-full" />
+            <USkeleton class="h-6 w-full" />
+            <USkeleton class="h-6 w-full" />
+            <USkeleton class="h-6 w-full" />
+            <USkeleton class="h-6 w-full" />
+            <USkeleton class="h-6 w-full" />
+          </div>
         </div>
         <div class="p-6 lg:col-span-5 col-span-10">
           <div class="border-b border-muted pb-6 mb-6">
@@ -128,6 +136,21 @@
                 </div>
               </div>
               <!-- <pre>{{ applicationSchema }}</pre> -->
+              <template #fallback>
+                <div class="flex justify-between">
+                  <div class="space-y-4">
+                    <div class="flex items-center gap-4">
+                      <USkeleton class="h-7 w-48" />
+                    </div>
+                    <div class="flex items-center gap-6">
+                      <USkeleton class="h-4 w-32" />
+                      <USkeleton class="h-4 w-24" />
+                    </div>
+                    <USkeleton class="h-4 w-64" />
+                  </div>
+                  <USkeleton class="h-10 w-24" />
+                </div>
+              </template>
             </ClientOnly>
             </UContainer> 
           </div>

@@ -1,28 +1,33 @@
 <template>
   <div>
-    <UCard>
+    <UCard v-if="!applicationSchema">
+      <template #header>
+        <USkeleton class="h-6 w-40" />
+      </template>
+      <USkeleton class="h-6 w-full" />
+      <template #footer>
+        <USkeleton class="h-8 w-40" />
+      </template>
+    </UCard>
+    <UCard v-else>
       <template #header>
         <h2>Application settings</h2>
       </template>
-      <ClientOnly>
-        <UForm ref="ApplicationSettingsForm" v-if="applicationSchema" :state="applicationSchema" :validate-on="['input']" class="space-y-4">
-          <UFormField label="Application name" name="name" class="grid grid-cols-3 gap-4">
-            <UInput v-model="applicationSchema.display_name" class="w-96" size="lg" />
-          </UFormField>
-        </UForm>
-      </ClientOnly>
+      <UForm ref="ApplicationSettingsForm" :state="applicationSchema" :validate-on="['input']" class="space-y-4">
+        <UFormField label="Application name" name="name" class="grid grid-cols-3 gap-4">
+          <UInput v-model="applicationSchema.display_name" class="w-96" size="lg" />
+        </UFormField>
+      </UForm>
       <template #footer>
         <div class="flex justify-start">
-          <ClientOnly>
-            <UButton
-              size="lg"
-              :loading="isAppSaving"
-              :disabled="!isAppChanged"
-              @click="saveAppChanges"
-            >
-              Save Changes
-            </UButton>
-          </ClientOnly>
+          <UButton
+            size="lg"
+            :loading="isAppSaving"
+            :disabled="!isAppChanged"
+            @click="saveAppChanges"
+          >
+            Save Changes
+          </UButton>
         </div>
       </template>
     </UCard>
@@ -34,16 +39,14 @@
       <AppServiceConfiguration :service="localServiceConfig" ref="serviceConfigForm" />
       <template #footer>
         <div class="flex justify-start">
-          <ClientOnly>
-            <UButton
-              size="lg"
-              :loading="isSaving"
-              :disabled="!isChanged || hasValidationErrors"
-              @click="saveChanges"
-            >
-              Save Changes
-            </UButton>
-          </ClientOnly>
+          <UButton
+            size="lg"
+            :loading="isSaving"
+            :disabled="!isChanged || hasValidationErrors"
+            @click="saveChanges"
+          >
+            Save Changes
+          </UButton>
         </div>
       </template>
     </UCard>
@@ -57,28 +60,24 @@
           <UInput :model-value="`${service.owner}/${service.repo}`" class="w-96" size="lg" disabled />
         </UFormField>
         <UFormField label="Branch" name="branch" class="grid grid-cols-3 gap-4">
-          <ClientOnly>
-            <USelect v-model="selectedBranch" :items="branchItems" class="w-96" size="lg" />
-          </ClientOnly>
+          <USelect v-model="selectedBranch" :items="branchItems" class="w-96" size="lg" />
         </UFormField>
       </UForm>
       <template #footer>
         <div class="flex justify-start">
-          <ClientOnly>
-            <UButton
-              size="lg"
-              :loading="isBranchSaving"
-              :disabled="!isBranchChanged"
-              @click="saveBranch"
-            >
-              Save Changes
-            </UButton>
-          </ClientOnly>
+          <UButton
+            size="lg"
+            :loading="isBranchSaving"
+            :disabled="!isBranchChanged"
+            @click="saveBranch"
+          >
+            Save Changes
+          </UButton>
         </div>
       </template>
     </UCard>
 
-    <UCard color="error" class="mt-8">
+    <UCard v-if="applicationSchema" color="error" class="mt-8">
       <template #header>
         <h3>Danger Zone</h3>
       </template>

@@ -1,5 +1,14 @@
 <template>
-  <UCard v-if="service && service.stack_type === 'SPA'">
+  <UCard v-if="!service">
+    <template #header>
+      <USkeleton class="h-6 w-40" />
+    </template>
+    <USkeleton class="h-6 w-full" />
+    <template #footer>
+      <USkeleton class="h-8 w-40" />
+    </template>
+  </UCard>
+  <UCard v-else-if="service.stack_type === 'SPA'">
     <template #header>
       <h2>Custom HTTP Headers</h2>
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
