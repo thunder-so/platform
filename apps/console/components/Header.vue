@@ -1,5 +1,5 @@
 <template>
-  <UHeader class="[&>div]:max-w-none border-muted" :ui="{ container: 'lg:px-6' }" v-model:open="isMobileMenuOpen">
+  <UHeader class="[&>div]:max-w-none border-muted" :ui="{ container: 'lg:px-6' }" v-model:open="isMobileMenuOpen" :toggle="props.mobileMenuItems.length > 0">
     <template #left>
 
       <NuxtLink to="/">
