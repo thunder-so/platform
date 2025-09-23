@@ -55,7 +55,7 @@
       <template #header>
         <h3>Github settings</h3>
       </template>
-      <UForm :state="{}" class="space-y-4">
+      <UForm :state="{}" class="space-y-6">
         <UFormField label="Repository" description="Github account and repository." name="repo" class="grid grid-cols-3 gap-4">
           <UInput :model-value="`${service.owner}/${service.repo}`" class="w-96" size="lg" disabled />
         </UFormField>
