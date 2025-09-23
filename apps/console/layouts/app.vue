@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Header />
+    <Header :mobile-menu-items="[...primaryLinks, ...manageLinks]" />
     
     <UMain>
       <div class="grid grid-cols-6 gap-0 min-h-[calc(100vh-4rem)]">

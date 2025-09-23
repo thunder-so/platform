@@ -1,6 +1,7 @@
 <template>
-  <UHeader class="[&>div]:max-w-none border-muted" :ui="{ container: 'lg:px-6' }">
+  <UHeader class="[&>div]:max-w-none border-muted" :ui="{ container: 'lg:px-6' }" v-model:open="isMobileMenuOpen">
     <template #left>
+
       <NuxtLink to="/">
         <UButton icon="custom:thunderso" size="sm" color="neutral" variant="ghost" class="p-3" />
       </NuxtLink>
@@ -132,13 +133,36 @@
         </template>
       </UPopover>
     </template>
+
+    <template #body>
+      <UNavigationMenu 
+        v-if="props.mobileMenuItems.length > 0"
+        :items="props.mobileMenuItems"
+        orientation="vertical" 
+        class="-mx-2.5"
+        :ui="{
+          link: 'p-3'
+        }"
+      />
+    </template>
   </UHeader>
 </template>
 
 <script setup lang="ts">
+import type { NavigationMenuItem } from '@nuxt/ui'
+
+interface Props {
+  mobileMenuItems?: NavigationMenuItem[]
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  mobileMenuItems: () => []
+})
+
 const user = useSupabaseUser();
 const supabase = useSupabaseClient();
 const { memberships, selectedOrganization, currentPlan } = useMemberships()
+const isMobileMenuOpen = ref(false);
 
 function selectOrganization(org: any) {
   selectedOrganization.value = org;
