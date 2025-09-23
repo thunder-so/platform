@@ -8,12 +8,12 @@
           <h1>Configure application</h1>
         </template>
 
-        <div class="space-y-4">
+        <div class="space-y-6">
           <UAlert v-if="loadError" color="error" variant="subtle" class="mb-4" :title="loadError" />
 
-          <div v-if="applicationSchema.environments" class="space-y-4">
+          <div v-if="applicationSchema.environments" class="space-y-6">
             <UForm ref="form" :state="applicationSchema" :schema="applicationInputSchema" :validate-on="['blur']" class="space-y-4">
-              <UFormField label="Repository" class="grid grid-cols-3 gap-4">
+              <UFormField label="Repository" description="Github account and repository." class="grid grid-cols-3 gap-4">
                 <UInput 
                   disabled 
                   size="lg" 
@@ -29,7 +29,7 @@
                 </UInput>
               </UFormField>
 
-              <UFormField label="Branch" class="grid grid-cols-3 gap-4">
+              <UFormField label="Branch" description="Repository branch used for this deployment." class="grid grid-cols-3 gap-4">
                 <USelect 
                   v-model="selectedBranchName" 
                   :items="branchItems" 
@@ -37,15 +37,11 @@
                 />
               </UFormField>
 
-              <UFormField label="Application Name" name="display_name" class="grid grid-cols-3 gap-4">
+              <UFormField label="Application Name" description="A unique name for your application." name="display_name" class="grid grid-cols-3 gap-4">
                 <UInput v-model="applicationSchema.display_name" size="lg" class="w-96" />
               </UFormField>
 
-              <!-- <UFormField label="Environment Name" name="environments.0.display_name" class="grid grid-cols-3 gap-4">
-                <UInput v-model="applicationSchema.environments[0].display_name" size="lg" class="w-96" />
-              </UFormField> -->
-
-              <UFormField label="AWS Account" class="grid grid-cols-3 gap-4">
+              <UFormField label="AWS Account" description="Select the AWS Account where you want to deploy." class="grid grid-cols-3 gap-4">
                 <USelect 
                   v-model="selectedProviderId" 
                   :items="providerItems" 
@@ -53,7 +49,7 @@
                 />
               </UFormField>
 
-              <UFormField label="Region" class="grid grid-cols-3 gap-4">
+              <UFormField label="Region" description="The AWS region where you want to deploy." class="grid grid-cols-3 gap-4">
                 <USelect 
                   v-model="applicationSchema.environments[0].region" 
                   :items="awsRegions" 

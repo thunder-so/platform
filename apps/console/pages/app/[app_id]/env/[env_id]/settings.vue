@@ -14,7 +14,7 @@
         <h2>Application settings</h2>
       </template>
       <UForm ref="ApplicationSettingsForm" :state="applicationSchema" :validate-on="['input']" class="space-y-4">
-        <UFormField label="Application name" name="name" class="grid grid-cols-3 gap-4">
+        <UFormField label="Application name" description="Your application's unique name." name="name" class="grid grid-cols-3 gap-4">
           <UInput v-model="applicationSchema.display_name" class="w-96" size="lg" />
         </UFormField>
       </UForm>
@@ -56,10 +56,10 @@
         <h3>Github settings</h3>
       </template>
       <UForm :state="{}" class="space-y-4">
-        <UFormField label="Repository" name="repo" class="grid grid-cols-3 gap-4">
+        <UFormField label="Repository" description="Github account and repository." name="repo" class="grid grid-cols-3 gap-4">
           <UInput :model-value="`${service.owner}/${service.repo}`" class="w-96" size="lg" disabled />
         </UFormField>
-        <UFormField label="Branch" name="branch" class="grid grid-cols-3 gap-4">
+        <UFormField label="Branch" description="Repository branch used for this deployment." name="branch" class="grid grid-cols-3 gap-4">
           <USelect v-model="selectedBranch" :items="branchItems" class="w-96" size="lg" />
         </UFormField>
       </UForm>

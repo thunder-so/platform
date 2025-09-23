@@ -1,19 +1,19 @@
 <template>
   <ClientOnly>
-    <UForm ref="form" v-if="service" :state="service" :schema="serviceSchema" :validate-on="['input']" class="space-y-4">
-      <UFormField label="Root Directory" name="metadata.rootDir" class="grid grid-cols-3 gap-4">
+    <UForm ref="form" v-if="service" :state="service" :schema="serviceSchema" :validate-on="['input']" class="space-y-6">
+      <UFormField label="Root Directory" description="The root directory of your project. For monorepos, enter the path to the project." name="metadata.rootDir" class="grid grid-cols-3 gap-4">
         <UInput v-model="service.metadata.rootDir" placeholder="./" class="w-96" size="lg" />
       </UFormField>
-      <UFormField label="Build System" name="metadata.functionProps.build_system" class="grid grid-cols-3 gap-4">
+      <UFormField label="Build System" description="Select a custom Dockerfile or use a build system to autogenerate." name="metadata.functionProps.build_system" class="grid grid-cols-3 gap-4">
         <USelect v-model="service.metadata.functionProps.build_system" :items="['Nixpacks', 'Buildpacks', 'Custom Dockerfile']" class="w-96" size="lg" />
       </UFormField>
-      <UFormField v-if="service.metadata.functionProps.build_system === 'Custom Dockerfile'" label="Docker File" name="metadata.functionProps.dockerFile" class="grid grid-cols-3 gap-4">
+      <UFormField v-if="service.metadata.functionProps.build_system === 'Custom Dockerfile'" label="Docker File" description="The path to your Dockerfile." name="metadata.functionProps.dockerFile" class="grid grid-cols-3 gap-4">
         <UInput v-model="service.metadata.functionProps.dockerFile" placeholder="Dockerfile" class="w-96" size="lg" />
       </UFormField>
-      <UFormField label="Memory Size (MB)" name="metadata.functionProps.memorySize" class="grid grid-cols-3 gap-4">
+      <UFormField label="Memory Size (MB)" description="The memory allocated to your Lambda." name="metadata.functionProps.memorySize" class="grid grid-cols-3 gap-4">
         <UInputNumber v-model="service.metadata.functionProps.memorySize" :default-value="1792" :min="128" :max="10240" size="lg" />
       </UFormField>
-      <UFormField label="Keep Warm" name="metadata.functionProps.keepWarm" class="grid grid-cols-3 gap-4">
+      <UFormField label="Keep Warm" description="Keep the Lambda warm by invoking every 5 minutes." name="metadata.functionProps.keepWarm" class="grid grid-cols-3 gap-4">
         <USwitch v-model="service.metadata.functionProps.keepWarm" />
       </UFormField>
     </UForm>
