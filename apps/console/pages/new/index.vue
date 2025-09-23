@@ -15,18 +15,17 @@
     <div v-else class="flex justify-center items-center" style="height: 50vh;">
       <UCard class="w-full max-w-lg">
         <template #header>
-          <h2 class="text-lg">Connect to GitHub</h2>
+          <h2>Connect to GitHub</h2>
         </template>
-        <div class="p-4">
-          <p class="mb-4">You need to install the Thunder GitHub App to see your repositories.</p>
-          <UButton
-            icon="i-uil-github"
-            size="lg"
-            :to="githubInstallUrl"
-            label="Install GitHub App"
-            external
-          />
-        </div>
+        
+        <p class="mb-4">Install the Thunder.so GitHub App to see your repositories.</p>
+        <UButton
+          icon="i-uil-github"
+          size="lg"
+          :to="githubInstallUrl"
+          label="Install GitHub App"
+          external
+        />
       </UCard>
     </div>
   </div>

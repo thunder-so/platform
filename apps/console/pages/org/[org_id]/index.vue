@@ -30,6 +30,8 @@
         :data="applications" 
         :columns="columns" 
         :column-visibility="columnVisibility"
+        :sorting="sortState"
+        @update:sorting="(state) => { sortState = state; saveSortState(state) }"
       />
     </div>
     <div v-else>No applications found for this organization.</div>
@@ -159,6 +161,27 @@ const columns = [
 const columnVisibility = ref({
   id: false
 })
+
+const sortState = ref([])
+
+// Load sort state from localStorage
+const loadSortState = () => {
+  if (process.client) {
+    const saved = localStorage.getItem(`table-sort-${orgId}`)
+    return saved ? JSON.parse(saved) : []
+  }
+  return []
+}
+
+// Save sort state to localStorage
+const saveSortState = (state) => {
+  if (process.client) {
+    localStorage.setItem(`table-sort-${orgId}`, JSON.stringify(state))
+  }
+}
+
+// Initialize sort state
+sortState.value = loadSortState()
 
 onMounted(async () => {
   loading.value = true
