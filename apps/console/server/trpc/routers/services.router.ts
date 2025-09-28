@@ -207,8 +207,8 @@ export const servicesRouter = router({
       }
 
       // Trigger the build with the service ID
-      const platformLib = new PlatformLibrary();
-      await platformLib.triggerBuild(updatedService.id);
+      // const platformLib = new PlatformLibrary();
+      // await platformLib.triggerBuild(updatedService.id);
 
       return updatedService;
     }),

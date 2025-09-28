@@ -6,9 +6,9 @@
 
     <ClientOnly v-if="service">
       <div class="mt-4">
-        <ServiceConfigStatic v-if="service.stack_type === 'SPA'" ref="serviceForm" :service="service" />
-        <ServiceConfigFunction v-else-if="service.stack_type === 'FUNCTION'" ref="serviceForm" :service="service" />
-        <ServiceConfigWeb v-else-if="service.stack_type === 'WEB_SERVICE'" ref="serviceForm" :service="service" />
+        <ServiceConfigStatic v-if="service.stack_type === 'SPA'" ref="serviceForm" :configuration="service.metadata" />
+        <ServiceConfigFunction v-else-if="service.stack_type === 'FUNCTION'" ref="serviceForm" :configuration="service.metadata" />
+        <ServiceConfigWeb v-else-if="service.stack_type === 'WEB_SERVICE'" ref="serviceForm" :configuration="service.metadata" />
       </div>
       <EnvironmentVariables v-model="environmentVariablesModel" ref="envVarsForm" />
     </ClientOnly>
@@ -18,7 +18,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import type { PropType } from 'vue';
-import type { Service } from '~/server/db/schema';
+import type { ServiceInputSchema } from '~/server/validators/new';
 import ServiceConfigStatic from './ServiceConfigStatic.vue';
 import ServiceConfigFunction from './ServiceConfigFunction.vue';
 import ServiceConfigWeb from './ServiceConfigWeb.vue';
@@ -30,7 +30,7 @@ const props = defineProps({
     default: null,
   },
   service: {
-    type: Object as PropType<Service | null>,
+    type: Object as PropType<ServiceInputSchema | null>,
     default: null,
   },
 });

@@ -73,6 +73,10 @@ export const SPABuildPropsSchema = z.object({
 });
 
 export const DockerBasedBuildPropsSchema = z.object({
+  buildSystem: z.enum(['Nixpacks', 'Custom Dockerfile']),
+  installcmd: z.string().optional(),
+  buildcmd: z.string().optional(),
+  startcmd: z.string().optional(),
   include: z.array(z.string()).optional(),
   exclude: z.array(z.string()).optional(),
 });
@@ -132,7 +136,6 @@ export const FunctionPropsSchema = z.object({
   keepWarm: z.boolean(),
   reservedConcurrency: z.number(),
   provisionedConcurrency: z.number(),
-  build_system: z.enum(['Nixpacks', 'Buildpacks', 'Custom Dockerfile']),
   dockerFile: z.string(),
 });
 
@@ -150,7 +153,6 @@ export const WebServicePropsSchema = z.object({
   cpu: z.number(),
   memorySize: z.number(),
   port: z.number(),
-  build_system: z.enum(['Nixpacks', 'Buildpacks', 'Custom Dockerfile']),
   dockerFile: z.string(),
 });
 

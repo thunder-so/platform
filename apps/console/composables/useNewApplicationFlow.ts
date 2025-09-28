@@ -32,27 +32,39 @@ const STACK_DEFAULTS: {
   FUNCTION: {
     debug: false,
     rootDir: '/',
-    buildProps: {},
+    buildProps: {
+      buildSystem: 'Nixpacks',
+      installcmd: 'npm install',
+      buildcmd: 'npm run build',
+      startcmd: '',
+      include: [],
+      exclude: [],
+    },
     functionProps: {
       memorySize: 1792,
       timeout: 30,
       keepWarm: true,
       reservedConcurrency: 0,
       provisionedConcurrency: 0,
-      build_system: 'Nixpacks',
       dockerFile: 'Dockerfile',
     },
   },
   WEB_SERVICE: {
     debug: false,
     rootDir: '/',
-    buildProps: {},
+    buildProps: {
+      buildSystem: 'Nixpacks',
+      installcmd: 'npm install',
+      buildcmd: 'npm run build',
+      startcmd: '',
+      include: [],
+      exclude: [],
+    },
     serviceProps: {
       desiredCount: 1,
       cpu: 0.25,
       memorySize: 1792,
       port: 3000,
-      build_system: 'Nixpacks',
       dockerFile: 'Dockerfile',
     }
   },
@@ -212,7 +224,7 @@ export const useNewApplicationFlow = () => {
       try {
         const dockerFileStatus = await $client.github.scanForDockerfile.query({ owner, repo, installation_id });
         if (dockerFileStatus.success) {
-          metadata.functionProps.build_system = 'Custom Dockerfile';
+          metadata.buildProps.buildSystem = 'Custom Dockerfile';
         }
       } catch (e: any) {
         console.error("scan error:", e);
@@ -230,7 +242,7 @@ export const useNewApplicationFlow = () => {
     try {
       const dockerFileStatus = await $client.github.scanForDockerfile.query({ owner, repo, installation_id });
       if (dockerFileStatus.success) {
-        metadata.serviceProps.build_system = 'Custom Dockerfile';
+        metadata.buildProps.buildSystem = 'Custom Dockerfile';
       }
     } catch (e: any) {
       console.error("scan error:", e);

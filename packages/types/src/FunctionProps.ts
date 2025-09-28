@@ -21,10 +21,12 @@ export interface PipelineProps {
    * The properties for CodeBuild build process.
    */
   readonly buildProps?: {
+    readonly buildSystem?: 'Nixpacks' | 'Custom Dockerfile';
     // readonly runtime?: string;
     // readonly runtime_version?: string|number;
-    // readonly installcmd?: string;
-    // readonly buildcmd?: string;
+    readonly installcmd?: string;
+    readonly buildcmd?: string;
+    readonly startcmd?: string;
     readonly include?: string[];
     readonly exclude?: string[];
     readonly environment?: Array<{ [key: string]: string; }>;
@@ -56,7 +58,7 @@ export interface LambdaProps {
    */
   readonly runtime?: Runtime;
   /**
-   * Lambda architecture (e.g., x86_64, ARM64)
+   * Lambda architecture (e.g., x86_64, arm64)
    */
   readonly architecture?: Architecture;
   /**
@@ -182,7 +184,7 @@ export interface AppProps extends StackProps {
    * The path to the root directory of the app (at which the `package.json` file is located).
    * Defaults to '.'.
    */
-  readonly rootDir: string;
+  readonly rootDir?: string;
 }
 
 /**
