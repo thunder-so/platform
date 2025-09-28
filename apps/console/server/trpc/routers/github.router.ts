@@ -120,12 +120,22 @@ export const githubRouter = router({
           }
         }
 
-        console.log(`Detected runtime: ${runtime_version}, install command: ${installcmd}, build command: ${buildcmd}`);
+        let startcmd = 'npm start';
+        if (hasBunLock) {
+          startcmd = 'bun start';
+        } else if (hasPnpmLock) {
+          startcmd = 'pnpm start';
+        } else if (hasYarnLock) {
+          startcmd = 'yarn start';
+        }
+
+        // console.log(`Detected runtime: ${runtime_version}, install command: ${installcmd}, build command: ${buildcmd}, start command: ${startcmd}`);
 
         return {
           runtime_version,
           installcmd,
           buildcmd,
+          startcmd,
         };
       }),
 

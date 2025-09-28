@@ -222,6 +222,10 @@ export const useNewApplicationFlow = () => {
     if (stackType === 'FUNCTION') {
       let metadata = { ...STACK_DEFAULTS.FUNCTION };
       try {
+        const buildSettings = await $client.github.scanRepository.query({ owner, repo, installation_id });
+        if (buildSettings) {
+          metadata.buildProps = { ...metadata.buildProps, ...buildSettings };
+        }
         const dockerFileStatus = await $client.github.scanForDockerfile.query({ owner, repo, installation_id });
         if (dockerFileStatus.success) {
           metadata.buildProps.buildSystem = 'Custom Dockerfile';
@@ -240,6 +244,10 @@ export const useNewApplicationFlow = () => {
     // WEB_SERVICE case
     let metadata = { ...STACK_DEFAULTS.WEB_SERVICE };
     try {
+      const buildSettings = await $client.github.scanRepository.query({ owner, repo, installation_id });
+        if (buildSettings) {
+          metadata.buildProps = { ...metadata.buildProps, ...buildSettings };
+        }
       const dockerFileStatus = await $client.github.scanForDockerfile.query({ owner, repo, installation_id });
       if (dockerFileStatus.success) {
         metadata.buildProps.buildSystem = 'Custom Dockerfile';
