@@ -229,6 +229,8 @@ export const useNewApplicationFlow = () => {
         const dockerFileStatus = await $client.github.scanForDockerfile.query({ owner, repo, installation_id });
         if (dockerFileStatus.success) {
           metadata.buildProps.buildSystem = 'Custom Dockerfile';
+        } else {
+          scanError.value = dockerFileStatus.message as string;
         }
       } catch (e: any) {
         console.error("scan error:", e);
@@ -251,6 +253,8 @@ export const useNewApplicationFlow = () => {
       const dockerFileStatus = await $client.github.scanForDockerfile.query({ owner, repo, installation_id });
       if (dockerFileStatus.success) {
         metadata.buildProps.buildSystem = 'Custom Dockerfile';
+      } else {
+        scanError.value = dockerFileStatus.message as string;
       }
     } catch (e: any) {
       console.error("scan error:", e);
