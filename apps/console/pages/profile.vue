@@ -49,13 +49,34 @@
         </template>
       </UTable>
     </UCard>
+
+    <UCard class="mt-8">
+      <template #header>
+        <h3>Notification Preferences</h3>
+      </template>
+      
+      <UCheckbox 
+        v-model="emailNotificationsEnabled" 
+        label="Enable Email Notifications"
+        description="Toggle to receive or stop receiving email notifications."
+      />
+      
+      <template #footer>
+        <UButton 
+          @click="savePreferences" 
+          :loading="savingPreferences"
+          :disabled="!hasPreferenceChanges">
+          Save Preferences
+        </UButton>
+      </template>
+    </UCard>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive } from 'vue'
 import { z } from 'zod'
-import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
+import type { DropdownMenuItem } from '@nuxt/ui'
 
 const user = useSupabaseUser()
 const supabase = useSupabaseClient()
@@ -64,6 +85,12 @@ const loading = ref(false)
 const errorMessage = ref('')
 const installations = ref<any[]>([])
 const toast = useToast()
+const emailNotificationsEnabled = ref(true)
+const originalEmailNotificationsEnabled = ref(true)
+const savingPreferences = ref(false)
+const hasPreferenceChanges = computed(() => {
+  return emailNotificationsEnabled.value !== originalEmailNotificationsEnabled.value
+})
 
 definePageMeta({
   layout: 'org',
@@ -73,7 +100,6 @@ definePageMeta({
 const githubApp = useRuntimeConfig().public.GITHUB_APP
 const siteUrl = useRuntimeConfig().public.siteUrl
 const base = useRequestURL().origin
-
 
 const displayName = computed(() => user.value?.user_metadata?.full_name || 'N/A')
 const isFormValid = computed(() => state.newDisplayName && state.newDisplayName.length >= 3)
@@ -85,7 +111,6 @@ const schema = z.object({
     .regex(/^[a-zA-Z0-9 ]+$/, 'Only letters, numbers, and spaces are allowed'),
 })
 
-type Schema = z.output<typeof schema>
 
 const UBadge = resolveComponent('UBadge')
 
@@ -120,7 +145,6 @@ const columns = [
       }
     }
   },
-  // { accessorKey: 'installation_id', header: 'Installation ID' },
   { 
     accessorKey: 'created_at', 
     header: 'Installed on',
@@ -139,25 +163,58 @@ const columns = [
   }
 ]
 
-onMounted(async () => {
+
   if (user.value) {
     state.newDisplayName = user.value.user_metadata?.full_name || ''
-    
     const { data, error } = await supabase
       .from('installations')
       .select('*')
-      .eq('user_id', user.value.id) 
+      .eq('user_id', user.value.id)
       .is('deleted_at', null)
-
     if (error) {
       console.error('Error fetching installations:', error)
       errorMessage.value = 'Failed to fetch installations.'
     } else {
       installations.value = data
     }
-  }
-})
+    await loadEmailPreference()
+}
 
+async function loadEmailPreference() {
+  if (!user.value) return
+  const { data } = await supabase
+    .from('user_notifications')
+    .select('email_enabled')
+    .eq('user_id', user.value.id)
+    .single()
+  emailNotificationsEnabled.value = data?.email_enabled ?? true
+  originalEmailNotificationsEnabled.value = emailNotificationsEnabled.value
+}
+
+async function savePreferences() {
+  if (!user.value) return
+  savingPreferences.value = true
+  try {
+    await supabase
+      .from('user_notifications')
+      .upsert({
+        user_id: user.value.id,
+        email_enabled: emailNotificationsEnabled.value
+      })
+    originalEmailNotificationsEnabled.value = emailNotificationsEnabled.value
+    toast.add({
+      title: 'Preferences saved successfully',
+      color: 'success'
+    })
+  } catch (error) {
+    toast.add({
+      title: 'Failed to save preferences',
+      color: 'error'
+    })
+  } finally {
+    savingPreferences.value = false
+  }
+}
 
 async function updateProfile() {
   if (!isFormValid.value || !hasChanges.value) return;

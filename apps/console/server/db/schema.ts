@@ -13,6 +13,8 @@ export const pricingPlanIntervalEnum = pgEnum('PRICING_PLAN_INTERVAL', ['month',
 export const subscriptionStatusEnum = pgEnum('SUBSCRIPTION_STATUS', ['trialing', 'active', 'canceled', 'incomplete', 'incomplete_expired', 'past_due', 'unpaid', 'paused']);
 export const variableTypeEnum = pgEnum('VARIABLE_TYPE', ['build', 'runtime']);
 export const buildSystemEnum = pgEnum('BUILD_SYSTEM', ['Nixpacks', 'Buildpacks', 'Custom Dockerfile']);
+export const notificationTypeEnum = pgEnum('NOTIFICATION_TYPE', ['APP_BUILD_SUCCESS', 'APP_BUILD_FAILURE', 'APP_DEPLOY_SUCCESS', 'APP_DEPLOY_FAILURE']);
+export const notificationChannelEnum = pgEnum('NOTIFICATION_CHANNEL', ['EMAIL', 'SLACK', 'DISCORD', 'IN_APP']);
 
 /**
  * Core Tables: Users, Organizations, Memberships
@@ -358,6 +360,51 @@ export const eventsRelations = relations(events, ({ one }) => ({
   environment: one(environments, { fields: [events.environment_id], references: [environments.id] }),
 }));
 
+// Notification Tables
+export const notifications = pgTable('notifications', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organization_id: text('organization_id').notNull().references(() => organizations.id),
+  environment_id: text('environment_id').notNull().references(() => environments.id),
+  user_id: uuid('user_id').references(() => users.id),
+  type: notificationTypeEnum('type').notNull(),
+  metadata: jsonb('metadata').notNull(),
+  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+}, (table) => ({
+  organizationIdIdx: index('notifications_organization_id_idx').on(table.organization_id),
+  environmentIdIdx: index('notifications_environment_id_idx').on(table.environment_id),
+  typeIdx: index('notifications_type_idx').on(table.type),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  organization: one(organizations, { fields: [notifications.organization_id], references: [organizations.id] }),
+  environment: one(environments, { fields: [notifications.environment_id], references: [environments.id] }),
+  user: one(users, { fields: [notifications.user_id], references: [users.id] }),
+}));
+
+export const user_notifications = pgTable('user_notifications', {
+  user_id: uuid('user_id').notNull().references(() => users.id),
+  email_enabled: boolean('email_enabled').default(true).notNull(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.user_id] }),
+}));
+
+export const user_notificationsRelations = relations(user_notifications, ({ one }) => ({
+  user: one(users, { fields: [user_notifications.user_id], references: [users.id] }),
+}));
+
+export const environment_notifications = pgTable('environment_notifications', {
+  environment_id: text('environment_id').notNull().references(() => environments.id),
+  type: notificationTypeEnum('type').notNull(),
+  channel: notificationChannelEnum('channel').notNull(),
+  enabled: boolean('enabled').default(true).notNull(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.environment_id, table.channel] }),
+}));
+
+export const environment_notificationsRelations = relations(environment_notifications, ({ one }) => ({
+  environment: one(environments, { fields: [environment_notifications.environment_id], references: [environments.id] }),
+}));
+
 /**
  * Export types for TypeScript
  */
@@ -382,6 +429,8 @@ export type ServiceVariable = typeof serviceVariables.$inferSelect;
 export type NewServiceVariable = typeof serviceVariables.$inferInsert;
 export type ServiceSecret = typeof serviceSecrets.$inferSelect;
 export type NewServiceSecret = typeof serviceSecrets.$inferInsert;
+export type UserNotification = typeof user_notifications.$inferSelect;
+export type EnvironmentNotification = typeof environment_notifications.$inferSelect;
 
 // Types for Polar Payment Integration
 export interface Price {

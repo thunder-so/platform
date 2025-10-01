@@ -77,6 +77,29 @@
       </template>
     </UCard>
 
+    <UCard v-if="applicationSchema" class="mt-8">
+      <template #header>
+        <h3>Notification Settings</h3>
+      </template>
+      <div class="space-y-4">
+        <div v-for="type in notificationTypes" :key="type.value">
+          <UCheckbox 
+            v-model="notificationPreferences[type.value]" 
+            :label="type.label"
+            :description="type.description"
+          />
+        </div>
+      </div>
+      <template #footer>
+        <UButton 
+          @click="saveNotificationPreferences" 
+          :loading="savingNotificationPreferences"
+          :disabled="!hasNotificationChanges">
+          Save Preferences
+        </UButton>
+      </template>
+    </UCard>
+
     <UCard v-if="applicationSchema" color="error" class="mt-8">
       <template #header>
         <h3>Danger Zone</h3>
@@ -114,9 +137,31 @@ const {
   refreshApplicationSchema,
   currentService: service,
 } = useApplications();
-const { $client } = useNuxtApp();
-const router = useRouter();
-const toast = useToast();
+const { $client } = useNuxtApp()
+const route = useRoute();
+const router = useRouter()
+const envId = route.params.env_id as string;
+const supabase = useSupabaseClient();
+const notificationPreferences = ref<Record<string, boolean>>({})
+const originalNotificationPreferences = ref<Record<string, boolean>>({})
+const savingNotificationPreferences = ref(false)
+const hasNotificationChanges = computed(() => {
+  return JSON.stringify(notificationPreferences.value) !== JSON.stringify(originalNotificationPreferences.value)
+});
+
+const notificationChannels = [
+  { value: 'EMAIL', label: 'Email', description: 'Receive notifications via email' },
+  { value: 'SLACK', label: 'Slack', description: 'Receive notifications via Slack' },
+  { value: 'DISCORD', label: 'Discord', description: 'Receive notifications via Discord' },
+  { value: 'IN_APP', label: 'In-App', description: 'Receive notifications in the app' }
+];
+
+const notificationTypes = [
+  { value: 'APP_BUILD_SUCCESS', label: 'Build success', description: 'Notify when environment has been successfully built.' },
+  { value: 'APP_BUILD_FAILURE', label: 'Build failed', description: 'Notify when environment build has failed.' },
+  { value: 'APP_DEPLOY_SUCCESS', label: 'Deployment success', description: 'Notify when deployments have successfully completed.' },
+  { value: 'APP_DEPLOY_FAILURE', label: 'Deployment failed', description: 'Notify when deployments have failed.' },
+];
 
 const localServiceConfig = ref<ServiceSchema | null>(null);
 const isSaving = ref(false);
@@ -125,6 +170,7 @@ const isAppSaving = ref(false);
 const isAppChanged = ref(false);
 const originalDisplayName = ref<string>('');
 const error = ref<string | null>(null);
+const toast = useToast();
 
 const serviceConfigForm = ref<{ hasErrors: boolean } | null>(null);
 const hasValidationErrors = computed(() => serviceConfigForm.value?.hasErrors || false);
@@ -189,7 +235,55 @@ watch(selectedBranch, (newBranch) => {
 
 onMounted(() => {
   fetchBranches();
+  loadNotificationPreferences();
 });
+
+async function loadNotificationPreferences() {
+  const { data } = await supabase
+    .from('environment_notifications')
+    .select('type, enabled')
+    .eq('environment_id', envId);
+
+  notificationTypes.forEach(type => {
+    notificationPreferences.value[type.value] = false;
+  });
+
+  data?.forEach(pref => {
+    notificationPreferences.value[pref.type] = pref.enabled;
+  });
+
+  originalNotificationPreferences.value = { ...notificationPreferences.value };
+}
+
+async function saveNotificationPreferences() {
+  savingNotificationPreferences.value = true;
+  
+  try {
+    const records = Object.entries(notificationPreferences.value).map(([type, enabled]) => ({
+      environment_id: envId,
+      type,
+      enabled
+    }));
+
+    await supabase
+      .from('environment_notifications')
+      .upsert(records);
+
+    originalNotificationPreferences.value = { ...notificationPreferences.value };
+
+    toast.add({
+      title: 'Notification preferences saved successfully',
+      color: 'success'
+    });
+  } catch (error) {
+    toast.add({
+      title: 'Failed to save notification preferences',
+      color: 'error'
+    });
+  } finally {
+    savingNotificationPreferences.value = false;
+  }
+}
 
 const saveChanges = async () => {
   if (!localServiceConfig.value?.metadata) return;
