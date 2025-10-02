@@ -247,4 +247,31 @@ export const servicesRouter = router({
       }
       return await db.insert(domains).values(input).returning();
     }),
+
+  upgradeStack: protectedProcedure
+    .input(
+      z.object({
+        service_id: z.string(),
+        stack_version: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { service_id, stack_version } = input;
+      
+      const [updatedService] = await db
+        .update(services)
+        .set({ stack_version, updated_at: new Date() })
+        .where(eq(services.id, service_id))
+        .returning();
+
+      if (!updatedService) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found.' });
+      }
+
+      // Trigger a new build with the updated stack version
+      const platformLib = new PlatformLibrary();
+      await platformLib.triggerBuild(updatedService.id);
+
+      return updatedService;
+    }),
 });

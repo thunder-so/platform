@@ -1,5 +1,28 @@
 <template>
   <div>
+    <div v-if="showStackUpgrade" class="mb-4">
+      <UCard>
+        <template #header>
+          <div class="flex items-center gap-2">
+            <Icon name="ix:info" class="text-blue-500" size="16" />
+            <h3>Stack update available</h3>
+          </div>
+        </template>
+        <p class="text-muted text-sm mb-4">
+          A newer version of the stack is available. Click Upgrade Stack to rebuild your service with the latest version.
+          <br />
+          <br />Current version: {{ service?.stack_version }} 
+          <br />Latest version: {{ latestStackVersion }}
+        </p>
+        <UButton 
+          label="Upgrade Stack" 
+          color="primary" 
+          :loading="upgrading"
+          @click="upgradeStack"
+        />
+      </UCard>
+    </div>
+
     <div v-if="loading">
       <div class="flex flex-col gap-4 mt-7">
         <div v-for="i in 3" :key="i" class="space-y-4">
@@ -62,13 +85,19 @@ import { useApplications } from '~/composables/useApplications';
 import type { Build, Event } from '~/server/db/schema';
 import { useTimeAgo } from '@vueuse/core';
 
+const { $client } = useNuxtApp();
+const appConfig = useAppConfig();
+
 definePageMeta({
   layout: 'app',
 });
 
 const supabase = useSupabaseClient();
 const route = useRoute();
-const { applicationSchema } = useApplications();
+const { applicationSchema, refreshApplicationSchema } = useApplications();
+const { $trpc } = useNuxtApp();
+
+const upgrading = ref(false);
 
 const getStatusIcon = (status: string) => {
   const normalizedStatus = status.toUpperCase();
@@ -105,6 +134,37 @@ const getStatusIconClass = (status: string) => {
 
 const environment = computed(() => applicationSchema.value?.environments?.[0]);
 const service = computed(() => environment.value?.services?.[0]);
+
+const latestStackVersion = computed(() => {
+  if (!service.value?.stack_type) return null;
+  const stack = appConfig.stacks.find(s => s.type === service.value?.stack_type);
+  return stack?.version || null;
+});
+
+const showStackUpgrade = computed(() => {
+  return service.value?.stack_version && 
+         latestStackVersion.value && 
+         service.value.stack_version !== latestStackVersion.value;
+});
+
+const upgradeStack = async () => {
+  if (!service.value?.id || !latestStackVersion.value) return;
+  
+  try {
+    upgrading.value = true;
+    await $client.services.upgradeStack.mutate({
+      service_id: service.value.id,
+      stack_version: latestStackVersion.value
+    });
+    
+    // Refresh application data to show updated version
+    await refreshApplicationSchema();
+  } catch (error) {
+    console.error('Failed to upgrade stack:', error);
+  } finally {
+    upgrading.value = false;
+  }
+};
 
 interface ActivityItem {
   id: string;
