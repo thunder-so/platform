@@ -188,7 +188,7 @@ const serviceType = computed(() => service.value?.stack_type);
 const isDeploying = ref(false);
 
 const primaryLinks = computed<NavigationMenuItem[]>(() => {
-  return [
+  const links = [
     {
       label: 'Events',
       to: `/app/${appId.value}`,
@@ -198,6 +198,16 @@ const primaryLinks = computed<NavigationMenuItem[]>(() => {
       to: `/app/${appId.value}/env/${envId.value}/settings`,
     },
   ];
+
+    // Only add Runtime Logs for FUNCTION and WEB_SERVICE stack types
+  if (serviceType.value === 'FUNCTION' || serviceType.value === 'WEB_SERVICE') {
+    links.push({
+      label: 'Logs',
+      to: `/app/${appId.value}/env/${envId.value}/logs`,
+    });
+  }
+
+  return links;
 });
 
 const manageLinks = computed<NavigationMenuItem[]>(() => {

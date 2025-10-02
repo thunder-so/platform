@@ -18,7 +18,7 @@ import {
   type ProviderSchema,
 } from '~/server/validators/common';
 import { PlatformLibrary } from '~/server/lib/platform.library';
-import { triggerPipeline, getCloudWatchLogs } from '~/server/lib/provider.library';
+import { triggerPipeline, getCloudWatchLogs, getCloudWatchLogsFromGroup } from '~/server/lib/provider.library';
 import { TRPCError } from '@trpc/server';
 import GithubLibrary from '~/server/lib/github.library';
 
@@ -125,6 +125,46 @@ export const servicesRouter = router({
           created_at: deploy.created_at,
           updated_at: deploy.updated_at
         }
+      };
+    }),
+
+  getRuntimeLogs: protectedProcedure
+    .input(
+      z.object({
+        service_id: z.string(),
+        nextToken: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      const service = await db.query.services.findFirst({
+        where: eq(services.id, input.service_id),
+        with: {
+          environment: {
+            with: {
+              provider: true,
+              application: true,
+            },
+          },
+        },
+      });
+
+      if (!service) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found.' });
+      }
+
+      const { environment } = service;
+      if (!environment || !environment.provider || !environment.application) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Provider or application not found for this service.' });
+      }
+
+      const logGroupName = `/aws/lambda/${environment.application.name}-${service.name}-${environment.name}-container-function`;
+
+      const logs = await getCloudWatchLogsFromGroup(environment.provider as ProviderSchema, logGroupName, input.nextToken);
+      const deepLink = `https://console.aws.amazon.com/cloudwatch/home?region=${environment.region}#logsV2:log-groups/log-group/${encodeURIComponent(logGroupName)}`;
+      
+      return { 
+        ...logs, 
+        deepLink
       };
     }),
 

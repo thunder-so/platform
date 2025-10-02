@@ -77,7 +77,7 @@
       </template>
     </UCard>
 
-    <UCard v-if="applicationSchema" class="mt-8">
+    <!-- <UCard v-if="applicationSchema" class="mt-8">
       <template #header>
         <h3>Notification Settings</h3>
       </template>
@@ -98,7 +98,7 @@
           Save Preferences
         </UButton>
       </template>
-    </UCard>
+    </UCard> -->
 
     <UCard v-if="applicationSchema" color="error" class="mt-8">
       <template #header>
@@ -235,7 +235,7 @@ watch(selectedBranch, (newBranch) => {
 
 onMounted(() => {
   fetchBranches();
-  loadNotificationPreferences();
+  // loadNotificationPreferences();
 });
 
 async function loadNotificationPreferences() {

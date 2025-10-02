@@ -2,7 +2,7 @@ import { STSClient, GetCallerIdentityCommand, AssumeRoleCommand } from '@aws-sdk
 import { SSMClient, PutParameterCommand } from '@aws-sdk/client-ssm';
 import { CodePipelineClient, StartPipelineExecutionCommand } from '@aws-sdk/client-codepipeline';
 import { SecretsManagerClient, CreateSecretCommand, UpdateSecretCommand } from '@aws-sdk/client-secrets-manager';
-import { CloudWatchLogsClient, GetLogEventsCommand } from '@aws-sdk/client-cloudwatch-logs';
+import { CloudWatchLogsClient, GetLogEventsCommand, FilterLogEventsCommand } from '@aws-sdk/client-cloudwatch-logs';
 import { TRPCError } from '@trpc/server';
 import { db } from '~/server/db/db';
 import { providers, services } from '../db/schema';
@@ -207,6 +207,29 @@ export async function getCloudWatchLogs(provider: ProviderSchema, logGroupName: 
         throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: 'Failed to fetch logs from CloudWatch.',
+        });
+    }
+}
+
+export async function getCloudWatchLogsFromGroup(provider: ProviderSchema, logGroupName: string, nextToken?: string) {
+    const cloudWatchLogsClient = await getAwsClient(CloudWatchLogsClient, provider);
+
+    try {
+        const command = new FilterLogEventsCommand({
+            logGroupName: logGroupName,
+            startTime: Date.now() - 24 * 60 * 60 * 1000,
+            nextToken: nextToken,
+        });
+        const response = await cloudWatchLogsClient.send(command);
+        return {
+            events: response.events || [],
+            nextForwardToken: response.nextToken,
+        };
+    } catch (error) {
+        console.error('Error fetching logs from CloudWatch log group:', error);
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to fetch logs from CloudWatch log group.',
         });
     }
 }

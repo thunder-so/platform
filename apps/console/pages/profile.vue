@@ -50,7 +50,7 @@
       </UTable>
     </UCard>
 
-    <UCard class="mt-8">
+    <!-- <UCard class="mt-8">
       <template #header>
         <h3>Notification Preferences</h3>
       </template>
@@ -69,7 +69,7 @@
           Save Preferences
         </UButton>
       </template>
-    </UCard>
+    </UCard> -->
   </div>
 </template>
 
@@ -177,7 +177,7 @@ const columns = [
     } else {
       installations.value = data
     }
-    await loadEmailPreference()
+    // await loadEmailPreference()
 }
 
 async function loadEmailPreference() {
