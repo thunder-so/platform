@@ -62,6 +62,7 @@ export const applicationSchema = z.object({
   name: z.string().regex(NAME_REGEX, NAME_ERROR_MESSAGE),
   display_name: z.string().min(1, 'Display name is required'),
   environments: z.array(environmentSchema),
+  organization_id: z.string(),
 });
 
 export type ServiceSchema = z.infer<typeof serviceSchema>;

@@ -126,14 +126,13 @@
                         color="neutral" 
                         variant="outline" 
                         trailing-icon="i-lucide-chevron-down"
-                        :loading="isDeploying"
                       />
 
                       <template #content>
                         <div class="p-2">
                           <ul class="space-y-1">
                             <li>
-                              <UButton class="w-full" variant="ghost" label="Deploy latest commit" @click="deployCommit()" />
+                              <UButton class="w-full" variant="ghost" label="Deploy latest commit" @click="openDeployLatestModal" />
                             </li>
                             <li>
                               <UButton class="w-full" variant="ghost" label="Deploy specific commit" @click="openDeployCommitModal" />
@@ -177,25 +176,21 @@
 import type { NavigationMenuItem } from '@nuxt/ui'
 import { useApplications } from '~/composables/useApplications';
 import Header from '~/components/Header.vue';
-import { AppDeployCommitModal } from '#components';
+import { AppDeployCommitModal, AppDeployLatestModal } from '#components';
 
 const route = useRoute();
-const { applicationSchema, setApplicationSchemaById, isLoading } = useApplications();
 const { $client } = useNuxtApp();
+const { applicationSchema, setApplicationSchemaById, currentEnvironment: environment, currentService: service } = useApplications();
+const provider = computed(() => environment.value?.provider);
 const toast = useToast();
 const overlay = useOverlay();
 
-const environment = computed(() => applicationSchema.value?.environments?.[0] || {});
-const provider = computed(() => environment.value?.provider);
-const service = computed(() => environment.value?.services?.[0]);
 // Use the route param for navigation immediately when present (falls back to loaded schema id).
 const appId = computed(() => {
   const param = route.params.app_id as string | undefined;
   return param ?? applicationSchema.value?.id;
 });
-const envId = computed(() => environment.value?.id);
 const serviceType = computed(() => service.value?.stack_type);
-const isDeploying = ref(false);
 
 const primaryLinks = computed<NavigationMenuItem[]>(() => {
   const links = [
@@ -263,8 +258,19 @@ async function openDeployCommitModal() {
   }
 }
 
-async function deployCommit(sha?: string) {
-  isDeploying.value = true;
+async function openDeployLatestModal() {
+  const deployLatestModal = overlay.create(AppDeployLatestModal, {
+    props: {
+      service: service.value,
+      environment: environment.value
+    }
+  });
+
+  const sha = await deployLatestModal.open().result;
+  // DeployLatestModal triggers the pipeline itself and shows feedback; no further action required here.
+}
+
+async function deployCommit(sha?: string) {  
   try {
     await $client.services.triggerPipeline.mutate({
       providerId: provider.value.id,
@@ -275,8 +281,6 @@ async function deployCommit(sha?: string) {
     toast.add({ title: 'Success', description: message });
   } catch (error: any) {
     toast.add({ title: 'Error', description: error.message || 'Failed to start deployment.', color: 'error' });
-  } finally {
-    isDeploying.value = false;
   }
 }
 
