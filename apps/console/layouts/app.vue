@@ -21,9 +21,7 @@
               }"
             />
 
-            <h3 class="text-xs uppercase p-3">
-              Manage
-            </h3>
+            <hr class="border border-muted mb-4" />
             <UNavigationMenu 
               :items="manageLinks"
               orientation="vertical" 
@@ -97,6 +95,18 @@
                       <span class="flex items-center gap-1">
                         <Icon name="mdi:link" class="w-4 h-4 mt-1 text-muted" />
                         <span>{{service.resources.ApiGatewayUrl}}</span>
+                      </span>
+                    </NuxtLink>
+                  </div>
+                  <div v-if="service?.resources?.LoadBalancerDNS" class="mt-2 text-left">
+                    <NuxtLink 
+                      :to="`${service.resources.LoadBalancerDNS}`" 
+                      target="_blank" 
+                      class="inline-block text-sm text-muted hover:text-white transition-colors"
+                    >
+                      <span class="flex items-center gap-1">
+                        <Icon name="mdi:link" class="w-4 h-4 mt-1 text-muted" />
+                        <span>{{service.resources.LoadBalancerDNS}}</span>
                       </span>
                     </NuxtLink>
                   </div>
@@ -195,7 +205,7 @@ const primaryLinks = computed<NavigationMenuItem[]>(() => {
     },
     {
       label: 'Settings',
-      to: `/app/${appId.value}/env/${envId.value}/settings`,
+      to: `/app/${appId.value}/settings`,
     },
   ];
 
@@ -203,7 +213,7 @@ const primaryLinks = computed<NavigationMenuItem[]>(() => {
   if (serviceType.value === 'FUNCTION' || serviceType.value === 'WEB_SERVICE') {
     links.push({
       label: 'Logs',
-      to: `/app/${appId.value}/env/${envId.value}/logs`,
+      to: `/app/${appId.value}/logs`,
     });
   }
 
@@ -213,12 +223,12 @@ const primaryLinks = computed<NavigationMenuItem[]>(() => {
 const manageLinks = computed<NavigationMenuItem[]>(() => {
   const links = [
     {
-      label: 'Environment',
-      to: `/app/${appId.value}/env/${envId.value}/variables`,
+      label: 'Environment Variables',
+      to: `/app/${appId.value}/variables`,
     },
     {
       label: 'Domains',
-      to: `/app/${appId.value}/env/${envId.value}/domains`,
+      to: `/app/${appId.value}/domains`,
     }
   ];
   
@@ -227,11 +237,11 @@ const manageLinks = computed<NavigationMenuItem[]>(() => {
     links.push(
       {
         label: 'Headers',
-        to: `/app/${appId.value}/env/${envId.value}/headers`,
+        to: `/app/${appId.value}/headers`,
       },
       {
         label: 'Redirects',
-        to: `/app/${appId.value}/env/${envId.value}/redirects`,
+        to: `/app/${appId.value}/redirects`,
       }
     );
   }

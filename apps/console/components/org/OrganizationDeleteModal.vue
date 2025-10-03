@@ -17,10 +17,10 @@ const isDeleteEnabled = computed(() => confirmationInput.value === 'delete')
     :ui="{ footer: 'justify-end' }"
   >
     <template #body>
-      <p>Are you sure you want to delete the workspace {{ org.name }}?</p> 
-      <p>This action cannot be undone.</p>
-      <UFormField label="Enter delete to confirm" name="orgId" class="mt-4">
-          <UInput v-model="confirmationInput" />
+      <p class="text-sm text-muted">Are you sure you want to delete the workspace <code class="text-white">{{ org.name }}</code>?</p> 
+      <p class="text-sm text-muted">This action cannot be undone.</p>
+      <UFormField label="Enter `delete` to confirm" name="orgId" class="mt-4">
+          <UInput v-model="confirmationInput" class="w-full" />
       </UFormField>
     </template>
     

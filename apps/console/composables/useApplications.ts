@@ -90,12 +90,16 @@ export const useApplications = () => {
   const route = useRoute();
 
   const currentEnvironment = computed(() => {
-    if (!applicationSchema.value || !route.params.env_id) return null;
-    return applicationSchema.value.environments.find(e => e.id === route.params.env_id);
+    // if (!applicationSchema.value || !route.params.env_id) return null;
+    // return applicationSchema.value.environments.find(e => e.id === route.params.env_id);
+    if (!applicationSchema.value) return null;
+    return applicationSchema.value.environments[0] ?? null;
   });
 
   const currentService = computed(() => {
     if (!currentEnvironment.value) return null;
+        console.log('currentService:', currentEnvironment.value.services[0]);
+
     return currentEnvironment.value.services[0] ?? null;
   });
 

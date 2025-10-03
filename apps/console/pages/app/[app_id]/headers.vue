@@ -8,6 +8,7 @@
       <USkeleton class="h-8 w-40" />
     </template>
   </UCard>
+  
   <UCard v-else-if="service.stack_type === 'SPA'">
     <template #header>
       <h2>Custom HTTP Headers</h2>

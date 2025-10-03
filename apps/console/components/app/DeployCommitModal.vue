@@ -20,8 +20,8 @@
         >
           <template #item="{ item }">
             <div class="flex flex-col text-left">
-              <span class="text-sm">{{ item.label }}</span>
-              <span class="text-xs text-muted">{{ item.value.substring(0, 7) }} by {{ item.author }} on {{ item.date }}</span>
+              <span class="text-sm mb-1">{{ item.label }}</span>
+              <span class="text-xs text-muted">{{ item.value.substring(0, 7) }} by {{ item.author }} {{ item.date }}</span>
             </div>
           </template>
         </USelectMenu>
@@ -36,7 +36,8 @@
 </template>
 
 <script setup lang="ts">
-import type { ServiceSchema, EnvironmentSchema } from '~/server/validators/app'
+import type { ServiceSchema, EnvironmentSchema } from '~/server/validators/app';
+import { useTimeAgo } from '@vueuse/core';
 
 const props = defineProps<{
   service: ServiceSchema,
@@ -69,7 +70,8 @@ const commitOptions = computed(() => {
     label: commit.commit.message.split('\n')[0], // First line of message
     value: commit.sha,
     author: commit.commit.author?.name || 'Unknown',
-    date: commit.commit.author?.date ? new Date(commit.commit.author.date).toLocaleDateString() : 'Unknown date'
+    // date: commit.commit.author?.date ? new Date(commit.commit.author.date).toLocaleDateString() : 'Unknown date'
+    date: commit.commit.author?.date ? useTimeAgo(new Date(commit.commit.author.date)).value : 'Unknown date'
   })) || []
 })
 

@@ -13,8 +13,8 @@ const emit = defineEmits<{ close: [applicationId: string | null] }>()
     :ui="{ footer: 'justify-end' }"
   >
     <template #body>
-      <p>Are you sure you want to delete this variable?</p> 
-      <p>This action cannot be undone.</p>
+      <p class="text-sm text-muted">Are you sure you want to delete this variable?</p> 
+      <p class="text-sm text-muted">This action cannot be undone.</p>
     </template>
     
     <template #footer="{ close }">

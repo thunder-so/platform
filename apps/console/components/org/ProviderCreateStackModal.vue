@@ -5,7 +5,7 @@
   >
     <template #body>
       <div class="space-y-4">
-        <p>Enter an alias for your new account.</p>
+        <p class="text-sm text-muted">Enter an alias for your new account. A URL will be generated below.</p>
         
         <UForm :schema="schema" :state="state">
           <UFormField label="Alias" name="alias" required class="mb-3">

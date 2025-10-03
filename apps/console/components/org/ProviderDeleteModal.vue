@@ -1,16 +1,3 @@
-<script setup lang="ts">
-const props = defineProps<{
-  provider: any
-  mode: 'confirmDelete' | 'cannotDelete'
-}>()
-
-const emit = defineEmits<{ close: [providerId: string | null] }>()
-
-const confirmationInput = ref('')
-
-const isDeleteEnabled = computed(() => confirmationInput.value === 'delete')
-</script>
-
 <template>
   <UModal 
     :title="mode === 'cannotDelete' ? 'Cannot Delete Provider' : 'Delete AWS Account'"
@@ -18,12 +5,13 @@ const isDeleteEnabled = computed(() => confirmationInput.value === 'delete')
   >
     <template #body>
       <div v-if="mode === 'cannotDelete'">
-        <p>This provider is currently associated with one or more active environments and cannot be deleted.</p>
+        <UAlert icon="i-heroicons-exclamation-triangle" color="warning" variant="outline" title="This provider is currently associated with one or more active applications and cannot be deleted." />
       </div>
       <div v-else>
-        <p>Are you sure you want to delete the provider "{{ provider.alias }}"? This action cannot be undone.</p>
+        <p class="text-sm text-muted">Are you sure you want to delete the provider <code class="text-white">{{ provider.alias }}</code>?</p>
+        <p class="text-sm text-muted">This action cannot be undone.</p>
         <UFormField label="Enter delete to confirm" name="providerId" class="mt-4">
-          <UInput v-model="confirmationInput" />
+          <UInput v-model="confirmationInput" class="w-full" />
         </UFormField>
       </div>
     </template>
@@ -39,3 +27,16 @@ const isDeleteEnabled = computed(() => confirmationInput.value === 'delete')
     </template>
   </UModal>
 </template>
+
+<script setup lang="ts">
+const props = defineProps<{
+  provider: any
+  mode: 'confirmDelete' | 'cannotDelete'
+}>()
+
+const emit = defineEmits<{ close: [providerId: string | null] }>()
+
+const confirmationInput = ref('')
+
+const isDeleteEnabled = computed(() => confirmationInput.value === 'delete')
+</script>
