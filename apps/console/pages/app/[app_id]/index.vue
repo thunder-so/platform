@@ -8,10 +8,11 @@
             <h3>Stack update available</h3>
           </div>
         </template>
-        <p class="text-muted text-sm mb-4">
+        <p class="text-muted text-sm mb-2">
           A newer version of the stack is available. Click Upgrade Stack to rebuild your service with the latest version.
-          <br />
-          <br />Current version: {{ service?.stack_version }} 
+        </p>
+        <p class="text-muted text-sm mb-4">
+          Current version: {{ service?.stack_version }} 
           <br />Latest version: {{ latestStackVersion }}
         </p>
         <UButton 
@@ -51,26 +52,68 @@
             <span v-if="activity.status === 'FAILED' || activity.status === 'FAULT' || activity.status === 'TIMED_OUT'">Build failed</span>
           </NuxtLink>
 
-          <NuxtLink v-if="activity.type === 'event'" :to="`/app/${applicationSchema?.id}/deploys/${activity.id}`">
-            <span v-if="activity.status === 'STARTED'">
-              Deploy started for {{ activity.sourceDetails?.revisionId?.substring(0, 7) }}
-            </span>
-            <span v-if="activity.status === 'SUCCEEDED'">
-              Deploy success for {{ activity.sourceDetails?.revisionId?.substring(0, 7) }}
-            </span>
-            <span v-if="activity.status === 'FAILED'">
-              Deploy failed for {{ activity.sourceDetails?.revisionId?.substring(0, 7) }}
-            </span>
-          </NuxtLink>
+          <div v-if="activity.type === 'event'" class="grid grid-cols-4 gap-2">
+            <div class="flex items-center text-left text-md">
+              <NuxtLink :to="`/app/${applicationSchema?.id}/deploys/${activity.id}`">
+                {{ activity.id.substring(0, 7) }}
+              </NuxtLink>
+            </div>
 
-          <p class="text-gray-500 text-sm mt-1">{{ useTimeAgo(new Date(activity.timestamp)).value }}</p>
+            <div class="flex flex-col text-left">
+              <p class="text-sm text-muted">{{ useTimeAgo(new Date(activity.timestamp_start)).value }}</p>
+              <p class="text-sm text-muted">{{ getDuration(activity) }}</p>
+            </div>
+
+            <div class="flex flex-col text-left">
+              <div class="leading-none">
+                <NuxtLink 
+                  :to="`https://github.com/${service?.owner}/${service?.repo}/tree/${service?.branch}`" 
+                  target="_blank" 
+                  class="inline-flex text-muted hover:text-white transition-colors"
+                >
+                  <span class="flex items-center gap-1">
+                    <Icon name="mdi:source-branch" class="w-4 h-4" />
+                    <span class="text-sm">{{service?.branch}}</span>
+                  </span>
+                </NuxtLink>
+              </div>
+              <div class="leading-none">
+                <NuxtLink 
+                  :to="`https://github.com/${service?.owner}/${service?.repo}/commit/${activity.sourceDetails?.revisionId}`" 
+                  target="_blank" 
+                  class="inline-flex text-muted hover:text-white transition-colors"
+                >
+                  <span class="flex items-center gap-1">
+                    <Icon name="fa6-solid:code-commit" class="w-4 h-4" />
+                    <span class="text-sm">{{ activity.sourceDetails?.revisionId?.substring(0, 7) }}</span>
+                  </span>
+                </NuxtLink>
+              </div>
+            </div>
+          </div>
         </div>
-        <UButton v-if="activity.type === 'event' && activity.status === 'FAILED'"
-         label="Rollback" 
-         color="neutral" 
-         variant="outline" 
-         size="md" 
-        />
+        <div v-if="activity.type === 'event'">
+          <UPopover
+            v-model:open="activityMenuOpen[activity.id]"
+            mode="click"
+            :content="{ align: 'end', side: 'bottom' }"
+          >
+            <UButton size="sm" icon="i-heroicons-ellipsis-horizontal" color="neutral" variant="ghost" />
+            
+            <template #content>
+              <div class="py-1">
+                <NuxtLink :to="`/app/${applicationSchema?.id}/deploys/${activity.id}`" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800">
+                  <Icon name="i-heroicons-eye" class="mr-2" />
+                  <span>Inspect Deployment</span>
+                </NuxtLink>
+                <div @click="() => copyUrl(activity.id)" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800 cursor-pointer">
+                  <Icon name="i-heroicons-clipboard" class="mr-2" />
+                  <span>Copy URL</span>
+                </div>
+              </div>
+            </template>
+          </UPopover>
+        </div>
       </div>
     </div>
     <div v-else>No activities found on this application.</div>
@@ -96,8 +139,18 @@ const supabase = useSupabaseClient();
 const route = useRoute();
 const { applicationSchema, refreshApplicationSchema } = useApplications();
 const { $trpc } = useNuxtApp();
+const toast = useToast();
+const overlay = useOverlay();
 
 const upgrading = ref(false);
+const activityMenuOpen = ref<Record<string, boolean>>({});
+
+const copyUrl = (activityId: string) => {
+  const url = `${window.location.origin}/app/${applicationSchema.value?.id}/deploys/${activityId}`;
+  navigator.clipboard.writeText(url);
+  activityMenuOpen.value[activityId] = false;
+  toast.add({ description: 'URL copied to clipboard' });
+};
 
 const getStatusIcon = (status: string) => {
   const normalizedStatus = status.toUpperCase();
@@ -109,10 +162,10 @@ const getStatusIcon = (status: string) => {
     return 'line-md:loading-loop';
   }
   if (['FAILED', 'FAULT', 'TIMED_OUT'].includes(normalizedStatus)) {
-    return 'ix:certificate-error';
+    return 'material-symbols:warning-outline-rounded';
   }
   if (normalizedStatus === 'SUCCEEDED') {
-    return 'ix:certificate-success';
+    return 'material-symbols:bookmark-check';
   }
   return 'ix:about';
 };
@@ -166,10 +219,21 @@ const upgradeStack = async () => {
   }
 };
 
+const getDuration = (activity: ActivityItem) => {
+  if (!activity.timestamp_start) return 'Duration: -';
+  const start = new Date(activity.timestamp_start);
+  const end = activity.timestamp_end ? new Date(activity.timestamp_end) : new Date();
+  const diff = Math.floor((end.getTime() - start.getTime()) / 1000);
+  const mins = Math.floor(diff / 60);
+  const secs = diff % 60;
+  return `Duration: ${mins}m ${secs}s`;
+};
+
 interface ActivityItem {
   id: string;
   type: 'build' | 'event';
-  timestamp: string;
+  timestamp_start: Date | null;
+  timestamp_end: Date | null;
   status: string;
   message: string;
   logAvailable: boolean;
@@ -189,7 +253,8 @@ const error = ref<{ message: string } | null>(null);
 const transformBuildToActivityItem = (build: Build): ActivityItem => ({
   id: build.id,
   type: 'build',
-  timestamp: build.created_at,
+  timestamp_start: build.build_start,
+  timestamp_end: build.build_end,
   status: build.build_status as string,
   message: `Build ${build.build_status?.toLowerCase()} for service ${service.value?.display_name || 'N/A'}`,
   logAvailable: !!build.build_log,
@@ -199,7 +264,8 @@ const transformBuildToActivityItem = (build: Build): ActivityItem => ({
 const transformEventToActivityItem = (event: Event): ActivityItem => ({
   id: event.pipeline_execution_id,
   type: 'event',
-  timestamp: event.created_at,
+  timestamp_start: event.pipeline_start,
+  timestamp_end: event.pipeline_end,
   status: event.pipeline_state as string,
   message: `Pipeline ${event.pipeline_state?.toLowerCase()} for service ${service.value?.display_name || 'N/A'}`,
   logAvailable: !!event.pipeline_log,
@@ -220,7 +286,7 @@ const fetchActivities = async (envId: string) => {
     const transformedBuilds = (buildsResponse.data as Build[]).map(transformBuildToActivityItem);
     const transformedEvents = (eventsResponse.data as Event[]).map(transformEventToActivityItem);
 
-    activities.value = [...transformedBuilds, ...transformedEvents].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    activities.value = [...transformedBuilds, ...transformedEvents].sort((a, b) => new Date(b.timestamp_start).getTime() - new Date(a.timestamp_start).getTime());
 
   } catch (e: any) {
     error.value = e;

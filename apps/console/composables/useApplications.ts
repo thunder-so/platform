@@ -98,8 +98,6 @@ export const useApplications = () => {
 
   const currentService = computed(() => {
     if (!currentEnvironment.value) return null;
-        console.log('currentService:', currentEnvironment.value.services[0]);
-
     return currentEnvironment.value.services[0] ?? null;
   });
 

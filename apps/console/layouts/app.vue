@@ -60,14 +60,20 @@
                         class="text-muted hover:text-white transition-colors"
                       >
                         <span class="flex items-center justify-center gap-1">
-                          <Icon name="mdi:github" class="w-4 h-4 mt-1 text-muted" />
+                          <Icon name="mdi:github" class="w-4 h-4 mt-1" />
                           <span class="text-sm">{{service?.owner}} / {{service?.repo}}</span>
                         </span>
                       </NuxtLink>
-                      <span class="flex items-center justify-center gap-1">
-                        <Icon name="mdi:source-branch" class="w-4 h-4 mt-1 text-muted" />
-                        <span class="text-sm text-muted">{{service?.branch}}</span>
-                      </span>
+                      <NuxtLink 
+                        :to="`https://github.com/${service?.owner}/${service?.repo}/tree/${service?.branch}`" 
+                        target="_blank" 
+                        class="text-muted hover:text-white transition-colors"
+                      >
+                        <span class="flex items-center justify-center gap-1">
+                          <Icon name="mdi:source-branch" class="w-4 h-4 mt-1" />
+                          <span class="text-sm">{{service?.branch}}</span>
+                        </span>
+                      </NuxtLink>
                     </div>
                     <div class="flex items-center justify-center gap-2">
                       <Icon name="mdi:aws" class="h-5 w-5 mt-1 text-muted" />
