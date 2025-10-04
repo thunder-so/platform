@@ -1,5 +1,6 @@
 <template>
   <div>
+    <!-- Stack Upgrade -->
     <div v-if="showStackUpgrade" class="mb-4">
       <UCard>
         <template #header>
@@ -24,6 +25,39 @@
       </UCard>
     </div>
 
+    <!-- Filters: View, Date Range, Status, Pagination -->
+    <div class="flex flex-col md:flex-row items-start md:items-center gap-3 mb-4">
+      <div class="flex items-center gap-2">
+        <label class="text-sm text-muted">View:</label>
+        <USelect 
+          v-model="selectedView" 
+          :items="[{value: 'all', label: 'Show all'}, {value: 'builds', label: 'Builds'}, {value: 'events', label: 'Deploys'}]"
+          size="lg"
+          class="w-48" 
+        />
+      </div>
+
+      <div class="flex items-center gap-2">
+        <label class="text-sm text-muted">Date:</label>
+        <USelect 
+          v-model="selectedDateRangeKey" 
+          :items="dateRangeOptions.map(opt => ({value: opt.key, label: opt.label}))"
+          size="lg"
+          class="w-64" 
+        />
+      </div>
+
+      <div class="ml-auto flex items-center gap-2">
+        <label class="text-sm text-muted">Status:</label>
+        <USelect 
+          v-model="selectedStatus" 
+          :items="[{value: 'all', label: 'Show all'}, ...statusOptions.map(s => ({value: s, label: s}))]"
+          size="lg"
+          class="w-48" 
+        />
+      </div>
+    </div>
+
     <div v-if="loading">
       <div class="flex flex-col gap-4 mt-7">
         <div v-for="i in 3" :key="i" class="space-y-4">
@@ -38,8 +72,8 @@
       </UAlert>
     </div>
 
-    <div v-else-if="activities.length">
-      <div v-for="activity in activities" :key="activity.id" class="p-4 mb-2 border border-muted rounded flex items-center gap-4">
+    <div v-else-if="paginatedActivities.length">
+      <div v-for="activity in paginatedActivities" :key="activity.id + '-' + activity.type" class="p-4 mb-2 border border-muted rounded flex items-center gap-4">
         <Icon 
           :name="getStatusIcon(activity.status)" 
           :class="getStatusIconClass(activity.status)"
@@ -115,6 +149,24 @@
           </UPopover>
         </div>
       </div>
+
+      <!-- Pagination -->
+      <div class="flex items-center justify-between mt-4">
+        <div class="text-sm text-muted">Showing {{ startItem }} - {{ endItem }} of {{ activities.length }}</div>
+        <div class="flex items-center gap-2">
+          <UButton :disabled="page <= 1" @click="goToPage(page - 1)" size="sm" variant="outline">Prev</UButton>
+          <UButton 
+            v-for="pageNum in pageNumbers" 
+            :key="pageNum" 
+            @click="goToPage(pageNum)" 
+            :variant="pageNum === page ? 'solid' : 'ghost'"
+            size="sm"
+          >
+            {{ pageNum }}
+          </UButton>
+          <UButton :disabled="endItem >= activities.length" @click="goToPage(page + 1)" size="sm" variant="outline">Next</UButton>
+        </div>
+      </div>
     </div>
     <div v-else>No activities found on this application.</div>
   </div>
@@ -122,14 +174,11 @@
 
 <script setup lang="ts">
 import { ref, computed, h, watch, onUnmounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useSupabaseClient } from '#imports';
 import { useApplications } from '~/composables/useApplications';
 import type { Build, Event } from '~/server/db/schema';
 import { useTimeAgo } from '@vueuse/core';
-
-const { $client } = useNuxtApp();
-const appConfig = useAppConfig();
 
 definePageMeta({
   layout: 'app',
@@ -137,13 +186,96 @@ definePageMeta({
 
 const supabase = useSupabaseClient();
 const route = useRoute();
+const router = useRouter();
 const { applicationSchema, refreshApplicationSchema } = useApplications();
-const { $trpc } = useNuxtApp();
+const { $client } = useNuxtApp();
+const appConfig = useAppConfig();
 const toast = useToast();
 const overlay = useOverlay();
 
 const upgrading = ref(false);
 const activityMenuOpen = ref<Record<string, boolean>>({});
+
+// --- Filter & Pagination state (URL synced) ---
+const PAGE_SIZE = 10;
+
+// Status options (union of build & pipeline statuses from schema)
+const statusOptions = [
+  'NULL', 'STARTED', 'IN_PROGRESS', 'SUCCEEDED', 'RESUMED', 'FAILED', 'CANCELED', 'SUPERSEDED', 'FAULT', 'TIMED_OUT', 'STOPPED'
+];
+
+const dateRangeOptions = [
+  { key: 'last_hour', label: 'Last hour' },
+  { key: 'last_12_hours', label: 'Last 12 hours' },
+  { key: 'last_day', label: 'Last day' },
+  { key: 'last_3_days', label: 'Last 3 days' },
+  { key: 'last_week', label: 'Last week' },
+  { key: 'all', label: 'Show all' },
+];
+
+// Read initial state from URL
+const q = route.query;
+const selectedView = ref((q.view as string) || 'all'); // all | builds | events
+const selectedStatus = ref((q.status as string) || 'all');
+const page = ref(q.page ? Math.max(1, Number(q.page)) : 1);
+
+// date is in the form start-end (epoch ms). If present, add a 'custom' option so the dropdown can reflect it.
+let initialDateKey = 'all';
+if (q.date && typeof q.date === 'string') {
+  initialDateKey = 'custom';
+  // ensure custom appears first in options so v-model can bind
+  if (!dateRangeOptions.find(d => d.key === 'custom')) {
+    dateRangeOptions.unshift({ key: 'custom', label: 'Custom' });
+  }
+}
+const selectedDateRangeKey = ref(initialDateKey);
+
+// parse date param into numeric start/end
+const parseDateParam = (val?: string) => {
+  if (!val) return null;
+  const parts = val.split('-');
+  if (parts.length !== 2) return null;
+  const s = Number(parts[0]);
+  const e = Number(parts[1]);
+  if (Number.isNaN(s) || Number.isNaN(e)) return null;
+  return { start: s, end: e };
+};
+
+const selectedDateRangeParam = ref(parseDateParam(q.date as string | undefined));
+
+const computeRangeForKey = (key: string) => {
+  const now = Date.now();
+  switch (key) {
+    case 'last_hour': return { start: now - 1000 * 60 * 60, end: now };
+    case 'last_12_hours': return { start: now - 1000 * 60 * 60 * 12, end: now };
+    case 'last_day': return { start: now - 1000 * 60 * 60 * 24, end: now };
+    case 'last_3_days': return { start: now - 1000 * 60 * 60 * 24 * 3, end: now };
+    case 'last_week': return { start: now - 1000 * 60 * 60 * 24 * 7, end: now };
+    case 'custom': return selectedDateRangeParam.value ? { start: selectedDateRangeParam.value.start, end: selectedDateRangeParam.value.end } : null;
+    case 'all':
+    default: return null;
+  }
+};
+
+const updateUrl = (opts?: { replace?: boolean }) => {
+  const next: Record<string, any> = { ...route.query };
+  // view
+  if (selectedView.value && selectedView.value !== 'all') next.view = selectedView.value; else delete next.view;
+  // status
+  if (selectedStatus.value && selectedStatus.value !== 'all') next.status = selectedStatus.value; else delete next.status;
+  // page
+  if (page.value && page.value > 1) next.page = String(page.value); else delete next.page;
+  // date range -> serialize to start-end (epoch ms)
+  const range = computeRangeForKey(selectedDateRangeKey.value);
+  if (range) next.date = `${range.start}-${range.end}`; else delete next.date;
+
+  const method = opts?.replace ? router.replace : router.push;
+  // avoid adding identical history entries
+  method({ query: next }).catch(() => {});
+};
+
+// sync URL when filters change
+watch([selectedView, selectedStatus, selectedDateRangeKey, page], () => updateUrl({ replace: true }));
 
 const copyUrl = (activityId: string) => {
   const url = `${window.location.origin}/app/${applicationSchema.value?.id}/deploys/${activityId}`;
@@ -152,8 +284,8 @@ const copyUrl = (activityId: string) => {
   toast.add({ description: 'URL copied to clipboard' });
 };
 
-const getStatusIcon = (status: string) => {
-  const normalizedStatus = status.toUpperCase();
+const getStatusIcon = (status?: string | null) => {
+  const normalizedStatus = (status || '').toString().toUpperCase();
   
   if (['STARTED'].includes(normalizedStatus)) {
     return 'line-md:loading-loop';
@@ -170,8 +302,8 @@ const getStatusIcon = (status: string) => {
   return 'ix:about';
 };
 
-const getStatusIconClass = (status: string) => {
-  const normalizedStatus = status.toUpperCase();
+const getStatusIconClass = (status?: string | null) => {
+  const normalizedStatus = (status || '').toString().toUpperCase();
   
   if (['STARTED', 'IN_PROGRESS'].includes(normalizedStatus)) {
     return 'text-yellow-500';
@@ -221,72 +353,119 @@ const upgradeStack = async () => {
 
 const getDuration = (activity: ActivityItem) => {
   if (!activity.timestamp_start) return 'Duration: -';
-  const start = new Date(activity.timestamp_start);
-  const end = activity.timestamp_end ? new Date(activity.timestamp_end) : new Date();
+  const start = new Date(activity.timestamp_start as string | Date);
+  const end = activity.timestamp_end ? new Date(activity.timestamp_end as string | Date) : new Date();
   const diff = Math.floor((end.getTime() - start.getTime()) / 1000);
   const mins = Math.floor(diff / 60);
   const secs = diff % 60;
   return `Duration: ${mins}m ${secs}s`;
 };
 
-interface ActivityItem {
+const formatTimeAgo = (ts?: string | Date | null) => {
+  if (!ts) return '-';
+  try {
+    return useTimeAgo(new Date(ts as string | Date)).value;
+  } catch (e) {
+    return '-';
+  }
+};
+
+type BaseActivity = {
   id: string;
-  type: 'build' | 'event';
-  timestamp_start: Date | null;
-  timestamp_end: Date | null;
-  status: string;
+  timestamp_start: string | Date | null;
+  timestamp_end: string | Date | null;
+  status: string | null;
   message: string;
   logAvailable: boolean;
   logId: string;
-  sourceDetails?: {
-    entityUrl?: string;
-    revisionId?: string;
-    revisionUrl?: string;
-    revisionSummary?: string;
-  };
-}
+};
+
+type BuildActivity = BaseActivity & { type: 'build' };
+type EventActivity = BaseActivity & { type: 'event'; sourceDetails?: { entityUrl?: string; revisionId?: string; revisionUrl?: string; revisionSummary?: string } };
+type ActivityItem = BuildActivity | EventActivity;
 
 const activities = ref<ActivityItem[]>([]);
 const loading = ref(true);
 const error = ref<{ message: string } | null>(null);
 
-const transformBuildToActivityItem = (build: Build): ActivityItem => ({
+const transformBuildToActivityItem = (build: Build): BuildActivity => ({
   id: build.id,
   type: 'build',
   timestamp_start: build.build_start,
   timestamp_end: build.build_end,
-  status: build.build_status as string,
-  message: `Build ${build.build_status?.toLowerCase()} for service ${service.value?.display_name || 'N/A'}`,
+  status: (build.build_status as string) || null,
+  message: `Build ${String(build.build_status || '').toLowerCase()} for service ${service.value?.display_name || 'N/A'}`,
   logAvailable: !!build.build_log,
   logId: build.id,
 });
 
-const transformEventToActivityItem = (event: Event): ActivityItem => ({
+const transformEventToActivityItem = (event: Event): EventActivity => ({
   id: event.pipeline_execution_id,
   type: 'event',
   timestamp_start: event.pipeline_start,
   timestamp_end: event.pipeline_end,
-  status: event.pipeline_state as string,
-  message: `Pipeline ${event.pipeline_state?.toLowerCase()} for service ${service.value?.display_name || 'N/A'}`,
+  status: (event.pipeline_state as string) || null,
+  message: `Pipeline ${String(event.pipeline_state || '').toLowerCase()} for service ${service.value?.display_name || 'N/A'}`,
   logAvailable: !!event.pipeline_log,
   logId: event.pipeline_execution_id,
-  sourceDetails: event.pipeline_metadata as ActivityItem['sourceDetails'],
+  sourceDetails: event.pipeline_metadata as EventActivity['sourceDetails'],
 });
 
 const fetchActivities = async (envId: string) => {
   try {
-    const [buildsResponse, eventsResponse] = await Promise.all([
-      supabase.from('builds').select('*').eq('environment_id', envId).is('deleted_at', null).order('created_at', { ascending: false }).limit(50),
-      supabase.from('events').select('*').eq('environment_id', envId).is('deleted_at', null).order('created_at', { ascending: false }).limit(50),
-    ]);
+    loading.value = true;
 
-    if (buildsResponse.error) throw buildsResponse.error;
-    if (eventsResponse.error) throw eventsResponse.error;
+    // Determine date filter
+    const range = computeRangeForKey(selectedDateRangeKey.value);
 
-    const transformedBuilds = (buildsResponse.data as Build[]).map(transformBuildToActivityItem);
-    const transformedEvents = (eventsResponse.data as Event[]).map(transformEventToActivityItem);
+    // Build queries depending on selectedView
+    const wantsBuilds = selectedView.value === 'all' || selectedView.value === 'builds';
+    const wantsEvents = selectedView.value === 'all' || selectedView.value === 'events';
 
-    activities.value = [...transformedBuilds, ...transformedEvents].sort((a, b) => new Date(b.timestamp_start).getTime() - new Date(a.timestamp_start).getTime());
+    const tasks: Promise<any>[] = [];
+
+    if (wantsBuilds) {
+      let qBuilds: any = supabase.from('builds').select('*').eq('environment_id', envId).is('deleted_at', null).order('created_at', { ascending: false }).limit(100);
+      if (selectedStatus.value && selectedStatus.value !== 'all') qBuilds = qBuilds.eq('build_status', selectedStatus.value);
+      if (range) qBuilds = qBuilds.gte('created_at', new Date(range.start).toISOString()).lte('created_at', new Date(range.end).toISOString());
+      tasks.push(qBuilds);
+    }
+
+    if (wantsEvents) {
+      let qEvents: any = supabase.from('events').select('*').eq('environment_id', envId).is('deleted_at', null).order('created_at', { ascending: false }).limit(100);
+      if (selectedStatus.value && selectedStatus.value !== 'all') qEvents = qEvents.eq('pipeline_state', selectedStatus.value);
+      if (range) qEvents = qEvents.gte('created_at', new Date(range.start).toISOString()).lte('created_at', new Date(range.end).toISOString());
+      tasks.push(qEvents);
+    }
+
+    const results = await Promise.all(tasks);
+
+    // Map results back - they will be in same order as tasks array
+    const items: ActivityItem[] = [];
+    let ri = 0;
+    if (wantsBuilds) {
+      const res = results[ri++];
+      if (res.error) throw res.error;
+      const transformedBuilds = (res.data as Build[]).map(transformBuildToActivityItem);
+      items.push(...transformedBuilds);
+    }
+    if (wantsEvents) {
+      const res = results[ri++];
+      if (res.error) throw res.error;
+      const transformedEvents = (res.data as Event[]).map(transformEventToActivityItem);
+      items.push(...transformedEvents);
+    }
+
+    activities.value = items
+      .filter(Boolean)
+      .sort((a, b) => {
+        const ta = a.timestamp_start ? new Date(a.timestamp_start).getTime() : 0;
+        const tb = b.timestamp_start ? new Date(b.timestamp_start).getTime() : 0;
+        return tb - ta;
+      });
+
+    // reset page if needed
+    if ((page.value - 1) * PAGE_SIZE >= activities.value.length) page.value = 1;
 
   } catch (e: any) {
     error.value = e;
@@ -304,37 +483,60 @@ const setupRealtimeForEnv = (envId: string) => {
   if (buildChannel) supabase.removeChannel(buildChannel);
   if (eventsChannel) supabase.removeChannel(eventsChannel);
 
-  buildChannel = supabase
-    .channel(`builds:${envId}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'builds', filter: `environment_id=eq.${envId}` }, (payload) => {
-      const newBuild = payload.new as Build;
-      const transformed = transformBuildToActivityItem(newBuild);
+  // Only subscribe to the channels that we care about given selectedView
+  if (selectedView.value === 'all' || selectedView.value === 'builds') {
+    buildChannel = supabase
+      .channel(`builds:${envId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'builds', filter: `environment_id=eq.${envId}` }, (payload) => {
+        const newBuild = payload.new as Build;
+        const transformed = transformBuildToActivityItem(newBuild);
 
-      if (payload.eventType === 'INSERT') {
-        activities.value.unshift(transformed);
-      } else if (payload.eventType === 'UPDATE') {
-        const index = activities.value.findIndex(item => item.id === transformed.id && item.type === 'build');
-        if (index !== -1) activities.value[index] = transformed;
-      }
-      if (activities.value.length > 50) activities.value = activities.value.slice(0, 50);
-    })
-    .subscribe();
+        // status filter
+        if (selectedStatus.value !== 'all' && transformed.status !== selectedStatus.value) return;
 
-  eventsChannel = supabase
-    .channel(`events:${envId}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'events', filter: `environment_id=eq.${envId}` }, (payload) => {
-      const newEvent = payload.new as Event;
-      const transformed = transformEventToActivityItem(newEvent);
+        // date filter
+        const range = computeRangeForKey(selectedDateRangeKey.value);
+        if (range) {
+          const ts = newBuild.created_at ? new Date(newBuild.created_at).getTime() : 0;
+          if (ts < range.start || ts > range.end) return;
+        }
 
-      if (payload.eventType === 'INSERT') {
-        activities.value.unshift(transformed);
-      } else if (payload.eventType === 'UPDATE') {
-        const index = activities.value.findIndex(item => item.id === transformed.id && item.type === 'event');
-        if (index !== -1) activities.value[index] = transformed;
-      }
-      if (activities.value.length > 50) activities.value = activities.value.slice(0, 50);
-    })
-    .subscribe();
+        if (payload.eventType === 'INSERT') {
+          activities.value.unshift(transformed);
+        } else if (payload.eventType === 'UPDATE') {
+          const index = activities.value.findIndex(item => item.id === transformed.id && item.type === 'build');
+          if (index !== -1) activities.value[index] = transformed;
+        }
+        if (activities.value.length > 500) activities.value = activities.value.slice(0, 500);
+      })
+      .subscribe();
+  }
+
+  if (selectedView.value === 'all' || selectedView.value === 'events') {
+    eventsChannel = supabase
+      .channel(`events:${envId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'events', filter: `environment_id=eq.${envId}` }, (payload) => {
+        const newEvent = payload.new as Event;
+        const transformed = transformEventToActivityItem(newEvent);
+
+        if (selectedStatus.value !== 'all' && transformed.status !== selectedStatus.value) return;
+
+        const range = computeRangeForKey(selectedDateRangeKey.value);
+        if (range) {
+          const ts = newEvent.created_at ? new Date(newEvent.created_at).getTime() : 0;
+          if (ts < range.start || ts > range.end) return;
+        }
+
+        if (payload.eventType === 'INSERT') {
+          activities.value.unshift(transformed);
+        } else if (payload.eventType === 'UPDATE') {
+          const index = activities.value.findIndex(item => item.id === transformed.id && item.type === 'event');
+          if (index !== -1) activities.value[index] = transformed;
+        }
+        if (activities.value.length > 500) activities.value = activities.value.slice(0, 500);
+      })
+      .subscribe();
+  }
 };
 
 // When environment becomes available (client-side navigation), fetch and setup realtime
@@ -349,6 +551,37 @@ watch(environment, async (env) => {
     activities.value = [];
   }
 }, { immediate: true });
+
+// Watch filters to refetch and re-subscribe
+watch([selectedView, selectedStatus, selectedDateRangeKey], async () => {
+  if (environment.value?.id) {
+    await fetchActivities(environment.value.id);
+    setupRealtimeForEnv(environment.value.id);
+  }
+});
+
+// --- Pagination computed values ---
+const totalPages = computed(() => Math.ceil(activities.value.length / PAGE_SIZE));
+
+const pageNumbers = computed(() => {
+  const total = totalPages.value;
+  const current = page.value;
+  const pages = [];
+  
+  for (let i = Math.max(1, current - 2); i <= Math.min(total, current + 2); i++) {
+    pages.push(i);
+  }
+  
+  return pages;
+});
+
+const startItem = computed(() => Math.min(activities.value.length, (page.value - 1) * PAGE_SIZE + 1));
+const endItem = computed(() => Math.min(activities.value.length, page.value * PAGE_SIZE));
+const paginatedActivities = computed(() => activities.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE));
+
+const goToPage = (p: number) => {
+  page.value = Math.max(1, p);
+};
 
 onUnmounted(() => {
   if (buildChannel) supabase.removeChannel(buildChannel);
