@@ -80,13 +80,22 @@
           size="24"
         />
         <div class="flex-1">
-          <NuxtLink v-if="activity.type === 'build'" :to="`/app/${applicationSchema?.id}/builds/${activity.id}`">
-            <span v-if="activity.status === 'IN_PROGRESS'">Build started</span>
-            <span v-if="activity.status === 'SUCCEEDED'">Build completed successfully</span>
-            <span v-if="activity.status === 'FAILED' || activity.status === 'FAULT' || activity.status === 'TIMED_OUT'">Build failed</span>
-          </NuxtLink>
+          <div v-if="activity.type === 'build'" class="grid grid-cols-4 gap-2 w-full">
+            <div class="flex items-center text-left text-md">
+              <NuxtLink :to="`/app/${applicationSchema?.id}/builds/${activity.id}`">
+                {{ `Build #${getBuildNumber(activity.id)}` }}
+              </NuxtLink>
+            </div>
 
-          <div v-if="activity.type === 'event'" class="grid grid-cols-4 gap-2">
+            <div class="flex flex-col text-left">
+              <p class="text-sm text-muted">{{ activity.timestamp_start ? useTimeAgo(new Date(activity.timestamp_start)).value : '-' }}</p>
+              <p class="text-sm text-muted">{{ getDuration(activity) }}</p>
+            </div>
+
+            <div class="col-span-2"></div>
+          </div>
+
+          <div v-else-if="activity.type === 'event'" class="grid grid-cols-4 gap-2">
             <div class="flex items-center text-left text-md">
               <NuxtLink :to="`/app/${applicationSchema?.id}/deploys/${activity.id}`">
                 {{ activity.id.substring(0, 7) }}
@@ -94,7 +103,7 @@
             </div>
 
             <div class="flex flex-col text-left">
-              <p class="text-sm text-muted">{{ useTimeAgo(new Date(activity.timestamp_start)).value }}</p>
+              <p class="text-sm text-muted">{{ activity.timestamp_start ? useTimeAgo(new Date(activity.timestamp_start)).value : '-' }}</p>
               <p class="text-sm text-muted">{{ getDuration(activity) }}</p>
             </div>
 
@@ -126,7 +135,7 @@
             </div>
           </div>
         </div>
-        <div v-if="activity.type === 'event'">
+        <div>
           <UPopover
             v-model:open="activityMenuOpen[activity.id]"
             mode="click"
@@ -136,11 +145,17 @@
             
             <template #content>
               <div class="py-1">
-                <NuxtLink :to="`/app/${applicationSchema?.id}/deploys/${activity.id}`" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800">
+                <NuxtLink v-if="activity.type === 'event'" :to="`/app/${applicationSchema?.id}/deploys/${activity.id}`" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800">
                   <Icon name="i-heroicons-eye" class="mr-2" />
                   <span>Inspect Deployment</span>
                 </NuxtLink>
-                <div @click="() => copyUrl(activity.id)" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800 cursor-pointer">
+
+                <NuxtLink v-if="activity.type === 'build'" :to="`/app/${applicationSchema?.id}/builds/${activity.id}`" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800">
+                  <Icon name="i-heroicons-eye" class="mr-2" />
+                  <span>Inspect Build</span>
+                </NuxtLink>
+
+                <div @click="() => copyUrl(activity.id, activity.type)" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800 cursor-pointer">
                   <Icon name="i-heroicons-clipboard" class="mr-2" />
                   <span>Copy URL</span>
                 </div>
@@ -277,11 +292,27 @@ const updateUrl = (opts?: { replace?: boolean }) => {
 // sync URL when filters change
 watch([selectedView, selectedStatus, selectedDateRangeKey, page], () => updateUrl({ replace: true }));
 
-const copyUrl = (activityId: string) => {
-  const url = `${window.location.origin}/app/${applicationSchema.value?.id}/deploys/${activityId}`;
+const copyUrl = (activityId: string, type?: string) => {
+  const path = type === 'build' ? 'builds' : 'deploys';
+  const url = `${window.location.origin}/app/${applicationSchema.value?.id}/${path}/${activityId}`;
   navigator.clipboard.writeText(url);
   activityMenuOpen.value[activityId] = false;
   toast.add({ description: 'URL copied to clipboard' });
+};
+
+// Compute a human-friendly build number (1 = most recent build)
+const getBuildNumber = (activityId: string) => {
+  const builds = activities.value
+    .filter(a => a.type === 'build')
+    .slice() // copy
+    .sort((a, b) => {
+      const ta = a.timestamp_start ? new Date(a.timestamp_start).getTime() : 0;
+      const tb = b.timestamp_start ? new Date(b.timestamp_start).getTime() : 0;
+      return ta - tb;
+    });
+
+  const idx = builds.findIndex(b => b.id === activityId);
+  return idx === -1 ? '-' : idx + 1;
 };
 
 const getStatusIcon = (status?: string | null) => {
