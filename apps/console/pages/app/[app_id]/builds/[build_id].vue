@@ -1,33 +1,64 @@
 <template>
-  <UCard>
+  <UCard v-if="buildPending">
     <template #header>
-      <h3>Build logs</h3>
+      <USkeleton class="h-6 w-40" />
+    </template>
+    <USkeleton class="h-6 w-full" />
+    <USkeleton class="h-6 w-full" />
+  </UCard>
+  <UCard v-if="buildData">
+    <template #header>
+      <h3>Build Details</h3>
     </template>
 
-    <div class="flex justify-between items-start">
-      <div v-if="buildData" class="text-md space-y-1">
-        <div class="flex gap-4">
-          <span><strong>Status:</strong> 
-            <UBadge :color="getStatusColor(buildData.build_status)" variant="subtle">
-              {{ buildData.build_status || 'NULL' }}
-            </UBadge>
-          </span>
+    <div class="flex items-top gap-4">
+      <Icon 
+        :name="getStatusIcon(buildData.build_status)" 
+        :class="getStatusIconClass(buildData.build_status)"
+        size="24"
+        class="mt-2"
+      />
+      <div class="flex-1 ml-3">
+        <div class="grid grid-cols-3 gap-2 w-full mb-4">
+          <div class="flex flex-col text-left">
+            <h4>Status</h4>
+            <p class="text-sm text-muted">{{ buildData.build_status || 'NULL' }}</p>
+          </div>
+
+          <div class="flex flex-col col-span-2 text-left">
+            <h4>Build ID</h4>
+            <p class="text-sm text-muted">{{ buildData.id }}</p>
+          </div>
         </div>
-        <div class="flex gap-4">
-          <span v-if="buildData.build_start"><strong>Start:</strong> {{ formatDate(buildData.build_start) }}</span>
-          <span v-if="buildData.build_end"><strong>End:</strong> {{ formatDate(buildData.build_end) }}</span>
-          <span v-if="duration"><strong>Duration:</strong> {{ duration }}</span>
+
+        <div class="grid grid-cols-3 gap-2 w-full">
+          <div class="flex flex-col text-left">
+            <h4>Created</h4>
+            <p class="text-sm text-muted">{{ formatDate(buildData.build_start) }}</p>
+          </div>
+
+          <div class="flex flex-col text-left">
+            <h4>Finished</h4>
+            <p class="text-sm text-muted">{{ formatDate(buildData.build_end) }}</p>
+          </div>
+
+          <div class="flex flex-col text-left">
+            <h4>Duration</h4>
+            <p class="text-sm text-muted">{{ duration }}</p>
+          </div>
         </div>
       </div>
     </div>
   </UCard>
 
   <div class="mt-4 h-full">
+    <UAlert v-if="error" color="warning" variant="subtle" class="mb-4" :title="error.message" />
+
     <div class="h-[calc(100vh-10rem)]">
       <AppLogViewer 
         :log-events="allLogEvents" 
         :deep-link="deepLink" 
-        :loading="pending && allLogEvents.length === 0"
+        :loading="isLoading"
         :polling="isPollingActive"
         @request-more="handleRequestMore"
       />
@@ -43,6 +74,7 @@ definePageMeta({
 });
 
 const { $client } = useNuxtApp();
+const supabase = useSupabaseClient();
 const route = useRoute();
 const buildId = computed(() => route.params.build_id as string);
 
@@ -51,20 +83,42 @@ const buildData = ref<any>(null);
 const allLogEvents = ref<any[]>([]);
 const deepLink = ref<string | undefined>(undefined);
 
+// Fetch build data using Supabase
+const { data: build, pending: buildPending } = useAsyncData(`build-${buildId.value}`,
+  async () => {
+    const { data, error } = await supabase
+      .from('builds')
+      .select('*')
+      .eq('id', buildId.value)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+  { server: false }
+);
+
+// Fetch build logs 
 const { data, pending, error, execute } = useAsyncData(`build-logs-${buildId.value}`,
-  () => {
+  async () => {
+    if (!buildData.value?.build_log) return { events: [], nextForwardToken: undefined };
     return $client.services.getBuildLogs.query({
-      build_id: buildId.value,
+      build_log: buildData.value.build_log,
       nextToken: nextToken.value,
     });
   },
   {
     server: false,
+    default: () => ({ events: [], nextForwardToken: undefined })
   }
 );
 
-onMounted(() => {
-  execute();
+watch(build, (newBuild) => {
+  if (newBuild) {
+    buildData.value = newBuild;
+    if (newBuild.build_log) {
+      execute();
+    }
+  }
 });
 
 watch(data, (newData) => {
@@ -74,9 +128,12 @@ watch(data, (newData) => {
     if (!deepLink.value) {
       deepLink.value = newData.deepLink;
     }
-    if (newData.build && !buildData.value) {
-      buildData.value = newData.build;
-    }
+  }
+});
+
+watch(error, (newError) => {
+  if (newError) {
+    console.error('Error fetching logs:', newError);
   }
 });
 
@@ -88,6 +145,10 @@ const handleRequestMore = () => {
 
 const isPollingActive = computed(() => {
   return !!nextToken.value;
+});
+
+const isLoading = computed(() => {
+  return buildPending.value || (pending.value && allLogEvents.value.length === 0);
 });
 
 // Helper functions
@@ -108,16 +169,36 @@ const duration = computed(() => {
   return `${minutes}m ${seconds}s`;
 });
 
-const getStatusColor = (status: string | null) => {
-  switch (status) {
-    case 'SUCCEEDED': return 'green';
-    case 'FAILED': return 'red';
-    case 'IN_PROGRESS': return 'blue';
-    case 'TIMED_OUT': return 'orange';
-    case 'STOPPED': return 'gray';
-    case 'FAULT': return 'red';
-    default: return 'gray';
+const getStatusIcon = (status?: string | null) => {
+  const normalizedStatus = (status || '').toString().toUpperCase();
+  
+  if (['STARTED'].includes(normalizedStatus)) {
+    return 'line-md:loading-loop';
   }
+  if (['IN_PROGRESS'].includes(normalizedStatus)) {
+    return 'line-md:loading-loop';
+  }
+  if (['FAILED', 'FAULT', 'TIMED_OUT'].includes(normalizedStatus)) {
+    return 'material-symbols:warning-outline-rounded';
+  }
+  if (normalizedStatus === 'SUCCEEDED') {
+    return 'material-symbols:bookmark-check';
+  }
+  return 'ix:about';
 };
 
+const getStatusIconClass = (status?: string | null) => {
+  const normalizedStatus = (status || '').toString().toUpperCase();
+  
+  if (['STARTED', 'IN_PROGRESS'].includes(normalizedStatus)) {
+    return 'text-yellow-500';
+  }
+  if (['FAILED', 'FAULT', 'TIMED_OUT'].includes(normalizedStatus)) {
+    return 'text-error';
+  }
+  if (normalizedStatus === 'SUCCEEDED') {
+    return 'text-success';
+  }
+  return 'text-gray-500';
+};
 </script>

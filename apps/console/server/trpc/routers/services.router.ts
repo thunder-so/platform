@@ -33,49 +33,33 @@ export const servicesRouter = router({
   getBuildLogs: protectedProcedure
     .input(
       z.object({
-        build_id: z.string(),
+        build_log: z.any(),
         nextToken: z.string().optional(),
       })
     )
     .query(async ({ input }) => {
-      const build = await db.query.builds.findFirst({
-        where: eq(builds.id, input.build_id),
-        with: {
-          environment: {
-            with: {
-              provider: true,
-            },
-          },
-        },
-      });
-
-      if (!build || !build.build_log) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Build not found or logs not available.' });
+      if (!input.build_log) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Build log not available.' });
       }
 
-      const { environment } = build;
-      if (!environment || !environment.provider) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Provider not found for this build.' });
-      }
-
-      // @ts-expect-error
-      const { 'group-name': logGroupName, 'stream-name': logStreamName, 'deep-link': deepLink } = build.build_log;
+      const { 'group-name': logGroupName, 'stream-name': logStreamName, 'deep-link': deepLink } = input.build_log;
 
       if (!logGroupName || !logStreamName) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Log group or stream name not found.' });
       }
 
-      const logs = await getCloudWatchLogs(environment.provider as ProviderSchema, logGroupName, logStreamName, input.nextToken);
-      return { 
-        ...logs, 
-        deepLink,
-        build: {
-          id: build.id,
-          build_start: build.build_start,
-          build_end: build.build_end,
-          build_status: build.build_status
-        }
-      };
+      try {
+        const platform = new PlatformLibrary();
+        const logs = await platform.getCloudWatchLogs(logGroupName, logStreamName, input.nextToken);
+        return { 
+          ...logs
+        };
+      } catch (error) {
+        throw new TRPCError({ 
+          code: 'INTERNAL_SERVER_ERROR', 
+          message: error instanceof Error ? error.message : 'Failed to fetch logs'
+        });
+      }
     }),
 
   getDeployLogs: protectedProcedure

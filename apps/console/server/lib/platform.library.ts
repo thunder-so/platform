@@ -1,5 +1,6 @@
 import { SQSClient, SendMessageCommand, MessageAttributeValue } from '@aws-sdk/client-sqs';
 import { SSMClient, PutParameterCommand } from '@aws-sdk/client-ssm';
+import { CloudWatchLogsClient, GetLogEventsCommand } from '@aws-sdk/client-cloudwatch-logs';
 import { TRPCError } from '@trpc/server';
 import { builds, services, type Build, type Application, type Environment, type Provider, type ServiceVariable } from '../db/schema';
 import { db } from '../db/db';
@@ -37,6 +38,7 @@ type Service = ServiceSchema & { serviceVariables: ServiceVariable[] };
 export class PlatformLibrary {
   private sqsClient?: SQSClient;
   private ssmClient?: SSMClient;
+  private cloudWatchLogsClient?: CloudWatchLogsClient;
   private readonly logger: Logger;
 
   constructor() {
@@ -59,6 +61,35 @@ export class PlatformLibrary {
       this.ssmClient = new SSMClient({});
     }
     return this.ssmClient;
+  }
+
+  private getCloudWatchLogsClient(): CloudWatchLogsClient {
+    if (!this.cloudWatchLogsClient) {
+      this.cloudWatchLogsClient = new CloudWatchLogsClient({});
+    }
+    return this.cloudWatchLogsClient;
+  }
+
+  async getCloudWatchLogs(logGroupName: string, logStreamName: string, nextToken?: string) {
+    try {
+        const command = new GetLogEventsCommand({
+            logGroupName: logGroupName,
+            logStreamName: logStreamName,
+            startFromHead: true,
+            nextToken: nextToken,
+        });
+        const response = await this.getCloudWatchLogsClient().send(command);
+        return {
+            events: response.events || [],
+            nextForwardToken: response.nextForwardToken,
+        };
+    } catch (error) {
+        console.error('Error fetching logs from CloudWatch:', error);
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to fetch logs from CloudWatch.',
+        });
+    }
   }
 
   /**
