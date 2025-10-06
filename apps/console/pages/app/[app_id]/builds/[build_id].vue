@@ -125,9 +125,6 @@ watch(data, (newData) => {
   if (newData) {
     allLogEvents.value.push(...newData.events);
     nextToken.value = newData.nextForwardToken;
-    if (!deepLink.value) {
-      deepLink.value = newData.deepLink;
-    }
   }
 });
 

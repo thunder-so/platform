@@ -2,7 +2,7 @@ import { Aws, Stack, StackProps, Duration, RemovalPolicy, CfnOutput } from 'aws-
 import { Construct } from 'constructs';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { Queue } from 'aws-cdk-lib/aws-sqs';
-import { Role, ServicePrincipal, ManagedPolicy, PolicyStatement, CompositePrincipal } from 'aws-cdk-lib/aws-iam';
+import { Role, ServicePrincipal, ManagedPolicy, PolicyStatement, CompositePrincipal, AccountPrincipal } from 'aws-cdk-lib/aws-iam';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { Project, BuildSpec, Source, Artifacts, LinuxBuildImage, LinuxArmBuildImage, ComputeType } from 'aws-cdk-lib/aws-codebuild';
@@ -169,6 +169,38 @@ export class RunnerService extends Stack {
       action: 'lambda:InvokeFunction',
       sourceArn: buildStatusRule.ruleArn,
     });
+
+    // Create a cross-account role if consoleAccountId context is provided
+    const consoleAccountId = this.node.tryGetContext('consoleAccountId') as string | undefined;
+    if (consoleAccountId) {
+      const crossAccountRole = new Role(this, 'RunnerCrossAccountRole', {
+        roleName: `RunnerCrossAccountRole-${environment}`,
+        assumedBy: new AccountPrincipal(consoleAccountId),
+        managedPolicies: [
+          ManagedPolicy.fromAwsManagedPolicyName('CloudWatchReadOnlyAccess'),
+        ],
+      });
+      // Allow the Console (when assuming this role) to send messages to the runner queue
+      runnerQueue.grantSendMessages(crossAccountRole);
+
+      // Add SSM read permissions and KMS decrypt for secure parameters used by builds
+      crossAccountRole.addToPolicy(new PolicyStatement({
+        actions: [
+          'ssm:GetParameter',
+          'ssm:GetParameters',
+          'ssm:GetParameterHistory',
+          'kms:Decrypt',
+        ],
+        resources: ['arn:aws:ssm:*:*:parameter/thunder/*'],
+      }));
+
+      new CfnOutput(this, 'RunnerCrossAccountRoleArn', {
+        description: 'ARN of role Console can assume to access Runner account',
+        value: crossAccountRole.roleArn,
+      });
+    } else {
+      // no-op: consoleAccountId not provided
+    }
 
     // Outputs
     new CfnOutput(this, 'RunnerQueueUrl', {

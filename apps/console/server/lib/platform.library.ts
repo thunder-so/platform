@@ -1,6 +1,7 @@
 import { SQSClient, SendMessageCommand, MessageAttributeValue } from '@aws-sdk/client-sqs';
 import { SSMClient, PutParameterCommand } from '@aws-sdk/client-ssm';
 import { CloudWatchLogsClient, GetLogEventsCommand } from '@aws-sdk/client-cloudwatch-logs';
+import { STSClient, AssumeRoleCommand } from '@aws-sdk/client-sts';
 import { TRPCError } from '@trpc/server';
 import { builds, services, type Build, type Application, type Environment, type Provider, type ServiceVariable } from '../db/schema';
 import { db } from '../db/db';
@@ -39,6 +40,12 @@ export class PlatformLibrary {
   private sqsClient?: SQSClient;
   private ssmClient?: SSMClient;
   private cloudWatchLogsClient?: CloudWatchLogsClient;
+  // Clients for assumed runner role
+  private assumedSqsClient?: SQSClient;
+  private assumedSsmClient?: SSMClient;
+  private assumedCloudWatchLogsClient?: CloudWatchLogsClient;
+  // Cache assumed role credentials and expiry
+  private assumedCreds?: { accessKeyId: string; secretAccessKey: string; sessionToken?: string; expiration?: Date };
   private readonly logger: Logger;
 
   constructor() {
@@ -50,6 +57,22 @@ export class PlatformLibrary {
   }
 
   private getSqsClient(): SQSClient {
+    // If there's a runner assume role configured and valid cached creds, return assumed client
+    const runnerRoleArn = process.env.RUNNER_ASSUME_ROLE_ARN;
+    if (runnerRoleArn && this.isAssumedCredsValid()) {
+      if (!this.assumedSqsClient) {
+        this.assumedSqsClient = new SQSClient({
+          credentials: {
+            accessKeyId: this.assumedCreds!.accessKeyId,
+            secretAccessKey: this.assumedCreds!.secretAccessKey,
+            sessionToken: this.assumedCreds!.sessionToken,
+          },
+          region: process.env.RUNNER_REGION || process.env.AWS_REGION,
+        });
+      }
+      return this.assumedSqsClient;
+    }
+
     if (!this.sqsClient) {
       this.sqsClient = new SQSClient({});
     }
@@ -57,6 +80,21 @@ export class PlatformLibrary {
   }
 
   private getSsmClient(): SSMClient {
+    const runnerRoleArn = process.env.RUNNER_ASSUME_ROLE_ARN;
+    if (runnerRoleArn && this.isAssumedCredsValid()) {
+      if (!this.assumedSsmClient) {
+        this.assumedSsmClient = new SSMClient({
+          credentials: {
+            accessKeyId: this.assumedCreds!.accessKeyId,
+            secretAccessKey: this.assumedCreds!.secretAccessKey,
+            sessionToken: this.assumedCreds!.sessionToken,
+          },
+          region: process.env.RUNNER_REGION || process.env.AWS_REGION,
+        });
+      }
+      return this.assumedSsmClient;
+    }
+
     if (!this.ssmClient) {
       this.ssmClient = new SSMClient({});
     }
@@ -64,31 +102,86 @@ export class PlatformLibrary {
   }
 
   private getCloudWatchLogsClient(): CloudWatchLogsClient {
+    const runnerRoleArn = process.env.RUNNER_ASSUME_ROLE_ARN;
+    if (runnerRoleArn && this.isAssumedCredsValid()) {
+      if (!this.assumedCloudWatchLogsClient) {
+        this.assumedCloudWatchLogsClient = new CloudWatchLogsClient({
+          credentials: {
+            accessKeyId: this.assumedCreds!.accessKeyId,
+            secretAccessKey: this.assumedCreds!.secretAccessKey,
+            sessionToken: this.assumedCreds!.sessionToken,
+          },
+          region: process.env.RUNNER_REGION || process.env.AWS_REGION,
+        });
+      }
+      return this.assumedCloudWatchLogsClient;
+    }
+
     if (!this.cloudWatchLogsClient) {
       this.cloudWatchLogsClient = new CloudWatchLogsClient({});
     }
     return this.cloudWatchLogsClient;
   }
 
+  private isAssumedCredsValid(): boolean {
+    if (!this.assumedCreds) return false;
+    if (!this.assumedCreds.expiration) return true; // session without expiration considered valid
+    const now = new Date();
+    // add a safety window of 60 seconds
+    return now.getTime() + 60000 < this.assumedCreds.expiration.getTime();
+  }
+
+  // Force assume role and refresh cached creds/clients
+  private async assumeRunnerRoleIfNeeded(): Promise<void> {
+    const runnerRoleArn = process.env.RUNNER_ASSUME_ROLE_ARN;
+    if (!runnerRoleArn) return;
+
+    if (this.isAssumedCredsValid()) return;
+
+    const sts = new STSClient({});
+    const assumed = await sts.send(new AssumeRoleCommand({
+      RoleArn: runnerRoleArn,
+      RoleSessionName: `PlatformAssume-${Date.now()}`,
+    }));
+    const creds = assumed.Credentials;
+    if (!creds) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to assume runner role.' });
+
+    this.assumedCreds = {
+      accessKeyId: creds.AccessKeyId as string,
+      secretAccessKey: creds.SecretAccessKey as string,
+      sessionToken: creds.SessionToken,
+      expiration: creds.Expiration ? new Date(creds.Expiration) : undefined,
+    };
+
+    // reset assumed clients so they'll be recreated with new credentials
+    this.assumedSqsClient = undefined;
+    this.assumedSsmClient = undefined;
+    this.assumedCloudWatchLogsClient = undefined;
+  }
+
   async getCloudWatchLogs(logGroupName: string, logStreamName: string, nextToken?: string) {
     try {
-        const command = new GetLogEventsCommand({
-            logGroupName: logGroupName,
-            logStreamName: logStreamName,
-            startFromHead: true,
-            nextToken: nextToken,
-        });
-        const response = await this.getCloudWatchLogsClient().send(command);
-        return {
-            events: response.events || [],
-            nextForwardToken: response.nextForwardToken,
-        };
+      // Ensure assumed role credentials are available if configured
+      await this.assumeRunnerRoleIfNeeded();
+
+      const client = this.getCloudWatchLogsClient();
+      const command = new GetLogEventsCommand({
+        logGroupName: logGroupName,
+        logStreamName: logStreamName,
+        startFromHead: true,
+        nextToken: nextToken,
+      });
+      const response = await client.send(command);
+      return {
+        events: response.events || [],
+        nextForwardToken: response.nextForwardToken,
+      };
     } catch (error) {
-        console.error('Error fetching logs from CloudWatch:', error);
-        throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: 'Failed to fetch logs from CloudWatch.',
-        });
+      console.error('Error fetching logs from CloudWatch:', error);
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to fetch logs from CloudWatch.',
+      });
     }
   }
 
@@ -102,6 +195,9 @@ export class PlatformLibrary {
     messageAttributes?: Record<string, MessageAttributeValue>
   ): Promise<void> {
     try {
+      // Ensure assumed role credentials are available if configured
+      await this.assumeRunnerRoleIfNeeded();
+
       await this.getSqsClient().send(new SendMessageCommand({
         QueueUrl: queueUrl,
         MessageBody: messageBody,
@@ -139,6 +235,9 @@ export class PlatformLibrary {
     }
 
     try {
+      // Ensure assumed role credentials are available if configured
+      await this.assumeRunnerRoleIfNeeded();
+
       await this.getSsmClient().send(new PutParameterCommand({
         Name: name,
         Value: value,
