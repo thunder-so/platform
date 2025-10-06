@@ -34,6 +34,8 @@
       </div>
     </div>
 
+    <UAlert v-if="error" color="warning" variant="subtle" class="mb-4" :title="error.message" />
+
     <div class="h-[calc(100vh-10rem)]">
       <AppLogViewer 
         :log-events="allLogEvents" 
@@ -170,24 +172,27 @@ watch(data, (newData) => {
   }
 });
 
-const handleRequestMore = () => {
-  // always try to execute to fetch any new logs; backend will paginate based on nextToken
-  execute();
+const handleRequestMore = async () => {
+  try {
+    await execute();
+  } catch (err) {
+    console.error('Error loading more logs:', err);
+  }
 };
 
 const refreshNow = async () => {
-  // show spinner while fetching
   if (refreshing.value) return;
   refreshing.value = true;
   try {
     if (nextToken.value) {
       await execute();
     } else {
-      // reset token and reload first page of results
       nextToken.value = undefined;
       allLogEvents.value = [];
       await execute();
     }
+  } catch (err) {
+    console.error('Error refreshing logs:', err);
   } finally {
     refreshing.value = false;
   }
