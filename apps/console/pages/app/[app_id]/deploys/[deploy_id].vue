@@ -1,33 +1,102 @@
 <template>
-  <UCard>
+  <UCard v-if="deployPending">
     <template #header>
-      <h3>Deploy logs</h3>
+      <USkeleton class="h-6 w-40" />
+    </template>
+    <USkeleton class="h-6 w-full" />
+    <USkeleton class="h-6 w-full" />
+  </UCard>
+  <UCard v-if="deployData">
+    <template #header>
+      <div class="flex justify-between items-center">
+        <h3>Deploy Details</h3>
+        <UButton v-if="deepLink" :to="deepLink" target="_blank" external color="neutral" variant="outline">
+          View in CloudWatch
+        </UButton>
+      </div>
     </template>
 
-    <div class="flex justify-between items-start">
-      <div v-if="deployData" class="text-md space-y-1">
-        <div class="flex gap-4">
-          <span><strong>Status:</strong> 
-            <UBadge :color="getStatusColor(deployData.pipeline_state)" variant="subtle">
-              {{ deployData.pipeline_state || 'NULL' }}
-            </UBadge>
-          </span>
+    <div class="flex items-top gap-4">
+      <Icon 
+        :name="getStatusIcon(deployData.pipeline_state)" 
+        :class="getStatusIconClass(deployData.pipeline_state)"
+        size="24"
+        class="mt-2"
+      />
+      <div class="flex-1 ml-3">
+        <div class="grid grid-cols-3 gap-2 w-full mb-4">
+          <div class="flex flex-col text-left">
+            <h4>Status</h4>
+            <p class="text-sm text-muted">{{ deployData.pipeline_state || 'NULL' }}</p>
+          </div>
+
+          <div class="flex flex-col col-span-2 text-left">
+            <h4>Deploy ID</h4>
+            <p class="text-sm text-muted">{{ deployData.pipeline_execution_id }}</p>
+          </div>
         </div>
-        <div class="flex gap-4">
-          <span v-if="deployData.pipeline_start"><strong>Start:</strong> {{ formatDate(deployData.pipeline_start) }}</span>
-          <span v-if="deployData.pipeline_end"><strong>End:</strong> {{ formatDate(deployData.pipeline_end) }}</span>
-          <span v-if="duration"><strong>Duration:</strong> {{ duration }}</span>
+
+        <div class="grid grid-cols-3 gap-2 w-full mb-4">
+          <div class="flex flex-col text-left">
+            <h4>Created</h4>
+            <p class="text-sm text-muted">{{ formatDate(deployData.pipeline_start) }}</p>
+          </div>
+
+          <div class="flex flex-col text-left">
+            <h4>Finished</h4>
+            <p class="text-sm text-muted">{{ formatDate(deployData.pipeline_end) }}</p>
+          </div>
+
+          <div class="flex flex-col text-left">
+            <h4>Duration</h4>
+            <p class="text-sm text-muted">{{ duration }}</p>
+          </div>
         </div>
+
+        <div class="grid grid-cols-3 gap-2 w-full">
+          <div class="flex flex-col text-left">
+            <h4>Source</h4>
+            <div class="flex flex-row gap-4 mt-1">
+              <div class="leading-none">
+                <NuxtLink 
+                  :to="deployData.pipeline_metadata?.entityUrl" 
+                  target="_blank" 
+                  class="inline-flex text-muted hover:text-white transition-colors"
+                >
+                  <span class="flex items-center gap-1">
+                    <Icon name="mdi:source-branch" class="w-4 h-4" />
+                    <span class="text-sm">{{service?.branch}}</span>
+                  </span>
+                </NuxtLink>
+              </div>
+              <div class="leading-none">
+                <NuxtLink 
+                  :to="deployData.pipeline_metadata?.revisionUrl" 
+                  target="_blank" 
+                  class="inline-flex text-muted hover:text-white transition-colors"
+                >
+                  <span class="flex items-center gap-1">
+                    <Icon name="fa6-solid:code-commit" class="w-4 h-4" />
+                    <span class="text-sm">{{ deployData.pipeline_metadata?.revisionId?.substring(0, 7) }}</span>
+                  </span>
+                </NuxtLink>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </UCard>
 
   <div class="mt-4 h-full">
+    <UAlert v-if="error" color="warning" variant="subtle" class="mb-4" :title="error.message" />
+
     <div class="h-[calc(100vh-10rem)]">
       <AppLogViewer 
         :log-events="allLogEvents" 
         :deep-link="deepLink" 
-        :loading="pending && allLogEvents.length === 0"
+        :loading="isLoading"
         :polling="isPollingActive"
         @request-more="handleRequestMore"
       />
@@ -37,12 +106,15 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useApplications } from '~/composables/useApplications';
 
 definePageMeta({
   layout: 'app',
 });
 
 const { $client } = useNuxtApp();
+const supabase = useSupabaseClient();
+const { applicationSchema } = useApplications();
 const route = useRoute();
 const deployId = computed(() => route.params.deploy_id as string);
 
@@ -50,33 +122,67 @@ const nextToken = ref<string | undefined>(undefined);
 const deployData = ref<any>(null);
 const allLogEvents = ref<any[]>([]);
 const deepLink = ref<string | undefined>(undefined);
+const error = ref<any>(null);
 
-const { data, pending, error, execute } = useAsyncData(`deploy-logs-${deployId.value}`,
-  () => {
+const environment = computed(() => applicationSchema.value?.environments?.[0]);
+const service = computed(() => environment.value?.services?.[0]);
+
+// Fetch deploy data using Supabase
+const { data: deploy, pending: deployPending } = useAsyncData(`deploy-${deployId.value}`,
+  async () => {
+    const { data, error: sbError } = await supabase
+      .from('events')
+      .select('*, environments(*, providers(*))')
+      .eq('pipeline_execution_id', deployId.value)
+      .maybeSingle();
+    if (sbError) throw sbError;
+    return data;
+  },
+  { server: false }
+);
+
+// Fetch deploy logs
+const { data, pending, error: logsError, execute } = useAsyncData(`deploy-logs-${deployId.value}`,
+  async () => {
+    if (!deployData.value?.pipeline_log || !deployData.value?.environments?.providers) return { events: [], nextForwardToken: undefined };
     return $client.services.getDeployLogs.query({
-      deploy_id: deployId.value,
+      pipeline_log: deployData.value.pipeline_log,
+      provider: deployData.value.environments.providers,
       nextToken: nextToken.value,
     });
   },
   {
     server: false,
+    default: () => ({ events: [], nextForwardToken: undefined }),
+    immediate: false
   }
 );
 
-onMounted(() => {
-  execute();
+watch(deploy, (newDeploy) => {
+  if (newDeploy) {
+    deployData.value = newDeploy;
+    if (newDeploy.pipeline_log?.['deep-link']) {
+      deepLink.value = newDeploy.pipeline_log['deep-link'];
+    }
+    nextTick(() => {
+      if (newDeploy.pipeline_log && newDeploy.environments?.providers) {
+        execute();
+      }
+    });
+  }
 });
 
 watch(data, (newData) => {
   if (newData) {
     allLogEvents.value.push(...newData.events);
     nextToken.value = newData.nextForwardToken;
-    if (!deepLink.value) {
-      deepLink.value = newData.deepLink;
-    }
-    if (newData.deploy && !deployData.value) {
-      deployData.value = newData.deploy;
-    }
+  }
+});
+
+watch(logsError, (newErr) => {
+  if (newErr) {
+    console.error('Error fetching deploy logs:', newErr);
+    error.value = newErr;
   }
 });
 
@@ -88,6 +194,10 @@ const handleRequestMore = () => {
 
 const isPollingActive = computed(() => {
   return !!nextToken.value;
+});
+
+const isLoading = computed(() => {
+  return deployPending.value || (pending.value && allLogEvents.value.length === 0);
 });
 
 // Helper functions
@@ -108,16 +218,34 @@ const duration = computed(() => {
   return `${minutes}m ${seconds}s`;
 });
 
-const getStatusColor = (status: string | null) => {
-  switch (status) {
-    case 'SUCCEEDED': return 'green';
-    case 'FAILED': return 'red';
-    case 'STARTED': return 'blue';
-    case 'RESUMED': return 'blue';
-    case 'CANCELED': return 'orange';
-    case 'SUPERSEDED': return 'gray';
-    default: return 'gray';
+const getStatusIcon = (status?: string | null) => {
+  const normalizedStatus = (status || '').toString().toUpperCase();
+  
+  if (['STARTED', 'RESUMED'].includes(normalizedStatus)) {
+    return 'line-md:loading-loop';
   }
+  if (['FAILED', 'CANCELED'].includes(normalizedStatus)) {
+    return 'material-symbols:warning-outline-rounded';
+  }
+  if (normalizedStatus === 'SUCCEEDED') {
+    return 'material-symbols:bookmark-check';
+  }
+  return 'ix:about';
+};
+
+const getStatusIconClass = (status?: string | null) => {
+  const normalizedStatus = (status || '').toString().toUpperCase();
+  
+  if (['STARTED', 'RESUMED'].includes(normalizedStatus)) {
+    return 'text-yellow-500';
+  }
+  if (['FAILED', 'CANCELED'].includes(normalizedStatus)) {
+    return 'text-error';
+  }
+  if (normalizedStatus === 'SUCCEEDED') {
+    return 'text-success';
+  }
+  return 'text-gray-500';
 };
 
 </script>

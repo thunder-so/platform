@@ -211,6 +211,9 @@ const overlay = useOverlay();
 const upgrading = ref(false);
 const activityMenuOpen = ref<Record<string, boolean>>({});
 
+const environment = computed(() => applicationSchema.value?.environments?.[0]);
+const service = computed(() => environment.value?.services?.[0]);
+
 // --- Filter & Pagination state (URL synced) ---
 const PAGE_SIZE = 10;
 
@@ -347,9 +350,6 @@ const getStatusIconClass = (status?: string | null) => {
   }
   return 'text-gray-500';
 };
-
-const environment = computed(() => applicationSchema.value?.environments?.[0]);
-const service = computed(() => environment.value?.services?.[0]);
 
 const latestStackVersion = computed(() => {
   if (!service.value?.stack_type) return null;

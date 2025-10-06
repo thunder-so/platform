@@ -90,7 +90,7 @@ const { data: build, pending: buildPending } = useAsyncData(`build-${buildId.val
       .from('builds')
       .select('*')
       .eq('id', buildId.value)
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -108,7 +108,8 @@ const { data, pending, error, execute } = useAsyncData(`build-logs-${buildId.val
   },
   {
     server: false,
-    default: () => ({ events: [], nextForwardToken: undefined })
+    default: () => ({ events: [], nextForwardToken: undefined }),
+    immediate: false,
   }
 );
 

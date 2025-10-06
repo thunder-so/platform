@@ -65,50 +65,31 @@ export const servicesRouter = router({
   getDeployLogs: protectedProcedure
     .input(
       z.object({
-        deploy_id: z.string(),
+        pipeline_log: z.any(),
+        provider: z.any(),
         nextToken: z.string().optional(),
       })
     )
     .query(async ({ input }) => {
-      const deploy = await db.query.events.findFirst({
-        where: eq(events.pipeline_execution_id, input.deploy_id),
-        with: {
-          environment: {
-            with: {
-              provider: true,
-            },
-          },
-        },
-      });
+      const { pipeline_log, provider } = input;
 
-      if (!deploy || !deploy.pipeline_log) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Deploy not found or logs not available.' });
+      if (!pipeline_log) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Pipeline log not provided.' });
       }
 
-      const { environment } = deploy;
-      if (!environment || !environment.provider) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Provider not found for this deploy.' });
-      }
-
-      // @ts-expect-error
-      const { 'group-name': logGroupName, 'stream-name': logStreamName, 'deep-link': deepLink } = deploy.pipeline_log;
+      const { 'group-name': logGroupName, 'stream-name': logStreamName } = pipeline_log;
 
       if (!logGroupName || !logStreamName) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Log group or stream name not found.' });
       }
 
-      const logs = await getCloudWatchLogs(environment.provider as ProviderSchema, logGroupName, logStreamName, input.nextToken);
+      if (!provider) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Provider information not provided.' });
+      }
+
+      const logs = await getCloudWatchLogs(provider as ProviderSchema, logGroupName, logStreamName, input.nextToken);
       return { 
-        ...logs, 
-        deepLink,
-        deploy: {
-          pipeline_execution_id: deploy.pipeline_execution_id,
-          pipeline_start: deploy.pipeline_start,
-          pipeline_end: deploy.pipeline_end,
-          pipeline_state: deploy.pipeline_state,
-          created_at: deploy.created_at,
-          updated_at: deploy.updated_at
-        }
+        ...logs
       };
     }),
 
