@@ -27,15 +27,7 @@ const props = defineProps({
     type: Array as () => LogEvent[],
     default: () => [],
   },
-  deepLink: {
-    type: String,
-    default: ''
-  },
   loading: {
-    type: Boolean,
-    default: false
-  },
-  polling: {
     type: Boolean,
     default: false
   }
@@ -44,7 +36,6 @@ const props = defineProps({
 const emit = defineEmits(['request-more']);
 
 const logsContainer = ref<HTMLElement | null>(null);
-let pollInterval: any = null;
 
 const scrollToBottom = () => {
   if (logsContainer.value) {
@@ -58,33 +49,6 @@ watch(() => props.logEvents, () => {
 
 onMounted(() => {
   scrollToBottom();
-  // start polling if polling prop is true on mount
-  if (props.polling) startPolling();
-});
-
-// start polling helper
-const startPolling = () => {
-  stopPolling();
-  pollInterval = setInterval(() => {
-    emit('request-more');
-  }, 10000);
-};
-
-// stop polling helper
-const stopPolling = () => {
-  if (pollInterval) {
-    clearInterval(pollInterval);
-    pollInterval = null;
-  }
-};
-
-// react to polling prop changes so parent can toggle live updates
-watch(() => props.polling, (newVal) => {
-  if (newVal) startPolling(); else stopPolling();
-});
-
-onUnmounted(() => {
-  stopPolling();
 });
 
 </script>

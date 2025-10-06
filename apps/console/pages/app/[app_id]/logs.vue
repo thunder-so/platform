@@ -39,9 +39,7 @@
     <div class="h-[calc(100vh-10rem)]">
       <AppLogViewer 
         :log-events="allLogEvents" 
-        :deep-link="deepLink" 
         :loading="pending && allLogEvents.length === 0"
-        :polling="live && isPollingActive"
         @request-more="handleRequestMore"
       />
     </div>
@@ -49,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 definePageMeta({
@@ -67,6 +65,7 @@ const deepLink = ref<string | undefined>(undefined);
 const live = ref(false);
 const seenEventKeys = ref(new Set<string>());
 const refreshing = ref(false);
+const pollingInterval = ref<NodeJS.Timeout | null>(null);
 
 const dateRangeOptions = [
   { key: 'last_hour', label: 'Last hour' },
@@ -200,9 +199,25 @@ const refreshNow = async () => {
 
 const toggleLive = () => {
   live.value = !live.value;
+  if (live.value) {
+    pollingInterval.value = setInterval(async () => {
+      await execute();
+    }, 10000);
+  } else {
+    if (pollingInterval.value) {
+      clearInterval(pollingInterval.value);
+      pollingInterval.value = null;
+    }
+  }
 };
 
 const isPollingActive = computed(() => {
-  return !!nextToken.value;
+  return live.value && !!pollingInterval.value;
+});
+
+onUnmounted(() => {
+  if (pollingInterval.value) {
+    clearInterval(pollingInterval.value);
+  }
 });
 </script>

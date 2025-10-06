@@ -91,6 +91,30 @@
     </UCard>
 
     <div class="mt-4 h-full">
+      <div class="flex items-center gap-2 mb-4">
+        <div class="ml-auto flex items-center gap-2">
+          <UButton
+            size="sm"
+            :variant="live ? 'solid' : 'ghost'"
+            :color="live ? 'primary' : 'neutral'"
+            @click="toggleLive"
+          >
+            {{ live ? 'Live: On' : 'Live' }}
+          </UButton>
+
+          <UButton
+            size="sm"
+            variant="outline"
+            icon="i-heroicons-arrow-path"
+            :loading="refreshing"
+            :disabled="refreshing"
+            @click="refreshNow"
+          />
+
+          <div class="text-sm text-muted">Showing {{ allLogEvents.length }} lines</div>
+        </div>
+      </div>
+
       <UAlert v-if="error" color="warning" variant="subtle" class="mb-4" :title="error.message" />
 
       <div class="h-[calc(100vh-10rem)]">
@@ -98,7 +122,6 @@
           :log-events="allLogEvents" 
           :deep-link="deepLink" 
           :loading="isLoading"
-          :polling="isPollingActive"
           @request-more="handleRequestMore"
         />
       </div>
@@ -126,6 +149,9 @@ const allLogEvents = ref<any[]>([]);
 const deepLink = ref<string | undefined>(undefined);
 const error = ref<any>(null);
 const realtimeChannel = ref<any>(null);
+const live = ref(false);
+const refreshing = ref(false);
+const pollingInterval = ref<NodeJS.Timeout | null>(null);
 
 const environment = computed(() => applicationSchema.value?.environments?.[0]);
 const service = computed(() => environment.value?.services?.[0]);
@@ -207,6 +233,9 @@ onUnmounted(() => {
   if (realtimeChannel.value) {
     supabase.removeChannel(realtimeChannel.value);
   }
+  if (pollingInterval.value) {
+    clearInterval(pollingInterval.value);
+  }
 });
 
 watch(data, (newData) => {
@@ -229,9 +258,43 @@ const handleRequestMore = () => {
   }
 };
 
-const isPollingActive = computed(() => {
-  return !!nextToken.value;
-});
+const refreshNow = async () => {
+  if (refreshing.value) return;
+  refreshing.value = true;
+  try {
+    if (nextToken.value) {
+      await execute();
+    } else {
+      nextToken.value = undefined;
+      allLogEvents.value = [];
+      await execute();
+    }
+  } catch (err) {
+    console.error('Error refreshing logs:', err);
+  } finally {
+    refreshing.value = false;
+  }
+};
+
+const toggleLive = () => {
+  live.value = !live.value;
+  if (live.value) {
+    pollingInterval.value = setInterval(async () => {
+      if (nextToken.value) {
+        refreshing.value = true;
+        await execute();
+        refreshing.value = false;
+      }
+    }, 10000);
+  } else {
+    if (pollingInterval.value) {
+      clearInterval(pollingInterval.value);
+      pollingInterval.value = null;
+    }
+  }
+};
+
+
 
 const isLoading = computed(() => {
   return deployPending.value || (pending.value && allLogEvents.value.length === 0);
