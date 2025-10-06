@@ -156,6 +156,7 @@ const realtimeChannel = ref<any>(null);
 const live = ref(false);
 const refreshing = ref(false);
 const pollingInterval = ref<NodeJS.Timeout | null>(null);
+const currentTime = ref(Date.now());
 
 const environment = computed(() => applicationSchema.value?.environments?.[0]);
 const service = computed(() => environment.value?.services?.[0]);
@@ -209,6 +210,15 @@ onMounted(() => {
   if (deployData.value) {
     setupRealtimeSubscription();
   }
+  
+  // Update current time every second for ticking duration
+  const timeInterval = setInterval(() => {
+    currentTime.value = Date.now();
+  }, 1000);
+  
+  onUnmounted(() => {
+    clearInterval(timeInterval);
+  });
 });
 
 watch(deployData, (newData) => {
@@ -313,8 +323,8 @@ const duration = computed(() => {
   if (!deployData.value?.pipeline_start) return null;
   
   const start = new Date(deployData.value.pipeline_start);
-  const end = deployData.value.pipeline_end ? new Date(deployData.value.pipeline_end) : new Date();
-  const diff = end.getTime() - start.getTime();
+  const end = deployData.value.pipeline_end ? new Date(deployData.value.pipeline_end) : currentTime.value;
+  const diff = end - start.getTime();
   
   const minutes = Math.floor(diff / 60000);
   const seconds = Math.floor((diff % 60000) / 1000);

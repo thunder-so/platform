@@ -414,15 +414,28 @@ const upgradeStack = async () => {
   }
 };
 
+const currentTime = ref(Date.now());
+
 const getDuration = (activity: ActivityItem) => {
   if (!activity.timestamp_start) return 'Duration: -';
   const start = new Date(activity.timestamp_start as string | Date);
-  const end = activity.timestamp_end ? new Date(activity.timestamp_end as string | Date) : new Date();
-  const diff = Math.floor((end.getTime() - start.getTime()) / 1000);
+  const end = activity.timestamp_end ? new Date(activity.timestamp_end as string | Date) : currentTime.value;
+  const diff = Math.floor((end - start.getTime()) / 1000);
   const mins = Math.floor(diff / 60);
   const secs = diff % 60;
   return `Duration: ${mins}m ${secs}s`;
 };
+
+// Update current time every second for ticking duration
+onMounted(() => {
+  const timeInterval = setInterval(() => {
+    currentTime.value = Date.now();
+  }, 1000);
+  
+  onUnmounted(() => {
+    clearInterval(timeInterval);
+  });
+});
 
 const formatTimeAgo = (ts?: string | Date | null) => {
   if (!ts) return '-';

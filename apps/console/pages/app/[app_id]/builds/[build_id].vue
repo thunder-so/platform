@@ -111,6 +111,7 @@ const realtimeChannel = ref<any>(null);
 const live = ref(false);
 const refreshing = ref(false);
 const pollingInterval = ref<NodeJS.Timeout | null>(null);
+const currentTime = ref(Date.now());
 
 // Fetch build data using Supabase
 const { data: build, pending: buildPending } = useAsyncData(`build-${buildId.value}`,
@@ -155,6 +156,15 @@ onMounted(() => {
   if (buildData.value) {
     setupRealtimeSubscription();
   }
+  
+  // Update current time every second for ticking duration
+  const timeInterval = setInterval(() => {
+    currentTime.value = Date.now();
+  }, 1000);
+  
+  onUnmounted(() => {
+    clearInterval(timeInterval);
+  });
 });
 
 watch(buildData, (newData) => {
@@ -258,8 +268,8 @@ const duration = computed(() => {
   if (!buildData.value?.build_start) return null;
   
   const start = new Date(buildData.value.build_start);
-  const end = buildData.value.build_end ? new Date(buildData.value.build_end) : new Date();
-  const diff = end.getTime() - start.getTime();
+  const end = buildData.value.build_end ? new Date(buildData.value.build_end) : currentTime.value;
+  const diff = end - start.getTime();
   
   const minutes = Math.floor(diff / 60000);
   const seconds = Math.floor((diff % 60000) / 1000);
