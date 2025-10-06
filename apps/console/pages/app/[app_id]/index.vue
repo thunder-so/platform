@@ -183,7 +183,20 @@
         </div>
       </div>
     </div>
-    <div v-else>No activities found on this application.</div>
+    <div v-else>
+      <div class="text-muted text-center py-10">
+        <p>No activities found on this application.</p>
+        <UButton 
+          v-if="selectedView !== 'all' || selectedStatus !== 'all' || selectedDateRangeKey !== 'all'"
+          @click="clearFilters" 
+          variant="outline" 
+          size="sm" 
+          class="mt-3"
+        >
+          Clear Filters
+        </UButton>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -217,9 +230,9 @@ const service = computed(() => environment.value?.services?.[0]);
 // --- Filter & Pagination state (URL synced) ---
 const PAGE_SIZE = 10;
 
-// Status options (union of build & pipeline statuses from schema)
+// Status options (simplified)
 const statusOptions = [
-  'NULL', 'STARTED', 'IN_PROGRESS', 'SUCCEEDED', 'RESUMED', 'FAILED', 'CANCELED', 'SUPERSEDED', 'FAULT', 'TIMED_OUT', 'STOPPED'
+  'IN PROGRESS', 'SUCCEEDED', 'FAILED'
 ];
 
 const dateRangeOptions = [
@@ -294,6 +307,20 @@ const updateUrl = (opts?: { replace?: boolean }) => {
 
 // sync URL when filters change
 watch([selectedView, selectedStatus, selectedDateRangeKey, page], () => updateUrl({ replace: true }));
+
+const mapToDisplayStatus = (status?: string | null) => {
+  const normalizedStatus = (status || '').toString().toUpperCase();
+  if (['STARTED', 'IN_PROGRESS', 'RESUMED'].includes(normalizedStatus)) {
+    return 'IN PROGRESS';
+  }
+  if (normalizedStatus === 'SUCCEEDED') {
+    return 'SUCCEEDED';
+  }
+  if (['FAILED', 'CANCELED', 'SUPERSEDED', 'FAULT', 'TIMED_OUT', 'STOPPED'].includes(normalizedStatus)) {
+    return 'FAILED';
+  }
+  return null;
+};
 
 const copyUrl = (activityId: string, type?: string) => {
   const path = type === 'build' ? 'builds' : 'deploys';
@@ -457,14 +484,12 @@ const fetchActivities = async (envId: string) => {
 
     if (wantsBuilds) {
       let qBuilds: any = supabase.from('builds').select('*').eq('environment_id', envId).is('deleted_at', null).order('created_at', { ascending: false }).limit(100);
-      if (selectedStatus.value && selectedStatus.value !== 'all') qBuilds = qBuilds.eq('build_status', selectedStatus.value);
       if (range) qBuilds = qBuilds.gte('created_at', new Date(range.start).toISOString()).lte('created_at', new Date(range.end).toISOString());
       tasks.push(qBuilds);
     }
 
     if (wantsEvents) {
       let qEvents: any = supabase.from('events').select('*').eq('environment_id', envId).is('deleted_at', null).order('created_at', { ascending: false }).limit(100);
-      if (selectedStatus.value && selectedStatus.value !== 'all') qEvents = qEvents.eq('pipeline_state', selectedStatus.value);
       if (range) qEvents = qEvents.gte('created_at', new Date(range.start).toISOString()).lte('created_at', new Date(range.end).toISOString());
       tasks.push(qEvents);
     }
@@ -489,6 +514,10 @@ const fetchActivities = async (envId: string) => {
 
     activities.value = items
       .filter(Boolean)
+      .filter(item => {
+        if (selectedStatus.value === 'all') return true;
+        return mapToDisplayStatus(item.status) === selectedStatus.value;
+      })
       .sort((a, b) => {
         const ta = a.timestamp_start ? new Date(a.timestamp_start).getTime() : 0;
         const tb = b.timestamp_start ? new Date(b.timestamp_start).getTime() : 0;
@@ -523,7 +552,7 @@ const setupRealtimeForEnv = (envId: string) => {
         const transformed = transformBuildToActivityItem(newBuild);
 
         // status filter
-        if (selectedStatus.value !== 'all' && transformed.status !== selectedStatus.value) return;
+        if (selectedStatus.value !== 'all' && mapToDisplayStatus(transformed.status) !== selectedStatus.value) return;
 
         // date filter
         const range = computeRangeForKey(selectedDateRangeKey.value);
@@ -550,7 +579,7 @@ const setupRealtimeForEnv = (envId: string) => {
         const newEvent = payload.new as Event;
         const transformed = transformEventToActivityItem(newEvent);
 
-        if (selectedStatus.value !== 'all' && transformed.status !== selectedStatus.value) return;
+        if (selectedStatus.value !== 'all' && mapToDisplayStatus(transformed.status) !== selectedStatus.value) return;
 
         const range = computeRangeForKey(selectedDateRangeKey.value);
         if (range) {
@@ -612,6 +641,13 @@ const paginatedActivities = computed(() => activities.value.slice((page.value - 
 
 const goToPage = (p: number) => {
   page.value = Math.max(1, p);
+};
+
+const clearFilters = () => {
+  selectedView.value = 'all';
+  selectedStatus.value = 'all';
+  selectedDateRangeKey.value = 'all';
+  page.value = 1;
 };
 
 onUnmounted(() => {
