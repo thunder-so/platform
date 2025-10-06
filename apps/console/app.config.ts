@@ -58,5 +58,44 @@ export default defineAppConfig({
     { type: "SPA", source: "@thunderso/cdk-spa", version: "0.22.1" },
     { type: "FUNCTION", source: "@thunderso/cdk-functions", version: "0.6.1" },
     { type: "WEB_SERVICE", source: "@thunderso/cdk-webservice", version: "0.3.0" },
-  ]
+  ],
+  fargate: {
+    cpuOptions: [
+      { label: '0.25 vCPU', value: 256 },
+      { label: '0.5 vCPU', value: 512 },
+      { label: '1 vCPU', value: 1024 },
+      { label: '2 vCPU', value: 2048 },
+      { label: '4 vCPU', value: 4096 }
+    ],
+    memoryOptions: {
+      256: [
+        { label: '512 MB', value: 512 },
+        { label: '1 GB', value: 1024 },
+        { label: '2 GB', value: 2048 }
+      ],
+      512: [
+        { label: '1 GB', value: 1024 },
+        { label: '2 GB', value: 2048 },
+        { label: '3 GB', value: 3072 },
+        { label: '4 GB', value: 4096 }
+      ],
+      1024: [
+        { label: '2 GB', value: 2048 },
+        { label: '3 GB', value: 3072 },
+        { label: '4 GB', value: 4096 },
+        { label: '5 GB', value: 5120 },
+        { label: '6 GB', value: 6144 },
+        { label: '7 GB', value: 7168 },
+        { label: '8 GB', value: 8192 }
+      ],
+      2048: Array.from({ length: 13 }, (_, i) => {
+        const gb = 4 + i;
+        return { label: `${gb} GB`, value: gb * 1024 };
+      }),
+      4096: Array.from({ length: 23 }, (_, i) => {
+        const gb = 8 + i;
+        return { label: `${gb} GB`, value: gb * 1024 };
+      })
+    }
+  }
 })

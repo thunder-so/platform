@@ -62,8 +62,8 @@ const STACK_DEFAULTS: {
     },
     serviceProps: {
       desiredCount: 1,
-      cpu: 0.25,
-      memorySize: 1792,
+      cpu: 256,
+      memorySize: 512,
       port: 3000,
       dockerFile: 'Dockerfile',
     }
