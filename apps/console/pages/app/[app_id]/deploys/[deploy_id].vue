@@ -1,12 +1,13 @@
 <template>
-  <UCard v-if="deployPending">
-    <template #header>
-      <USkeleton class="h-6 w-40" />
-    </template>
-    <USkeleton class="h-6 w-full" />
-    <USkeleton class="h-6 w-full" />
-  </UCard>
-  <UCard v-if="deployData">
+  <ClientOnly>
+    <UCard v-if="deployPending">
+      <template #header>
+        <USkeleton class="h-6 w-40" />
+      </template>
+      <USkeleton class="h-6 w-full" />
+      <USkeleton class="h-6 w-full" />
+    </UCard>
+    <UCard v-if="deployData">
     <template #header>
       <div class="flex justify-between items-center">
         <h3>Deploy Details</h3>
@@ -87,25 +88,26 @@
 
       </div>
     </div>
-  </UCard>
+    </UCard>
 
-  <div class="mt-4 h-full">
-    <UAlert v-if="error" color="warning" variant="subtle" class="mb-4" :title="error.message" />
+    <div class="mt-4 h-full">
+      <UAlert v-if="error" color="warning" variant="subtle" class="mb-4" :title="error.message" />
 
-    <div class="h-[calc(100vh-10rem)]">
-      <AppLogViewer 
-        :log-events="allLogEvents" 
-        :deep-link="deepLink" 
-        :loading="isLoading"
-        :polling="isPollingActive"
-        @request-more="handleRequestMore"
-      />
+      <div class="h-[calc(100vh-10rem)]">
+        <AppLogViewer 
+          :log-events="allLogEvents" 
+          :deep-link="deepLink" 
+          :loading="isLoading"
+          :polling="isPollingActive"
+          @request-more="handleRequestMore"
+        />
+      </div>
     </div>
-  </div>
+  </ClientOnly>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useApplications } from '~/composables/useApplications';
 
 definePageMeta({
@@ -123,6 +125,7 @@ const deployData = ref<any>(null);
 const allLogEvents = ref<any[]>([]);
 const deepLink = ref<string | undefined>(undefined);
 const error = ref<any>(null);
+const realtimeChannel = ref<any>(null);
 
 const environment = computed(() => applicationSchema.value?.environments?.[0]);
 const service = computed(() => environment.value?.services?.[0]);
@@ -169,6 +172,40 @@ watch(deploy, (newDeploy) => {
         execute();
       }
     });
+  }
+});
+
+onMounted(() => {
+  if (deployData.value) {
+    setupRealtimeSubscription();
+  }
+});
+
+watch(deployData, (newData) => {
+  if (newData && !realtimeChannel.value) {
+    setupRealtimeSubscription();
+  }
+});
+
+const setupRealtimeSubscription = () => {
+  if (process.server || realtimeChannel.value) return;
+  
+  realtimeChannel.value = supabase
+    .channel(`events`)
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'events',
+      filter: `pipeline_execution_id=eq.${deployId.value}`
+    }, (payload) => {
+      deployData.value = { ...deployData.value, ...payload.new };
+    })
+    .subscribe();
+};
+
+onUnmounted(() => {
+  if (realtimeChannel.value) {
+    supabase.removeChannel(realtimeChannel.value);
   }
 });
 

@@ -1,12 +1,13 @@
 <template>
-  <UCard v-if="buildPending">
-    <template #header>
-      <USkeleton class="h-6 w-40" />
-    </template>
-    <USkeleton class="h-6 w-full" />
-    <USkeleton class="h-6 w-full" />
-  </UCard>
-  <UCard v-if="buildData">
+  <ClientOnly>
+    <UCard v-if="buildPending">
+      <template #header>
+        <USkeleton class="h-6 w-40" />
+      </template>
+      <USkeleton class="h-6 w-full" />
+      <USkeleton class="h-6 w-full" />
+    </UCard>
+    <UCard v-if="buildData">
     <template #header>
       <h3>Build Details</h3>
     </template>
@@ -49,25 +50,26 @@
         </div>
       </div>
     </div>
-  </UCard>
+    </UCard>
 
-  <div class="mt-4 h-full">
-    <UAlert v-if="error" color="warning" variant="subtle" class="mb-4" :title="error.message" />
+    <div class="mt-4 h-full">
+      <UAlert v-if="error" color="warning" variant="subtle" class="mb-4" :title="error.message" />
 
-    <div class="h-[calc(100vh-10rem)]">
-      <AppLogViewer 
-        :log-events="allLogEvents" 
-        :deep-link="deepLink" 
-        :loading="isLoading"
-        :polling="isPollingActive"
-        @request-more="handleRequestMore"
-      />
+      <div class="h-[calc(100vh-10rem)]">
+        <AppLogViewer 
+          :log-events="allLogEvents" 
+          :deep-link="deepLink" 
+          :loading="isLoading"
+          :polling="isPollingActive"
+          @request-more="handleRequestMore"
+        />
+      </div>
     </div>
-  </div>
+  </ClientOnly>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 
 definePageMeta({
   layout: 'app',
@@ -82,6 +84,7 @@ const nextToken = ref<string | undefined>(undefined);
 const buildData = ref<any>(null);
 const allLogEvents = ref<any[]>([]);
 const deepLink = ref<string | undefined>(undefined);
+const realtimeChannel = ref<any>(null);
 
 // Fetch build data using Supabase
 const { data: build, pending: buildPending } = useAsyncData(`build-${buildId.value}`,
@@ -119,6 +122,40 @@ watch(build, (newBuild) => {
     if (newBuild.build_log) {
       execute();
     }
+  }
+});
+
+onMounted(() => {
+  if (buildData.value) {
+    setupRealtimeSubscription();
+  }
+});
+
+watch(buildData, (newData) => {
+  if (newData && !realtimeChannel.value) {
+    setupRealtimeSubscription();
+  }
+});
+
+const setupRealtimeSubscription = () => {
+  if (process.server || realtimeChannel.value) return;
+  
+  realtimeChannel.value = supabase
+    .channel(`builds`)
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'builds',
+      filter: `id=eq.${buildId.value}`
+    }, (payload) => {
+      buildData.value = { ...buildData.value, ...payload.new };
+    })
+    .subscribe();
+};
+
+onUnmounted(() => {
+  if (realtimeChannel.value) {
+    supabase.removeChannel(realtimeChannel.value);
   }
 });
 
