@@ -20,9 +20,11 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue';
 
+type LogEvent = { timestamp: number | string; message: string };
+
 const props = defineProps({
   logEvents: {
-    type: Array,
+    type: Array as () => LogEvent[],
     default: () => [],
   },
   deepLink: {
@@ -56,17 +58,33 @@ watch(() => props.logEvents, () => {
 
 onMounted(() => {
   scrollToBottom();
-  if (props.polling) {
-    pollInterval = setInterval(() => {
-      emit('request-more');
-    }, 5000);
+  // start polling if polling prop is true on mount
+  if (props.polling) startPolling();
+});
+
+// start polling helper
+const startPolling = () => {
+  stopPolling();
+  pollInterval = setInterval(() => {
+    emit('request-more');
+  }, 10000);
+};
+
+// stop polling helper
+const stopPolling = () => {
+  if (pollInterval) {
+    clearInterval(pollInterval);
+    pollInterval = null;
   }
+};
+
+// react to polling prop changes so parent can toggle live updates
+watch(() => props.polling, (newVal) => {
+  if (newVal) startPolling(); else stopPolling();
 });
 
 onUnmounted(() => {
-  if (pollInterval) {
-    clearInterval(pollInterval);
-  }
+  stopPolling();
 });
 
 </script>

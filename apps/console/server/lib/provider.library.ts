@@ -211,13 +211,15 @@ export async function getCloudWatchLogs(provider: ProviderSchema, logGroupName: 
     }
 }
 
-export async function getCloudWatchLogsFromGroup(provider: ProviderSchema, logGroupName: string, nextToken?: string) {
+export async function getCloudWatchLogsFromGroup(provider: ProviderSchema, logGroupName: string, nextToken?: string, startTime?: number, endTime?: number) {
     const cloudWatchLogsClient = await getAwsClient(CloudWatchLogsClient, provider);
 
     try {
         const command = new FilterLogEventsCommand({
             logGroupName: logGroupName,
-            startTime: Date.now() - 24 * 60 * 60 * 1000,
+            // prefer explicit start/end when provided, otherwise fall back to last 1 hour
+            startTime: typeof startTime === 'number' ? startTime : Date.now() - 1000 * 60 * 60,
+            ...(typeof endTime === 'number' ? { endTime } : {}),
             nextToken: nextToken,
         });
         const response = await cloudWatchLogsClient.send(command);

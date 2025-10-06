@@ -98,6 +98,8 @@ export const servicesRouter = router({
       z.object({
         service_id: z.string(),
         nextToken: z.string().optional(),
+        startTime: z.number().optional(),
+        endTime: z.number().optional(),
       })
     )
     .query(async ({ input }) => {
@@ -124,7 +126,7 @@ export const servicesRouter = router({
 
       const logGroupName = `/aws/lambda/${environment.application.name}-${service.name}-${environment.name}-container-function`;
 
-      const logs = await getCloudWatchLogsFromGroup(environment.provider as ProviderSchema, logGroupName, input.nextToken);
+      const logs = await getCloudWatchLogsFromGroup(environment.provider as ProviderSchema, logGroupName, input.nextToken, input.startTime, input.endTime);
       const deepLink = `https://console.aws.amazon.com/cloudwatch/home?region=${environment.region}#logsV2:log-groups/log-group/${encodeURIComponent(logGroupName)}`;
       
       return { 
