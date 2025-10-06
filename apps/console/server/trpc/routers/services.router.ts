@@ -87,10 +87,17 @@ export const servicesRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Provider information not provided.' });
       }
 
-      const logs = await getCloudWatchLogs(provider as ProviderSchema, logGroupName, logStreamName, input.nextToken);
-      return { 
-        ...logs
-      };
+      try {
+        const logs = await getCloudWatchLogs(provider as ProviderSchema, logGroupName, logStreamName, input.nextToken);
+        return { 
+          ...logs
+        };
+      } catch (error) {
+        throw new TRPCError({ 
+          code: 'INTERNAL_SERVER_ERROR', 
+          message: error instanceof Error ? error.message : 'Failed to fetch logs'
+        });
+      }
     }),
 
   getRuntimeLogs: protectedProcedure
@@ -124,7 +131,15 @@ export const servicesRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Provider or application not found for this service.' });
       }
 
-      const logGroupName = `/aws/lambda/${environment.application.name}-${service.name}-${environment.name}-container-function`;
+      const resourceIdPrefix = `${environment.application.name.substring(0, 7)}-${service.name.substring(0, 7)}-${environment.name.substring(0, 7)}`;
+      
+      let logGroupName: string;
+      if (service.stack_type === 'WEB_SERVICE') {
+        logGroupName = `/webservice/${resourceIdPrefix}-logs`;
+      } else {
+        // Default to Function log group for FUNCTION stack_type and fallback
+        logGroupName = `/aws/lambda/${resourceIdPrefix}-container-function`;
+      }
 
       const logs = await getCloudWatchLogsFromGroup(environment.provider as ProviderSchema, logGroupName, input.nextToken, input.startTime, input.endTime);
       const deepLink = `https://console.aws.amazon.com/cloudwatch/home?region=${environment.region}#logsV2:log-groups/log-group/${encodeURIComponent(logGroupName)}`;
