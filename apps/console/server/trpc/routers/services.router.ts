@@ -281,4 +281,16 @@ export const servicesRouter = router({
 
       return updatedService;
     }),
+
+  triggerBuild: protectedProcedure
+    .input(
+      z.object({
+        service_id: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const platformLib = new PlatformLibrary();
+      const build = await platformLib.triggerBuild(input.service_id);
+      return build;
+    }),
 });

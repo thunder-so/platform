@@ -285,6 +285,33 @@ async function saveNotificationPreferences() {
   }
 }
 
+const isBuildTriggering = ref(false);
+
+const triggerBuild = async () => {
+  if (!service.value?.id) return;
+  isBuildTriggering.value = true;
+  try {
+    const build = await $client.services.triggerBuild.mutate({ service_id: service.value.id });
+    toast.add({ 
+      title: 'Build triggered.', 
+      description: "Click to view build details and logs.",
+      color: 'success',
+      progress: false,
+      duration: 0,
+      actions: [{
+        label: 'View Build',
+        color: 'primary',
+        size: 'lg',
+        to: `/app/${applicationSchema.value?.id}/builds/${build.id}`
+      }]
+    });
+  } catch (e: any) {
+    toast.add({ title: 'Error triggering build', description: e.message, color: 'error' });
+  } finally {
+    isBuildTriggering.value = false;
+  }
+};
+
 const saveChanges = async () => {
   if (!localServiceConfig.value?.metadata) return;
 
@@ -301,7 +328,20 @@ const saveChanges = async () => {
     });
 
     await refreshApplicationSchema();
-    toast.add({ title: 'Settings saved successfully!', color: 'success' });
+    toast.add({ 
+      title: 'Settings saved.',
+      description: 'Rebuild your service to apply changes.', 
+      color: 'success',
+      progress: false,
+      duration: 0,
+      actions: [{
+        label: 'Rebuild',
+        color: 'primary',
+        size: 'lg',
+        loading: isBuildTriggering.value,
+        onClick: () => triggerBuild()
+      }]
+    });
   } catch (e: any) {
     error.value = e.message;
     toast.add({ title: 'Error saving settings', description: e.message, color: 'error' });
@@ -321,7 +361,20 @@ const saveBranch = async () => {
     });
     await refreshApplicationSchema();
     isBranchChanged.value = false;
-    toast.add({ title: 'Branch updated successfully!', color: 'success' });
+    toast.add({ 
+      title: 'Branch updated.', 
+      description: 'Rebuild your service to apply changes.', 
+      color: 'success',
+      progress: false,
+      duration: 0,
+      actions: [{
+        label: 'Rebuild',
+        color: 'primary',
+        size: 'lg',
+        loading: isBuildTriggering.value,
+        onClick: () => triggerBuild()
+      }]
+    });
   } catch (e: any) {
     toast.add({ title: 'Error updating branch', description: e.message, color: 'error' });
   } finally {
