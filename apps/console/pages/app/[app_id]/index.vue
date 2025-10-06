@@ -107,7 +107,7 @@
               <p class="text-sm text-muted">{{ getDuration(activity) }}</p>
             </div>
 
-            <div class="flex flex-col text-left">
+            <div class="flex flex-col col-span-2 text-left">
               <div class="leading-none">
                 <NuxtLink 
                   :to="`https://github.com/${service?.owner}/${service?.repo}/tree/${service?.branch}`" 
@@ -121,16 +121,21 @@
                 </NuxtLink>
               </div>
               <div class="leading-none">
-                <NuxtLink 
-                  :to="`https://github.com/${service?.owner}/${service?.repo}/commit/${activity.sourceDetails?.revisionId}`" 
-                  target="_blank" 
-                  class="inline-flex text-muted hover:text-white transition-colors"
-                >
-                  <span class="flex items-center gap-1">
-                    <Icon name="fa6-solid:code-commit" class="w-4 h-4" />
-                    <span class="text-sm">{{ activity.sourceDetails?.revisionId?.substring(0, 7) }}</span>
-                  </span>
-                </NuxtLink>
+                <div class="flex flex-row gap-2">
+                  <NuxtLink 
+                    :to="`https://github.com/${service?.owner}/${service?.repo}/commit/${activity.sourceDetails?.revisionId}`" 
+                    target="_blank" 
+                    class="inline-flex text-muted hover:text-white transition-colors"
+                  >
+                    <span class="flex items-center gap-1">
+                      <Icon name="fa6-solid:code-commit" class="w-4 h-4" />
+                      <span class="text-sm">{{ activity.sourceDetails?.revisionId?.substring(0, 7) }}</span>
+                    </span>
+                  </NuxtLink>
+
+                  <span class="text-sm">{{ activity.sourceDetails?.revisionSummary }}</span>
+                </div>
+                
               </div>
             </div>
           </div>

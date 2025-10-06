@@ -57,35 +57,39 @@
         <div class="grid grid-cols-3 gap-2 w-full">
           <div class="flex flex-col text-left">
             <h4>Source</h4>
-            <div class="flex flex-row gap-4 mt-1">
-              <div class="leading-none">
-                <NuxtLink 
-                  :to="deployData.pipeline_metadata?.entityUrl" 
-                  target="_blank" 
-                  class="inline-flex text-muted hover:text-white transition-colors"
-                >
-                  <span class="flex items-center gap-1">
-                    <Icon name="mdi:source-branch" class="w-4 h-4" />
-                    <span class="text-sm">{{service?.branch}}</span>
-                  </span>
-                </NuxtLink>
+            <div class="flex flex-col">
+              <div class="flex flex-row gap-4 mt-1">
+                <div class="leading-none">
+                  <NuxtLink 
+                    :to="deployData.pipeline_metadata?.entityUrl" 
+                    target="_blank" 
+                    class="inline-flex text-muted hover:text-white transition-colors"
+                  >
+                    <span class="flex items-center gap-1">
+                      <Icon name="mdi:source-branch" class="w-4 h-4" />
+                      <span class="text-sm">{{service?.branch}}</span>
+                    </span>
+                  </NuxtLink>
+                </div>
+                <div class="leading-none">
+                  <NuxtLink 
+                    :to="deployData.pipeline_metadata?.revisionUrl" 
+                    target="_blank" 
+                    class="inline-flex text-muted hover:text-white transition-colors"
+                  >
+                    <span class="flex items-center gap-1">
+                      <Icon name="fa6-solid:code-commit" class="w-4 h-4" />
+                      <span class="text-sm">{{ deployData.pipeline_metadata?.revisionId?.substring(0, 7) }}</span>
+                    </span>
+                  </NuxtLink>
+                </div>
               </div>
-              <div class="leading-none">
-                <NuxtLink 
-                  :to="deployData.pipeline_metadata?.revisionUrl" 
-                  target="_blank" 
-                  class="inline-flex text-muted hover:text-white transition-colors"
-                >
-                  <span class="flex items-center gap-1">
-                    <Icon name="fa6-solid:code-commit" class="w-4 h-4" />
-                    <span class="text-sm">{{ deployData.pipeline_metadata?.revisionId?.substring(0, 7) }}</span>
-                  </span>
-                </NuxtLink>
+              <div>
+                <span class="text-sm">{{ deployData.pipeline_metadata?.revisionSummary }}</span>
               </div>
-            </div>
           </div>
         </div>
-
+      </div>
       </div>
     </div>
     </UCard>
