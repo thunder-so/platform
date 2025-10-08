@@ -37,22 +37,16 @@ Deno.serve(async (req) => {
 
     if (!envNotification?.enabled) return new Response('OK', { status: 200 });
 
-    // Get organization members with user details
+    // Get organization members with email preferences
     const { data: members } = await supabase
       .from('memberships')
-      .select('user_id, user:users(email, full_name)')
+      .select('user_id, user:users(email, full_name, email_enabled)')
       .eq('organization_id', organization_id)
       .is('deleted_at', null);
 
     for (const member of members || []) {
       // Check if user has email notifications enabled
-      const { data: userNotification } = await supabase
-        .from('user_notifications')
-        .select('email_enabled')
-        .eq('user_id', member.user_id)
-        .single();
-
-      if (userNotification && !userNotification.email_enabled) continue;
+      if (!member.user.email_enabled) continue;
 
       // Add username to metadata
       const templateProps = {

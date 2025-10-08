@@ -26,6 +26,7 @@ export const users = pgTable('users', {
   full_name: text('full_name'),
   avatar_url: text('avatar_url'),
   website: text('website'),
+  email_enabled: boolean('email_enabled').default(true).notNull(),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -365,7 +366,7 @@ export const notifications = pgTable('notifications', {
   id: uuid('id').defaultRandom().primaryKey(),
   organization_id: text('organization_id').notNull().references(() => organizations.id),
   environment_id: text('environment_id').notNull().references(() => environments.id),
-  user_id: uuid('user_id').references(() => users.id),
+  // user_id: uuid('user_id').references(() => users.id),
   type: notificationTypeEnum('type').notNull(),
   metadata: jsonb('metadata').notNull(),
   created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
@@ -378,18 +379,7 @@ export const notifications = pgTable('notifications', {
 export const notificationsRelations = relations(notifications, ({ one }) => ({
   organization: one(organizations, { fields: [notifications.organization_id], references: [organizations.id] }),
   environment: one(environments, { fields: [notifications.environment_id], references: [environments.id] }),
-  user: one(users, { fields: [notifications.user_id], references: [users.id] }),
-}));
-
-export const user_notifications = pgTable('user_notifications', {
-  user_id: uuid('user_id').notNull().references(() => users.id),
-  email_enabled: boolean('email_enabled').default(true).notNull(),
-}, (table) => ({
-  pk: primaryKey({ columns: [table.user_id] }),
-}));
-
-export const user_notificationsRelations = relations(user_notifications, ({ one }) => ({
-  user: one(users, { fields: [user_notifications.user_id], references: [users.id] }),
+  // user: one(users, { fields: [notifications.user_id], references: [users.id] }),
 }));
 
 export const environment_notifications = pgTable('environment_notifications', {
@@ -429,7 +419,7 @@ export type ServiceVariable = typeof serviceVariables.$inferSelect;
 export type NewServiceVariable = typeof serviceVariables.$inferInsert;
 export type ServiceSecret = typeof serviceSecrets.$inferSelect;
 export type NewServiceSecret = typeof serviceSecrets.$inferInsert;
-export type UserNotification = typeof user_notifications.$inferSelect;
+
 export type EnvironmentNotification = typeof environment_notifications.$inferSelect;
 
 // Types for Polar Payment Integration

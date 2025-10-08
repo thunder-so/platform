@@ -50,7 +50,7 @@
       </UTable>
     </UCard>
 
-    <!-- <UCard class="mt-8">
+    <UCard class="mt-8">
       <template #header>
         <h3>Notification Preferences</h3>
       </template>
@@ -69,7 +69,7 @@
           Save Preferences
         </UButton>
       </template>
-    </UCard> -->
+    </UCard>
   </div>
 </template>
 
@@ -177,15 +177,15 @@ const columns = [
     } else {
       installations.value = data
     }
-    // await loadEmailPreference()
+    await loadEmailPreference()
 }
 
 async function loadEmailPreference() {
   if (!user.value) return
   const { data } = await supabase
-    .from('user_notifications')
+    .from('users')
     .select('email_enabled')
-    .eq('user_id', user.value.id)
+    .eq('id', user.value.id)
     .single()
   emailNotificationsEnabled.value = data?.email_enabled ?? true
   originalEmailNotificationsEnabled.value = emailNotificationsEnabled.value
@@ -196,11 +196,11 @@ async function savePreferences() {
   savingPreferences.value = true
   try {
     await supabase
-      .from('user_notifications')
-      .upsert({
-        user_id: user.value.id,
+      .from('users')
+      .update({
         email_enabled: emailNotificationsEnabled.value
       })
+      .eq('id', user.value.id)
     originalEmailNotificationsEnabled.value = emailNotificationsEnabled.value
     toast.add({
       title: 'Preferences saved successfully',
