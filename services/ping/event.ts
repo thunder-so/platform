@@ -192,6 +192,7 @@ export const handler = async (event: CodePipelineEvent, context: Context) => {
             organization_id: environment.application.organization_id,
             environment_id: environment.id,
             type: 'APP_DEPLOY_FAILURE',
+            channel: 'EMAIL',
             metadata: {
               application_id: environment.application.id,
               application_name: service.name,
@@ -287,6 +288,7 @@ export const handler = async (event: CodePipelineEvent, context: Context) => {
             organization_id: environment.application.organization_id,
             environment_id: environment.id,
             type: 'APP_DEPLOY_SUCCESS',
+            channel: 'EMAIL',
             metadata: {
               application_id: environment.application.id,
               application_name: service.name,

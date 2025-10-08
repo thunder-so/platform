@@ -151,6 +151,7 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
             organization_id: application.organization_id,
             environment_id: service.environment_id,
             type: 'APP_BUILD_FAILURE',
+            channel: 'EMAIL',
             metadata: {
               application_id: environment.application.id,
               application_name: application.display_name,
@@ -327,6 +328,7 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
         organization_id: application.organization_id,
         environment_id: environment.id,
         type: 'APP_BUILD_SUCCESS',
+        channel: 'EMAIL',
         metadata: {
           application_id: application.id,
           application_name: application.display_name,

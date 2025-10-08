@@ -366,8 +366,8 @@ export const notifications = pgTable('notifications', {
   id: uuid('id').defaultRandom().primaryKey(),
   organization_id: text('organization_id').notNull().references(() => organizations.id),
   environment_id: text('environment_id').notNull().references(() => environments.id),
-  // user_id: uuid('user_id').references(() => users.id),
   type: notificationTypeEnum('type').notNull(),
+  channel: notificationChannelEnum('channel').default('EMAIL').notNull(),
   metadata: jsonb('metadata').notNull(),
   created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
 }, (table) => ({
@@ -379,20 +379,6 @@ export const notifications = pgTable('notifications', {
 export const notificationsRelations = relations(notifications, ({ one }) => ({
   organization: one(organizations, { fields: [notifications.organization_id], references: [organizations.id] }),
   environment: one(environments, { fields: [notifications.environment_id], references: [environments.id] }),
-  // user: one(users, { fields: [notifications.user_id], references: [users.id] }),
-}));
-
-export const environment_notifications = pgTable('environment_notifications', {
-  environment_id: text('environment_id').notNull().references(() => environments.id),
-  type: notificationTypeEnum('type').notNull(),
-  channel: notificationChannelEnum('channel').notNull(),
-  enabled: boolean('enabled').default(true).notNull(),
-}, (table) => ({
-  pk: primaryKey({ columns: [table.environment_id, table.channel] }),
-}));
-
-export const environment_notificationsRelations = relations(environment_notifications, ({ one }) => ({
-  environment: one(environments, { fields: [environment_notifications.environment_id], references: [environments.id] }),
 }));
 
 /**
@@ -420,7 +406,7 @@ export type NewServiceVariable = typeof serviceVariables.$inferInsert;
 export type ServiceSecret = typeof serviceSecrets.$inferSelect;
 export type NewServiceSecret = typeof serviceSecrets.$inferInsert;
 
-export type EnvironmentNotification = typeof environment_notifications.$inferSelect;
+
 
 // Types for Polar Payment Integration
 export interface Price {

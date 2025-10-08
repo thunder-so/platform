@@ -26,16 +26,6 @@ Deno.serve(async (req) => {
   const { organization_id, environment_id, type, metadata } = record;
 
   try {
-    // Check if environment has notifications enabled for this type and EMAIL channel
-    const { data: envNotification } = await supabase
-      .from('environment_notifications')
-      .select('enabled')
-      .eq('environment_id', environment_id)
-      .eq('type', type)
-      .eq('channel', 'EMAIL')
-      .single();
-
-    if (!envNotification?.enabled) return new Response('OK', { status: 200 });
 
     // Get organization members with email preferences
     const { data: members } = await supabase
@@ -83,13 +73,13 @@ Deno.serve(async (req) => {
 function getSubject(type: string, metadata: any): string {
   switch (type) {
     case 'APP_BUILD_SUCCESS':
-      return `✅ Build successful for ${metadata.service_name}`;
+      return `✅ Build successful for ${metadata.application_name}`;
     case 'APP_BUILD_FAILURE':
-      return `❌ Build failed for ${metadata.service_name}`;
+      return `❌ Build failed for ${metadata.application_name}`;
     case 'APP_DEPLOY_SUCCESS':
-      return `🚀 Deploy successful for ${metadata.service_name}`;
+      return `🚀 Deploy successful for ${metadata.application_name}`;
     case 'APP_DEPLOY_FAILURE':
-      return `💥 Deploy failed for ${metadata.service_name}`;
+      return `💥 Deploy failed for ${metadata.application_name}`;
     default:
       return 'Thunder Notification';
   }
