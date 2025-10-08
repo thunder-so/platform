@@ -9,8 +9,7 @@ import {
   Link,
   Section,
   Text,
-} from "@react-email/components";
-import * as React from "react";
+} from "npm:@react-email/components";
 
 interface DeploySuccessProps {
   username?: string;
