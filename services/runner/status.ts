@@ -132,24 +132,34 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
         .single();
 
       if (!eventFetchError && eventSchema) {
+        // Fetch the service
+        const service = eventSchema.service;
+
+        // Fetch the environment where the service belongs
+        const environment = service.environment;
+
+        // Fetch providers by environment.provider_id
+        const provider = environment.provider;
+
+        // Fetch application where environment belongs
+        const application = environment.application;
+
         // Insert build failure notification
         await supabase
           .from('notifications')
           .insert({
-            organization_id: eventSchema.service.environment.application.organization_id,
-            environment_id: eventSchema.service.environment_id,
+            organization_id: application.organization_id,
+            environment_id: service.environment_id,
             type: 'APP_BUILD_FAILURE',
             metadata: {
-              application_id: eventSchema.service.environment.application.id,
-              application_name: eventSchema.service.name,
-              repository: `${eventSchema.service.owner}/${eventSchema.service.repo}`,
-              branch: eventSchema.service.branch,
-              commit_sha: build?.sourceVersion || 'unknown',
-              commit_message: 'Build failed',
+              application_id: environment.application.id,
+              application_name: application.display_name,
+              repository: `${service.owner}/${service.repo}`,
+              branch: service.branch,
               build_id: buildId,
               error_message: `Build failed with status: ${buildStatus}`,
-              account_id: eventSchema.service.environment.provider.account_id,
-              region: eventSchema.service.environment.region
+              account_id: provider.account_id,
+              region: environment.region
             }
           });
       }
@@ -319,7 +329,7 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
         type: 'APP_BUILD_SUCCESS',
         metadata: {
           application_id: application.id,
-          application_name: service.name,
+          application_name: application.display_name,
           application_url: trimmedOutputs.CloudFrontDistributionUrl || trimmedOutputs.ApiGatewayUrl || trimmedOutputs.LoadBalancerDNS,
           domain: trimmedOutputs.CloudFrontDistributionUrl?.replace('https://', ''),
           repository: `${service.owner}/${service.repo}`,
