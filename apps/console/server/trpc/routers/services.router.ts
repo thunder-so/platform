@@ -145,8 +145,7 @@ export const servicesRouter = router({
       const deepLink = `https://console.aws.amazon.com/cloudwatch/home?region=${environment.region}#logsV2:log-groups/log-group/${encodeURIComponent(logGroupName)}`;
       
       return { 
-        ...logs, 
-        deepLink
+        ...logs
       };
     }),
 

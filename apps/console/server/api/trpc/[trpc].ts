@@ -11,9 +11,9 @@ export default createTRPCNuxtHandler({
   createContext: createTRPCContext,
   onError(opts) {
     const { error, type, path, input, ctx, req } = opts;
-    console.error('api/trpc/[trpc]: Error:', error);
-    console.error('api/trpc/[trpc]: Type:', type);
     console.error('api/trpc/[trpc]: Path:', path);
+    console.error('api/trpc/[trpc]: Type:', type);
+    console.error('api/trpc/[trpc]: Error:', error);
     // console.error('api/trpc/[trpc]: Input:', input);
     // console.error('api/trpc/[trpc]: Context:', ctx);
     // console.error('api/trpc/[trpc]: Req:', req);

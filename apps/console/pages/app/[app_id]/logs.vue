@@ -40,7 +40,6 @@
       <AppLogViewer 
         :log-events="allLogEvents" 
         :loading="pending && allLogEvents.length === 0"
-        @request-more="handleRequestMore"
       />
     </div>
   </div>
@@ -61,7 +60,6 @@ const {
 
 const nextToken = ref<string | undefined>(undefined);
 const allLogEvents = ref<any[]>([]);
-const deepLink = ref<string | undefined>(undefined);
 const live = ref(false);
 const seenEventKeys = ref(new Set<string>());
 const refreshing = ref(false);
@@ -165,9 +163,6 @@ watch(data, (newData) => {
       }
     }
     nextToken.value = newData.nextForwardToken;
-    if (!deepLink.value && (newData as any).deepLink) {
-      deepLink.value = (newData as any).deepLink;
-    }
   }
 });
 

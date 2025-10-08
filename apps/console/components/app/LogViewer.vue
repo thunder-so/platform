@@ -33,8 +33,6 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['request-more']);
-
 const logsContainer = ref<HTMLElement | null>(null);
 
 const scrollToBottom = () => {

@@ -37,10 +37,10 @@ Deno.serve(async (req) => {
 
     if (!envNotification?.enabled) return new Response('OK', { status: 200 });
 
-    // Get organization members
+    // Get organization members with user details
     const { data: members } = await supabase
       .from('memberships')
-      .select('user_id, user:users(email)')
+      .select('user_id, user:users(email, full_name)')
       .eq('organization_id', organization_id)
       .is('deleted_at', null);
 
@@ -54,9 +54,15 @@ Deno.serve(async (req) => {
 
       if (userNotification && !userNotification.email_enabled) continue;
 
+      // Add username to metadata
+      const templateProps = {
+        ...metadata,
+        username: member.user.full_name || member.user.email?.split('@')[0]
+      };
+
       // Render and send email
       const Template = templates[type];
-      const html = render(Template(metadata));
+      const html = render(Template(templateProps));
       
       await fetch('https://api.resend.com/emails', {
         method: 'POST',

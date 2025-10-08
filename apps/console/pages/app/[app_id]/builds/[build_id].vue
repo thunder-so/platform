@@ -82,9 +82,7 @@
       <div class="h-[calc(100vh-10rem)]">
         <AppLogViewer 
           :log-events="allLogEvents" 
-          :deep-link="deepLink" 
           :loading="isLoading"
-          @request-more="handleRequestMore"
         />
       </div>
     </div>

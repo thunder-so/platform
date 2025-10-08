@@ -1,39 +1,201 @@
-import { Html, Head, Body, Container, Heading, Text, Section, Button } from 'npm:@react-email/components';
+import {
+  Body,
+  Button,
+  Container,
+  Head,
+  Hr,
+  Html,
+  Img,
+  Link,
+  Section,
+  Text,
+} from "@react-email/components";
+import * as React from "react";
 
-export const DeploySuccessEmail = ({ service_name, environment_name, domain, deploy_id, repository }) => (
+interface DeploySuccessProps {
+  username?: string;
+  application_id: string;
+  application_name: string;
+  application_url: string;
+  domain?: string;
+  repository: string;
+  branch?: string;
+  commit_sha: string;
+  commit_message: string;
+  deploy_id: string;
+  account_id?: string;
+  region?: string;
+}
+
+export const DeploySuccessEmail = ({
+  username,
+  application_id,
+  application_name,
+  application_url,
+  domain,
+  repository,
+  branch,
+  commit_sha,
+  commit_message,
+  deploy_id,
+  account_id,
+  region
+}: DeploySuccessProps) => (
   <Html>
     <Head />
-    <Body style={{ fontFamily: 'Arial, sans-serif', backgroundColor: '#f4f4f4' }}>
-      <Container style={{ maxWidth: '600px', margin: '0 auto', backgroundColor: '#ffffff', padding: '20px' }}>
-        <Heading style={{ color: '#22c55e', fontSize: '24px', marginBottom: '20px' }}>
-          🚀 Deploy Successful
-        </Heading>
-        <Text style={{ fontSize: '16px', lineHeight: '1.5', marginBottom: '20px' }}>
-          Your deployment for <strong>{service_name}</strong> to <strong>{environment_name}</strong> has completed successfully.
-        </Text>
-        <Section style={{ backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '5px', marginBottom: '20px' }}>
-          <Text style={{ margin: '5px 0', fontSize: '14px' }}>
-            <strong>Service:</strong> {service_name}
+    <Body style={main}>
+      <Container style={container}>
+        <Section className="text-left">
+          <table style={{ width: '100%' }}>
+            <tbody>
+              <tr>
+                <td style={{ width: '46px' }}></td> 
+                <td style={{ width: '24px' }}>
+                  <Img
+                    alt="Thunder"
+                    height="24"
+                    src="https://thunder.so/images/thunder.png"
+                  />
+                </td>
+                <td style={{ width: '1px' }}></td> 
+                <td>
+                  <Text style={{ fontSize: "16px", fontWeight: "bold" }}>thunder</Text>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </Section>
+        <Section style={box}>
+          <Text style={paragraph}>
+            Hi {username},
           </Text>
-          <Text style={{ margin: '5px 0', fontSize: '14px' }}>
-            <strong>Environment:</strong> {environment_name}
+
+          <Text style={paragraph}>
+            🚀 Your deployment for <strong>{application_name}</strong> has completed successfully.
           </Text>
-          <Text style={{ margin: '5px 0', fontSize: '14px' }}>
-            <strong>Repository:</strong> {repository}
-          </Text>
-          {domain && (
-            <Text style={{ margin: '5px 0', fontSize: '14px' }}>
-              <strong>URL:</strong> <a href={`https://${domain}`} style={{ color: '#3b82f6' }}>{domain}</a>
-            </Text>
+
+          <table style={{ width: '100%' }}>
+            <tbody>
+              <tr>
+                <td style={{ width: '100px', color: '#525f7f' }}>Repository: </td> 
+                <td style={{ color: '#525f7f' }}>{repository}</td> 
+              </tr>
+              <tr>
+                <td style={{ width: '100px', color: '#525f7f' }}>Branch: </td> 
+                <td style={{ color: '#525f7f' }}>{branch}</td> 
+              </tr>
+              <tr>
+                <td style={{ width: '100px', color: '#525f7f' }}>Commit: </td> 
+                <td style={{ color: '#525f7f' }}>{commit_sha?.substring(0, 7)}</td> 
+              </tr>
+              <tr>
+                <td style={{ width: '100px', color: '#525f7f' }}>Message: </td> 
+                <td style={{ color: '#525f7f' }}>{commit_message}</td> 
+              </tr>
+            </tbody>
+          </table>
+        </Section>
+
+        <Section style={box}>
+          <Hr style={hr} />
+
+          {(application_url || domain) && (
+            <Button style={button} href={application_url || `https://${domain}`}>
+              View your application
+            </Button>
           )}
-          <Text style={{ margin: '5px 0', fontSize: '14px' }}>
-            <strong>Deploy ID:</strong> {deploy_id}
+
+          <Text style={paragraph}>
+            Actions performed on your AWS Account:
+          </Text>
+
+          {account_id && region && (
+            <table style={{ width: '100%' }}>
+              <tbody>
+                <tr>
+                  <td style={{ width: '150px', color: '#525f7f' }}>Account ID: </td> 
+                  <td style={{ color: '#525f7f' }}>{account_id}</td> 
+                </tr>
+                <tr>
+                  <td style={{ width: '150px', color: '#525f7f' }}>Region: </td> 
+                  <td style={{ color: '#525f7f' }}>{region}</td> 
+                </tr>
+              </tbody>
+            </table>
+          )}
+
+          <Hr style={hr} />
+          <Text style={paragraph}>
+            Need help? Check our{" "}
+            <Link style={anchor} href="https://thunder.so/docs">
+              documentation
+            </Link>{" "}
+            or visit the{" "}
+            <Link style={anchor} href="https://console.thunder.so">
+              console
+            </Link>.
+          </Text>
+
+          <Link style={anchor} href="https://thunder.so">thunder.so</Link>
+          
+          <Hr style={hr} />
+          <Text style={footer}>
+              CloudBits, Inc. 651 N Broad St., Suite 206, Middletown, Delaware 19709 
           </Text>
         </Section>
-        <Text style={{ fontSize: '14px', color: '#666' }}>
-          Thunder Platform
-        </Text>
       </Container>
     </Body>
   </Html>
 );
+
+const main = {
+  backgroundColor: "#f6f9fc",
+  fontFamily:
+    '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif',
+};
+
+const container = {
+  backgroundColor: "#ffffff",
+  margin: "0 auto",
+  padding: "20px 0 48px",
+  marginBottom: "64px",
+};
+
+const box = {
+  padding: "0 48px",
+};
+
+const hr = {
+  borderColor: "#e6ebf1",
+  margin: "20px 0",
+};
+
+const paragraph = {
+  color: "#525f7f",
+  fontSize: "16px",
+  lineHeight: "24px",
+  textAlign: "left" as const,
+};
+
+const anchor = {
+  color: "#556cd6",
+};
+
+const button = {
+  backgroundColor: "#1a0d0d",
+  borderRadius: "5px",
+  color: "#fff",
+  fontSize: "16px",
+  fontWeight: "bold",
+  textDecoration: "none",
+  textAlign: "center" as const,
+  display: "block",
+  width: "100%",
+  padding: "10px",
+};
+
+const footer = {
+  color: "#8898aa",
+  fontSize: "12px",
+  lineHeight: "16px",
+};
