@@ -5,9 +5,6 @@ import { CodeBuild, CodeBuildClient, BatchGetBuildsCommand } from "@aws-sdk/clie
 import { CloudFormationClient, DescribeStacksCommand } from "@aws-sdk/client-cloudformation";
 import { CodePipelineClient, StartPipelineExecutionCommand } from "@aws-sdk/client-codepipeline";
 import { createClient } from '@supabase/supabase-js';
-import Plunk from '@plunk/node';
-import { render } from '@react-email/render';
-import { StackInstalled } from './emails/stack-installed';
 
 const REGION = process.env.REGION;
 
@@ -16,50 +13,6 @@ const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   throw new Error('Supabase URL and Key not found.');
-}
-
-/**
- * Transactional Email
- */
-async function sendEmail(
-  email: string, 
-  username: string,
-  applicationId: string, 
-  CloudFrontDistributionUrl: string, 
-  accountId: string, 
-  region: string,
-  repo: string,
-  owner: string,
-  branch: string
-) {
-  try {
-
-    const plunkApiKey = process.env.PLUNK_TOKEN;
-
-    // @ts-expect-error
-    const plunk = new Plunk.default(plunkApiKey as string);
-
-    // const body = await render(<StackInstalled applicationId=applicationId CloudFrontDistributionUrl=CloudFrontDistributionUrl />);
-    const body = await render(StackInstalled({ 
-      username,
-      applicationId, 
-      CloudFrontDistributionUrl, 
-      accountId, 
-      region, 
-      repo,
-      owner,
-      branch
-    }));
-    
-    const success = await plunk.emails.send({
-        to: email,
-        subject: "Application installed on your AWS account",
-        body,
-    });
-
-  } catch (error) {
-    throw error;
-  }
 }
 
 /**
@@ -159,9 +112,48 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
         throw error;
     }
 
-    // If the build fails, go no further
+    // If the build fails, insert failure notification and return
     if (buildStatus !== 'SUCCEEDED') {
-      console.log('buildStatus is not SUCCEEDED, skipping...')
+      console.log('buildStatus is not SUCCEEDED, inserting failure notification...')
+      
+      // Fetch the event schema first for build failure notification
+      const { data: eventSchema, error: eventFetchError } = await supabase
+        .from('builds')
+        .select(`
+            *,
+            service:services(*, 
+                environment:environments(*, 
+                    provider:providers(*), 
+                    application:applications(*)
+                )
+            )
+        `)
+        .eq('build_id', buildId)
+        .single();
+
+      if (!eventFetchError && eventSchema) {
+        // Insert build failure notification
+        await supabase
+          .from('notifications')
+          .insert({
+            organization_id: eventSchema.service.environment.application.organization_id,
+            environment_id: eventSchema.service.environment_id,
+            type: 'APP_BUILD_FAILURE',
+            metadata: {
+              application_id: eventSchema.service.environment.application.id,
+              application_name: eventSchema.service.name,
+              repository: `${eventSchema.service.owner}/${eventSchema.service.repo}`,
+              branch: eventSchema.service.branch,
+              commit_sha: build?.sourceVersion || 'unknown',
+              commit_message: 'Build failed',
+              build_id: buildId,
+              error_message: `Build failed with status: ${buildStatus}`,
+              account_id: eventSchema.service.environment.provider.account_id,
+              region: eventSchema.service.environment.region
+            }
+          });
+      }
+      
       return;
     }
 
@@ -300,52 +292,6 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
         throw new Error('Error updating service');
     }
 
-    /** 
-     *  Transactional Email 
-     *  - Fetch user profile using application data
-     *  - Invoke send email
-     */
-    const { data: organizationData, error: organizationFetchError } = await supabase
-        .from('applications')
-        .select(`
-            *,
-            organization:organizations(*,
-                memberships:memberships(*,
-                    user:users(*)
-                )
-            )
-        `)
-        .eq('id', application.id)
-        .single();
-
-    if (organizationFetchError) {
-        throw new Error(`Error fetching organization data: ${organizationFetchError.message}`);
-    }
-
-    if (!organizationData) {
-        throw new Error('Organization data not found for the application.');
-    }
-
-    const organization = organizationData.organization;
-    const memberships = organization.memberships;
-    const userProfile = [organization.memberships[0].user];
-
-    // console.log("User Profile: ", JSON.stringify(userProfile));
-
-    for (const member of userProfile) {
-        await sendEmail(
-          member.email, 
-          member.full_name,
-          application.id, 
-          trimmedOutputs.CloudFrontDistributionUrl,
-          provider.account_id,
-          environment.region,
-          service.pipeline_props.sourceProps.repo,
-          service.pipeline_props.sourceProps.owner,
-          service.pipeline_props.sourceProps.branchOrRef
-        );
-    }
-
     /**
      * Trigger the pipeline
      * 
@@ -363,6 +309,26 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
     const StartPipelineCommand = new StartPipelineExecutionCommand({ name: `${stackPrefix}-pipeline` });
     const StartPipelineResponse = await codePipeline.send(StartPipelineCommand);
     console.log(StartPipelineResponse);
+
+    // Insert build success notification
+    await supabase
+      .from('notifications')
+      .insert({
+        organization_id: application.organization_id,
+        environment_id: environment.id,
+        type: 'APP_BUILD_SUCCESS',
+        metadata: {
+          application_id: application.id,
+          application_name: service.name,
+          application_url: trimmedOutputs.CloudFrontDistributionUrl || trimmedOutputs.ApiGatewayUrl || trimmedOutputs.LoadBalancerDNS,
+          domain: trimmedOutputs.CloudFrontDistributionUrl?.replace('https://', ''),
+          repository: `${service.owner}/${service.repo}`,
+          branch: service.branch,
+          build_id: buildId,
+          account_id: provider.account_id,
+          region: environment.region
+        }
+      });
 
     return {
       statusCode: 200,

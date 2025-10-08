@@ -185,6 +185,27 @@ export const handler = async (event: CodePipelineEvent, context: Context) => {
             console.error("Upsert Error:", errorFailedState);
           }
 
+        // Insert deploy failure notification
+        await supabase
+          .from('notifications')
+          .insert({
+            organization_id: environment.application.organization_id,
+            environment_id: environment.id,
+            type: 'APP_DEPLOY_FAILURE',
+            metadata: {
+              application_id: environment.application.id,
+              application_name: service.name,
+              repository: `${service.owner}/${service.repo}`,
+              branch: service.branch,
+              commit_sha: sourceMetadata.revisionId || 'unknown',
+              commit_message: sourceMetadata.revisionSummary || 'Deploy failed',
+              deploy_id: event.detail["execution-id"],
+              error_message: sourceMetadata.errorMessage || 'Deploy failed',
+              account_id: provider.account_id,
+              region: environment.region
+            }
+          });
+
         break;
       case 'CANCELED':
         break;
@@ -258,6 +279,28 @@ export const handler = async (event: CodePipelineEvent, context: Context) => {
         if (errorSucceededState) {
           console.error("Upsert Error:", errorSucceededState);
         }
+
+        // Insert deploy success notification
+        await supabase
+          .from('notifications')
+          .insert({
+            organization_id: environment.application.organization_id,
+            environment_id: environment.id,
+            type: 'APP_DEPLOY_SUCCESS',
+            metadata: {
+              application_id: environment.application.id,
+              application_name: service.name,
+              application_url: service.resources?.CloudFrontDistributionUrl || service.resources?.ApiGatewayUrl || service.resources?.LoadBalancerDNS,
+              domain: service.resources?.CloudFrontDistributionUrl?.replace('https://', ''),
+              repository: `${service.owner}/${service.repo}`,
+              branch: service.branch,
+              commit_sha: sourceMetadata.revisionId || 'unknown',
+              commit_message: sourceMetadata.revisionSummary || 'Deploy completed successfully',
+              deploy_id: event.detail["execution-id"],
+              account_id: provider.account_id,
+              region: environment.region
+            }
+          });
  
         break;
       default:
