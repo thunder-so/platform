@@ -3,7 +3,12 @@
   <div>
     <UCard class="mt-4">
       <template #header>
-        <h2>Domain Settings</h2>
+        <div class="flex items-center justify-between">
+          <h2>Custom Domains</h2>
+          <div>
+            <UButton size="sm" color="primary" @click.prevent="openAddModal">Add new domain</UButton>
+          </div>
+        </div>
       </template>
 
       <div v-if="loading" class="flex items-center space-x-4 px-4 pt-2">
@@ -15,48 +20,44 @@
       </div>
 
       <div v-else>
-        <!-- Domain type selection -->
-        <div class="px-4 pt-4">
-          <URadioGroup 
-            v-model="mode" 
-            orientation="horizontal"
-            :items="[
-              { label: 'Custom DNS', value: 'custom' },
-              { label: 'AWS Route53', value: 'route53' }
-            ]"
-          />
+        <!-- Domains list -->
+        <div class="p-4">
+          <div v-if="domains.length === 0" class="text-sm text-muted">No domains configured for this environment.</div>
+          <ul v-else class="space-y-3">
+            <li v-for="d in domains" :key="d.id" class="flex items-start justify-between border border-muted py-5 px-6 rounded">
+              <div>
+                <div class="flex items-center gap-6">
+                  <div class="font-medium">{{ d.domain }}</div>
+
+                  <div class="flex items-center gap-3 p-1.5">
+                    <UBadge v-if="d.type === 'route53'" color="info" variant="subtle">ROUTE 53</Ubadge>
+                    <UBadge v-else color="success" variant="subtle">CUSTOM DNS</Ubadge>
+                    <span v-if="d.type === 'custom'">
+                      <UBadge v-if="d.verified" color="success" variant="outline">Verified</UBadge>
+                      <UBadge v-else="d.verified" color="warning" variant="outline">Unverified</UBadge>
+                    </span>
+                  </div>
+                </div>
+                <div v-if="d.type === 'custom'" class="mt-4 w-full">
+                  <p class="text-sm text-muted">Create a CNAME record pointing to 
+                    <span class="font-mono">
+                      <span v-if="targetUrl">{{ targetUrl }}</span>
+                      <span v-else>[Target URL not available yet]</span>
+                    </span>
+                  </p>
+                  <p class="text-sm text-muted mt-2">Once your DNS is configured, verify your settings:</p>
+                  <div class="mt-4">
+                    <UButton size="sm" color="primary" variant="outline"  @click="verifyDomain(d)" :loading="verifyingId === d.id">Verify</UButton>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <!-- <UButton size="sm" color="danger" variant="outlined" @click="openDelete(d)">Delete</UButton> -->
+                <UButton icon="lucide:trash" color="error" variant="ghost" @click="openDelete(d)" />
+              </div>
+            </li>
+          </ul>
         </div>
-
-        <UForm ref="form" :schema="validationSchema" :state="formState" @submit="saveSettings" class="space-y-4 p-4">
-          <!-- Domain field shown for both flows -->
-          <UFormField label="Domain" name="domain">
-            <div class="flex items-center gap-2">
-              <UInput v-model="formState.domain" />
-              <UButton v-if="mode === 'route53'" size="sm" :loading="isLookupLoading" @click.prevent="lookupHostedZone">Lookup</UButton>
-            </div>
-          </UFormField>
-
-          <!-- Route53 specific fields -->
-          <template v-if="mode === 'route53'">
-            <UFormField label="Hosted Zone ID" name="hosted_zone_id">
-              <UInput v-model="formState.hosted_zone_id" />
-            </UFormField>
-
-            <UFormField v-if="service?.stack_type === 'SPA' || service?.stack_type === 'WEB_SERVICE'" label="Global Certificate ARN (for CloudFront)" name="global_certificate_arn">
-              <UInput v-model="formState.global_certificate_arn" />
-            </UFormField>
-
-            <UFormField v-if="service?.stack_type === 'FUNCTION' || service?.stack_type === 'WEB_SERVICE'" label="Regional Certificate ARN (for API Gateway/ALB)" name="regional_certificate_arn">
-              <UInput v-model="formState.regional_certificate_arn" />
-            </UFormField>
-          </template>
-
-          <div class="mt-4 flex items-center gap-3">
-            <UButton type="submit" :loading="isSaving" :disabled="!isDirty">Save</UButton>
-            <UButton v-if="hasDomain" color="danger" variant="outlined" @click="confirmDelete">Delete</UButton>
-            <UButton v-if="hasDomain" variant="text" @click="verifyNow" :loading="isVerifying">Verify</UButton>
-          </div>
-        </UForm>
       </div>
     </UCard>
   </div>
@@ -67,6 +68,8 @@ import { ref, reactive, watch, computed } from 'vue';
 import { isEqual } from 'lodash-es';
 import { z } from 'zod';
 import type { Form } from '#ui/types';
+const overlay = useOverlay();
+import { AppDomainDeleteModal, AppDomainAddModal } from '#components';
 
 const validationSchema = z.object({
   domain: z.string().min(1, 'Domain is required.').regex(/^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$/, 'Invalid domain format.').nullable(),
@@ -92,6 +95,11 @@ const formState = reactive({
   hosted_zone_id: '' as string | null,
 });
 
+const domains = ref<Array<any>>([]);
+const showAdd = ref(false);
+const lookupNoZone = ref(false);
+const verifyingId = ref<string | null>(null);
+
 const originalState = ref({});
 const isSaving = ref(false);
 const loading = ref(true);
@@ -102,86 +110,64 @@ watch(formState, (newState) => {
   isDirty.value = !isEqual(originalState.value, newState);
 }, { deep: true });
 
-const fetchDomain = async (serviceId: string) => {
-    loading.value = true;
-    error.value = null;
+const fetchDomains = async (serviceId: string) => {
+  loading.value = true;
+  error.value = null;
   try {
-    // fetch via trpc services.listDomain if available, otherwise fallback to supabase
-    let domainRow: any = null;
-    try {
-      const res = await $client.services.listDomain?.query({ service_id: serviceId });
-      domainRow = res?.[0] || res || null;
+    // trpc listDomain returns array
+    let rows: any[] = [];
+      try {
+      const res = await $client.services.listDomains?.query({ service_id: serviceId });
+      rows = res || [];
     } catch (err) {
-      // fallback to supabase direct read
       const { data, error } = await supabase
         .from('domains')
-        .select('domain, global_certificate_arn, regional_certificate_arn, hosted_zone_id, verified')
+        .select('*')
         .eq('service_id', serviceId)
-        .maybeSingle();
+        .is('deleted_at', null);
       if (error) throw error;
-      domainRow = data;
+      rows = data || [];
     }
 
-    if (domainRow) {
-      formState.domain = domainRow.domain || '';
-      formState.global_certificate_arn = domainRow.global_certificate_arn || '';
-      formState.regional_certificate_arn = domainRow.regional_certificate_arn || '';
-      formState.hosted_zone_id = domainRow.hosted_zone_id || '';
-      verifiedState.value = !!domainRow.verified;
+    domains.value = rows.map((r: any) => ({
+      id: r.id || r.domain,
+      domain: r.domain,
+      hosted_zone_id: r.hosted_zone_id,
+      global_certificate_arn: r.global_certificate_arn,
+      regional_certificate_arn: r.regional_certificate_arn,
+      verified: !!r.verified,
+      type: r.hosted_zone_id ? 'route53' : 'custom'
+    }));
+
+    // set original form state to first domain if any
+    const first = rows[0];
+    if (first) {
+      formState.domain = first.domain || '';
+      formState.global_certificate_arn = first.global_certificate_arn || '';
+      formState.regional_certificate_arn = first.regional_certificate_arn || '';
+      formState.hosted_zone_id = first.hosted_zone_id || '';
+      verifiedState.value = !!first.verified;
     }
+
     originalState.value = JSON.parse(JSON.stringify(formState));
     isDirty.value = false;
   } catch (e: any) {
     toast.add({ title: 'Error fetching domain settings', description: e.message, color: 'error' });
-    } finally {
-      loading.value = false;
-    }
+  } finally {
+    loading.value = false;
+  }
 };
 
 watch(() => currentService.value?.id, (serviceId, old) => {
   if (serviceId && serviceId !== old) {
-    fetchDomain(serviceId);
+    fetchDomains(serviceId);
   }
 }, { immediate: true });
 
 const environment = computed(() => currentEnvironment.value);
 const service = computed(() => currentService.value);
 
-const saveSettings = async () => {
-  if (!form.value) return;
-  try {
-    await form.value.validate();
-  } catch (e) {
-    return;
-  }
-
-    isSaving.value = true;
-  try {
-    const serviceId = service.value?.id;
-    if (!serviceId) {
-      throw new Error('Service ID not found.');
-    }
-
-    await $client.services.upsertDomain.mutate({
-      service_id: serviceId,
-      domain: formState.domain,
-  hosted_zone_id: formState.hosted_zone_id || null,
-  global_certificate_arn: formState.global_certificate_arn || null,
-  regional_certificate_arn: formState.regional_certificate_arn || null,
-    });
-    toast.add({ title: 'Domain settings saved successfully!', color: 'success' });
-    await fetchDomain(serviceId);
-  } catch (e: any) {
-    toast.add({ title: 'Error saving domain settings', description: e.message, color: 'error' });
-  } finally {
-    isSaving.value = false;
-  }
-};
-
 // UI helpers & extra actions
-const mode = ref<'custom' | 'route53'>('custom');
-const isLookupLoading = ref(false);
-const isVerifying = ref(false);
 const verifiedState = ref(false);
 
 const targetUrl = computed(() => {
@@ -190,77 +176,49 @@ const targetUrl = computed(() => {
   return resources?.CloudFrontDistributionUrl || resources?.ApiGatewayUrl || resources?.LoadBalancerDNS || '';
 });
 
-const lookupHostedZone = async () => {
-  if (!formState.domain) return;
-  if (!environment.value?.provider) {
-    toast.add({ title: 'Provider not configured', description: 'No provider associated with this environment.', color: 'warning' });
-    return;
-  }
-
-  isLookupLoading.value = true;
+const openDelete = async (domain: any) => {
+  const modal = overlay.create(AppDomainDeleteModal, { props: { domain } });
   try {
-    const providerId = environment.value.provider.id;
-    const resp = await $client.services.lookupRoute53.query({ provider_id: providerId, domain: formState.domain });
-    if (resp?.hosted_zone_id) formState.hosted_zone_id = resp.hosted_zone_id;
-    if (resp?.certificates && resp.certificates.length) {
-      // pick first candidate for convenience
-      formState.global_certificate_arn = resp.certificates[0].arn || formState.global_certificate_arn;
+    const result = await modal.open().result;
+    if (result) {
+      try {
+        await $client.services.deleteDomain.mutate({ id: result });
+        toast.add({ title: 'Domain deleted', color: 'neutral' });
+        if (service.value?.id) await fetchDomains(service.value.id);
+      } catch (err: any) {
+        toast.add({ title: 'Domain deletion error', description: err.message, color: 'error' });
+        if (service.value?.id) await fetchDomains(service.value.id);
+      }
     }
-    toast.add({ title: 'Lookup complete', color: 'success' });
-  } catch (err: any) {
-    toast.add({ title: 'Lookup failed', description: err.message, color: 'error' });
-  } finally {
-    isLookupLoading.value = false;
+  } catch (e) {
+    // ignore
   }
 };
 
-const verifyNow = async () => {
-  if (!formState.domain) return;
-  isVerifying.value = true;
+const verifyDomain = async (d: any) => {
+  verifyingId.value = d.id;
   try {
-    const res = await $client.services.verifyDomain.mutate({ domain: formState.domain, service_id: service.value?.id });
+    const res = await $client.services.verifyDomain.mutate({ domain: d.domain, service_id: service.value?.id });
     if (res.verified) {
-      verifiedState.value = true;
       toast.add({ title: 'Domain verified', color: 'success' });
     } else {
       toast.add({ title: 'Not verified', description: 'DNS records not found yet.', color: 'warning' });
     }
+  if (service.value?.id) await fetchDomains(service.value.id);
   } catch (err: any) {
     toast.add({ title: 'Verification error', description: err.message, color: 'error' });
   } finally {
-    isVerifying.value = false;
+    verifyingId.value = null;
   }
 };
 
-const hasDomain = computed(() => {
-  // show Verify/Delete only when a domain is persisted (originalState) rather than as user types
+const openAddModal = async () => {
+  const modal = overlay.create(AppDomainAddModal, { props: { service: service.value, environment: environment.value } });
   try {
-    const orig = (originalState.value as any) || {};
-    return !!orig.domain && String(orig.domain).length > 0;
+    const result = await modal.open().result;
+    if (service.value?.id) await fetchDomains(service.value.id);
   } catch (e) {
-    return false;
-  }
-});
-
-
-const confirmDelete = async () => {
-  // simple confirm dialog pattern (keep UI minimal)
-  if (!confirm('Delete domain? This will soft-delete the record.')) return;
-  try {
-    // soft-delete via supabase update for now; can call trpc deleteDomain if added
-    const { error } = await supabase.from('domains').update({ deleted_at: new Date() }).eq('service_id', service.value?.id);
-    if (error) throw error;
-    toast.add({ title: 'Domain deleted', color: 'success' });
-    // clear form
-    formState.domain = '';
-    formState.hosted_zone_id = '';
-    formState.global_certificate_arn = '';
-    formState.regional_certificate_arn = '';
-    verifiedState.value = false;
-    originalState.value = JSON.parse(JSON.stringify(formState));
-    try { await refreshApplicationSchema(); } catch (e) { /* non-fatal */ }
-  } catch (err: any) {
-    toast.add({ title: 'Delete failed', description: err.message, color: 'error' });
+    // closed or cancelled
   }
 };
 </script>

@@ -259,7 +259,13 @@ export const servicesRouter = router({
       return await db.delete(serviceVariables).where(eq(serviceVariables.id, input.id)).returning();
     }),
 
-  // Mutations for Domains
+  // Domains
+  insertDomain: protectedProcedure
+    .input(domainSchema.omit({ id: true }))
+    .mutation(async ({ input }) => {
+      return await db.insert(domains).values(input).returning();
+    }),
+
   upsertDomain: protectedProcedure
     .input(domainSchema.omit({ id: true }))
     .mutation(async ({ input }) => {
@@ -274,15 +280,25 @@ export const servicesRouter = router({
       return await db.insert(domains).values(input).returning();
     }),
 
-  listDomain: protectedProcedure
+  deleteDomain: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input }) => {
+      const { id } = input;
+      const [deleted] = await db.update(domains).set({ deleted_at: new Date() }).where(eq(domains.id, id)).returning();
+      if (!deleted) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Domain not found' });
+      }
+      return deleted;
+    }),
+
+  listDomains: protectedProcedure
     .input(z.object({ service_id: z.string() }))
     .query(async ({ input }) => {
       const { service_id } = input;
-      const row = await db.query.domains.findFirst({ where: eq(domains.service_id, service_id) });
-      if (!row) return null;
-      // respect soft-delete: return null if deleted_at set
-      if (row.deleted_at) return null;
-      return row;
+      // return all non-deleted domains for the service
+      const rows = await db.query.domains.findMany({ where: eq(domains.service_id, service_id) });
+      if (!rows || rows.length === 0) return [];
+      return rows.filter(r => !r.deleted_at);
     }),
 
   lookupRoute53: protectedProcedure
