@@ -111,7 +111,6 @@ watch(formState, (newState) => {
 }, { deep: true });
 
 const fetchDomains = async (serviceId: string) => {
-  console.log('Fetching domains for service', serviceId);
   loading.value = true;
   error.value = null;
   try {

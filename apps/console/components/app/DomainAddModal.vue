@@ -126,7 +126,6 @@ const fetchServiceDomains = async (serviceId?: string) => {
   try {
     const res = await $client.services.listDomains.query({ service_id: serviceId });
     serviceDomains.value = Array.isArray(res) ? res : (res ? [res] : []);
-    console.log('Fetched service domains:', serviceDomains.value);
   } catch (e) {
     // Best-effort — server validation will still enforce uniqueness
     serviceDomains.value = [];

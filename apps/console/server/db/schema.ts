@@ -22,7 +22,7 @@ export const notificationChannelEnum = pgEnum('NOTIFICATION_CHANNEL', ['EMAIL', 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey(),
   updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }),
-  email: text('email'),
+  email: text('email').unique(),
   full_name: text('full_name'),
   avatar_url: text('avatar_url'),
   website: text('website'),
@@ -300,10 +300,7 @@ export const domains = pgTable('domains', {
   updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
   deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
   service_id: text('service_id').notNull().references(() => services.id),
-}, (table) => ({
-  // Enforce one domain per service at the DB level (barebones unique constraint)
-  // serviceUnique: unique().on(table.service_id),
-}));
+});
 
 export const domainsRelations = relations(domains, ({ one }) => ({
   service: one(services, { fields: [domains.service_id], references: [services.id] }),
