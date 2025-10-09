@@ -10,7 +10,8 @@
         <p v-if="error" class="text-red-500 mt-2">{{ error.message }}</p>
       </div>
     </template>
-    <template #footer>
+    <template #footer="{ close }">
+      <UButton label="Close" color="neutral" variant="outline" @click="close" />
       <UButton type="submit" :loading="inviting">Invite</UButton>
     </template>
   </UModal>

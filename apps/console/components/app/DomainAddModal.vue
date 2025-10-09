@@ -1,7 +1,7 @@
 <template>
   <UModal title="Add domain" :ui="{ footer: 'justify-end' }">
     <template #body>
-      <UForm ref="form" :schema="validationSchema" :state="formState" @submit="submit">
+      <UForm ref="form" :schema="validationSchema" :state="formState" @submit.prevent="submit">
 
         <URadioGroup v-model="mode" orientation="horizontal" variant="table" :items="radioItems" class="mb-4" />
 
@@ -33,7 +33,7 @@
 
     <template #footer="{ close }">
       <UButton label="Cancel" color="neutral" variant="outline" @click="close" />
-      <UButton :loading="isSaving" :disabled="!isDirty || !formIsValid || !isDomainValid" color="primary" @click="handleSubmit(close)">Save</UButton>
+      <UButton :loading="isSaving" :disabled="!isDirty || !formIsValid || !isDomainValid" color="primary" @click="handleSubmit()">Save</UButton>
     </template>
   </UModal>
 </template>
@@ -51,7 +51,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   saved: [domainId: string]
-  close: []
+  close: [boolean]
 }>()
 
 const mode = ref<'custom' | 'route53'>('custom');
@@ -116,7 +116,6 @@ const { $client } = useNuxtApp();
 const supabase = useSupabaseClient();
 const toast = useToast();
 
-
 const serviceDomains = ref<Array<any>>([]);
 
 const fetchServiceDomains = async (serviceId?: string) => {
@@ -127,6 +126,7 @@ const fetchServiceDomains = async (serviceId?: string) => {
   try {
     const res = await $client.services.listDomains.query({ service_id: serviceId });
     serviceDomains.value = Array.isArray(res) ? res : (res ? [res] : []);
+    console.log('Fetched service domains:', serviceDomains.value);
   } catch (e) {
     // Best-effort — server validation will still enforce uniqueness
     serviceDomains.value = [];
@@ -231,13 +231,13 @@ const submit = async () => {
       createdId = (res as any).id || '';
     }
     emit('saved', createdId);
+    emit('close', true);
   } catch (err: any) {
     toast.add({ title: 'Save failed', description: err.message, color: 'error' });
   } finally { isSaving.value = false; }
 };
 
-const handleSubmit = async (close: any) => {
+const handleSubmit = async () => {
   await submit();
-  close();
 };
 </script>

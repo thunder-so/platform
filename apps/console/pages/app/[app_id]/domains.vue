@@ -111,6 +111,7 @@ watch(formState, (newState) => {
 }, { deep: true });
 
 const fetchDomains = async (serviceId: string) => {
+  console.log('Fetching domains for service', serviceId);
   loading.value = true;
   error.value = null;
   try {
@@ -206,7 +207,9 @@ const openAddModal = async () => {
   const modal = overlay.create(AppDomainAddModal, { props: { service: service.value, environment: environment.value } });
   try {
     const result = await modal.open().result;
-    if (service.value?.id) await fetchDomains(service.value.id);
+    if (result && service.value?.id) {
+      await fetchDomains(service.value.id);
+    }
   } catch (e) {
     // closed or cancelled
   }

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { protectedProcedure, router } from '../init';
 import { db } from '~/server/db/db';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import {
   services,
   serviceVariables,
@@ -263,8 +263,10 @@ export const servicesRouter = router({
   insertDomain: protectedProcedure
     .input(domainSchema.omit({ id: true }))
     .mutation(async ({ input }) => {
-      // prevent duplicate domain entries (same domain, not soft-deleted)
-      const existing = await db.query.domains.findFirst({ where: eq(domains.domain, input.domain) });
+      // prevent duplicate domain entries (same domain in service, not soft-deleted)
+      const existing = await db.query.domains.findFirst({ 
+        where: and(eq(domains.domain, input.domain), eq(domains.service_id, input.service_id))
+      });
       if (existing && !existing.deleted_at) {
         throw new TRPCError({ code: 'CONFLICT', message: 'Domain already exists.' });
       }
@@ -302,6 +304,7 @@ export const servicesRouter = router({
       const { service_id } = input;
       // return all non-deleted domains for the service
       const rows = await db.query.domains.findMany({ where: eq(domains.service_id, service_id) });
+      console.log('listDomains rows:', rows);
       if (!rows || rows.length === 0) return [];
       return rows.filter(r => !r.deleted_at);
     }),
