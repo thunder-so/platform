@@ -6,10 +6,11 @@
         <URadioGroup v-model="mode" orientation="horizontal" variant="table" :items="radioItems" class="mb-4" />
 
         <UFormField label="Domain" description="Enter a domain name" name="domain">
-            <div class="flex items-center gap-2">
-                <UInput v-model="formState.domain" class="w-full" />
-                <UButton v-if="mode === 'route53'" size="sm" :loading="isLookupLoading" @click.prevent="lookupHostedZone">Lookup</UButton>
-            </div>
+          <div class="flex items-center gap-2">
+              <UInput v-model="formState.domain" class="w-full" @blur="validateDomain" />
+              <UButton v-if="mode === 'route53'" size="sm" :loading="isLookupLoading" @click.prevent="lookupHostedZone">Lookup</UButton>
+          </div>
+          <p v-if="!isDomainValid" class="mt-2 text-error text-sm">Duplicate domain</p> 
         </UFormField>
 
         <div v-if="mode === 'route53'" class="space-y-4 mt-4">
@@ -32,13 +33,13 @@
 
     <template #footer="{ close }">
       <UButton label="Cancel" color="neutral" variant="outline" @click="close" />
-      <UButton :loading="isSaving" :disabled="!isDirty" color="primary" @click="handleSubmit(close)">Save</UButton>
+      <UButton :loading="isSaving" :disabled="!isDirty || !formIsValid || !isDomainValid" color="primary" @click="handleSubmit(close)">Save</UButton>
     </template>
   </UModal>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, watch } from 'vue';
 import { z } from 'zod';
 import { isEqual } from 'lodash-es';
 import type { Form } from '#ui/types';
@@ -73,6 +74,8 @@ const isSaving = ref(false);
 const isLookupLoading = ref(false);
 const lookupNoZone = ref(false);
 const isDirty = ref(false);
+const isDomainValid = ref(true);
+const domainError = ref('');
 
 watch(() => ({ ...formState }), (ns) => {
   isDirty.value = !isEqual(originalState.value, ns);
@@ -84,12 +87,66 @@ const toast = useToast();
 
 const mode = ref<'custom' | 'route53'>('custom');
 
+const serviceDomains = ref<Array<any>>([]);
+
+const fetchServiceDomains = async (serviceId?: string) => {
+  if (!serviceId) {
+    serviceDomains.value = [];
+    return;
+  }
+  try {
+    const res = await $client.services.listDomains.query({ service_id: serviceId });
+    serviceDomains.value = Array.isArray(res) ? res : (res ? [res] : []);
+  } catch (e) {
+    // Best-effort — server validation will still enforce uniqueness
+    serviceDomains.value = [];
+  }
+};
+
+watch(() => props.service?.id, (id) => {
+  if (id) fetchServiceDomains(id as string);
+}, { immediate: true });
+
+onMounted(() => {
+  if (props.service?.id) fetchServiceDomains(props.service.id);
+});
+
 const radioItems = computed(() => {
-  const hasRoute53 = props.service?.domains?.some((d: any) => d.type === 'route53');
+  const hasRoute53 = Array.isArray(serviceDomains.value) && serviceDomains.value.some((d: any) => d.type === 'route53');
   return [
     { label: 'Custom DNS', value: 'custom', description: 'Use external domain providers.' },
     { label: 'AWS Route53', value: 'route53', description: 'I have a Hosted Zone for this domain name.', disabled: hasRoute53 }
   ];
+});
+
+const validateDomain = async () => {
+  isDomainValid.value = true;
+  domainError.value = '';
+  const val = String(formState.domain || '').toLowerCase().trim();
+  if (!val) {
+    isDomainValid.value = false;
+    domainError.value = 'Domain is required.';
+    return;
+  }
+  // client-side duplicate check (case-insensitive) against fetched serviceDomains
+  if (Array.isArray(serviceDomains.value)) {
+    const dup = serviceDomains.value.find((d: any) => String(d.domain || '').toLowerCase().trim() === val && !d.deleted_at);
+    if (dup) {
+      isDomainValid.value = false;
+      domainError.value = 'This domain is already configured for the service.';
+      return;
+    }
+  }
+};
+
+const formIsValid = computed(() => {
+  // use zod schema to synchronously check the current formState
+  try {
+    const res = validationSchema.safeParse(formState as any);
+    return res.success;
+  } catch {
+    return false;
+  }
 });
 
 const lookupHostedZone = async () => {
@@ -124,6 +181,11 @@ const submit = async () => {
   try {
     const serviceId = props.service?.id;
     if (!serviceId) throw new Error('Service ID missing');
+    // final domain validation before submit
+    await validateDomain();
+    if (!isDomainValid.value) {
+      throw new Error(domainError.value || 'Invalid domain');
+    }
     const res = await $client.services.insertDomain.mutate({
       service_id: serviceId,
       domain: formState.domain as string,

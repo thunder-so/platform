@@ -213,7 +213,7 @@ const verifyDomain = async (d: any) => {
 };
 
 const openAddModal = async () => {
-  const modal = overlay.create(AppDomainAddModal, { props: { service: service.value, environment: environment.value } });
+  const modal = overlay.create(AppDomainAddModal, { props: { service: service.value, environment: environment.value, domains: domains.value } });
   try {
     const result = await modal.open().result;
     if (service.value?.id) await fetchDomains(service.value.id);

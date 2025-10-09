@@ -263,6 +263,11 @@ export const servicesRouter = router({
   insertDomain: protectedProcedure
     .input(domainSchema.omit({ id: true }))
     .mutation(async ({ input }) => {
+      // prevent duplicate domain entries (same domain, not soft-deleted)
+      const existing = await db.query.domains.findFirst({ where: eq(domains.domain, input.domain) });
+      if (existing && !existing.deleted_at) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'Domain already exists.' });
+      }
       return await db.insert(domains).values(input).returning();
     }),
 
