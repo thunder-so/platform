@@ -134,6 +134,13 @@
       "when": 1759981497683,
       "tag": "0018_opposite_hercules",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1760052892228,
+      "tag": "0019_misty_silver_fox",
+      "breakpoints": true
     }
   ]
 }

@@ -1,18 +1,61 @@
--- Thunder Platform Row Level Security Policies
--- Enable RLS on all tables
+CREATE INDEX "installations_user_id_idx" ON "installations" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "memberships_user_id_idx" ON "memberships" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "memberships_organization_id_idx" ON "memberships" USING btree ("organization_id");--> statement-breakpoint
+CREATE INDEX "user_access_tokens_user_id_idx" ON "user_access_tokens" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "user_access_tokens_environment_id_idx" ON "user_access_tokens" USING btree ("environment_id");--> statement-breakpoint
+-- ALTER TABLE "users" ADD CONSTRAINT "users_email_unique" UNIQUE("email");
 
--- Core Tables
+-- Thunder Platform Row Level Security Policies
+-- Drop existing policies first
+DROP POLICY IF EXISTS "Users can view own profile" ON users;
+DROP POLICY IF EXISTS "Users can update own profile" ON users;
+DROP POLICY IF EXISTS "View organizations through membership" ON organizations;
+DROP POLICY IF EXISTS "Update organizations as owner/admin" ON organizations;
+DROP POLICY IF EXISTS "View own memberships" ON memberships;
+DROP POLICY IF EXISTS "View org memberships as admin" ON memberships;
+DROP POLICY IF EXISTS "Manage memberships as owner" ON memberships;
+DROP POLICY IF EXISTS "Insert own memberships" ON memberships;
+DROP POLICY IF EXISTS "Update own memberships" ON memberships;
+DROP POLICY IF EXISTS "Delete own memberships" ON memberships;
+DROP POLICY IF EXISTS "View own installations" ON installations;
+DROP POLICY IF EXISTS "Manage own installations" ON installations;
+DROP POLICY IF EXISTS "Public read access to products" ON products;
+DROP POLICY IF EXISTS "View customers in org" ON customers;
+DROP POLICY IF EXISTS "View subscriptions in org" ON subscriptions;
+DROP POLICY IF EXISTS "Manage subscriptions as owner/admin" ON subscriptions;
+DROP POLICY IF EXISTS "View providers in org" ON providers;
+DROP POLICY IF EXISTS "Manage providers with write access" ON providers;
+DROP POLICY IF EXISTS "View applications in org" ON applications;
+DROP POLICY IF EXISTS "Manage applications with write access" ON applications;
+DROP POLICY IF EXISTS "View environments through app" ON environments;
+DROP POLICY IF EXISTS "Manage environments with write access" ON environments;
+DROP POLICY IF EXISTS "View own access tokens" ON user_access_tokens;
+DROP POLICY IF EXISTS "Manage own access tokens" ON user_access_tokens;
+DROP POLICY IF EXISTS "View services through env" ON services;
+DROP POLICY IF EXISTS "Manage services with write access" ON services;
+DROP POLICY IF EXISTS "View service variables" ON service_variables;
+DROP POLICY IF EXISTS "Manage service variables with write access" ON service_variables;
+DROP POLICY IF EXISTS "View service secrets as admin" ON service_secrets;
+DROP POLICY IF EXISTS "Manage service secrets as admin" ON service_secrets;
+DROP POLICY IF EXISTS "View domains through service" ON domains;
+DROP POLICY IF EXISTS "Manage domains with write access" ON domains;
+DROP POLICY IF EXISTS "View builds through service" ON builds;
+DROP POLICY IF EXISTS "Manage builds with write access" ON builds;
+DROP POLICY IF EXISTS "View destroys as admin" ON destroys;
+DROP POLICY IF EXISTS "Manage destroys as admin" ON destroys;
+DROP POLICY IF EXISTS "View events through service" ON events;
+DROP POLICY IF EXISTS "Manage events with write access" ON events;
+DROP POLICY IF EXISTS "View notifications in org" ON notifications;
+DROP POLICY IF EXISTS "Manage notifications as admin" ON notifications;
+
+-- Enable RLS on all tables
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE memberships ENABLE ROW LEVEL SECURITY;
 ALTER TABLE installations ENABLE ROW LEVEL SECURITY;
-
--- Payment Tables
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
-
--- Platform Infrastructure Tables
 ALTER TABLE providers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE applications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE environments ENABLE ROW LEVEL SECURITY;
@@ -21,13 +64,9 @@ ALTER TABLE services ENABLE ROW LEVEL SECURITY;
 ALTER TABLE service_variables ENABLE ROW LEVEL SECURITY;
 ALTER TABLE service_secrets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE domains ENABLE ROW LEVEL SECURITY;
-
--- Build and Deploy Tables
 ALTER TABLE builds ENABLE ROW LEVEL SECURITY;
 ALTER TABLE destroys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
-
--- Notification Tables
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
 -- Users: Can only access their own record
@@ -54,25 +93,18 @@ CREATE POLICY "Update organizations as owner/admin" ON organizations
     )
   );
 
--- Memberships: View own memberships and org memberships if admin+
+-- Memberships: Simple policies to avoid recursion
 CREATE POLICY "View own memberships" ON memberships
   FOR SELECT USING (user_id = auth.uid());
 
-CREATE POLICY "View org memberships as admin" ON memberships
-  FOR SELECT USING (
-    organization_id IN (
-      SELECT organization_id FROM memberships 
-      WHERE user_id = auth.uid() AND access IN ('OWNER', 'ADMIN') AND deleted_at IS NULL
-    )
-  );
+CREATE POLICY "Insert own memberships" ON memberships
+  FOR INSERT WITH CHECK (user_id = auth.uid());
 
-CREATE POLICY "Manage memberships as owner" ON memberships
-  FOR ALL USING (
-    organization_id IN (
-      SELECT organization_id FROM memberships 
-      WHERE user_id = auth.uid() AND access = 'OWNER' AND deleted_at IS NULL
-    )
-  );
+CREATE POLICY "Update own memberships" ON memberships
+  FOR UPDATE USING (user_id = auth.uid());
+
+CREATE POLICY "Delete own memberships" ON memberships
+  FOR DELETE USING (user_id = auth.uid());
 
 -- Installations: Own installations only
 CREATE POLICY "View own installations" ON installations
@@ -327,9 +359,43 @@ CREATE POLICY "View builds through service" ON builds
     )
   );
 
+CREATE POLICY "Manage builds with write access" ON builds
+  FOR ALL USING (
+    service_id IN (
+      SELECT id FROM services 
+      WHERE environment_id IN (
+        SELECT id FROM environments 
+        WHERE application_id IN (
+          SELECT id FROM applications 
+          WHERE organization_id IN (
+            SELECT organization_id FROM memberships 
+            WHERE user_id = auth.uid() AND access IN ('OWNER', 'ADMIN', 'READ_WRITE') AND deleted_at IS NULL
+          )
+        )
+      )
+    )
+  );
+
 -- Destroys: Through service access (admin+ only)
 CREATE POLICY "View destroys as admin" ON destroys
   FOR SELECT USING (
+    service_id IN (
+      SELECT id FROM services 
+      WHERE environment_id IN (
+        SELECT id FROM environments 
+        WHERE application_id IN (
+          SELECT id FROM applications 
+          WHERE organization_id IN (
+            SELECT organization_id FROM memberships 
+            WHERE user_id = auth.uid() AND access IN ('OWNER', 'ADMIN') AND deleted_at IS NULL
+          )
+        )
+      )
+    )
+  );
+
+CREATE POLICY "Manage destroys as admin" ON destroys
+  FOR ALL USING (
     service_id IN (
       SELECT id FROM services 
       WHERE environment_id IN (
@@ -357,6 +423,23 @@ CREATE POLICY "View events through service" ON events
           WHERE organization_id IN (
             SELECT organization_id FROM memberships 
             WHERE user_id = auth.uid() AND deleted_at IS NULL
+          )
+        )
+      )
+    )
+  );
+
+CREATE POLICY "Manage events with write access" ON events
+  FOR ALL USING (
+    service_id IN (
+      SELECT id FROM services 
+      WHERE environment_id IN (
+        SELECT id FROM environments 
+        WHERE application_id IN (
+          SELECT id FROM applications 
+          WHERE organization_id IN (
+            SELECT organization_id FROM memberships 
+            WHERE user_id = auth.uid() AND access IN ('OWNER', 'ADMIN', 'READ_WRITE') AND deleted_at IS NULL
           )
         )
       )

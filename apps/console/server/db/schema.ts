@@ -22,7 +22,7 @@ export const notificationChannelEnum = pgEnum('NOTIFICATION_CHANNEL', ['EMAIL', 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey(),
   updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }),
-  email: text('email').unique(),
+  email: text('email'),
   full_name: text('full_name'),
   avatar_url: text('avatar_url'),
   website: text('website'),
@@ -55,7 +55,9 @@ export const memberships = pgTable('memberships', {
   updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
   deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
 }, (table) => ({
-  userOrgUnique: unique().on(table.user_id, table.organization_id)
+  userOrgUnique: unique().on(table.user_id, table.organization_id),
+  userIdIdx: index('memberships_user_id_idx').on(table.user_id),
+  organizationIdIdx: index('memberships_organization_id_idx').on(table.organization_id)
 }));
 
 export const membershipsRelations = relations(memberships, ({ one }) => ({
@@ -71,7 +73,9 @@ export const installations = pgTable('installations', {
   deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
   user_id: uuid('user_id').notNull().references(() => users.id),
   metadata: jsonb('metadata').notNull(),
-});
+}, (table) => ({
+  userIdIdx: index('installations_user_id_idx').on(table.user_id)
+}));
 
 export const installationsRelations = relations(installations, ({ one }) => ({
   user: one(users, { fields: [installations.user_id], references: [users.id] }),
@@ -216,7 +220,10 @@ export const userAccessTokens = pgTable('user_access_tokens', {
   created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
   deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
-});
+}, (table) => ({
+  userIdIdx: index('user_access_tokens_user_id_idx').on(table.user_id),
+  environmentIdIdx: index('user_access_tokens_environment_id_idx').on(table.environment_id)
+}));
 
 export const userAccessTokensRelations = relations(userAccessTokens, ({ one }) => ({
   user: one(users, { fields: [userAccessTokens.user_id], references: [users.id] }),
