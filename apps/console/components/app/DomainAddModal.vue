@@ -16,15 +16,15 @@
         <div v-if="mode === 'route53'" class="space-y-4 mt-4">
           <UAlert v-if="lookupNoZone" color="warning" variant="subtle" title="No hosted zone or certificate found for this domain on your AWS account. You can fill the form manually."></UAlert>
 
-          <UFormField label="Hosted Zone ID" name="hosted_zone_id">
+          <UFormField label="Hosted Zone ID" description="Find the hosted zone of your domain." name="hosted_zone_id">
             <UInput v-model="formState.hosted_zone_id" class="w-full" />
           </UFormField>
 
-          <UFormField v-if="service?.stack_type === 'SPA' || service?.stack_type === 'WEB_SERVICE'" label="Global Certificate ARN (for CloudFront)" name="global_certificate_arn">
+          <UFormField v-if="service?.stack_type === 'SPA' || service?.stack_type === 'WEB_SERVICE'" label="Global Certificate ARN" description="The ARN of the global certificate issued for your domain in us-east-1. Required for CloudFront." name="global_certificate_arn">
             <UInput v-model="formState.global_certificate_arn" class="w-full" />
           </UFormField>
 
-          <UFormField v-if="service?.stack_type === 'FUNCTION' || service?.stack_type === 'WEB_SERVICE'" label="Regional Certificate ARN (for API Gateway/ALB)" name="regional_certificate_arn">
+          <UFormField v-if="service?.stack_type === 'FUNCTION' || service?.stack_type === 'WEB_SERVICE'" label="Regional Certificate ARN"  description="The ARN of the regional certificate issued for your domain in the same region as this environment. Required for API Gateway/ALB." name="regional_certificate_arn">
             <UInput v-model="formState.regional_certificate_arn" class="w-full" />
           </UFormField>
         </div>
@@ -54,14 +54,45 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const validationSchema = z.object({
-  domain: z.string().min(1, 'Domain is required.').regex(/^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$/, 'Invalid domain format.').nullable(),
-  hosted_zone_id: z.string().nullable().optional(),
-  global_certificate_arn: z.string().optional().nullable(),
-  regional_certificate_arn: z.string().optional().nullable(),
+const mode = ref<'custom' | 'route53'>('custom');
+
+const validationSchema = computed(() => {
+  const domain = z.string().min(1, 'Domain is required.').regex(/^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$/, 'Invalid domain format.');
+
+  // Hosted zone required when Route53 mode
+  const hostedZone = mode.value === 'route53'
+    ? z.string().min(1, 'Hosted Zone ID is required for Route53')
+    : z.string().nullable().optional();
+
+  // Certificates conditionally required when Route53 + matching stack types
+  let globalCert: any = z.string().optional().nullable();
+  let regionalCert: any = z.string().optional().nullable();
+  const st = props.service?.stack_type;
+  if (mode.value === 'route53') {
+    if (st === 'SPA' || st === 'WEB_SERVICE') {
+      globalCert = z.string().min(1, 'Global certificate ARN is required for this stack type');
+    }
+    if (st === 'FUNCTION' || st === 'WEB_SERVICE') {
+      regionalCert = z.string().min(1, 'Regional certificate ARN is required for this stack type');
+    }
+  }
+
+  return z.object({
+    domain: domain.nullable(),
+    hosted_zone_id: hostedZone.nullable().optional(),
+    global_certificate_arn: globalCert.optional().nullable(),
+    regional_certificate_arn: regionalCert.optional().nullable(),
+  });
 });
 
-const form = ref<Form<z.infer<typeof validationSchema>> | null>(null);
+type DomainFormData = {
+  domain: string | null;
+  hosted_zone_id?: string | null;
+  global_certificate_arn?: string | null;
+  regional_certificate_arn?: string | null;
+};
+
+const form = ref<Form<DomainFormData> | null>(null);
 const formState = reactive({
   domain: '' as string | null,
   global_certificate_arn: '' as string | null,
@@ -85,7 +116,6 @@ const { $client } = useNuxtApp();
 const supabase = useSupabaseClient();
 const toast = useToast();
 
-const mode = ref<'custom' | 'route53'>('custom');
 
 const serviceDomains = ref<Array<any>>([]);
 
@@ -124,7 +154,6 @@ const validateDomain = async () => {
   domainError.value = '';
   const val = String(formState.domain || '').toLowerCase().trim();
   if (!val) {
-    isDomainValid.value = false;
     domainError.value = 'Domain is required.';
     return;
   }
@@ -140,9 +169,9 @@ const validateDomain = async () => {
 };
 
 const formIsValid = computed(() => {
-  // use zod schema to synchronously check the current formState
   try {
-    const res = validationSchema.safeParse(formState as any);
+    const schema = (validationSchema as any).value as any;
+    const res = schema.safeParse(formState as any);
     return res.success;
   } catch {
     return false;
@@ -165,7 +194,7 @@ const lookupHostedZone = async () => {
     if (resp?.certificates && Array.isArray(resp.certificates) && resp.certificates.length) {
       formState.global_certificate_arn = resp.certificates[0]?.arn || formState.global_certificate_arn;
     }
-    toast.add({ title: 'Lookup complete', color: 'success' });
+    toast.add({ title: 'Lookup complete', color: 'neutral' });
   } catch (err: any) {
     toast.add({ title: 'Lookup failed', description: err.message, color: 'error' });
     lookupNoZone.value = true;

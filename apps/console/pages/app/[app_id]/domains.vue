@@ -139,16 +139,6 @@ const fetchDomains = async (serviceId: string) => {
       type: r.hosted_zone_id ? 'route53' : 'custom'
     }));
 
-    // set original form state to first domain if any
-    const first = rows[0];
-    if (first) {
-      formState.domain = first.domain || '';
-      formState.global_certificate_arn = first.global_certificate_arn || '';
-      formState.regional_certificate_arn = first.regional_certificate_arn || '';
-      formState.hosted_zone_id = first.hosted_zone_id || '';
-      verifiedState.value = !!first.verified;
-    }
-
     originalState.value = JSON.parse(JSON.stringify(formState));
     isDirty.value = false;
   } catch (e: any) {
@@ -213,7 +203,7 @@ const verifyDomain = async (d: any) => {
 };
 
 const openAddModal = async () => {
-  const modal = overlay.create(AppDomainAddModal, { props: { service: service.value, environment: environment.value, domains: domains.value } });
+  const modal = overlay.create(AppDomainAddModal, { props: { service: service.value, environment: environment.value } });
   try {
     const result = await modal.open().result;
     if (service.value?.id) await fetchDomains(service.value.id);
