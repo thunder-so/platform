@@ -127,6 +127,13 @@
       "when": 1759934009463,
       "tag": "0017_amusing_leopardon",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1759981497683,
+      "tag": "0018_opposite_hercules",
+      "breakpoints": true
     }
   ]
 }

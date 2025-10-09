@@ -1,14 +1,15 @@
 import { z } from 'zod';
 import { protectedProcedure, router } from '../init';
 import { db } from '~/server/db/db';
+import { eq } from 'drizzle-orm';
 import {
   services,
   serviceVariables,
   domains,
+  providers,
   builds,
   events,
 } from '~/server/db/schema';
-import { eq } from 'drizzle-orm';
 import {
   serviceVariableSchema,
   domainSchema,
@@ -18,16 +19,20 @@ import {
   type ProviderSchema,
 } from '~/server/validators/common';
 import { PlatformLibrary } from '~/server/lib/platform.library';
-import { triggerPipeline, getCloudWatchLogs, getCloudWatchLogsFromGroup } from '~/server/lib/provider.library';
+import { 
+  triggerPipeline,   
+  getCloudWatchLogs, 
+  getCloudWatchLogsFromGroup,
+  lookupHostedZoneAndCerts,
+  verifyDomainDns,
+} from '~/server/lib/provider.library';
 import { TRPCError } from '@trpc/server';
 import GithubLibrary from '~/server/lib/github.library';
 
-// Schema for creating a variable (omits id)
-const createServiceVariableSchema = serviceVariableSchema.omit({ id: true });
+// Schema for creating a variable (omits id) - require service_id for DB insert
+const createServiceVariableSchema = serviceVariableSchema.omit({ id: true }).extend({ service_id: z.string() });
 // Schema for updating a variable (requires id)
-const updateServiceVariableSchema = serviceVariableSchema.extend({
-  id: z.string(),
-});
+const updateServiceVariableSchema = serviceVariableSchema.extend({ id: z.string() });
 
 export const servicesRouter = router({
   getBuildLogs: protectedProcedure
@@ -267,6 +272,41 @@ export const servicesRouter = router({
         return await db.update(domains).set(data).where(eq(domains.id, existingDomain.id)).returning();
       }
       return await db.insert(domains).values(input).returning();
+    }),
+
+  listDomain: protectedProcedure
+    .input(z.object({ service_id: z.string() }))
+    .query(async ({ input }) => {
+      const { service_id } = input;
+      const row = await db.query.domains.findFirst({ where: eq(domains.service_id, service_id) });
+      if (!row) return null;
+      // respect soft-delete: return null if deleted_at set
+      if (row.deleted_at) return null;
+      return row;
+    }),
+
+  lookupRoute53: protectedProcedure
+    .input(z.object({ provider_id: z.string(), domain: z.string() }))
+    .query(async ({ input }) => {
+      const { provider_id, domain } = input;
+      const provider = await db.query.providers.findFirst({ where: eq(providers.id, provider_id) });
+      if (!provider) throw new TRPCError({ code: 'NOT_FOUND', message: 'Provider not found.' });
+
+      const result = await lookupHostedZoneAndCerts(provider as any, domain);
+      return result;
+    }),
+
+  verifyDomain: protectedProcedure
+    .input(z.object({ domain: z.string(), expectedCname: z.string().optional(), expectedTxt: z.string().optional(), service_id: z.string().optional() }))
+    .mutation(async ({ input }) => {
+      const { domain, expectedCname, expectedTxt, service_id } = input;
+      const result = await verifyDomainDns(domain, expectedCname, expectedTxt);
+
+      if (result.verified && service_id) {
+        await db.update(domains).set({ verified: true, verified_at: new Date(), verification_method: result.method, verification_meta: result }).where(eq(domains.service_id, service_id));
+      }
+
+      return result;
     }),
 
   upgradeStack: protectedProcedure

@@ -3,6 +3,9 @@ import { SSMClient, PutParameterCommand } from '@aws-sdk/client-ssm';
 import { CodePipelineClient, StartPipelineExecutionCommand } from '@aws-sdk/client-codepipeline';
 import { SecretsManagerClient, CreateSecretCommand, UpdateSecretCommand } from '@aws-sdk/client-secrets-manager';
 import { CloudWatchLogsClient, GetLogEventsCommand, FilterLogEventsCommand } from '@aws-sdk/client-cloudwatch-logs';
+import { Route53Client, ListHostedZonesCommand } from '@aws-sdk/client-route-53';
+import { ACMClient, ListCertificatesCommand } from '@aws-sdk/client-acm';
+import dns from 'dns/promises';
 import { TRPCError } from '@trpc/server';
 import { db } from '~/server/db/db';
 import { providers, services } from '../db/schema';
@@ -233,5 +236,56 @@ export async function getCloudWatchLogsFromGroup(provider: ProviderSchema, logGr
             code: 'INTERNAL_SERVER_ERROR',
             message: 'Failed to fetch logs from CloudWatch log group.',
         });
+    }
+}
+
+// Lookup hosted zone ID and ACM certificates for a domain using the provider credentials
+export async function lookupHostedZoneAndCerts(provider: ProviderSchema | ManualProvider, domain: string) {
+    try {
+        const route53 = await getAwsClient(Route53Client, provider);
+        const acm = await getAwsClient(ACMClient, provider);
+
+        // Find hosted zone by listing zones and matching suffix
+        const hzResp = await route53.send(new ListHostedZonesCommand({}));
+        const hostedZones = hzResp.HostedZones || [];
+        const matched = hostedZones.find(z => {
+            const name = (z.Name || '').replace(/\.$/, '');
+            return domain === name || domain.endsWith(`.${name}`);
+        });
+        const hosted_zone_id = matched?.Id ? matched.Id.split('/').pop() : undefined;
+
+        // List ACM certificates and try to match by domain name
+        const certsResp = await acm.send(new ListCertificatesCommand({}));
+        const certs = (certsResp.CertificateSummaryList || []).filter(c => {
+            const certDomain = c.DomainName || '';
+            return certDomain === domain || certDomain.endsWith(domain) || domain.endsWith(certDomain);
+        }).map(c => ({ arn: c.CertificateArn, domain: c.DomainName }));
+
+        return { hosted_zone_id, certificates: certs };
+    } catch (error) {
+        console.error('Error in lookupHostedZoneAndCerts:', error);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to lookup hosted zone or certificates.' });
+    }
+}
+
+// Verify DNS records for a domain. Tries CNAME then TXT if expected values provided
+export async function verifyDomainDns(domain: string, expectedCname?: string, expectedTxt?: string) {
+    try {
+        if (expectedCname) {
+            const cnames = await dns.resolveCname(domain).catch(() => []);
+            if (cnames && cnames.includes(expectedCname)) return { verified: true, method: 'CNAME', records: cnames };
+        }
+
+        if (expectedTxt) {
+            const txts = await dns.resolveTxt(domain).catch(() => []);
+            // resolveTxt returns string[][]
+            const flat = txts.flat().map(s => s.toString());
+            if (flat.includes(expectedTxt)) return { verified: true, method: 'TXT', records: flat };
+        }
+
+        return { verified: false };
+    } catch (error) {
+        console.error('Error verifying domain DNS:', error);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to verify domain DNS.' });
     }
 }

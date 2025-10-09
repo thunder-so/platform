@@ -289,14 +289,21 @@ export const serviceSecretsRelations = relations(serviceSecrets, ({ one }) => ({
 export const domains = pgTable('domains', {
   id: uuid('id').defaultRandom().primaryKey(),
   domain: text('domain').notNull(),
-  hosted_zone_id: text('hosted_zone_id').notNull(),
+  hosted_zone_id: text('hosted_zone_id'),
   global_certificate_arn: text('global_certificate_arn'),
   regional_certificate_arn: text('regional_certificate_arn'),
+  verified: boolean('verified').default(false).notNull(),
+  verified_at: timestamp('verified_at', { withTimezone: true, precision: 6 }),
+  verification_method: text('verification_method'),
+  verification_meta: jsonb('verification_meta'),
   created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
   deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
   service_id: text('service_id').notNull().references(() => services.id),
-});
+}, (table) => ({
+  // Enforce one domain per service at the DB level (barebones unique constraint)
+  // serviceUnique: unique().on(table.service_id),
+}));
 
 export const domainsRelations = relations(domains, ({ one }) => ({
   service: one(services, { fields: [domains.service_id], references: [services.id] }),
@@ -405,6 +412,9 @@ export type ServiceVariable = typeof serviceVariables.$inferSelect;
 export type NewServiceVariable = typeof serviceVariables.$inferInsert;
 export type ServiceSecret = typeof serviceSecrets.$inferSelect;
 export type NewServiceSecret = typeof serviceSecrets.$inferInsert;
+
+export type Domain = typeof domains.$inferSelect;
+export type NewDomain = typeof domains.$inferInsert;
 
 
 

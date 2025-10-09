@@ -168,9 +168,15 @@ export type WebServiceMetadata = z.infer<typeof WebServiceMetadataSchema>;
 export const domainSchema = z.object({
   id: z.string(),
   domain: z.string(),
-  hosted_zone_id: z.string(),
-  global_certificate_arn: z.string(),
-  regional_certificate_arn: z.string().nullable(),
+  hosted_zone_id: z.string().nullable().optional(),
+  global_certificate_arn: z.string().nullable().optional(),
+  regional_certificate_arn: z.string().nullable().optional(),
+  verified: z.boolean().optional(),
+  verified_at: z.preprocess((arg) => {
+    if (typeof arg == 'string' || arg instanceof Date) return new Date(arg);
+  }, z.date()).nullable().optional(),
+  verification_method: z.string().nullable().optional(),
+  verification_meta: z.any().nullable().optional(),
   service_id: z.string(),
 });
 
