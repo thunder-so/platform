@@ -29,7 +29,7 @@ export class ProviderService extends Stack {
       depsLockFilePath: path.join(__dirname, '../../bun.lock'),
       environment: {
         SUPABASE_URL: process.env.SUPABASE_URL || '',
-        SUPABASE_KEY: process.env.SUPABASE_KEY || '',
+        SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY || '',
         NODE_OPTIONS: '--enable-source-maps',
       },
     });

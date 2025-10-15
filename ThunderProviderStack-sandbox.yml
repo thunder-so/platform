@@ -25,7 +25,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              AWS: '665186350589'
+              AWS: '047719662375'
             Action: sts:AssumeRole
             Condition:
               StringEquals:
@@ -36,7 +36,7 @@ Resources:
     Type: 'Custom::ThunderProvider'
     DependsOn: ThunderRole
     Properties:
-      ServiceToken: 'arn:aws:lambda:us-east-1:665186350589:function:ProviderFunction-sandbox'
+      ServiceToken: 'arn:aws:lambda:us-east-1:047719662375:function:ProviderFunction-sandbox'
       Alias: !Ref Alias
       AccountId: !Ref 'AWS::AccountId'
       Region: !Ref 'AWS::Region'
