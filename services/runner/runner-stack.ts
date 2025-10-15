@@ -183,12 +183,13 @@ export class RunnerService extends Stack {
       // Allow the Console (when assuming this role) to send messages to the runner queue
       runnerQueue.grantSendMessages(crossAccountRole);
 
-      // Add SSM read permissions and KMS decrypt for secure parameters used by builds
+      // Add SSM read/write permissions and KMS decrypt for secure parameters used by builds
       crossAccountRole.addToPolicy(new PolicyStatement({
         actions: [
           'ssm:GetParameter',
           'ssm:GetParameters',
           'ssm:GetParameterHistory',
+          'ssm:PutParameter',
           'kms:Decrypt',
         ],
         resources: ['arn:aws:ssm:*:*:parameter/thunder/*'],

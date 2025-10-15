@@ -53,3 +53,36 @@ RUNNER_SERVICE=https://sqs.us-east-1.amazonaws.com/222233334444/RunnerQueue-sand
 ```
 
 With `RUNNER_ASSUME_ROLE_ARN` set, the Console `PlatformLibrary.getCloudWatchLogs` will assume that role (via STS) and query CloudWatch in the Runner account. If the env var is not set, the Console will query CloudWatch with its own credentials (useful for single-account deployments).
+
+The console lambda needs the following permissions to perform platform tasks as `PlatformPermissionsPolicy`
+
+```JSON
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "sts:AssumeRole",
+        "sqs:SendMessage",
+        "ssm:PutParameter",
+        "ssm:GetParameter",
+        "ssm:GetParameters",
+        "ssm:GetParameterHistory",
+        "logs:GetLogEvents",
+        "kms:Decrypt",
+        "kms:Encrypt",
+        "kms:GenerateDataKey"
+      ],
+      "Resource": [
+        "arn:aws:sts::*:role/*",
+        "arn:aws:sqs:*:*:*",
+        "arn:aws:ssm:*:*:parameter/thunder/*",
+        "arn:aws:logs:*:*:*",
+        "arn:aws:kms:*:*:key/*"
+      ]
+    }
+  ]
+}
+
+```
