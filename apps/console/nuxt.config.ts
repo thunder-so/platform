@@ -6,7 +6,7 @@ const currentDir = dirname(fileURLToPath(import.meta.url))
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-05-15',
-  devtools: { enabled: true },
+  devtools: { enabled: false },
   runtimeConfig: {
     public: {
       siteUrl: process.env.SITE_URL || 'http://localhost:3000',
@@ -18,18 +18,20 @@ export default defineNuxtConfig({
       polarAccessToken: process.env.POLAR_ACCESS_TOKEN,
       polarCheckoutSuccessUrl: process.env.POLAR_CHECKOUT_SUCCESS_URL,
       polarServer: process.env.POLAR_SERVER || 'sandbox',
-      polarWebhookSecret: process.env.POLAR_WEBHOOK_SECRET,
     }
   },
   build: {
-    transpile: ['trpc-nuxt', '@trpc/client', '@trpc/server'],
+    transpile: [
+      'trpc-nuxt', 
+      '@trpc/client', 
+      '@trpc/server',
+    ],
   },
   modules: [
     '@nuxtjs/tailwindcss',
     '@nuxt/ui',
     '@nuxtjs/supabase',
     '@polar-sh/nuxt',
-    '@pinia/nuxt',
     '@nuxt/icon'
   ],
   css: ['~/assets/css/main.css'],
@@ -78,12 +80,33 @@ export default defineNuxtConfig({
         target: 'esnext',
       },
     },
+    inlineDynamicImports: false,
     experimental: {
-      wasm: true
+      wasm: false,
+      legacyExternals: true,
+    },
+    routeRules: {
+      '/api/trpc/**': {
+        cors: true,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
     },
     // Exclude
     externals: {
-      inline: []
+      inline: [
+        '@polar-sh/nuxt', 
+        // '@polar-sh/sdk',
+        '@aws-sdk/client-acm',
+        '@aws-sdk/client-cloudwatch-logs',
+        '@aws-sdk/client-route-53',
+        '@aws-sdk/client-sqs',
+        '@aws-sdk/client-ssm',
+        '@aws-sdk/client-sts',
+        '@aws-sdk/core',
+        'perfect-debounce'
+      ]
     }
   }
 });

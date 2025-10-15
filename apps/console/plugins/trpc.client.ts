@@ -7,7 +7,7 @@ export default defineNuxtPlugin(() => {
   
   const trpc = createTRPCNuxtClient<AppRouter>({
     links: [
-      httpBatchLink({
+      httpLink({
         url: '/api/trpc',
         async headers() {          
           const { data: { session } } = await supabase.auth.getSession()

@@ -11,9 +11,19 @@ type ListCommitsResponse = Endpoints['GET /repos/{owner}/{repo}/commits']['respo
 
 export default class GithubLibrary {
     private appId = process.env.GITHUB_APP_ID;
-    private privateKey = process.env.GITHUB_PRIVATE_KEY;
+    private privateKey = this.base64decode(process.env.GITHUB_PRIVATE_KEY);
     private clientId = process.env.GH_CLIENT_ID;
     private clientSecret = process.env.GITHUB_CLIENT_SECRET;
+
+    private base64decode(key: string | undefined): string {
+        if (!key) return '';
+        
+        try {
+            return Buffer.from(key, 'base64').toString('utf-8');
+        } catch {
+            return key.replace(/\\n/g, '\n');
+        }
+    }
 
     /**
      * Get installation metadata from Octokit

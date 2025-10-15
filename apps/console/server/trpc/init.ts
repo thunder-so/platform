@@ -4,14 +4,19 @@ import { H3Event, parseCookies } from 'h3';
 import { serverSupabaseUser, serverSupabaseClient } from '#supabase/server'
 
 export const createTRPCContext = async (event: H3Event) => {
-  const user = await serverSupabaseUser(event)
-  const supabase = await serverSupabaseClient(event)
-  const cookies = parseCookies(event)
-  const authorization = getHeader(event, 'authorization')
+  try {
+    const user = await serverSupabaseUser(event)
+    const supabase = await serverSupabaseClient(event)
+    const cookies = parseCookies(event) || {}
+    const authorization = getHeader(event, 'authorization') || ''
 
-  // console.log('createTRPCContext', { user, supabase, cookies, authorization })
+    // console.log('createTRPCContext', { user, supabase, cookies, authorization })
 
-  return { user, supabase, cookies, event, authorization }
+    return { user, supabase, cookies, event, authorization }
+  } catch (error) {
+    console.error('Error creating tRPC context:', error)
+    return { user: null, supabase: null, cookies: {}, event, authorization: '' }
+  }
 }
 
 type Context = Awaited<ReturnType<typeof createTRPCContext>>;

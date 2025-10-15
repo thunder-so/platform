@@ -1,8 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'npm:@supabase/supabase-js'
-// import { validateEvent, WebhookVerificationError } from 'npm:@polar-sh/sdk/webhooks'
 
-// const polarWebhookSecret = Deno.env.get('POLAR_WEBHOOK_SECRET')!
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
