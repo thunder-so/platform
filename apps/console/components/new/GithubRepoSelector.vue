@@ -43,7 +43,15 @@
               <img :src="repo.owner.avatar_url" alt="Repository owner" class="repo-avatar" />
               <span class="repo-name">{{ repo.owner.login }} / {{ repo.name }}</span>
             </div>
-            <UButton size="md" color="primary" variant="outline" @click="selectRepository(repo, repo.installationId)">Select</UButton>
+            <UButton 
+              size="md" 
+              color="primary" 
+              variant="outline" 
+              :loading="selectedRepoId === repo.id"
+              @click="selectRepository(repo, repo.installationId)"
+            >
+              Select
+            </UButton>
           </div>
         </div>
       </div>
@@ -91,6 +99,7 @@ const allRepositories = ref<any[]>([]);
 const pendingRepositories = ref(false);
 const searchQuery = ref('');
 const selectedInstallation = ref<string | 'all'>('all'); // Ensure type compatibility
+const selectedRepoId = ref<number | null>(null);
 
 const installationItems = computed(() => {
   return [
@@ -151,7 +160,7 @@ const filteredRepositories = computed(() => {
 const emit = defineEmits(['selected']);
 
 const selectRepository = (repo: any, installationId: number) => {
-  // setRepo({ ...repo, installationId });
+  selectedRepoId.value = repo.id;
   emit('selected', {
     owner: repo.owner?.login || repo.owner,
     repo,

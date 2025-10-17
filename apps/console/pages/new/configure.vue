@@ -72,7 +72,8 @@
             <UButton 
               size="lg" 
               :disabled="hasValidationErrors"
-              @click="router.push('/new/deploy')"
+              :loading="isNavigating"
+              @click="handleContinue"
             >
               Continue
             </UButton>
@@ -119,12 +120,18 @@ const service = computed(() => applicationSchema.value.environments?.[0]?.servic
 
 const form = ref();
 const serviceConfig = ref();
+const isNavigating = ref(false);
 
 const hasValidationErrors = computed(() => {
   const formErrors = form.value?.errors?.length > 0;
   const serviceErrors = serviceConfig.value?.hasErrors;
   return formErrors || serviceErrors;
 });
+
+const handleContinue = async () => {
+  isNavigating.value = true;
+  await router.push('/new/deploy');
+};
 
 onMounted(async () => {
   // If route contains repo info, let the composable initialize applicationSchema and fetch branches/build settings

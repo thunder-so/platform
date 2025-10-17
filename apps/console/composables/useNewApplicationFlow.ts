@@ -77,10 +77,24 @@ const stackVersionMap = appConfig.stacks.reduce((acc, stack) => {
   return acc;
 }, {} as Record<ValidStackType, string>);
 
+const useLocalStorage = <T>(key: string, defaultValue: T) => {
+  const storedValue = process.client ? localStorage.getItem(key) : null;
+  const initialValue = storedValue ? JSON.parse(storedValue) : defaultValue;
+  const state = ref<T>(initialValue);
+  
+  watch(state, (newValue) => {
+    if (process.client) {
+      localStorage.setItem(key, JSON.stringify(newValue));
+    }
+  }, { deep: true });
+  
+  return state;
+};
+
 export const useNewApplicationFlow = () => {
   const { $client } = useNuxtApp();
   const route = useRoute();
-  const applicationSchema = useCookie<Partial<ApplicationInputSchema>>('newApplicationSchema', { default: () => ({}) });
+  const applicationSchema = useLocalStorage<Partial<ApplicationInputSchema>>('newApplicationSchema', {});
   const oAuthError = useState<boolean>('newApplicationOAuthError', () => false);
 
   const isLoading = ref(false);
@@ -312,6 +326,9 @@ export const useNewApplicationFlow = () => {
 
   const clearApplicationSchema = () => {
     applicationSchema.value = {};
+    if (process.client) {
+      localStorage.removeItem('newApplicationSchema');
+    }
   };
 
   const setUat = (uat: UserAccessToken | undefined) => {
