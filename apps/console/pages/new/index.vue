@@ -22,9 +22,9 @@
         <UButton
           icon="i-uil-github"
           size="lg"
-          :to="githubInstallUrl"
+          @click="handleInstallApp"
+          :loading="installing"
           label="Install GitHub App"
-          external
         />
       </UCard>
     </div>
@@ -37,8 +37,7 @@ import GithubRepoSelector from '~/components/new/GithubRepoSelector.vue';
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
 
 definePageMeta({
-  layout: 'new',
-  middleware: ['github-middleware-client']
+  layout: 'new'
 });
 
 const { clearApplicationSchema, applicationSchema } = useNewApplicationFlow();
@@ -51,20 +50,11 @@ const config = useRuntimeConfig();
 const installations = ref<any[]>([]);
 const loading = ref(true);
 const error = ref<{ message: string } | null>(null);
+const installing = ref(false);
+const toast = useToast();
+const { openInstallationPopup } = useGithubPopup();
 
 provide('installations', installations);
-
-const githubApp = computed(() => config.public.GITHUB_APP);
-const base = ref('');
-
-if (process.client) {
-    base.value = window.location.origin;
-}
-
-const githubInstallUrl = computed(() => {
-  if (!githubApp.value || !base.value) return '';
-  return `https://github.com/apps/${githubApp.value}/installations/new?redirect_uri=${base.value}/new`;
-});
 
 const router = useRouter();
 const route = useRoute();
@@ -103,6 +93,28 @@ const fetchInstallations = async () => {
     loading.value = false;
   }
 };
+
+async function handleInstallApp() {
+  installing.value = true;
+  try {
+    await openInstallationPopup();
+    await fetchInstallations();
+    toast.add({
+      title: 'GitHub App installed successfully',
+      color: 'success'
+    });
+  } catch (error: any) {
+    if (error.message !== 'Installation cancelled') {
+      toast.add({
+        title: 'Installation failed',
+        description: error.message,
+        color: 'error'
+      });
+    }
+  } finally {
+    installing.value = false;
+  }
+}
 
 onMounted(() => {
   fetchInstallations();

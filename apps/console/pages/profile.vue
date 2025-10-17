@@ -29,9 +29,9 @@
       </template>
       <div class="flex justify-between items-center mb-4">
         <UButton
-          icon="i-lucide-plus" 
-          :to="`https://github.com/apps/${githubApp}/installations/new?redirect_uri=${base}/profile`"
-          target="_blank"
+          icon="i-lucide-plus"
+          @click="handleInstallApp"
+          :loading="installing"
         >
           Import repositories
         </UButton>
@@ -91,10 +91,11 @@ const savingPreferences = ref(false)
 const hasPreferenceChanges = computed(() => {
   return emailNotificationsEnabled.value !== originalEmailNotificationsEnabled.value
 })
+const installing = ref(false)
+const { openInstallationPopup } = useGithubPopup()
 
 definePageMeta({
-  layout: 'org',
-  middleware: ['github-middleware-client']
+  layout: 'org'
 })
 
 const githubApp = useRuntimeConfig().public.GITHUB_APP
@@ -164,20 +165,47 @@ const columns = [
 ]
 
 
-  if (user.value) {
-    state.newDisplayName = user.value.user_metadata?.full_name || ''
-    const { data, error } = await supabase
-      .from('installations')
-      .select('*')
-      .eq('user_id', user.value.id)
-      .is('deleted_at', null)
-    if (error) {
-      console.error('Error fetching installations:', error)
-      errorMessage.value = 'Failed to fetch installations.'
-    } else {
-      installations.value = data
+if (user.value) {
+  state.newDisplayName = user.value.user_metadata?.full_name || ''
+  await fetchInstallations()
+  await loadEmailPreference()
+}
+
+async function fetchInstallations() {
+  if (!user.value) return
+  const { data, error } = await supabase
+    .from('installations')
+    .select('*')
+    .eq('user_id', user.value.id)
+    .is('deleted_at', null)
+  if (error) {
+    console.error('Error fetching installations:', error)
+    errorMessage.value = 'Failed to fetch installations.'
+  } else {
+    installations.value = data
+  }
+}
+
+async function handleInstallApp() {
+  installing.value = true
+  try {
+    await openInstallationPopup()
+    await fetchInstallations()
+    toast.add({
+      title: 'GitHub App installed successfully',
+      color: 'success'
+    })
+  } catch (error: any) {
+    if (error.message !== 'Installation cancelled') {
+      toast.add({
+        title: 'Installation failed',
+        description: error.message,
+        color: 'error'
+      })
     }
-    await loadEmailPreference()
+  } finally {
+    installing.value = false
+  }
 }
 
 async function loadEmailPreference() {

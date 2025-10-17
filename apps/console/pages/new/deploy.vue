@@ -55,7 +55,7 @@
           <UButton 
             size="lg"
             icon="mdi:github"
-            @click="authorizeGithub" 
+            @click="handleAuthorize" 
             :loading="authorizing" 
             :disabled="authorizing">Authorize with GitHub
           </UButton>
@@ -94,16 +94,15 @@
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
 
 definePageMeta({
-  layout: 'new',
-  middleware: ['github-middleware-client']
+  layout: 'new'
 });
 
-const { applicationSchema, oAuthError, setOAuthError, clearApplicationSchema } = useNewApplicationFlow();
+const { applicationSchema, oAuthError, setOAuthError, clearApplicationSchema, setUat } = useNewApplicationFlow();
 const { selectedOrganization } = useMemberships()
-const config = useRuntimeConfig();
-const user = useSupabaseUser();
 const { $client } = useNuxtApp();
 const router = useRouter();
+const toast = useToast();
+const { openOAuthPopup } = useGithubPopup();
 
 if (!applicationSchema.value.name) {
   navigateTo('/new');
@@ -116,17 +115,28 @@ const hasUat = computed(() => {
   return !!applicationSchema.value.environments?.[0]?.user_access_token;
 });
 
-const authorizeGithub = () => {
+const handleAuthorize = async () => {
   setOAuthError(false);
   authorizing.value = true;
-  const githubClientId = config.public.GITHUB_CLIENT_ID;
-  const redirectUri = `${window.location.origin}/new/deploy`;
-  // A random string for CSRF protection.
-  const state = Math.random().toString(36).substring(7);
-  const scope = 'user,repo';
-  const login = user.value?.user_metadata?.user_name;
-  const url = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&state=${state}&scope=${scope}&login=${login}&allow_signup=false&redirect_uri=${redirectUri}`;
-  window.location.href = url;
+  try {
+    const userAccessToken = await openOAuthPopup();
+    setUat(userAccessToken);
+    toast.add({
+      title: 'GitHub authorization successful',
+      color: 'success'
+    });
+  } catch (error: any) {
+    if (error.message !== 'OAuth cancelled') {
+      setOAuthError(true);
+      toast.add({
+        title: 'Authorization failed',
+        description: error.message,
+        color: 'error'
+      });
+    }
+  } finally {
+    authorizing.value = false;
+  }
 };
 
 const installApplication = async () => {
