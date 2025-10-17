@@ -218,7 +218,9 @@ export const useNewApplicationFlow = () => {
       let metadata = { ...STACK_DEFAULTS.SPA };
       try {
         const buildSettings = await $client.github.scanRepository.query({ owner, repo, installation_id });
-        if (buildSettings) {
+        if (buildSettings?.success === false) {
+          scanError.value = buildSettings.message;
+        } else if (buildSettings) {
           metadata.buildProps = { ...metadata.buildProps, ...buildSettings };
         }
       } catch (e: any) {
@@ -237,7 +239,9 @@ export const useNewApplicationFlow = () => {
       let metadata = { ...STACK_DEFAULTS.FUNCTION };
       try {
         const buildSettings = await $client.github.scanRepository.query({ owner, repo, installation_id });
-        if (buildSettings) {
+        if (buildSettings?.success === false) {
+          scanError.value = buildSettings.message;
+        } else if (buildSettings) {
           metadata.buildProps = { ...metadata.buildProps, ...buildSettings };
         }
         const dockerFileStatus = await $client.github.scanForDockerfile.query({ owner, repo, installation_id });
@@ -261,9 +265,11 @@ export const useNewApplicationFlow = () => {
     let metadata = { ...STACK_DEFAULTS.WEB_SERVICE };
     try {
       const buildSettings = await $client.github.scanRepository.query({ owner, repo, installation_id });
-        if (buildSettings) {
-          metadata.buildProps = { ...metadata.buildProps, ...buildSettings };
-        }
+      if (buildSettings?.success === false) {
+        scanError.value = buildSettings.message;
+      } else if (buildSettings) {
+        metadata.buildProps = { ...metadata.buildProps, ...buildSettings };
+      }
       const dockerFileStatus = await $client.github.scanForDockerfile.query({ owner, repo, installation_id });
       if (dockerFileStatus.success) {
         metadata.buildProps.buildSystem = 'Custom Dockerfile';

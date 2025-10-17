@@ -76,7 +76,7 @@ export const githubRouter = router({
         // console.log('>>>> DEBUG: packageJsonContent is:', packageJsonContent);
 
         if (!packageJsonContent) {
-          throw new Error('A package.json file was not found at the root of your repository.')
+          return { success: false, message: 'A package.json file was not found at the root of your repository.' };
         }
 
         const packageJson = JSON.parse(packageJsonContent);
