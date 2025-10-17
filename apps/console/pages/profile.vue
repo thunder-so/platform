@@ -25,29 +25,21 @@
 
     <UCard class="mt-8">
       <template #header>
-        <h3>Github accounts</h3>
-      </template>
-      <div class="flex justify-between items-center mb-4">
-        <UButton
-          icon="i-lucide-plus"
-          @click="handleInstallApp"
-          :loading="installing"
-        >
-          Import repositories
-        </UButton>
-      </div>
-      <UTable :columns="columns" :data="installations">
-        <template #action-cell="{ row }">
-          <UDropdownMenu :items="getDropdownActions(row.original)">
+        <div class="flex items-center justify-between">
+          <h2>Github accounts</h2>
+          <div>
             <UButton
-              icon="i-lucide-ellipsis-vertical"
-              color="neutral"
-              variant="ghost"
-              aria-label="Actions"
-            />
-          </UDropdownMenu>
-        </template>
-      </UTable>
+              icon="i-lucide-plus"
+              @click="handleInstallApp"
+              :loading="installing"
+            >
+              Import repositories
+            </UButton>
+          </div>
+        </div>
+      </template>
+      
+      <UTable :columns="columns" :data="installations" />
     </UCard>
 
     <UCard class="mt-8">
@@ -93,6 +85,8 @@ const hasPreferenceChanges = computed(() => {
 })
 const installing = ref(false)
 const { openInstallationPopup } = useGithubPopup()
+const UDropdownMenu = resolveComponent('UDropdownMenu')
+const UButton = resolveComponent('UButton')
 
 definePageMeta({
   layout: 'org'
@@ -160,7 +154,17 @@ const columns = [
     }
   },
   {
-    id: 'action'
+    id: 'action',
+    cell: ({ row }) => h('div', { class: 'text-right' }, [
+      h(resolveComponent('UDropdownMenu'), { items: getDropdownActions(row.original) }, () =>
+        h(resolveComponent('UButton'), {
+          icon: 'i-lucide-ellipsis-vertical',
+          color: 'neutral',
+          variant: 'ghost',
+          'aria-label': 'Actions'
+        })
+      )
+    ])
   }
 ]
 

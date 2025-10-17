@@ -14,13 +14,13 @@
       </div>
       
       <div v-else-if="error" class="text-center py-4">
-        <UAlert color="error" variant="soft" :title="error" />
-        <UButton @click="closePopup" class="mt-4" color="secondary" variant="subtle">Close</UButton>
+        <UAlert color="error" variant="subtle" :title="error" />
+        <UButton @click="closePopup" class="mt-4 w-full" color="primary" variant="subtle">Close</UButton>
       </div>
       
       <div v-else class="text-center py-4">
-        <UAlert color="success" variant="soft" title="Authorization successful!" />
-        <p class="text-sm text-gray-600 mt-2">Closing window...</p>
+        <UAlert color="success" variant="subtle" title="Authorization successful!" />
+        <p class="text-sm text-muted mt-2">Closing window...</p>
       </div>
     </UCard>
   </div>
