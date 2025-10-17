@@ -46,14 +46,7 @@ export const githubRouter = router({
         const githubLibrary = new GithubLibrary();
         const repositories = await githubLibrary.getRepositories(input.installation_ids);
         
-        if (!repositories) {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Repositories not found for this installation.'
-          });
-        }
-
-        return repositories;
+        return repositories || {};
       }),
 
     getBranches: protectedProcedure
