@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 // Shared regex pattern for name validation
-export const NAME_REGEX = /^[a-zA-Z](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$/;
-export const NAME_ERROR_MESSAGE = 'Use letters, numbers, and hyphens. Must start with a letter.';
+export const NAME_REGEX = /^[a-zA-Z0-9]+$/;
+export const NAME_ERROR_MESSAGE = 'Use letters and numbers only.';
 
 export const envVarSchema = z.array(z.object({
   key: z.string().min(1, 'Key is required.').regex(/^[a-zA-Z0-9_]+$/, 'Use only letters, numbers, and underscores.'),
