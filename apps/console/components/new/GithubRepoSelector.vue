@@ -57,9 +57,8 @@
             variant="subtle"
             icon="i-uil-github"
             size="lg"
-            :to="githubInstallUrl"
+            @click="handleImportRepositories"
             label="Import repositories"
-            external
             class="mt-4 w-full"
           />
         </div>
@@ -70,24 +69,17 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, inject, watch } from 'vue';
-import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
+import { useGithubPopup } from '~/composables/useGithubPopup';
 import type { SelectItem } from '@nuxt/ui';
 
 const { $client } = useNuxtApp();
 const config = useRuntimeConfig();
-// const { selectedRepo } = useNewApplicationFlow();
-
-const githubApp = computed(() => config.public.GITHUB_APP);
+const { openInstallationPopup } = useGithubPopup();
 const base = ref('');
 
 if (process.client) {
     base.value = window.location.origin;
 }
-
-const githubInstallUrl = computed(() => {
-  if (!githubApp.value || !base.value) return '';
-  return `https://github.com/apps/${githubApp.value}/installations/new?redirect_uri=${base.value}/new`;
-});
 
 const installations = inject<any>('installations');
 
@@ -169,6 +161,16 @@ watch(installations, (newInstallations) => {
     fetchAllRepositories();
   }
 }, { immediate: true });
+
+const handleImportRepositories = async () => {
+  try {
+    await openInstallationPopup();
+    // Refresh installations and repositories after successful installation
+    await fetchAllRepositories();
+  } catch (error) {
+    console.error('Installation failed:', error);
+  }
+};
 
 selectedInstallation.value = 'all'; // Default to 'Show all'
 </script>
