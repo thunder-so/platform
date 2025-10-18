@@ -80,10 +80,10 @@ export default defineNuxtConfig({
         target: 'esnext',
       },
     },
-    // inlineDynamicImports: false,
+    inlineDynamicImports: process.env.NODE_ENV === 'development' ? true : false,
     experimental: {
       wasm: false,
-      // legacyExternals: true,
+      legacyExternals: process.env.NODE_ENV === 'development' ? false : true,
     },
     routeRules: {
       '/api/trpc/**': {

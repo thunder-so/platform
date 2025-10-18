@@ -10,7 +10,7 @@
     "synth": "cdk synth",
     "deploy:provider:sandbox": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/provider.ts\" --context environment=sandbox --profile burner",
     "deploy:provider:production": "cdk deploy --app \"npx tsx bin/provider.ts\" --context environment=production",
-    "deploy:runner:sandbox": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/runner.ts\" --context environment=sandbox --context consoleAccountId=047719662375 --profile burner",
+    "deploy:runner:sandbox": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/runner.ts\" --context environment=sandbox --profile burner",
     "deploy:runner:production": "cdk deploy --app \"npx tsx bin/runner.ts\" --context environment=production",
     "deploy:ping:sandbox": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=sandbox --profile burner",
     "deploy:ping:production": "cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=production"
@@ -27,9 +27,6 @@
     "@aws-sdk/client-codebuild": "^3.859.0",
     "@aws-sdk/client-codepipeline": "^3.859.0",
     "@aws-sdk/client-sts": "^3.859.0",
-    "@plunk/node": "^3.0.3",
-    "@react-email/components": "^0.4.0",
-    "@react-email/render": "^1.1.4",
     "@supabase/supabase-js": "^2.53.0",
     "aws-cloudformation-custom-resource": "^5.0.0",
     "constructs": "^10.4.2"

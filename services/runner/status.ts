@@ -89,9 +89,10 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
         .from('builds')
         .select('*')
         .eq('build_id', buildId)
+        .limit(1)
         .single();
 
-    if (existingBuildEvent.build_status === 'SUCCEEDED' ) {
+    if (existingBuildEvent && existingBuildEvent.build_status === 'SUCCEEDED' ) {
       console.log('buildStatus already set to SUCCEEDED, skipping...')
       return;
     }
