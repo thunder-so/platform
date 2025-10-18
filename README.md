@@ -2,7 +2,7 @@
 
 The open source platform-as-a-service for AWS. Alternative to AWS Amplify, Heroku, Render and Vercel. 
 
-This is a monorepo which contains:
+This is a Turborepo monorepo which contains:
 - `apps/console` Nuxt project which is the UI
 - `services` is a collection of CDK stacks
   - Provider: Exposes a Lambda endpoint which is used to connect AWS Accounts to Thunder.

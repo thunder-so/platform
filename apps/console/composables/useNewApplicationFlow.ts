@@ -202,7 +202,7 @@ export const useNewApplicationFlow = () => {
   ): Promise<ServiceInputSchema> => {
     
     await fetchBranches(owner, repo, installation_id);
-    const name = Math.random().toString(36).substring(2, 9).toUpperCase();
+    const name = Math.random().toString(36).substring(2, 9).toLowerCase();
 
     const baseService = {
       name: name,
@@ -314,7 +314,7 @@ export const useNewApplicationFlow = () => {
           display_name: repo,
           environments: [
             {
-              name: Math.random().toString(36).substring(2, 9).toUpperCase(),
+              name: Math.random().toString(36).substring(2, 9).toLowerCase(),
               display_name: 'preview',
               region: initialProvider?.region || 'us-east-1',
               services: [serviceSchema],
