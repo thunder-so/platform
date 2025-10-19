@@ -63,7 +63,8 @@ export const handler = async (event: CodePipelineEvent, context: Context) => {
         *,
         environment:environments(
           *,
-          provider:providers(*)
+          provider:providers(*),
+          application:applications(*)
         )
       `)
       .eq('resources->>CodePipelineName', event.detail.pipeline)
@@ -83,7 +84,7 @@ export const handler = async (event: CodePipelineEvent, context: Context) => {
     const assumeRoleParams = {
       RoleArn: provider.role_arn,
       RoleSessionName: "PipelineInquirySession",
-      ExternalId: provider.id
+      ExternalId: environment.application.organization_id
     };
 
     const sts = new STSClient({ region: REGION });

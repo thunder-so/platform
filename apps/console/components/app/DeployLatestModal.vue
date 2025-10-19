@@ -18,7 +18,6 @@
         <div class="text-left">
           <h3 class="text-sm font-medium mb-2">{{ latest.commit.message.split('\n')[0] }}</h3>
           <p class="text-xs text-muted mb-2">{{ latest.sha.substring(0,7) }} • {{ author }} • {{ date }}</p>
-          <p class="text-sm text-muted leading-relaxed">{{ latest.commit.message }}</p>
         </div>
       </div>
 
