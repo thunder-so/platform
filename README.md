@@ -56,7 +56,7 @@ The console lambda needs the following permissions to perform platform tasks. Sa
         "kms:GenerateDataKey"
       ],
       "Resource": [
-        "arn:aws:sts::*:role/*",
+        "arn:aws:iam::*:role/*",
         "arn:aws:sqs:*:*:*",
         "arn:aws:ssm:*:*:parameter/thunder/*",
         "arn:aws:logs:*:*:*",
