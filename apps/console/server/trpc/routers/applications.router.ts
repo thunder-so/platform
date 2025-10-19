@@ -68,7 +68,7 @@ export const applicationsRouter = router({
 
         const secretName = `thunder/${newApplication.id}/${newEnvironment.id}/github-token`;
         const accessTokenSecretArn = await ProviderLibrary.createOrUpdateSecret(
-          env.provider,
+          { ...env.provider, organization_id: input.organization_id },
           secretName,
           decryptedToken,
           `GitHub User Access Token for application ${newApplication.name} in environment ${newEnvironment.name}`

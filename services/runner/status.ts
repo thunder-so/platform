@@ -136,7 +136,8 @@ async function fetchBuildContext(
 }
 
 async function getAwsCredentials(
-  provider: BuildContext['service']['environment']['provider']
+  provider: BuildContext['service']['environment']['provider'],
+  organizationId: string
 ): Promise<AwsCredentials> {
   if (provider.role_arn) {
     const sts = new STSClient({ region: REGION });
@@ -159,7 +160,7 @@ async function getAwsCredentials(
 
   const parametersProvider = new SSMProvider();
   const secretAccessKey = await parametersProvider.get(
-    `/thunder/provider/${provider.id}/secret_access_key`, 
+    `/thunder/${organizationId}/${provider.access_key_id}/secretAccessKey`, 
     { decrypt: true }
   );
 
@@ -318,7 +319,7 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
       console.log('Processing successful build');
       
       const stackPrefix = `${application.name}-${service.name}-${environment.name}`;
-      const credentials = await getAwsCredentials(provider);
+      const credentials = await getAwsCredentials(provider, application.organization_id);
       
       // Get stack outputs and update service
       const outputs = await getStackOutputs(credentials, environment.region, `${stackPrefix}-stack`);

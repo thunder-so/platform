@@ -3,7 +3,6 @@ import { STSClient, AssumeRoleCommand } from "@aws-sdk/client-sts";
 import { CodePipelineClient, GetPipelineExecutionCommand, GetPipelineStateCommand } from "@aws-sdk/client-codepipeline";
 import { CodeBuild, CodeBuildClient, BatchGetBuildsCommand } from "@aws-sdk/client-codebuild";
 import { createClient } from '@supabase/supabase-js';
-import { v4 as uuidv4 } from 'uuid';
 
 const REGION = process.env.REGION;
 
