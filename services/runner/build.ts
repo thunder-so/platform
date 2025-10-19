@@ -28,10 +28,10 @@ if (!EVENT_TARGET) {
 }
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_KEY;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_KEY) {
-  throw new Error('Supabase URL and Key not found.');
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+  throw new Error('Supabase URL, Key, and Service Key not found.');
 }
 
 const builders: Record<string, IStackBuilder> = {
@@ -170,8 +170,9 @@ export const handler: SQSHandler = async (event) => {
         const buildDetails = await codebuild.send(new BatchGetBuildsCommand({ ids: [buildId] }));
         if (buildDetails.builds && buildDetails.builds.length > 0) {
           const build = buildDetails.builds[0];
+          console.log('Fetched build details:', JSON.stringify(build, null, 2));
           const startTime = build.startTime;
-          const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+          const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
           if (command === 'delete') {
             console.log('Updating Supabase for delete command');

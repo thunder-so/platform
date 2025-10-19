@@ -8,9 +8,9 @@ import { v4 as uuidv4 } from 'uuid';
 const REGION = process.env.REGION;
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_KEY;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_KEY) {
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   throw new Error('Supabase URL and Key not found.');
 }
 
@@ -53,7 +53,7 @@ interface Metadata {
 export const handler = async (event: CodePipelineEvent, context: Context) => {
     console.log('Received message:', JSON.stringify(event));
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     /**
      * fetch the service, environment and provider from pipeline name
