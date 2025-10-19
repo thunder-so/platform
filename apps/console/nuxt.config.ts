@@ -66,7 +66,8 @@ export default defineNuxtConfig({
     }
   },
   icon: {
-    provider: 'none',
+    provider: 'iconify',
+    serverBundle: false,
     clientBundle: {
       scan: true,
       includeCustomCollections: true, 
