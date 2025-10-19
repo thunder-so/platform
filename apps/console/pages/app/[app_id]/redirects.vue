@@ -30,7 +30,7 @@
               <UInput v-model="redirect.destination" placeholder="Destination URL (e.g., /new-path)" class="w-full" />
             </UFormField>
             <div class="col-span-1">
-              <UButton icon="i-heroicons-trash" color="error" variant="ghost" @click="removeRedirect(index)" />
+              <UButton icon="lucide:trash" color="error" variant="ghost" @click="removeRedirect(index)" />
             </div>
           </div>
         </div>
@@ -52,7 +52,7 @@
               <UInput v-model="rewrite.destination" placeholder="Destination Path (e.g., /index.html)" class="w-full" />
             </UFormField>
             <div class="col-span-1">
-              <UButton icon="i-heroicons-trash" color="error" variant="ghost" @click="removeRewrite(index)" />
+              <UButton icon="lucide:trash" color="error" variant="ghost" @click="removeRewrite(index)" />
             </div>
           </div>
         </div>

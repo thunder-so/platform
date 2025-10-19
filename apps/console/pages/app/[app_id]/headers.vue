@@ -29,7 +29,7 @@
           <UInput v-model="header.value" placeholder="Header Value (e.g., SAMEORIGIN)" class="w-full" />
         </UFormField>
         <div class="col-span-1">
-          <UButton icon="i-heroicons-trash" color="error" variant="ghost" @click="removeHeader(index)" />
+          <UButton icon="lucide:trash" color="error" variant="ghost" @click="removeHeader(index)" />
         </div>
       </div>
 

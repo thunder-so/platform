@@ -45,7 +45,7 @@
 
           <div class="flex flex-col text-left">
             <h4>Finished</h4>
-            <p class="text-sm text-muted">{{ formatDate(deployData.pipeline_end) }}</p>
+            <p class="text-sm text-muted">{{ deployData.pipeline_end ? formatDate(deployData.pipeline_end) : '-' }}</p>
           </div>
 
           <div class="flex flex-col text-left">

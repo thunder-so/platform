@@ -1,3 +1,4 @@
+import { SSMProvider } from '@aws-lambda-powertools/parameters/ssm';
 import { Context } from "aws-lambda";
 import { STSClient, AssumeRoleCommand } from "@aws-sdk/client-sts";
 import { CodePipelineClient, GetPipelineExecutionCommand, GetPipelineStateCommand } from "@aws-sdk/client-codepipeline";
@@ -49,6 +50,51 @@ interface Metadata {
   errorMessage?: string;
 }
 
+type AwsCredentials = {
+  accessKeyId: string;
+  secretAccessKey: string;
+  sessionToken?: string;
+};
+
+async function getAwsCredentials(
+  provider: any,
+  organizationId: string
+): Promise<AwsCredentials> {
+  if (provider.role_arn) {
+    const sts = new STSClient({ region: REGION });
+    const { Credentials } = await sts.send(new AssumeRoleCommand({
+      RoleArn: provider.role_arn,
+      RoleSessionName: "PipelineInquirySession",
+      ExternalId: organizationId
+    }));
+
+    if (!Credentials?.AccessKeyId || !Credentials?.SecretAccessKey) {
+      throw new Error('Failed to assume role');
+    }
+
+    return {
+      accessKeyId: Credentials.AccessKeyId,
+      secretAccessKey: Credentials.SecretAccessKey,
+      sessionToken: Credentials.SessionToken
+    };
+  }
+
+  const parametersProvider = new SSMProvider();
+  const secretAccessKey = await parametersProvider.get(
+    `/thunder/${organizationId}/${provider.access_key_id}/secretAccessKey`, 
+    { decrypt: true }
+  );
+
+  if (!provider.access_key_id || !secretAccessKey) {
+    throw new Error('Missing AWS credentials');
+  }
+
+  return {
+    accessKeyId: provider.access_key_id,
+    secretAccessKey: secretAccessKey as string
+  };
+}
+
 export const handler = async (event: CodePipelineEvent, context: Context) => {
     console.log('Received message:', JSON.stringify(event));
 
@@ -78,26 +124,10 @@ export const handler = async (event: CodePipelineEvent, context: Context) => {
     const environment = service.environment;
     const provider = environment.provider;
 
-    /**
-     * STS CodePipelineClient
-     */
-    const assumeRoleParams = {
-      RoleArn: provider.role_arn,
-      RoleSessionName: "PipelineInquirySession",
-      ExternalId: environment.application.organization_id
-    };
-
-    const sts = new STSClient({ region: REGION });
-    const assumedRole = await sts.send(new AssumeRoleCommand(assumeRoleParams));
-    const credentialedArn = assumedRole.AssumedRoleUser?.Arn;
-    const credentials = assumedRole.Credentials;
+    const credentials = await getAwsCredentials(provider, environment.application.organization_id);
   
     const codePipeline = new CodePipelineClient({ 
-      credentials: {
-        accessKeyId: credentials?.AccessKeyId as string,
-        secretAccessKey: credentials?.SecretAccessKey as string,
-        sessionToken: credentials?.SessionToken
-      },
+      credentials,
       region: environment.region
     });
 
@@ -139,11 +169,7 @@ export const handler = async (event: CodePipelineEvent, context: Context) => {
         if (buildAction?.latestExecution?.status === 'Failed') {
           // STS CodeBuildClient
           const codeBuild = new CodeBuildClient({
-            credentials: {
-              accessKeyId: credentials?.AccessKeyId as string,
-              secretAccessKey: credentials?.SecretAccessKey as string,
-              sessionToken: credentials?.SessionToken
-            },
+            credentials,
             region: environment.region
           });
 
@@ -236,11 +262,7 @@ export const handler = async (event: CodePipelineEvent, context: Context) => {
       case 'SUCCEEDED':
         // STS CodeBuildClient
         const codeBuild = new CodeBuildClient({
-          credentials: {
-            accessKeyId: credentials?.AccessKeyId as string,
-            secretAccessKey: credentials?.SecretAccessKey as string,
-            sessionToken: credentials?.SessionToken
-          },
+          credentials,
           region: environment.region
         });
 
