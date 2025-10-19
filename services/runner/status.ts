@@ -144,7 +144,7 @@ async function getAwsCredentials(
     const { Credentials } = await sts.send(new AssumeRoleCommand({
       RoleArn: provider.role_arn,
       RoleSessionName: "StackInquirySession",
-      ExternalId: provider.id
+      ExternalId: organizationId
     }));
 
     if (!Credentials?.AccessKeyId || !Credentials?.SecretAccessKey) {

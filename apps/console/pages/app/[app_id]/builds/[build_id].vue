@@ -40,7 +40,7 @@
 
           <div class="flex flex-col text-left">
             <h4>Finished</h4>
-            <p class="text-sm text-muted">{{ formatDate(buildData.build_end) }}</p>
+            <p class="text-sm text-muted">{{ buildData.build_end ? formatDate(buildData.build_end) : '-' }}</p>
           </div>
 
           <div class="flex flex-col text-left">
