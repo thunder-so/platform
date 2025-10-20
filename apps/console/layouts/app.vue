@@ -179,6 +179,7 @@
 </template>
 
 <script setup lang="ts">
+import { watch, computed } from 'vue';
 import type { NavigationMenuItem } from '@nuxt/ui'
 import { useApplications } from '~/composables/useApplications';
 import Header from '~/components/Header.vue';
@@ -186,8 +187,9 @@ import { AppDeployCommitModal, AppDeployLatestModal } from '#components';
 
 const route = useRoute();
 const { $client } = useNuxtApp();
-const { applicationSchema, setApplicationSchemaById, currentEnvironment: environment, currentService: service } = useApplications();
+const { applicationSchema, setApplicationSchemaById, currentEnvironment: environment, currentService } = useApplications();
 const provider = computed(() => environment.value?.provider);
+const service = computed(() => currentService.value);
 const toast = useToast();
 const overlay = useOverlay();
 

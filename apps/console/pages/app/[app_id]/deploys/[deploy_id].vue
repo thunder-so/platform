@@ -55,7 +55,7 @@
         </div>
 
         <div class="grid grid-cols-3 gap-2 w-full">
-          <div class="flex flex-col text-left">
+          <div class="flex flex-col col-span-3 text-left">
             <h4>Source</h4>
             <div class="flex flex-col">
               <div class="flex flex-row gap-4 mt-1">
@@ -83,9 +83,9 @@
                     </span>
                   </NuxtLink>
                 </div>
-              </div>
-              <div>
-                <span class="text-sm">{{ deployData.pipeline_metadata?.revisionSummary }}</span>
+                <div class="leading-none">
+                  <span class="text-sm">{{ deployData.pipeline_metadata?.revisionSummary }}</span>
+                </div>
               </div>
           </div>
         </div>

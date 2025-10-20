@@ -114,7 +114,7 @@ export const handler = async (event: CodePipelineEvent, context: Context) => {
         )
       `)
       .eq('resources->>CodePipelineName', event.detail.pipeline)
-      .single();
+      .maybeSingle();
 
     if (servicesFetchError) {
       console.error(`Error fetching service from Supabase: ${JSON.stringify(servicesFetchError, null, 2)}`);
