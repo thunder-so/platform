@@ -73,6 +73,7 @@ To deploy the Supabase functions, run the following command:
 
 ```sh
 supabase functions deploy email-invite --no-verify-jwt
+supabase functions deploy notification-webhook --no-verify-jwt
 supabase functions deploy github-webhook --no-verify-jwt
 supabase functions deploy polar-webhook --no-verify-jwt
 ```

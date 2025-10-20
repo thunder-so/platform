@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import React from 'npm:react';
 import { createClient } from 'npm:@supabase/supabase-js';
 import { BuildSuccessEmail } from './templates/BuildSuccessEmail.tsx';
 import { BuildFailureEmail } from './templates/BuildFailureEmail.tsx';
@@ -46,7 +47,7 @@ Deno.serve(async (req) => {
 
       // Render and send email
       const Template = templates[type];
-      const html = render(Template(templateProps));
+      const html = render(React.createElement(Template, templateProps));
       
       await fetch('https://api.resend.com/emails', {
         method: 'POST',
