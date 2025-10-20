@@ -119,98 +119,25 @@ export const applicationsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { application_id, service_id } = input;
 
-      // Use exported DB types and cast the query result so nested relations
-      type ServiceWithRelations = Service & {
-        environment?: (Environment & { provider?: Provider; userAccessTokens?: UserAccessToken[] }) | null;
-      };
-
-      const service = await db.query.services.findFirst({
-        where: eq(services.id, service_id),
-        with: {
-          environment: {
-            with: {
-              provider: true,
-              userAccessTokens: true,
-            },
-          },
-        },
-      }) as ServiceWithRelations | null;
-
-      if (!service || !service.environment) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Service or environment not found.' });
-      }
-
-      const { environment } = service;
-      const { provider, userAccessTokens: uats } = environment;
-      const accessTokenSecretArn = uats?.[0]?.resource;
-
-      if (!accessTokenSecretArn) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Access token secret ARN not found.' });
-      }
-
-      const props = {
-        ...(service.metadata || {}),
-        owner: service.owner,
-        repo: service.repo,
-        branch: service.branch,
-        env: {
-          account: provider?.account_id,
-          region: environment.region,
-        },
-        application: application_id,
-        service: service.name,
-        environment: environment.name,
-      };
-
-      const [newDestroy] = await db.insert(destroys).values({
-        service_id: service.id,
-        environment_id: environment.id,
-        destroy_status: 'IN_PROGRESS',
-        destroy_context: props,
-      }).returning({ id: destroys.id });
-
-      if (!newDestroy) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create destroy entry.' });
-      }
-
       try {
-        const messageAttributes = {
-          command: { DataType: 'String', StringValue: 'delete' },
-          stackType: { DataType: 'String', StringValue: service.stack_type },
-          stackVersion: { DataType: 'String', StringValue: service.stack_version },
-          eventId: { DataType: 'String', StringValue: newDestroy.id },
-          accessTokenSecretArn: { DataType: 'String', StringValue: accessTokenSecretArn },
-          provider: { DataType: 'String', StringValue: JSON.stringify(provider) },
-        };
-
-        const runnerServiceQueueUrl = process.env.RUNNER_SERVICE;
-        if (!runnerServiceQueueUrl) {
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Runner SQS queue URL is not configured.' });
-        }
-
         const platform = new PlatformLibrary();
-        await platform.sendSqsMessage(runnerServiceQueueUrl, JSON.stringify(props), newDestroy.id, messageAttributes);
+        await platform.triggerBuild(service_id, 'delete');
+      } catch (err) {
+        console.error('Failed to trigger delete build:', err);
+        return { success: false, message: 'Failed to trigger delete build.' };
+      }
 
-        // Soft-delete the service, environment, and application right after
-        // the delete request is sent. Use a transaction to keep updates atomic.
-        // try {
-        //   await db.transaction(async (tx) => {
-        //     // await tx.update(serviceVariables).set({ deleted_at: new Date() }).where(eq(serviceVariables.service_id, service.id));
-        //     await tx.update(services).set({ deleted_at: new Date() }).where(eq(services.id, service.id));
-        //     await tx.update(environments).set({ deleted_at: new Date() }).where(eq(environments.id, environment.id));
-        //     await tx.update(applications).set({ deleted_at: new Date() }).where(eq(applications.id, application_id));
-        //   });
-        // } catch (updateErr) {
-        //   console.error('Failed to soft-delete resources after delete request:', updateErr);
-        //   // Don't block the delete flow if soft-delete fails; report success but log the error.
-        // }
-      } catch (error) {
-        if (error instanceof z.ZodError) {
-          console.error('Zod validation error creating build request:', error.flatten());
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to construct a valid build request.', cause: error });
-        }
-        console.error('Unknown error creating build request:', error);
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred.' });
+      // Soft-delete the service, environment, and application records
+      try {
+        await db.transaction(async (tx) => {
+          // await tx.update(serviceVariables).set({ deleted_at: new Date() }).where(eq(serviceVariables.service_id, service.id));
+          // await tx.update(services).set({ deleted_at: new Date() }).where(eq(services.id, service.id));
+          // await tx.update(environments).set({ deleted_at: new Date() }).where(eq(environments.id, environment.id));
+          await tx.update(applications).set({ deleted_at: new Date() }).where(eq(applications.id, application_id));
+        });
+      } catch (updateErr) {
+        console.error('Failed to soft-delete resources after delete request:', updateErr);
+        return { success: false, message: 'Failed to delete database record.' };
       }
 
       return { success: true };

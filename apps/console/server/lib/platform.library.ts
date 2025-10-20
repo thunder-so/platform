@@ -3,7 +3,7 @@ import { SSMClient, PutParameterCommand } from '@aws-sdk/client-ssm';
 import { CloudWatchLogsClient, GetLogEventsCommand } from '@aws-sdk/client-cloudwatch-logs';
 import { STSClient, AssumeRoleCommand } from '@aws-sdk/client-sts';
 import { TRPCError } from '@trpc/server';
-import { builds, services, type Build, type Application, type Environment, type Provider, type ServiceVariable } from '../db/schema';
+import { builds, destroys, services, type Build, type Application, type Environment, type Provider, type ServiceVariable } from '../db/schema';
 import { db } from '../db/db';
 import { eq } from 'drizzle-orm';
 import { ServiceSchema } from '../validators/app';
@@ -234,7 +234,7 @@ export class PlatformLibrary {
     return context;
   }
 
-  async triggerBuild(serviceId: string): Promise<Build> {
+  async triggerBuild(serviceId: string, command?: string): Promise<string> {
     if (!serviceId?.trim()) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
@@ -288,19 +288,46 @@ export class PlatformLibrary {
     const { environment, environment: { application, provider } } = serviceData;
     const context = this.createBuildContext(application, environment, serviceData as Service, provider, accessTokenSecretArn);
 
-    // Create build record
-    const [newBuild] = await db.insert(builds).values({
-      service_id: serviceData.id,
-      environment_id: environment.id,
-      build_status: 'IN_PROGRESS',
-      build_context: context,
-    }).returning();
+    let eventId: string | undefined = undefined;
+    if (command === 'delete') {
+      // Create destroy record if command is delete
+      const [newDestroy] = await db.insert(destroys).values({
+        service_id: serviceData.id,
+        environment_id: (await db.query.services.findFirst({
+          where: eq(services.id, serviceData.id),
+          columns: { id: true },
+          with: { environment: { columns: { id: true } } }
+        }))?.environment?.id!,
+        destroy_status: 'IN_PROGRESS',
+        destroy_context: context,
+      }).returning({ id: destroys.id });
 
-    if (!newBuild) {
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to create build entry.',
-      });
+      eventId = newDestroy.id;
+
+      if (!newDestroy) {
+        throw new TRPCError({ 
+          code: 'INTERNAL_SERVER_ERROR', 
+          message: 'Failed to create destroy entry.' 
+        });
+      }
+
+    } else {
+      // Create build record
+      const [newBuild] = await db.insert(builds).values({
+        service_id: serviceData.id,
+        environment_id: environment.id,
+        build_status: 'IN_PROGRESS',
+        build_context: context,
+      }).returning();
+
+      eventId = newBuild.id;
+
+      if (!newBuild) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to create build entry.',
+        });
+      }
     }
 
     // Validate environment configuration
@@ -316,19 +343,20 @@ export class PlatformLibrary {
     const messageAttributes: Record<string, MessageAttributeValue> = {
       stackType: { DataType: 'String', StringValue: serviceData.stack_type },
       stackVersion: { DataType: 'String', StringValue: serviceData.stack_version },
-      eventId: { DataType: 'String', StringValue: newBuild.id },
+      eventId: { DataType: 'String', StringValue: eventId },
       accessTokenSecretArn: { DataType: 'String', StringValue: accessTokenSecretArn },
       provider: { DataType: 'String', StringValue: JSON.stringify(provider) },
+      ...command ? { command: { DataType: 'String', StringValue: command } } : {},
     };
 
     // Send build message
     await this.sendSqsMessage(
       runnerServiceQueueUrl,
       JSON.stringify(context),
-      newBuild.id,
+      eventId,
       messageAttributes
     );
 
-    return newBuild;
+    return eventId;
   }
 }

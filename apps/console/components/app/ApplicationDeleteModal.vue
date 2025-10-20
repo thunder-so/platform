@@ -26,8 +26,6 @@ const props = defineProps<{
   application: ApplicationSchema
 }>()
 
-console.log(props.application)
-
 const emit = defineEmits<{ close: [applicationId: string | null] }>()
 
 const confirmationInput = ref('')
