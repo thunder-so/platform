@@ -13,7 +13,7 @@ export const spaBuilder: IStackBuilder = {
             - git clone --depth 1 --branch v${stackVersion} ${this.getStackRepositoryUrl()} ./cdk-spa
             - cd ./cdk-spa
             - npm install
-            - git clone --depth 1 --branch ${context.metadata.sourceProps.branchOrRef} https://x-access-token:$GITHUB_TOKEN@github.com/${context.metadata.sourceProps.owner}/${context.metadata.sourceProps.repo}.git ./code
+            - git clone --depth 1 --branch ${context.metadata.sourceProps?.branchOrRef || context.branch || 'main'} https://x-access-token:$GITHUB_TOKEN@github.com/${context.metadata.sourceProps?.owner || context.owner}/${context.metadata.sourceProps?.repo || context.repo}.git ./code
         build:
           commands:
             - echo '${JSON.stringify(context)}' > cdk.context.json
@@ -33,7 +33,7 @@ export const spaBuilder: IStackBuilder = {
             - git clone --depth 1 --branch v${stackVersion} ${this.getStackRepositoryUrl()} ./cdk-spa
             - cd ./cdk-spa
             - npm install
-            - git clone --depth 1 --branch ${context.metadata.sourceProps.branchOrRef} https://x-access-token:$GITHUB_TOKEN@github.com/${context.metadata.sourceProps.owner}/${context.metadata.sourceProps.repo}.git ./code
+            - git clone --depth 1 --branch ${context.metadata.sourceProps?.branchOrRef || context.branch || 'main'} https://x-access-token:$GITHUB_TOKEN@github.com/${context.metadata.sourceProps?.owner || context.owner}/${context.metadata.sourceProps?.repo || context.repo}.git ./code
         build:
           commands:
             - echo '${JSON.stringify(context)}' > cdk.context.json

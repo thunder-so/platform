@@ -149,7 +149,7 @@ export const applicationsRouter = router({
       }
 
       const props = {
-        ...service.metadata,
+        ...(service.metadata || {}),
         owner: service.owner,
         repo: service.repo,
         branch: service.branch,
@@ -193,17 +193,17 @@ export const applicationsRouter = router({
 
         // Soft-delete the service, environment, and application right after
         // the delete request is sent. Use a transaction to keep updates atomic.
-        try {
-          await db.transaction(async (tx) => {
-            await tx.update(serviceVariables).set({ deleted_at: new Date() }).where(eq(serviceVariables.service_id, service.id));
-            await tx.update(services).set({ deleted_at: new Date() }).where(eq(services.id, service.id));
-            await tx.update(environments).set({ deleted_at: new Date() }).where(eq(environments.id, environment.id));
-            await tx.update(applications).set({ deleted_at: new Date() }).where(eq(applications.id, application_id));
-          });
-        } catch (updateErr) {
-          console.error('Failed to soft-delete resources after delete request:', updateErr);
-          // Don't block the delete flow if soft-delete fails; report success but log the error.
-        }
+        // try {
+        //   await db.transaction(async (tx) => {
+        //     // await tx.update(serviceVariables).set({ deleted_at: new Date() }).where(eq(serviceVariables.service_id, service.id));
+        //     await tx.update(services).set({ deleted_at: new Date() }).where(eq(services.id, service.id));
+        //     await tx.update(environments).set({ deleted_at: new Date() }).where(eq(environments.id, environment.id));
+        //     await tx.update(applications).set({ deleted_at: new Date() }).where(eq(applications.id, application_id));
+        //   });
+        // } catch (updateErr) {
+        //   console.error('Failed to soft-delete resources after delete request:', updateErr);
+        //   // Don't block the delete flow if soft-delete fails; report success but log the error.
+        // }
       } catch (error) {
         if (error instanceof z.ZodError) {
           console.error('Zod validation error creating build request:', error.flatten());

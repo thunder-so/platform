@@ -148,6 +148,7 @@ const isAppChanged = ref(false);
 const originalDisplayName = ref<string>('');
 const error = ref<string | null>(null);
 const toast = useToast();
+const overlay = useOverlay();
 
 const serviceConfigForm = ref<{ hasErrors: boolean } | null>(null);
 const hasValidationErrors = computed(() => serviceConfigForm.value?.hasErrors || false);
@@ -333,18 +334,17 @@ const saveAppChanges = async () => {
   }
 };
 
-const overlay = useOverlay()
-const applicationDeleteModal = overlay.create(AppApplicationDeleteModal, {
-  props: {application: applicationSchema.value}
-});
-
 async function deleteApplicationModal() {
+  const applicationDeleteModal = overlay.create(AppApplicationDeleteModal, {
+    props: {application: applicationSchema.value}
+  });
+
   const result = await applicationDeleteModal.open().result;
 
   if (result === applicationSchema.value?.id) {
     await deleteApplication();
   }
-}
+};
 
 const deleteApplication = async () => {
   error.value = null;

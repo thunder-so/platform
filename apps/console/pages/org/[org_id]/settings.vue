@@ -79,6 +79,8 @@ definePageMeta({
 
 const supabase = useSupabaseClient();
 const toast = useToast();
+const overlay = useOverlay()
+
 const submitButton = ref(false);
 const loading = ref(true);
 const error = ref<{ message: string } | null>(null);
@@ -101,12 +103,11 @@ const hasChanges = computed(() => {
 
 const orgId = selectedOrganization.value?.id as string;
 
-const overlay = useOverlay()
-const organizationDeleteModal = overlay.create(OrgOrganizationDeleteModal, {
-  props: {org: selectedOrganization.value}
-});
-
 async function deleteOrganizationModal() {
+  const organizationDeleteModal = overlay.create(OrgOrganizationDeleteModal, {
+    props: {org: selectedOrganization.value}
+  });
+
   const result = await organizationDeleteModal.open().result;
 
   if (result === orgId) {
@@ -172,9 +173,7 @@ const updateOrganization = async () => {
       .single();
 
     if (data && selectedOrganization) {
-      // organization.value.name = data.name;
       selectedOrganization.value = data;
-      // refreshMemberships();
       await initializeSession();
     }
 
@@ -183,7 +182,6 @@ const updateOrganization = async () => {
       title: 'Organization updated successfully.',
       color: 'success',
     });
-    setTimeout(() => success.value = false, 3000);
   } catch (e: any) {
     error.value = e;
   } finally {

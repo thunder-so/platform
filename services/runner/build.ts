@@ -121,8 +121,8 @@ export const handler: SQSHandler = async (event) => {
 
       const codebuild = new CodeBuild({ region: REGION });
 
-      const originalRootDir = props.metadata.rootDir || '';
-      const newRootDir = (stackType === 'FUNCTION' || stackType === 'WEB_SERVICE') ? path.join('code', originalRootDir) : props.metadata.rootDir;
+      const originalRootDir = props.metadata?.rootDir || '';
+      const newRootDir = (stackType === 'FUNCTION' || stackType === 'WEB_SERVICE') ? path.join('code', originalRootDir) : props.metadata?.rootDir;
 
       const cdkContext = {
         ...props,
