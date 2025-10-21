@@ -19,6 +19,7 @@ export const envVarSchema = z.array(z.object({
 
   keyMap.forEach((indices, key) => {
     if (indices.length > 1) {
+      // @ts-ignore index has any type
       indices.forEach(index => {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -72,7 +73,17 @@ export const SPABuildPropsSchema = z.object({
   exclude: z.array(z.string()).optional(),
 });
 
-export const DockerBasedBuildPropsSchema = z.object({
+export const FunctionBuildPropsSchema = z.object({
+  runtime: z.string().min(1, 'Runtime is required.'),
+  runtime_version: z.union([z.string(), z.number()]).optional(),
+  installcmd: z.string().optional(),
+  buildcmd: z.string().optional(),
+  startcmd: z.string().optional(),
+  include: z.array(z.string()).optional(),
+  exclude: z.array(z.string()).optional(),
+});
+
+export const ServiceBuildPropsSchema = z.object({
   buildSystem: z.enum(['Nixpacks', 'Custom Dockerfile']),
   installcmd: z.string().optional(),
   buildcmd: z.string().optional(),
@@ -131,35 +142,51 @@ export const SPAServiceMetadataSchema = z.object({
 export type SPAServiceMetadata = z.infer<typeof SPAServiceMetadataSchema>;
 
 export const FunctionPropsSchema = z.object({
-  memorySize: z.number(),
-  timeout: z.number(),
-  keepWarm: z.boolean(),
-  reservedConcurrency: z.number(),
-  provisionedConcurrency: z.number(),
-  dockerFile: z.string(),
+  dockerFile: z.string().optional(),
+  runtime: z.string().optional(),
+  architecture: z.enum(['x86', 'arm']).optional(),
+  codeDir: z.string().optional(),
+  handler: z.string().optional(),
+  memorySize: z.number().optional(),
+  timeout: z.number().optional(),
+  keepWarm: z.boolean().optional(),
+  reservedConcurrency: z.number().optional(),
+  provisionedConcurrency: z.number().optional(),
+}).superRefine((obj, ctx) => {
+  const hasDocker = typeof obj.dockerFile === 'string' && obj.dockerFile.trim().length > 0;
+  const hasRuntime = typeof obj.runtime === 'string' && obj.runtime.trim().length > 0;
+  const hasCodeDir = typeof obj.codeDir === 'string' && obj.codeDir.trim().length > 0;
+  const hasHandler = typeof obj.handler === 'string' && obj.handler.trim().length > 0;
+
+  // If dockerFile is not provided, require runtime, codeDir and handler for zip mode
+  if (!hasDocker) {
+    if (!hasRuntime) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Runtime is required for zip mode.', path: ['runtime'] });
+    if (!hasCodeDir) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'codeDir is required for zip mode.', path: ['codeDir'] });
+    if (!hasHandler) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'handler is required for zip mode.', path: ['handler'] });
+  }
 });
 
 export const FunctionServiceMetadataSchema = z.object({
   debug: z.boolean(),
   rootDir: z.string(),
-  buildProps: DockerBasedBuildPropsSchema,
+  buildProps: FunctionBuildPropsSchema,
   functionProps: FunctionPropsSchema,
 });
 
 export type FunctionServiceMetadata = z.infer<typeof FunctionServiceMetadataSchema>;
 
 export const WebServicePropsSchema = z.object({
+  dockerFile: z.string(),
   desiredCount: z.number(),
   cpu: z.number(),
   memorySize: z.number(),
   port: z.number(),
-  dockerFile: z.string(),
 });
 
 export const WebServiceMetadataSchema = z.object({
   debug: z.boolean(),
   rootDir: z.string(),
-  buildProps: DockerBasedBuildPropsSchema,
+  buildProps: ServiceBuildPropsSchema,
   serviceProps: WebServicePropsSchema,
 });
 

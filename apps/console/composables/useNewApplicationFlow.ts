@@ -5,6 +5,9 @@ import type { ServiceInputSchema, ApplicationInputSchema } from '~/server/valida
 import type { Provider, Branch, UserAccessToken } from '~/server/db/schema';
 import appConfig from '~/app.config';
 
+const lambdaRuntimes = (appConfig as any).lambdaRuntimes as Array<{ label: string; value: string }>;
+const lambdaRuntimeDefault = lambdaRuntimes[0]?.value;
+
 const STACK_DEFAULTS: {
   SPA: SPAServiceMetadata,
   FUNCTION: FunctionServiceMetadata,
@@ -33,20 +36,22 @@ const STACK_DEFAULTS: {
     debug: false,
     rootDir: '/',
     buildProps: {
-      buildSystem: 'Nixpacks',
+      runtime: 'nodejs',
+      runtime_version: '22',
       installcmd: 'npm install',
       buildcmd: 'npm run build',
-      startcmd: 'index.handler',
+      startcmd: 'npm start',
       include: [],
       exclude: [],
     },
     functionProps: {
+      runtime: lambdaRuntimeDefault,
+      architecture: 'arm',
       memorySize: 1792,
       timeout: 30,
       keepWarm: true,
-      reservedConcurrency: 0,
-      provisionedConcurrency: 0,
-      dockerFile: 'Dockerfile',
+      codeDir: 'dist',
+      handler: 'index.handler',
     },
   },
   WEB_SERVICE: {
@@ -56,7 +61,7 @@ const STACK_DEFAULTS: {
       buildSystem: 'Nixpacks',
       installcmd: 'npm install',
       buildcmd: 'npm run build',
-      startcmd: 'npm run start',
+      startcmd: 'npm start',
       include: [],
       exclude: [],
     },
@@ -244,12 +249,16 @@ export const useNewApplicationFlow = () => {
         } else if (buildSettings) {
           metadata.buildProps = { ...metadata.buildProps, ...buildSettings };
         }
-        const dockerFileStatus = await $client.github.scanForDockerfile.query({ owner, repo, installation_id });
-        if (dockerFileStatus.success) {
-          metadata.buildProps.buildSystem = 'Custom Dockerfile';
-        } else {
-          scanError.value = dockerFileStatus.message as string;
-        }
+          const dockerFileStatus = await $client.github.scanForDockerfile.query({ owner, repo, installation_id });
+          if (dockerFileStatus.success) {
+            // set functionProps.dockerFile when a Dockerfile exists in the repo
+            metadata.functionProps = {
+              ...metadata.functionProps,
+              dockerFile: 'Dockerfile'
+            };
+          } else {
+            scanError.value = dockerFileStatus.message as string;
+          }
       } catch (e: any) {
         console.error("scan error:", e);
       }

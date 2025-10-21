@@ -51,7 +51,7 @@ export default class GithubLibrary {
     /**
      * Get repositories from multiple installations in a single call
      * @param installation_ids Array of installation IDs
-     * @returns Object with installation IDs as keys and their repositories as values
+     * @returns Object with installation IDs as keys and their repositories as values (archived repos filtered out)
      */
     async getRepositories(
       installation_ids: number[]
@@ -72,7 +72,9 @@ export default class GithubLibrary {
                 'X-GitHub-Api-Version': '2022-11-28'
               }
             });
-            return { installation_id, repositories: response.data.repositories };
+            // Filter out archived repositories
+            const activeRepositories = response.data.repositories.filter(repo => !repo.archived);
+            return { installation_id, repositories: activeRepositories };
           })
         );
         

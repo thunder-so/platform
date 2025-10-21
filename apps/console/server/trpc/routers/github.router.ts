@@ -145,7 +145,7 @@ export const githubRouter = router({
         const hasDockerfile = await github.checkFileExists(owner, repo, installation_id, 'Dockerfile');
 
         if (!hasDockerfile) {
-          return { success: false, message: 'A Dockerfile was not found at the root of your repository. Using Nixpacks build system.' };
+          return { success: false, message: 'A Dockerfile was not found at the root of your repository.' };
         }
 
         return { success: true };

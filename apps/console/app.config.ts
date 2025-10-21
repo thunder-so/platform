@@ -27,6 +27,7 @@ export default defineAppConfig({
     { name: "me-south-1", label: "Middle East (Bahrain)" },
     { name: "sa-east-1", label: "South America (São Paulo)" }
   ],
+  // Runtimes supported by AWS CodeBuild
   runtimes: [
     {
       label: "Node.js 24.4.1 (Current)",
@@ -54,9 +55,20 @@ export default defineAppConfig({
       value: "20"
     }
   ],
+  // Runtimes supported by AWS Lambda for functions
+  lambdaRuntimes: [
+    {
+      label: 'Node.js 22.x',
+      value: 'nodejs22.x',
+    },
+    {
+      label: 'Node.js 20.x',
+      value: 'nodejs20.x',
+    },
+  ],
   stacks: [
     { type: "SPA", source: "@thunderso/cdk-spa", version: "0.22.1" },
-    { type: "FUNCTION", source: "@thunderso/cdk-functions", version: "0.6.1" },
+    { type: "FUNCTION", source: "@thunderso/cdk-functions", version: "0.6.2" },
     { type: "WEB_SERVICE", source: "@thunderso/cdk-webservice", version: "0.3.1" },
   ],
   fargate: {

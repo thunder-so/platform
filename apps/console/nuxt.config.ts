@@ -86,7 +86,8 @@ export default defineNuxtConfig({
         target: 'esnext',
       },
     },
-    inlineDynamicImports: process.env.NODE_ENV === 'development' ? true : false,
+    // inlineDynamicImports: process.env.NODE_ENV === 'development' ? true : false,
+    inlineDynamicImports: false,
     experimental: {
       wasm: false,
       legacyExternals: process.env.NODE_ENV === 'development' ? false : true,
