@@ -40,7 +40,6 @@ const STACK_DEFAULTS: {
       runtime_version: '22',
       installcmd: 'npm install',
       buildcmd: 'npm run build',
-      startcmd: 'npm start',
       include: [],
       exclude: [],
     },

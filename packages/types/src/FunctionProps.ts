@@ -25,7 +25,6 @@ export interface PipelineProps {
     readonly runtime_version?: string|number;
     readonly installcmd?: string;
     readonly buildcmd?: string;
-    readonly startcmd?: string;
     readonly include?: string[];
     readonly exclude?: string[];
     readonly environment?: Array<{ [key: string]: string; }>;

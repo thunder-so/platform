@@ -83,6 +83,15 @@ export const handler: SQSHandler = async (event) => {
       }
 
       console.log('Builder found for stack type:', stackType);
+      
+      // Validate BuildProps if user code build is required
+      if (builder.requiresUserCodeBuild(props)) {
+        const buildProps = props.metadata.buildProps;
+        if (!buildProps) {
+          throw new Error(`BuildProps are required for ${stackType} but not provided`);
+        }
+        console.log('User code build required, BuildProps validated');
+      }
 
       let credentials;
       if (provider.role_arn) {
@@ -121,16 +130,12 @@ export const handler: SQSHandler = async (event) => {
 
       const codebuild = new CodeBuild({ region: REGION });
 
-      const originalRootDir = props.metadata?.rootDir || '';
-      const newRootDir = (stackType === 'FUNCTION' || stackType === 'WEB_SERVICE') ? path.join('code', originalRootDir) : props.metadata?.rootDir;
-
       const cdkContext = {
         ...props,
         metadata: { 
           ...props.metadata, 
           accessTokenSecretArn,
           eventTarget: EVENT_TARGET,
-          rootDir: newRootDir,
         }
       }
       console.log('CDK Context:', JSON.stringify(cdkContext, null, 2));

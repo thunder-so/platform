@@ -24,6 +24,7 @@ export type RunnerRequest = SpaRunnerRequest | FunctionRunnerRequest | WebServic
 export interface IStackBuilder {
   generateBuildSpec(request: RunnerRequest, stackVersion: string): string;
   generateDestroyBuildSpec(request: RunnerRequest, stackVersion: string): string;
-  // generateCdkContext(request: RunnerRequest): Record<string, any>;
   getStackRepositoryUrl(): string;
+  requiresUserCodeBuild(request: RunnerRequest): boolean;
+  generateUserBuildCommands(request: RunnerRequest): string[];
 }
