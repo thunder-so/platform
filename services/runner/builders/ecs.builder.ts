@@ -11,12 +11,12 @@ export const ecsBuilder: IStackBuilder = {
 
   generateBuildSpec(context: any, stackVersion: string): string {
     // Adjust rootDir for CDK context - WebService needs code directory path
-    const originalRootDir = context.metadata.rootDir || '.';
+    const originalRootDir = (context.metadata.rootDir || '.').replace(/^\/+|\/+$/g, '');
     const adjustedContext = {
       ...context,
       metadata: {
         ...context.metadata,
-        rootDir: originalRootDir === '.' ? 'code' : `code/${originalRootDir}`
+        rootDir: (!originalRootDir || originalRootDir === '.') ? 'code' : `code/${originalRootDir}`
       }
     };
     
@@ -41,12 +41,12 @@ export const ecsBuilder: IStackBuilder = {
 
   generateDestroyBuildSpec(context: any, stackVersion: string): string {
     // Adjust rootDir for CDK context
-    const originalRootDir = context.metadata.rootDir || '.';
+    const originalRootDir = (context.metadata.rootDir || '.').replace(/^\/+|\/+$/g, '');
     const adjustedContext = {
       ...context,
       metadata: {
         ...context.metadata,
-        rootDir: originalRootDir === '.' ? 'code' : `code/${originalRootDir}`
+        rootDir: (!originalRootDir || originalRootDir === '.') ? 'code' : `code/${originalRootDir}`
       }
     };
     

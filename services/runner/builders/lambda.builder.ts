@@ -12,10 +12,10 @@ export const lambdaBuilder: IStackBuilder = {
     }
     
     const buildProps = request.metadata.buildProps;
-    const rootDir = request.metadata.rootDir || '.';
+    const rootDir = (request.metadata.rootDir || '.').replace(/^\/+|\/+$/g, '');
     const commands = [];
     
-    if (rootDir !== '.') {
+    if (rootDir && rootDir !== '.') {
       commands.push(`cd code/${rootDir}`);
     } else {
       commands.push('cd code');
@@ -24,7 +24,7 @@ export const lambdaBuilder: IStackBuilder = {
     commands.push(buildProps?.installcmd || 'npm install');
     commands.push(buildProps?.buildcmd || 'npm run build');
     
-    if (rootDir !== '.') {
+    if (rootDir && rootDir !== '.') {
       commands.push('cd ../..');
     } else {
       commands.push('cd ..');
@@ -40,12 +40,12 @@ export const lambdaBuilder: IStackBuilder = {
     const userBuildCommands = this.generateUserBuildCommands(context);
     
     // Adjust rootDir for CDK context - Functions need code directory path
-    const originalRootDir = context.metadata.rootDir || '.';
+    const originalRootDir = (context.metadata.rootDir || '.').replace(/^\/+|\/+$/g, '');
     const adjustedContext = {
       ...context,
       metadata: {
         ...context.metadata,
-        rootDir: originalRootDir === '.' ? 'code' : `code/${originalRootDir}`
+        rootDir: (!originalRootDir || originalRootDir === '.') ? 'code' : `code/${originalRootDir}`
       }
     };
     
@@ -74,12 +74,12 @@ export const lambdaBuilder: IStackBuilder = {
     const runtimeVersion = buildProps?.runtime_version || '22';
     
     // Adjust rootDir for CDK context
-    const originalRootDir = context.metadata.rootDir || '.';
+    const originalRootDir = (context.metadata.rootDir || '.').replace(/^\/+|\/+$/g, '');
     const adjustedContext = {
       ...context,
       metadata: {
         ...context.metadata,
-        rootDir: originalRootDir === '.' ? 'code' : `code/${originalRootDir}`
+        rootDir: (!originalRootDir || originalRootDir === '.') ? 'code' : `code/${originalRootDir}`
       }
     };
     

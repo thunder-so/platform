@@ -7,10 +7,10 @@ export const spaBuilder: IStackBuilder = {
 
   generateUserBuildCommands(request: RunnerRequest): string[] {
     const buildProps = request.metadata.buildProps;
-    const rootDir = request.metadata.rootDir || '.';
+    const rootDir = (request.metadata.rootDir || '.').replace(/^\/+|\/+$/g, '');
     const commands = [];
     
-    if (rootDir !== '.') {
+    if (rootDir && rootDir !== '.') {
       commands.push(`cd code/${rootDir}`);
     } else {
       commands.push('cd code');
@@ -19,7 +19,7 @@ export const spaBuilder: IStackBuilder = {
     commands.push(buildProps?.installcmd || 'npm install');
     commands.push(buildProps?.buildcmd || 'npm run build');
     
-    if (rootDir !== '.') {
+    if (rootDir && rootDir !== '.') {
       commands.push('cd ../..');
     } else {
       commands.push('cd ..');
@@ -35,12 +35,12 @@ export const spaBuilder: IStackBuilder = {
     const userBuildCommands = this.generateUserBuildCommands(context);
     
     // Adjust rootDir for CDK context - SPA needs built output path
-    const originalRootDir = context.metadata.rootDir || '.';
+    const originalRootDir = (context.metadata.rootDir || '.').replace(/^\/+|\/+$/g, '');
     const adjustedContext = {
       ...context,
       metadata: {
         ...context.metadata,
-        rootDir: originalRootDir === '.' ? 'code' : `code/${originalRootDir}`
+        rootDir: (!originalRootDir || originalRootDir === '.') ? 'code' : `code/${originalRootDir}`
       }
     };
     
@@ -70,12 +70,12 @@ export const spaBuilder: IStackBuilder = {
     const runtimeVersion = buildProps?.runtime_version || '22';
     
     // Adjust rootDir for CDK context
-    const originalRootDir = context.metadata.rootDir || '.';
+    const originalRootDir = (context.metadata.rootDir || '.').replace(/^\/+|\/+$/g, '');
     const adjustedContext = {
       ...context,
       metadata: {
         ...context.metadata,
-        rootDir: originalRootDir === '.' ? 'code' : `code/${originalRootDir}`
+        rootDir: (!originalRootDir || originalRootDir === '.') ? 'code' : `code/${originalRootDir}`
       }
     };
     
