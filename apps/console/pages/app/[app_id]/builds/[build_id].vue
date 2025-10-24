@@ -4,8 +4,9 @@
       <template #header>
         <USkeleton class="h-6 w-40" />
       </template>
-      <USkeleton class="h-6 w-full" />
-      <USkeleton class="h-6 w-full" />
+      <div v-for="i in 3" :key="i" class="space-y-4">
+        <USkeleton class="h-6 w-full" />
+      </div>
     </UCard>
     <UCard v-if="buildData">
     <template #header>
