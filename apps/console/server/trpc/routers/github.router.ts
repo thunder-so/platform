@@ -117,7 +117,7 @@ export const githubRouter = router({
             if (hasBunLock) {
               buildcmd = `bun run ${buildScript}`;
             } else if (hasPnpmLock) {
-              buildcmd = `pnpm run ${buildScript}`;
+              buildcmd = `pnpm exec ${buildScript}`;
             } else if (hasYarnLock) {
               buildcmd = `yarn ${buildScript}`;
             } else {

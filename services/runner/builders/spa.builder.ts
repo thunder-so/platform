@@ -59,17 +59,15 @@ export const spaBuilder: IStackBuilder = {
   },
 
   generateDestroyBuildSpec(context: any, stackVersion: string): string {
-    const buildProps = context.metadata.buildProps;
-    const runtime = buildProps?.runtime || 'nodejs';
-    const runtimeVersion = buildProps?.runtime_version || '22';
-    
-    // Adjust rootDir for CDK context
-    const originalRootDir = (context.metadata.rootDir || '.').replace(/^\/+|\/+$/g, '');
+    // Adjust context for custom runtime
     const adjustedContext = {
       ...context,
       metadata: {
         ...context.metadata,
-        rootDir: (!originalRootDir || originalRootDir === '.') ? 'code' : `code/${originalRootDir}`
+        buildProps: {
+          ...context.metadata.buildProps,
+          customRuntime: 'runtime/Dockerfile'
+        }
       }
     };
     
