@@ -106,10 +106,23 @@ export const githubRouter = router({
 
         let buildcmd = '';
         if (packageJson.scripts) {
+          let buildScript = '';
           if (packageJson.scripts.build) {
-            buildcmd = packageJson.scripts.build;
+            buildScript = 'build';
           } else if (packageJson.scripts.generate) {
-            buildcmd = packageJson.scripts.generate;
+            buildScript = 'generate';
+          }
+          
+          if (buildScript) {
+            if (hasBunLock) {
+              buildcmd = `bun run ${buildScript}`;
+            } else if (hasPnpmLock) {
+              buildcmd = `pnpm run ${buildScript}`;
+            } else if (hasYarnLock) {
+              buildcmd = `yarn ${buildScript}`;
+            } else {
+              buildcmd = `npx ${buildScript}`;
+            }
           }
         }
 

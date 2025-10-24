@@ -10,6 +10,7 @@ import { Rule } from 'aws-cdk-lib/aws-events';
 import { LambdaFunction } from 'aws-cdk-lib/aws-events-targets';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as path from 'path';
+import { DockerImageAsset } from 'aws-cdk-lib/aws-ecr-assets';
 
 export class RunnerService extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -84,7 +85,12 @@ export class RunnerService extends Stack {
       resources: ['*'],
     }));
 
-    // CodeBuild Project
+    // Build and publish Docker image asset for CodeBuild runtime
+    const runnerCustomRuntime = new DockerImageAsset(this, 'RunnerDockerImage', {
+      directory: path.join(__dirname),
+    });
+
+    // CodeBuild Project using custom Docker image
     const runnerBuild = new Project(this, 'RunnerBuild', {
       projectName: `RunnerBuild-${environment}`,
       artifacts: Artifacts.s3({
@@ -94,10 +100,12 @@ export class RunnerService extends Stack {
         path: 'artifacts/',
       }),
       environment: {
-        buildImage: LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_3_0,
+        // buildImage: LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_3_0,
+        buildImage: LinuxBuildImage.fromEcrRepository(runnerCustomRuntime.repository, runnerCustomRuntime.imageTag),
         computeType: ComputeType.SMALL,
+        privileged: false,
       },
-      role: runnerRole,      
+      role: runnerRole,
       buildSpec: BuildSpec.fromObject({
         version: '0.2',
         phases: {

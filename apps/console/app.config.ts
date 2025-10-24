@@ -30,27 +30,17 @@ export default defineAppConfig({
   // Runtimes supported by AWS CodeBuild
   runtimes: [
     {
-      label: "Node.js 24.4.1 (Current)",
+      label: "Node.js 24",
       runtime: "nodejs",
       value: "24"
     },
     {
-      label: "Node.js 23.11.1",
-      runtime: "nodejs",
-      value: "23"
-    },
-    {
-      label: "Node.js 22.17.1 (LTS)",
+      label: "Node.js 22",
       runtime: "nodejs",
       value: "22"
     },
     {
-      label: "Node.js 21.7.3",
-      runtime: "nodejs",
-      value: "21"
-    },
-    {
-      label: "Node.js 20.19.4 (LTS)",
+      label: "Node.js 20",
       runtime: "nodejs",
       value: "20"
     }
@@ -58,16 +48,16 @@ export default defineAppConfig({
   // Runtimes supported by AWS Lambda for functions
   lambdaRuntimes: [
     {
-      label: 'Node.js 22.x',
+      label: 'Node.js 22',
       value: 'nodejs22.x',
     },
     {
-      label: 'Node.js 20.x',
+      label: 'Node.js 20',
       value: 'nodejs20.x',
     },
   ],
   stacks: [
-    { type: "SPA", source: "@thunderso/cdk-spa", version: "0.22.1" },
+    { type: "SPA", source: "@thunderso/cdk-spa", version: "0.23.0" },
     { type: "FUNCTION", source: "@thunderso/cdk-functions", version: "0.6.2" },
     { type: "WEB_SERVICE", source: "@thunderso/cdk-webservice", version: "0.3.1" },
   ],

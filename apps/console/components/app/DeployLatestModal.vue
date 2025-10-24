@@ -1,7 +1,7 @@
 <template>
   <UModal
     title="Deploy latest commit"
-    description="Review the latest commit on the configured branch and confirm deployment."
+    description="Review the latest commit and confirm deployment."
     :ui="{ footer: 'justify-end' }"
   >
     <template #body>

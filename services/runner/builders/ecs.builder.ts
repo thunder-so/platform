@@ -25,7 +25,7 @@ export const ecsBuilder: IStackBuilder = {
       phases:
         install:
           runtime-versions:
-            nodejs: 20
+            nodejs: 24
           commands:
             - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
             - git clone --depth 1 --branch v${stackVersion} ${this.getStackRepositoryUrl()} ./cdk-webservice
@@ -55,7 +55,7 @@ export const ecsBuilder: IStackBuilder = {
       phases:
         install:
           runtime-versions:
-            nodejs: 20
+            nodejs: 24
           commands:
             - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
             - git clone --depth 1 --branch v${stackVersion} ${this.getStackRepositoryUrl()} ./cdk-webservice

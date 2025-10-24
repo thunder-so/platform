@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
 
       // Render and send email
       const Template = templates[type];
-      const html = render(React.createElement(Template, templateProps));
+      const html = await render(React.createElement(Template, templateProps));
       
       await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
           Authorization: `Bearer ${RESEND_API_KEY}`,
         },
         body: JSON.stringify({
-          from: 'no-reply@ping.thunder.so',
+          from: 'Thunder <no-reply@ping.thunder.so>',
           to: member.user.email,
           subject: getSubject(type, metadata),
           html,
