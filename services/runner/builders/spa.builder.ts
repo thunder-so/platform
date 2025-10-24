@@ -9,13 +9,15 @@ export const spaBuilder: IStackBuilder = {
     const buildProps = context.metadata.buildProps;
     const sourceProps = context.metadata.sourceProps;
 
-    // Adjust rootDir for CDK context - SPA needs built output path
-    const originalRootDir = (context.metadata.rootDir || '.').replace(/^\/+|\/+$/g, '');
+    // Normalize rootDir - remove leading/trailing slashes, handle empty/dot cases
+    const rootDir = context.metadata.rootDir?.replace(/^\.?\/+|\/+$/g, '') || '';
+
+    // Adjust context for custom runtime
     const adjustedContext = {
       ...context,
       metadata: {
         ...context.metadata,
-        rootDir: (!originalRootDir || originalRootDir === '.') ? 'code' : `code/${originalRootDir}`,
+        contextDirectory: '../',
         buildProps: {
           ...context.metadata.buildProps,
           customRuntime: 'runtime/Dockerfile'
@@ -31,16 +33,10 @@ export const spaBuilder: IStackBuilder = {
             - echo "Starting build..."
             - source /etc/profile
             - export PROJECT_PATH="$PWD"
+            - echo "Building application..."
             - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
-            - git clone --depth 1 --branch v${stackVersion} -c advice.detachedHead=false ${this.getStackRepositoryUrl()} .
-            - echo "Installing CDK dependencies..."
-            - bun install
-            - git clone --depth 1 --branch ${sourceProps?.branchOrRef || context.branch || 'main'} https://x-access-token:$GITHUB_TOKEN@github.com/${sourceProps?.owner || context.owner}/${sourceProps?.repo || context.repo}.git ./code
-        build:
-          commands:
-            - cd code
-            - echo "Building user application..."
-            ${originalRootDir && originalRootDir !== '.' ? `- cd ${originalRootDir}` : ''}
+            - git clone --depth 1 --branch ${sourceProps?.branchOrRef || context.branch || 'main'} https://x-access-token:$GITHUB_TOKEN@github.com/${sourceProps?.owner || context.owner}/${sourceProps?.repo || context.repo}.git .
+            - ${rootDir ? `cd "${rootDir}"` : ''}
             - fnm use ${buildProps?.runtime_version || '24'}
             - echo "Installing dependencies..."
             - ${buildProps?.installcmd || 'npm install'}
@@ -48,12 +44,17 @@ export const spaBuilder: IStackBuilder = {
             - echo "Building application..."
             - ${buildProps?.buildcmd || 'npm run build'}
             - echo "Build phase complete"
+        build:
+          commands:          
+            - echo "Installing CDK dependencies..."
+            - git clone --depth 1 --branch v${stackVersion} -c advice.detachedHead=false ${this.getStackRepositoryUrl()} __
+            - cd "__"
+            - bun install
         post_build:
           commands:
-            - cd "$PROJECT_PATH"
             - echo "Deploying infrastructure..."
             - echo '${JSON.stringify(adjustedContext)}' > cdk.context.json
-            - npx cdk deploy --app "npx tsx bin/app.ts" --require-approval never --verbose
+            - npx cdk deploy --app "npx tsx bin/app.ts" --require-approval never
     `;
   },
 
@@ -77,13 +78,13 @@ export const spaBuilder: IStackBuilder = {
       phases:
         install:
           commands:
-            - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
-            - git clone --depth 1 --branch v${stackVersion} ${this.getStackRepositoryUrl()} .
+            - echo "Installing CDK dependencies..."
+            - git clone --depth 1 --branch v${stackVersion} -c advice.detachedHead=false ${this.getStackRepositoryUrl()} .
             - cd .
-            - npm install
-            - git clone --depth 1 --branch ${context.metadata.sourceProps?.branchOrRef || context.branch || 'main'} https://x-access-token:$GITHUB_TOKEN@github.com/${context.metadata.sourceProps?.owner || context.owner}/${context.metadata.sourceProps?.repo || context.repo}.git ./code
-        build:
+            - bun install
+        post_build:
           commands:
+            - echo "Destroying infrastructure..."
             - echo '${JSON.stringify(adjustedContext)}' > cdk.context.json
             - npx cdk destroy --app "npx tsx bin/app.ts" --require-approval never --force --verbose
     `;
