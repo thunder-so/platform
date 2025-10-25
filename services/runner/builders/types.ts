@@ -25,5 +25,4 @@ export interface IStackBuilder {
   generateBuildSpec(request: RunnerRequest, stackVersion: string): string;
   generateDestroyBuildSpec(request: RunnerRequest, stackVersion: string): string;
   getStackRepositoryUrl(): string;
-  requiresUserCodeBuild(request: RunnerRequest): boolean;
 }

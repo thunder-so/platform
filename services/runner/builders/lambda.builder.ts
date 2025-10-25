@@ -1,85 +1,78 @@
 import type { IStackBuilder, RunnerRequest } from './types';
 
 export const lambdaBuilder: IStackBuilder = {
-  requiresUserCodeBuild(request: RunnerRequest): boolean {
-    // Only require user code build for zip mode (when no dockerFile is specified)
-    return !request.metadata.functionProps?.dockerFile;
-  },
-
-  generateUserBuildCommands(request: RunnerRequest): string[] {
-    if (!this.requiresUserCodeBuild(request)) {
-      return [];
-    }
-    
-    const buildProps = request.metadata.buildProps;
-    const rootDir = (request.metadata.rootDir || '.').replace(/^\/+|\/+$/g, '');
-    const commands = [];
-    
-    if (rootDir && rootDir !== '.') {
-      commands.push(`cd code/${rootDir}`);
-    } else {
-      commands.push('cd code');
-    }
-    
-    commands.push(buildProps?.installcmd || 'npm install');
-    commands.push(buildProps?.buildcmd || 'npm run build');
-    
-    if (rootDir && rootDir !== '.') {
-      commands.push('cd ../..');
-    } else {
-      commands.push('cd ..');
-    }
-    
-    return commands;
-  },
-
   generateBuildSpec(context: any, stackVersion: string): string {
     const buildProps = context.metadata.buildProps;
-    const runtime = buildProps?.runtime || 'nodejs';
-    const runtimeVersion = buildProps?.runtime_version || '22';
-    const userBuildCommands = this.generateUserBuildCommands(context);
-    
-    // Adjust rootDir for CDK context - Functions need code directory path
-    const originalRootDir = (context.metadata.rootDir || '.').replace(/^\/+|\/+$/g, '');
+    const sourceProps = context.metadata.sourceProps;
+    const rootDir = context.metadata.rootDir;
+    const isContainerMode = !!context.metadata.functionProps?.dockerFile;
+
+    // Adjust context for custom runtime (kept consistent for both modes)
     const adjustedContext = {
       ...context,
       metadata: {
         ...context.metadata,
-        rootDir: (!originalRootDir || originalRootDir === '.') ? 'code' : `code/${originalRootDir}`
+        contextDirectory: '../',
+        buildProps: {
+          ...context.metadata.buildProps,
+          customRuntime: 'runtime/Dockerfile'
+        }
       }
     };
-    
+
+    // Common install commands: clone user repo and cd into rootDir if present
+    let installCommands = `- echo "Starting build..."
+            - source /etc/profile
+            - export PROJECT_PATH="$PWD"
+            - echo "Building application..."
+            - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
+            - git clone --depth 1 --branch ${sourceProps?.branchOrRef || context.branch || 'main'} https://x-access-token:$GITHUB_TOKEN@github.com/${sourceProps?.owner || context.owner}/${sourceProps?.repo || context.repo}.git .
+            - ${rootDir ? `cd "${rootDir}"` : ''}`;
+
+    // In zip mode we run the user's install/build steps. 
+    // In container mode we skip because the Dockerfile should handle the build.
+    if (!isContainerMode) {
+      installCommands += `
+            - fnm use ${buildProps?.runtime_version || '24'}
+            - echo "Installing dependencies..."
+            - ${buildProps?.installcmd || 'npm install'}
+            - echo "Install phase complete"
+            - echo "Building application..."
+            - ${buildProps?.buildcmd || 'npm run build'}
+            - echo "Build phase complete"`;
+    }
+
     return `
       version: 0.2
       phases:
         install:
-          runtime-versions:
-            ${runtime}: ${runtimeVersion}
           commands:
-            - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
-            - git clone --depth 1 --branch v${stackVersion} ${this.getStackRepositoryUrl()} ./cdk-functions
-            - cd ./cdk-functions
-            - npm install
-            - git clone --depth 1 --branch ${context.metadata.sourceProps?.branchOrRef || context.branch || 'main'} https://x-access-token:$GITHUB_TOKEN@github.com/${context.metadata.sourceProps?.owner || context.owner}/${context.metadata.sourceProps?.repo || context.repo}.git ./code
+            ${installCommands}
         build:
+          commands:          
+            - echo "Installing CDK dependencies..."
+            - git clone --depth 1 --branch v${stackVersion} -c advice.detachedHead=false ${this.getStackRepositoryUrl()} __
+            - cd "__"
+            - bun install
+        post_build:
           commands:
-            ${userBuildCommands.length > 0 ? userBuildCommands.map(cmd => `- ${cmd}`).join('\n            ') + '\n            ' : ''}- echo '${JSON.stringify(adjustedContext)}' > cdk.context.json
-            - npx cdk deploy --app "npx tsx bin/app.ts" --require-approval never --verbose
+            - echo "Deploying infrastructure..."
+            - echo '${JSON.stringify(adjustedContext)}' > cdk.context.json
+            - npx cdk deploy --app "npx tsx bin/app.ts" --require-approval never
     `;
   },
 
   generateDestroyBuildSpec(context: any, stackVersion: string): string {
-    const buildProps = context.metadata.buildProps;
-    const runtime = buildProps?.runtime || 'nodejs';
-    const runtimeVersion = buildProps?.runtime_version || '22';
-    
-    // Adjust rootDir for CDK context
-    const originalRootDir = (context.metadata.rootDir || '.').replace(/^\/+|\/+$/g, '');
+    // Adjust context for custom runtime
     const adjustedContext = {
       ...context,
       metadata: {
         ...context.metadata,
-        rootDir: (!originalRootDir || originalRootDir === '.') ? 'code' : `code/${originalRootDir}`
+        contextDirectory: '../',
+        buildProps: {
+          ...context.metadata.buildProps,
+          customRuntime: 'runtime/Dockerfile'
+        }
       }
     };
     
@@ -87,16 +80,14 @@ export const lambdaBuilder: IStackBuilder = {
       version: 0.2
       phases:
         install:
-          runtime-versions:
-            ${runtime}: ${runtimeVersion}
           commands:
-            - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
-            - git clone --depth 1 --branch v${stackVersion} ${this.getStackRepositoryUrl()} ./cdk-functions
-            - cd ./cdk-functions
-            - npm install
-            - git clone --depth 1 --branch ${context.metadata.sourceProps?.branchOrRef || context.branch || 'main'} https://x-access-token:$GITHUB_TOKEN@github.com/${context.metadata.sourceProps?.owner || context.owner}/${context.metadata.sourceProps?.repo || context.repo}.git ./code
-        build:
+            - echo "Installing CDK dependencies..."
+            - git clone --depth 1 --branch v${stackVersion} -c advice.detachedHead=false ${this.getStackRepositoryUrl()} .
+            - cd .
+            - bun install
+        post_build:
           commands:
+            - echo "Destroying infrastructure..."
             - echo '${JSON.stringify(adjustedContext)}' > cdk.context.json
             - npx cdk destroy --app "npx tsx bin/app.ts" --require-approval never --force --verbose
     `;

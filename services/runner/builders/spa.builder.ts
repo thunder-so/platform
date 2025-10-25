@@ -1,16 +1,10 @@
 import type { IStackBuilder, RunnerRequest } from './types';
 
 export const spaBuilder: IStackBuilder = {
-  requiresUserCodeBuild(request: RunnerRequest): boolean {
-    return true;
-  },
-
   generateBuildSpec(context: any, stackVersion: string): string {
     const buildProps = context.metadata.buildProps;
     const sourceProps = context.metadata.sourceProps;
-
-    // Normalize rootDir - remove leading/trailing slashes, handle empty/dot cases
-    const rootDir = context.metadata.rootDir?.replace(/^\.?\/+|\/+$/g, '') || '';
+    const rootDir = context.metadata.rootDir;
 
     // Adjust context for custom runtime
     const adjustedContext = {
@@ -64,6 +58,7 @@ export const spaBuilder: IStackBuilder = {
       ...context,
       metadata: {
         ...context.metadata,
+        contextDirectory: '../',
         buildProps: {
           ...context.metadata.buildProps,
           customRuntime: 'runtime/Dockerfile'

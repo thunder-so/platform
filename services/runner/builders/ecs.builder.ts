@@ -1,14 +1,6 @@
 import type { IStackBuilder, RunnerRequest } from './types';
 
 export const ecsBuilder: IStackBuilder = {
-  requiresUserCodeBuild(request: RunnerRequest): boolean {
-    return false; // Container-based, no user build step needed
-  },
-
-  generateUserBuildCommands(request: RunnerRequest): string[] {
-    return []; // No user build commands for container-based deployment
-  },
-
   generateBuildSpec(context: any, stackVersion: string): string {
     // Adjust rootDir for CDK context - WebService needs code directory path
     const originalRootDir = (context.metadata.rootDir || '.').replace(/^\/+|\/+$/g, '');
