@@ -467,7 +467,7 @@ const error = ref<{ message: string } | null>(null);
 const transformBuildToActivityItem = (build: Build): BuildActivity => ({
   id: build.id,
   type: 'build',
-  timestamp_start: build.build_start,
+  timestamp_start: build.build_start || build.created_at,
   timestamp_end: build.build_end,
   status: (build.build_status as string) || null,
   message: `Build ${String(build.build_status || '').toLowerCase()} for service ${service.value?.display_name || 'N/A'}`,

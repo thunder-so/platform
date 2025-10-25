@@ -81,17 +81,7 @@ export const handler: SQSHandler = async (event) => {
       if (!builder) {
         throw new Error(`No builder found for stack type: ${stackType}`);
       }
-
-      console.log('Builder found for stack type:', stackType);
-      
-      // Validate BuildProps if user code build is required
-      if (builder.requiresUserCodeBuild(props)) {
-        const buildProps = props.metadata.buildProps;
-        if (!buildProps) {
-          throw new Error(`BuildProps are required for ${stackType} but not provided`);
-        }
-        console.log('User code build required, BuildProps validated');
-      }
+      console.log('Stack type:', stackType);
 
       let credentials;
       if (provider.role_arn) {

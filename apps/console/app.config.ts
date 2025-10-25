@@ -57,8 +57,8 @@ export default defineAppConfig({
     },
   ],
   stacks: [
-    { type: "SPA", source: "@thunderso/cdk-spa", version: "0.23.3" },
-    { type: "FUNCTION", source: "@thunderso/cdk-functions", version: "0.7.0" },
+    { type: "SPA", source: "@thunderso/cdk-spa", version: "0.23.4" },
+    { type: "FUNCTION", source: "@thunderso/cdk-functions", version: "0.7.1" },
     { type: "WEB_SERVICE", source: "@thunderso/cdk-webservice", version: "0.3.1" },
   ],
   fargate: {

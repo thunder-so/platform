@@ -4,8 +4,10 @@
       <template #header>
         <USkeleton class="h-6 w-40" />
       </template>
-      <div v-for="i in 3" :key="i" class="space-y-4">
-        <USkeleton class="h-6 w-full" />
+      <div class="flex flex-col gap-4">
+        <div v-for="i in 3" :key="i" class="space-y-4">
+          <USkeleton class="h-6 w-full" />
+        </div>
       </div>
     </UCard>
     <UCard v-if="deployData">

@@ -1,10 +1,11 @@
 import type { IStackBuilder, RunnerRequest } from './types';
+import { sanitizePath } from './utils';
 
 export const spaBuilder: IStackBuilder = {
   generateBuildSpec(context: any, stackVersion: string): string {
     const buildProps = context.metadata.buildProps;
     const sourceProps = context.metadata.sourceProps;
-    const rootDir = context.metadata.rootDir;
+    const rootDir = sanitizePath(context.metadata.rootDir);
 
     // Adjust context for custom runtime
     const adjustedContext = {

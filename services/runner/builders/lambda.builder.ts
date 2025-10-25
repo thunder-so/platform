@@ -1,10 +1,11 @@
 import type { IStackBuilder, RunnerRequest } from './types';
+import { sanitizePath } from './utils';
 
 export const lambdaBuilder: IStackBuilder = {
   generateBuildSpec(context: any, stackVersion: string): string {
     const buildProps = context.metadata.buildProps;
     const sourceProps = context.metadata.sourceProps;
-    const rootDir = context.metadata.rootDir;
+    const rootDir = sanitizePath(context.metadata.rootDir);
     const isContainerMode = !!context.metadata.functionProps?.dockerFile;
 
     // Adjust context for custom runtime (kept consistent for both modes)
