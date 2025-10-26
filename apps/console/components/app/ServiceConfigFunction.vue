@@ -39,7 +39,7 @@
 
 <script setup lang="ts">
 import type { PropType } from 'vue';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { z } from 'zod';
 import { FunctionServiceMetadataSchema } from '~/server/validators/common';
 import appConfig from '~/app.config';
@@ -56,6 +56,25 @@ const deploymentMode = ref<'Container' | 'Zip'>(configuration.functionProps?.doc
 if (!configuration.functionProps) configuration.functionProps = {} as any;
 if (!configuration.buildProps) configuration.buildProps = {} as any;
 if (!configuration.functionProps.runtime) configuration.functionProps.runtime = lambdaRuntimeValues[0];
+
+// Bidirectional sync between functionProps.runtime and buildProps.runtime_version
+watch(() => configuration.functionProps.runtime, (newRuntime) => {
+  if (newRuntime && configuration.buildProps) {
+    const version = newRuntime.replace('nodejs', '').replace('.x', '');
+    configuration.buildProps.runtime_version = version;
+  }
+});
+
+// Initial sync: if buildProps.runtime_version exists, sync to functionProps.runtime
+if (configuration.buildProps?.runtime_version) {
+  const matchingRuntime = lambdaRuntimeValues.find(runtime => 
+    runtime.replace('nodejs', '').replace('.x', '') === configuration.buildProps.runtime_version
+  );
+  if (matchingRuntime) {
+    configuration.functionProps.runtime = matchingRuntime;
+  }
+}
+
 const errors = computed(() => form.value?.errors || []);
 
 defineExpose({ errors });
