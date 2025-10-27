@@ -13,7 +13,7 @@ export const lambdaBuilder: IStackBuilder = {
       ...context,
       metadata: {
         ...context.metadata,
-        contextDirectory: '../',
+        contextDirectory: '../code/',
         buildProps: {
           ...context.metadata.buildProps,
           customRuntime: 'runtime/Dockerfile'
@@ -27,20 +27,22 @@ export const lambdaBuilder: IStackBuilder = {
             - export PROJECT_PATH="$PWD"
             - echo "Building application..."
             - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
-            - git clone --depth 1 --branch ${sourceProps?.branchOrRef || context.branch || 'main'} https://x-access-token:$GITHUB_TOKEN@github.com/${sourceProps?.owner || context.owner}/${sourceProps?.repo || context.repo}.git .
-            - ${rootDir ? `cd "${rootDir}"` : ''}`;
+            - git clone --depth 1 --branch ${sourceProps?.branchOrRef || context.branch || 'main'} https://x-access-token:$GITHUB_TOKEN@github.com/${sourceProps?.owner || context.owner}/${sourceProps?.repo || context.repo}.git code
+            `;
 
     // In zip mode we run the user's install/build steps. 
     // In container mode we skip because the Dockerfile should handle the build.
     if (!isContainerMode) {
       installCommands += `
+            - cd "code/${rootDir}"
             - fnm use ${buildProps?.runtime_version || '24'}
             - echo "Installing dependencies..."
             - ${buildProps?.installcmd || 'npm install'}
             - echo "Install phase complete"
             - echo "Building application..."
             - ${buildProps?.buildcmd || 'npm run build'}
-            - echo "Build phase complete"`;
+            - echo "Build phase complete"
+        `;
     }
 
     return `
@@ -50,10 +52,11 @@ export const lambdaBuilder: IStackBuilder = {
           commands:
             ${installCommands}
         build:
-          commands:          
+          commands:
             - echo "Installing CDK dependencies..."
-            - git clone --depth 1 --branch v${stackVersion} -c advice.detachedHead=false ${this.getStackRepositoryUrl()} __
-            - cd "__"
+            - cd "$PROJECT_PATH"
+            - git clone --depth 1 --branch v${stackVersion} -c advice.detachedHead=false ${this.getStackRepositoryUrl()} lib
+            - cd "lib"
             - bun install
         post_build:
           commands:
