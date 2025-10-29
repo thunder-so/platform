@@ -107,8 +107,8 @@ export const applicationsRouter = router({
         return { newApplicationId: newApplication.id, newServiceId: newService.id };
       });
 
-      // const platform = new PlatformLibrary();
-      // await platform.triggerBuild(newServiceId);
+      const platform = new PlatformLibrary();
+      await platform.triggerBuild(newServiceId);
 
       return { newApplicationId };
     }),
