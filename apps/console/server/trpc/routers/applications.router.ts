@@ -66,13 +66,15 @@ export const applicationsRouter = router({
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to decrypt GitHub access token.' });
         }
 
-        const secretName = `thunder/${newApplication.id}/${newEnvironment.id}/github-token`;
+        const secretName = `thunder/${newApplication.name}/${newEnvironment.name}/github-token`;
         const accessTokenSecretArn = await ProviderLibrary.createOrUpdateSecret(
           { ...env.provider, organization_id: input.organization_id },
           secretName,
           decryptedToken,
-          `GitHub User Access Token for application ${newApplication.name} in environment ${newEnvironment.name}`
+          `GitHub UAT for app ${newApplication.name} in env ${newEnvironment.name}`,
+          env.region
         );
+        console.log('Created/Updated secret in provider with ARN:', accessTokenSecretArn);
 
         await tx.update(userAccessTokens)
           .set({ environment_id: newEnvironment.id, resource: accessTokenSecretArn })
@@ -105,8 +107,8 @@ export const applicationsRouter = router({
         return { newApplicationId: newApplication.id, newServiceId: newService.id };
       });
 
-      const platform = new PlatformLibrary();
-      await platform.triggerBuild(newServiceId);
+      // const platform = new PlatformLibrary();
+      // await platform.triggerBuild(newServiceId);
 
       return { newApplicationId };
     }),

@@ -74,10 +74,11 @@ async function getCredentials(provider: ProviderSchema | ManualProvider) {
 
 async function getAwsClient<TClient>(
     clientConstructor: new (config: any) => TClient,
-    provider: ProviderSchema | ManualProvider
+    provider: ProviderSchema | ManualProvider,
+    region?: string
 ): Promise<TClient> {
     const credentials = await getCredentials(provider);
-    return new clientConstructor({ credentials });
+    return new clientConstructor({ credentials, region });
 }
 
 export async function getCallerIdentity(provider: ManualProvider) {
@@ -117,8 +118,8 @@ export async function getCallerIdentity(provider: ManualProvider) {
 //     }
 // }
 
-export async function createOrUpdateSecret(provider: ProviderSchema, name: string, secretString: string, description: string): Promise<string> {
-    const secretsManagerClient = await getAwsClient(SecretsManagerClient, provider);
+export async function createOrUpdateSecret(provider: ProviderSchema, name: string, secretString: string, description: string, region?: string): Promise<string> {
+    const secretsManagerClient = await getAwsClient(SecretsManagerClient, provider, region);
     try {
         const response = await secretsManagerClient.send(new CreateSecretCommand({
             Name: name,
