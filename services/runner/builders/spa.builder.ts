@@ -26,7 +26,7 @@ export const spaBuilder: IStackBuilder = {
         install:
           commands:
             - echo "Starting build..."
-            - source /etc/profile
+            - source ~/.bashrc
             - export PROJECT_PATH="$PWD"
             - echo "Building application..."
             - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)

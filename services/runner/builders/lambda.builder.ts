@@ -23,7 +23,7 @@ export const lambdaBuilder: IStackBuilder = {
 
     // Common install commands: clone user repo and cd into rootDir if present
     let installCommands = `- echo "Starting build..."
-            - source /etc/profile
+            - source ~/.bashrc
             - export PROJECT_PATH="$PWD"
             - echo "Building application..."
             - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
@@ -67,27 +67,59 @@ export const lambdaBuilder: IStackBuilder = {
   },
 
   generateDestroyBuildSpec(context: any, stackVersion: string): string {
-    // Adjust context for custom runtime
+    const buildProps = context.metadata.buildProps;
+    const sourceProps = context.metadata.sourceProps;
+    const rootDir = sanitizePath(context.metadata.rootDir);
+    const isContainerMode = !!context.metadata.functionProps?.dockerFile;
+
+    // Adjust context for custom runtime (kept consistent for both modes)
     const adjustedContext = {
       ...context,
       metadata: {
         ...context.metadata,
-        contextDirectory: '../',
+        contextDirectory: '../code/',
         buildProps: {
           ...context.metadata.buildProps,
           customRuntime: 'runtime/Dockerfile'
         }
       }
     };
-    
+
+    let installCommands = `- echo "Starting build..."
+            - source ~/.bashrc
+            - export PROJECT_PATH="$PWD"
+            - echo "Building application..."
+            - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
+            - git clone --depth 1 --branch ${sourceProps?.branchOrRef || context.branch || 'main'} https://x-access-token:$GITHUB_TOKEN@github.com/${sourceProps?.owner || context.owner}/${sourceProps?.repo || context.repo}.git code
+            `;
+
+    // In zip mode we run the user's install/build steps. 
+    // In container mode we skip because the Dockerfile should handle the build.
+    if (!isContainerMode) {
+      installCommands += `
+            - cd "code/${rootDir}"
+            - fnm use ${buildProps?.runtime_version || '24'}
+            - echo "Installing dependencies..."
+            - ${buildProps?.installcmd || 'npm install'}
+            - echo "Install phase complete"
+            - echo "Building application..."
+            - ${buildProps?.buildcmd || 'npm run build'}
+            - echo "Build phase complete"
+        `;
+    }
+
     return `
       version: 0.2
       phases:
         install:
           commands:
+            ${installCommands}
+        build:
+          commands:
             - echo "Installing CDK dependencies..."
-            - git clone --depth 1 --branch v${stackVersion} -c advice.detachedHead=false ${this.getStackRepositoryUrl()} .
-            - cd .
+            - cd "$PROJECT_PATH"
+            - git clone --depth 1 --branch v${stackVersion} -c advice.detachedHead=false ${this.getStackRepositoryUrl()} lib
+            - cd "lib"
             - bun install
         post_build:
           commands:

@@ -45,7 +45,7 @@ const STACK_DEFAULTS: {
     },
     functionProps: {
       runtime: lambdaRuntimeDefault,
-      architecture: 'arm',
+      architecture: 'x86',
       memorySize: 1792,
       timeout: 30,
       keepWarm: true,
