@@ -29,11 +29,10 @@ RUN source ~/.bashrc && \
     fnm install 24 --corepack-enabled && \
     fnm default 24
 
-# Install Yarn (via corepack, included with Node)
-RUN source ~/.bashrc && corepack prepare yarn@stable --activate
-
-# Install pnpm
-RUN curl -fsSL https://get.pnpm.io/install.sh | bash
+# Install Yarn and PNPM (via corepack, included with Node)
+RUN source ~/.bashrc && \
+    corepack prepare yarn@stable --activate && \
+    corepack prepare pnpm@latest --activate
 
 # Install Bun
 RUN curl -fsSL https://bun.sh/install | bash
@@ -42,7 +41,6 @@ RUN curl -fsSL https://bun.sh/install | bash
 RUN source ~/.bashrc && \
     node --version && \
     npm --version && \
-    corepack --version && \
     pnpm --version && \
     yarn --version && \
     bun --version

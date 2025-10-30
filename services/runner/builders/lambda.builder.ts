@@ -8,16 +8,20 @@ export const lambdaBuilder: IStackBuilder = {
     const rootDir = sanitizePath(context.metadata.rootDir);
     const isContainerMode = !!context.metadata.functionProps?.dockerFile;
 
-    // Adjust context for custom runtime (kept consistent for both modes)
+    // Adjust context - only add customRuntime for zip mode
+    const adjustedBuildProps = isContainerMode 
+      ? context.metadata.buildProps
+      : {
+          ...context.metadata.buildProps,
+          customRuntime: 'runtime/Dockerfile'
+        };
+
     const adjustedContext = {
       ...context,
       metadata: {
         ...context.metadata,
         contextDirectory: '../code/',
-        buildProps: {
-          ...context.metadata.buildProps,
-          customRuntime: 'runtime/Dockerfile'
-        }
+        buildProps: adjustedBuildProps
       }
     };
 
@@ -72,16 +76,20 @@ export const lambdaBuilder: IStackBuilder = {
     const rootDir = sanitizePath(context.metadata.rootDir);
     const isContainerMode = !!context.metadata.functionProps?.dockerFile;
 
-    // Adjust context for custom runtime (kept consistent for both modes)
+    // Adjust context - only add customRuntime for zip mode
+    const adjustedBuildProps = isContainerMode 
+      ? context.metadata.buildProps
+      : {
+          ...context.metadata.buildProps,
+          customRuntime: 'runtime/Dockerfile'
+        };
+
     const adjustedContext = {
       ...context,
       metadata: {
         ...context.metadata,
         contextDirectory: '../code/',
-        buildProps: {
-          ...context.metadata.buildProps,
-          customRuntime: 'runtime/Dockerfile'
-        }
+        buildProps: adjustedBuildProps
       }
     };
 
