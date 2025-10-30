@@ -183,6 +183,7 @@ const { data, pending, error: logsError, execute } = useAsyncData(`deploy-logs-$
     return $client.services.getDeployLogs.query({
       pipeline_log: deployData.value.pipeline_log,
       provider: deployData.value.environments.providers,
+      region: deployData.value.environments.region,
       nextToken: nextToken.value,
     });
   },

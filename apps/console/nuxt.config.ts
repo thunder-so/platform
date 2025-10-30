@@ -25,6 +25,7 @@ export default defineNuxtConfig({
       'trpc-nuxt', 
       '@trpc/client', 
       '@trpc/server',
+      '@supabase/postgrest-js'
     ],
   },
   modules: [
@@ -86,8 +87,8 @@ export default defineNuxtConfig({
         target: 'esnext',
       },
     },
-    // inlineDynamicImports: process.env.NODE_ENV === 'development' ? true : false,
-    inlineDynamicImports: false,
+    inlineDynamicImports: process.env.NODE_ENV === 'development' ? true : false,
+    // inlineDynamicImports: false,
     experimental: {
       wasm: false,
       legacyExternals: process.env.NODE_ENV === 'development' ? false : true,

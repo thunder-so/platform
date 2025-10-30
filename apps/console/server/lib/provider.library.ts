@@ -145,12 +145,12 @@ export async function createOrUpdateSecret(provider: ProviderSchema, name: strin
     }
 }
 
-export async function triggerPipeline(providerId: string, serviceId: string, sha?: string) {
+export async function triggerPipeline(providerId: string, serviceId: string, sha?: string, region?: string) {
   const provider = await db.query.providers.findFirst({
     where: eq(providers.id, providerId),
   });
 
-  const codePipelineClient = await getAwsClient(CodePipelineClient, provider as ProviderSchema);
+  const codePipelineClient = await getAwsClient(CodePipelineClient, provider as ProviderSchema, region);
 
   const serviceData = await db.query.services.findFirst({
     where: eq(services.id, serviceId),
@@ -191,8 +191,8 @@ export async function triggerPipeline(providerId: string, serviceId: string, sha
   }
 }
 
-export async function getCloudWatchLogs(provider: ProviderSchema, logGroupName: string, logStreamName: string, nextToken?: string) {
-    const cloudWatchLogsClient = await getAwsClient(CloudWatchLogsClient, provider);
+export async function getCloudWatchLogs(provider: ProviderSchema, logGroupName: string, logStreamName: string, nextToken?: string, region?: string) {
+    const cloudWatchLogsClient = await getAwsClient(CloudWatchLogsClient, provider, region);
 
     try {
         const command = new GetLogEventsCommand({
@@ -215,8 +215,8 @@ export async function getCloudWatchLogs(provider: ProviderSchema, logGroupName: 
     }
 }
 
-export async function getCloudWatchLogsFromGroup(provider: ProviderSchema, logGroupName: string, nextToken?: string, startTime?: number, endTime?: number) {
-    const cloudWatchLogsClient = await getAwsClient(CloudWatchLogsClient, provider);
+export async function getCloudWatchLogsFromGroup(provider: ProviderSchema, logGroupName: string, nextToken?: string, startTime?: number, endTime?: number, region?: string) {
+    const cloudWatchLogsClient = await getAwsClient(CloudWatchLogsClient, provider, region);
 
     try {
         const command = new FilterLogEventsCommand({

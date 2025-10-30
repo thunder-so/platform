@@ -72,6 +72,7 @@ export const servicesRouter = router({
       z.object({
         pipeline_log: z.any(),
         provider: z.any(),
+        region: z.string(),
         nextToken: z.string().optional(),
       })
     )
@@ -93,7 +94,13 @@ export const servicesRouter = router({
       }
 
       try {
-        const logs = await getCloudWatchLogs(provider as ProviderSchema, logGroupName, logStreamName, input.nextToken);
+        const logs = await getCloudWatchLogs(
+          provider as ProviderSchema, 
+          logGroupName, 
+          logStreamName, 
+          input.nextToken, 
+          input.region
+        );
         return { 
           ...logs
         };
@@ -146,8 +153,14 @@ export const servicesRouter = router({
         logGroupName = `/aws/lambda/${resourceIdPrefix}-container-function`;
       }
 
-      const logs = await getCloudWatchLogsFromGroup(environment.provider as ProviderSchema, logGroupName, input.nextToken, input.startTime, input.endTime);
-      const deepLink = `https://console.aws.amazon.com/cloudwatch/home?region=${environment.region}#logsV2:log-groups/log-group/${encodeURIComponent(logGroupName)}`;
+      const logs = await getCloudWatchLogsFromGroup(
+        environment.provider as ProviderSchema, 
+        logGroupName, 
+        input.nextToken, 
+        input.startTime, 
+        input.endTime, 
+        environment.region as string
+      );
       
       return { 
         ...logs
@@ -179,7 +192,16 @@ export const servicesRouter = router({
     )
     .mutation(async ({ input }) => {
       const { providerId, serviceId, sha } = input;
-      return await triggerPipeline(providerId, serviceId, sha);
+      const service = await db.query.services.findFirst({
+        where: eq(services.id, serviceId),
+        with: { environment: true }
+      });
+      return await triggerPipeline(
+        providerId, 
+        serviceId, 
+        sha, 
+        service?.environment?.region as string
+      );
     }),
 
   updateService: protectedProcedure
