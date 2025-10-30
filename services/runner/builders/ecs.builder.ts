@@ -19,11 +19,11 @@ export const ecsBuilder: IStackBuilder = {
           runtime-versions:
             nodejs: 24
           commands:
-            - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
+            - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --region ${context.metadata.env.region} --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
             - git clone --depth 1 --branch v${stackVersion} ${this.getStackRepositoryUrl()} ./cdk-webservice
             - cd ./cdk-webservice
             - npm install
-            - git clone --depth 1 --branch ${context.metadata.sourceProps?.branchOrRef || context.branch || 'main'} https://x-access-token:$GITHUB_TOKEN@github.com/${context.metadata.sourceProps?.owner || context.owner}/${context.metadata.sourceProps?.repo || context.repo}.git ./code
+            - git clone --depth 1 --branch ${context.metadata.sourceProps?.branchOrRef} https://x-access-token:$GITHUB_TOKEN@github.com/${context.metadata.sourceProps?.owner}/${context.metadata.sourceProps?.repo}.git ./code
         build:
           commands:
             - echo '${JSON.stringify(adjustedContext)}' > cdk.context.json
@@ -49,11 +49,11 @@ export const ecsBuilder: IStackBuilder = {
           runtime-versions:
             nodejs: 24
           commands:
-            - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
+            - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --region ${context.metadata.env.region} --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
             - git clone --depth 1 --branch v${stackVersion} ${this.getStackRepositoryUrl()} ./cdk-webservice
             - cd ./cdk-webservice
             - npm install
-            - git clone --depth 1 --branch ${context.metadata.sourceProps?.branchOrRef || context.branch || 'main'} https://x-access-token:$GITHUB_TOKEN@github.com/${context.metadata.sourceProps?.owner || context.owner}/${context.metadata.sourceProps?.repo || context.repo}.git ./code
+            - git clone --depth 1 --branch ${context.metadata.sourceProps?.branchOrRef} https://x-access-token:$GITHUB_TOKEN@github.com/${context.metadata.sourceProps?.owner}/${context.metadata.sourceProps?.repo}.git ./code
         build:
           commands:
             - echo '${JSON.stringify(adjustedContext)}' > cdk.context.json

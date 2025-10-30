@@ -478,7 +478,7 @@ const transformBuildToActivityItem = (build: Build): BuildActivity => ({
 const transformEventToActivityItem = (event: Event): EventActivity => ({
   id: event.pipeline_execution_id,
   type: 'event',
-  timestamp_start: event.pipeline_start,
+  timestamp_start: event.pipeline_start || event.created_at,
   timestamp_end: event.pipeline_end,
   status: (event.pipeline_state as string) || null,
   message: `Pipeline ${String(event.pipeline_state || '').toLowerCase()} for service ${service.value?.display_name || 'N/A'}`,

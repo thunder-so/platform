@@ -5,7 +5,6 @@ export default defineAppConfig({
     { name: "us-west-1", label: "US West 1 (N. California)" },
     { name: "us-west-2", label: "US West 2 (Oregon)" },
     { name: "ca-central-1", label: "Canada (Central)" },
-    { name: "af-south-1", label: "Africa (Cape Town)" },
     { name: "ap-east-1", label: "Asia Pacific (Hong Kong)" },
     { name: "ap-northeast-1", label: "Asia Pacific (Tokyo)" },
     { name: "ap-northeast-2", label: "Asia Pacific (Seoul)" },
@@ -25,6 +24,7 @@ export default defineAppConfig({
     { name: "eu-west-3", label: "Europe (Paris)" },
     { name: "me-central-1", label: "Middle East (UAE)" },
     { name: "me-south-1", label: "Middle East (Bahrain)" },
+    { name: "af-south-1", label: "Africa (Cape Town)" },
     { name: "sa-east-1", label: "South America (São Paulo)" }
   ],
   // Runtimes supported by AWS CodeBuild
@@ -57,8 +57,8 @@ export default defineAppConfig({
     },
   ],
   stacks: [
-    { type: "SPA", source: "@thunderso/cdk-spa", version: "0.23.7" },
-    { type: "FUNCTION", source: "@thunderso/cdk-functions", version: "0.7.5" },
+    { type: "SPA", source: "@thunderso/cdk-spa", version: "0.23.8" },
+    { type: "FUNCTION", source: "@thunderso/cdk-functions", version: "0.7.6" },
     { type: "WEB_SERVICE", source: "@thunderso/cdk-webservice", version: "0.3.1" },
   ],
   fargate: {
