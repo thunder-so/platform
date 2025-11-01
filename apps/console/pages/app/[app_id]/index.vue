@@ -671,6 +671,5 @@ const clearFilters = () => {
 onUnmounted(() => {
   if (buildChannel) supabase.removeChannel(buildChannel);
   if (eventsChannel) supabase.removeChannel(eventsChannel);
-  clearApplicationSchema();
 });
 </script>

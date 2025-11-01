@@ -180,7 +180,7 @@
 </template>
 
 <script setup lang="ts">
-import { watch, computed } from 'vue';
+import { watch, computed, onUnmounted } from 'vue';
 import type { NavigationMenuItem } from '@nuxt/ui'
 import { useApplications } from '~/composables/useApplications';
 import Header from '~/components/Header.vue';
@@ -188,7 +188,7 @@ import { AppDeployCommitModal, AppDeployLatestModal } from '#components';
 
 const route = useRoute();
 const { $client } = useNuxtApp();
-const { applicationSchema, setApplicationSchemaById, currentEnvironment: environment, currentService } = useApplications();
+const { applicationSchema, setApplicationSchemaById, currentEnvironment: environment, currentService, clearApplicationSchema } = useApplications();
 const provider = computed(() => environment.value?.provider);
 const service = computed(() => currentService.value);
 const toast = useToast();
@@ -301,4 +301,8 @@ watch(() => route.params.app_id, (newAppId) => {
     }
   }
 }, { immediate: true });
+
+onUnmounted(() => {
+  clearApplicationSchema();
+});
 </script>
