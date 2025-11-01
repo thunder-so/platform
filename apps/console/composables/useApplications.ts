@@ -87,6 +87,13 @@ export const useApplications = () => {
     return await fetchApplicationSchema(appId.value);
   };
 
+  const clearApplicationSchema = () => {
+    applicationSchema.value = null;
+    appId.value = null;
+    isLoading.value = false;
+    isError.value = false;
+  };
+
   const route = useRoute();
 
   const currentEnvironment = computed(() => {
@@ -107,6 +114,7 @@ export const useApplications = () => {
     isError,
     refreshApplicationSchema,
     setApplicationSchemaById,
+    clearApplicationSchema,
     appId,
     currentEnvironment,
     currentService,
