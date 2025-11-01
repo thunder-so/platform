@@ -59,6 +59,7 @@ const { $client } = useNuxtApp();
 const overlay = useOverlay();
 const toast = useToast()
 const MemberInviteModal = resolveComponent('OrgMemberInviteModal');
+const MemberDeleteModal = resolveComponent('OrgMemberDeleteModal');
 const UAvatar = resolveComponent('UAvatar');
 const UBadge = resolveComponent('UBadge');
 const orgId = selectedOrganization?.value?.id as string;
@@ -67,7 +68,6 @@ const maxMembers = computed(() => {
 });
 const limitReached = computed(() => members.value.length >= maxMembers.value);
 
-const removingMemberId = ref<number | null>(null);
 const members = ref<any[]>([]);
 const loading = ref(true);
 const error = ref<{ message: string } | null>(null);
@@ -106,8 +106,7 @@ const columns = [
           icon: 'i-lucide-ellipsis-vertical',
           color: 'neutral',
           variant: 'ghost',
-          'aria-label': 'Actions',
-          disabled: removingMemberId.value === row.original.id
+          'aria-label': 'Actions'
         })
       )
     ])
@@ -133,7 +132,8 @@ const fetchMembers = async () => {
         user:users (id, email, full_name, avatar_url)
       `)
       .eq('organization_id', orgId)
-      .order('pending', { ascending: true }); // Only order by top-level field
+      .is('deleted_at', null)
+      .order('pending', { ascending: true });
 
     if (fetchError) throw fetchError;
     members.value = data;
@@ -151,18 +151,7 @@ function getDropdownActions(member: any) {
         label: 'Remove Member',
         icon: 'i-lucide-trash',
         color: 'error',
-        onSelect: async () => {
-          removingMemberId.value = member.id;
-          try {
-            await $client.team.removeMember.mutate({ membershipId: member.id });
-            toast.add({ title: 'Member removed successfully!', color: 'success' });
-            await fetchMembers();
-          } catch (e: any) {
-            toast.add({ title: 'Failed to remove member', color: 'error' });
-          } finally {
-            removingMemberId.value = null;
-          }
-        }
+        onSelect: () => openDeleteModal(member)
       }
     ]];
   } else {
@@ -171,18 +160,7 @@ function getDropdownActions(member: any) {
         label: 'Cancel Invite',
         icon: 'i-lucide-trash',
         color: 'error',
-        onSelect: async () => {
-          removingMemberId.value = member.id;
-          try {
-            await $client.team.removeMember.mutate({ membershipId: member.id });
-            toast.add({ title: 'Invitation cancelled!', color: 'success' });
-            await fetchMembers();
-          } catch (e: any) {
-            toast.add({ title: 'Failed to cancel invite', color: 'error' });
-          } finally {
-            removingMemberId.value = null;
-          }
-        }
+        onSelect: () => openDeleteModal(member)
       }
     ]];
   }
@@ -195,6 +173,19 @@ onMounted(() => {
 const openInviteModal = async () => {
   const modal = overlay.create(MemberInviteModal, {
     props: { organizationId: orgId }
+  });
+  const result = await modal.open().result;
+  if (result) {
+    await fetchMembers();
+  }
+};
+
+const openDeleteModal = async (member: any) => {
+  const modal = overlay.create(MemberDeleteModal, {
+    props: { 
+      member,
+      totalMembers: members.value.filter(m => !m.pending).length
+    }
   });
   const result = await modal.open().result;
   if (result) {

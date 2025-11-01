@@ -282,7 +282,6 @@ const saveAppChanges = async () => {
   if (!applicationSchema.value?.id || !applicationSchema.value?.display_name) return;
 
   isAppSaving.value = true;
-  error.value = null;
 
   try {
     await $client.applications.update.mutate({
@@ -293,7 +292,6 @@ const saveAppChanges = async () => {
     await refreshApplicationSchema();
     toast.add({ title: 'Application settings saved successfully!', color: 'success' });
   } catch (e: any) {
-    error.value = e.message;
     toast.add({ title: 'Error saving application settings', description: e.message, color: 'error' });
   } finally {
     isAppSaving.value = false;

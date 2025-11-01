@@ -141,6 +141,13 @@
       "when": 1760052892228,
       "tag": "0019_misty_silver_fox",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1762035810666,
+      "tag": "0020_happy_mastermind",
+      "breakpoints": true
     }
   ]
 }

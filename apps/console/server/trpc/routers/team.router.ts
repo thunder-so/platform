@@ -1,8 +1,8 @@
 import { z } from 'zod'
 import { protectedProcedure, router } from '../init'
 import { db } from '~/server/db/db'
-import { memberships, users, organizations } from '~/server/db/schema'
-import { eq, and } from 'drizzle-orm'
+import { memberships, users, organizations, subscriptions } from '~/server/db/schema'
+import { eq, and, isNull, sql } from 'drizzle-orm'
 import { createClient } from '@supabase/supabase-js'
 
 export const teamRouter = router({
@@ -116,6 +116,33 @@ export const teamRouter = router({
 
       if (!removerMembership || removerMembership.access !== 'ADMIN') {
         throw new Error('Only admins can remove members.');
+      }
+
+      // Check if this is the last active member
+      const activeMembersCount = await db.select({ count: sql`count(*)` })
+        .from(memberships)
+        .where(and(
+          eq(memberships.organization_id, membershipToRemove.organization_id),
+          eq(memberships.pending, false),
+          isNull(memberships.deleted_at)
+        ));
+
+      if (Number(activeMembersCount[0]?.count) <= 1) {
+        throw new Error('Cannot remove the last member from the organization.');
+      }
+
+      // Check if user is billing owner (has active subscription)
+      const activeSubscription = await db.select()
+        .from(subscriptions)
+        .where(and(
+          eq(subscriptions.organization_id, membershipToRemove.organization_id),
+          eq(subscriptions.user_id, membershipToRemove.user_id),
+          eq(subscriptions.status, 'active')
+        ))
+        .limit(1);
+
+      if (activeSubscription.length > 0) {
+        throw new Error('Cannot remove member who manages the organization\'s subscription.');
       }
 
       await db.update(memberships).set({ deleted_at: new Date() }).where(eq(memberships.id, input.membershipId));
