@@ -10,5 +10,5 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true
   },
-  "exclude": ["node_modules", "dist", "cdk.out", ".nuxt", "supabase", "apps"]
+  "exclude": ["node_modules", "dist", "cdk.out", ".nuxt", "supabase"]
 }

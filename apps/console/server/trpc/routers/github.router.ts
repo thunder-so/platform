@@ -91,7 +91,7 @@ export const githubRouter = router({
 
         let installcmd = 'npm install';
         const [hasBunLock, hasPnpmLock, hasYarnLock] = await Promise.all([
-          github.checkFileExists(owner, repo, installation_id, 'bun.lockb'),
+          github.checkFileExists(owner, repo, installation_id, 'bun.lock'),
           github.checkFileExists(owner, repo, installation_id, 'pnpm-lock.yaml'),
           github.checkFileExists(owner, repo, installation_id, 'yarn.lock'),
         ]);
@@ -121,7 +121,7 @@ export const githubRouter = router({
             } else if (hasYarnLock) {
               buildcmd = `yarn ${buildScript}`;
             } else {
-              buildcmd = `npx ${buildScript}`;
+              buildcmd = `npm run ${buildScript}`;
             }
           }
         }

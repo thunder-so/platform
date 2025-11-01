@@ -16,19 +16,19 @@
     "deploy:ping:production": "cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=production"
   },
   "devDependencies": {
-    "aws-cdk": "^2.1023.0",
-    "aws-cdk-lib": "^2.208.0",
-    "dotenv-cli": "^7.4.2",
-    "typescript": "^5.9.2"
+    "aws-cdk": "2.1023.0",
+    "aws-cdk-lib": "2.208.0",
+    "dotenv-cli": "7.4.2",
+    "typescript": "5.9.2"
   },
   "dependencies": {
-    "@aws-lambda-powertools/parameters": "^2.24.1",
-    "@aws-sdk/client-cloudformation": "^3.859.0",
-    "@aws-sdk/client-codebuild": "^3.859.0",
-    "@aws-sdk/client-codepipeline": "^3.859.0",
-    "@aws-sdk/client-sts": "^3.859.0",
-    "@supabase/supabase-js": "^2.53.0",
-    "aws-cloudformation-custom-resource": "^5.0.0",
-    "constructs": "^10.4.2"
+    "@aws-lambda-powertools/parameters": "2.24.1",
+    "@aws-sdk/client-cloudformation": "3.922.0",
+    "@aws-sdk/client-codebuild": "3.922.0",
+    "@aws-sdk/client-codepipeline": "3.922.0",
+    "@aws-sdk/client-sts": "3.922.0",
+    "@supabase/supabase-js": "2.53.0",
+    "aws-cloudformation-custom-resource": "5.0.0",
+    "constructs": "10.4.2"
   }
 }

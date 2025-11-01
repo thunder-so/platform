@@ -15,13 +15,9 @@
     "turbo": "^2.5.4"
   },
   "workspaces": [
-    "apps/*",
     "packages/*",
     "services",
     "services/*"
   ],
-  "packageManager": "bun@1.2.18",
-  "dependencies": {
-    "supabase": "^2.30.4"
-  }
+  "packageManager": "bun@1.2.18"
 }

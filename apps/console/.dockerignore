@@ -1,0 +1,8 @@
+.nuxt
+.output
+node_modules
+.gitignore
+README.md
+.git
+.turbo
+cdk.out

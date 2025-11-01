@@ -25,7 +25,7 @@ export default defineNuxtConfig({
       'trpc-nuxt', 
       '@trpc/client', 
       '@trpc/server',
-      '@supabase/postgrest-js'
+      '@supabase/supabase-js'
     ],
   },
   modules: [
@@ -36,10 +36,10 @@ export default defineNuxtConfig({
     '@nuxt/icon'
   ],
   css: ['~/assets/css/main.css'],
-  modulesDir: [
-    join(currentDir, '../../node_modules'), 
-    join(currentDir, './node_modules')
-  ],
+  // modulesDir: [
+  //   join(currentDir, '../../node_modules'), 
+  //   join(currentDir, './node_modules')
+  // ],
   supabase: {
     url: process.env.SUPABASE_URL,
     key: process.env.SUPABASE_KEY,
@@ -70,7 +70,7 @@ export default defineNuxtConfig({
     provider: 'iconify',
     serverBundle: false,
     clientBundle: {
-      scan: true,
+      // scan: true,
       includeCustomCollections: true, 
     },
     customCollections: [
@@ -105,13 +105,14 @@ export default defineNuxtConfig({
     externals: {
       inline: [
         '@polar-sh/nuxt', 
-        // '@polar-sh/sdk',
         '@aws-sdk/client-acm',
         '@aws-sdk/client-cloudwatch-logs',
         '@aws-sdk/client-route-53',
         '@aws-sdk/client-sqs',
         '@aws-sdk/client-ssm',
         '@aws-sdk/client-sts',
+        '@aws-sdk/client-secrets-manager',
+        '@aws-sdk/client-codepipeline',
         '@aws-sdk/core',
         'perfect-debounce'
       ]
