@@ -1,7 +1,7 @@
 <template>
   <div>
     <Header :mobile-menu-items="[...primaryLinks, ...manageLinks]" />
-    
+    <ClientOnly>
     <UMain>
       <div class="grid grid-cols-6 gap-0 min-h-[calc(100vh-4rem)]">
         <div class="col-span-1 p-6 border-r border-muted lg:block hidden">
@@ -175,6 +175,7 @@
         </div>
       </div>
     </UMain>
+    </ClientOnly>
   </div>
 </template>
 

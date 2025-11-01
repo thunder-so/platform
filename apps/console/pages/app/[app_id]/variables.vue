@@ -37,7 +37,14 @@
       </UForm>
 
       <template #footer>
-        <UButton :loading="isSaving" :disabled="!isDirty" color="primary" @click="saveVariables">Save Variables</UButton>
+        <div class="flex gap-2">
+          <UButton :loading="localSaving" :disabled="!isDirty" @click="() => saveAndRebuild(() => saveVariablesData(), 'Variables saved.')">
+            Save and Rebuild
+          </UButton>
+          <UButton :loading="localSaving" :disabled="!isDirty" @click="() => saveOnly(() => saveVariablesData(), 'Variables saved.')" color="neutral" variant="outline">
+            Save
+          </UButton>
+        </div>
       </template>
     </UCard>
   </div>
@@ -62,13 +69,14 @@ const { $client } = useNuxtApp();
 const supabase = useSupabaseClient();
 const toast = useToast();
 const overlay = useOverlay();
+const { isSaving, saveOnly, saveAndRebuild } = useSaveAndRebuild();
 
 const service = computed(() => applicationSchema.value?.environments?.[0]?.services?.[0]);
 
 const form = ref<Form<z.infer<typeof envVarSchema>> | null>(null);
 const formState = ref<{ variables: Partial<ServiceVariable>[] }>({ variables: [] });
 const originalState = ref<{ variables: Partial<ServiceVariable>[] }>({ variables: [] });
-const isSaving = ref(false);
+const localSaving = ref(false);
 const loading = ref(true);
 const error = ref<Error | null>(null);
 const isDirty = ref(false);
@@ -148,50 +156,37 @@ const deleteVariable = async (id: string, index: number) => {
   }
 };
 
-const saveVariables = async () => {
+const saveVariablesData = async () => {
   if (!form.value) return;
-  try {
-    await form.value.validate();
-  } catch (e) {
-    return;
-  }
-
+  await form.value.validate();
+  
   if (!service.value) return;
-
-  isSaving.value = true;
+  
   const variableType = service.value.stack_type === 'SPA' ? 'build' : 'runtime';
+  
+  await Promise.all(formState.value.variables.map(variable => {
+    const { id, ...data } = variable;
 
-  try {
-    await Promise.all(formState.value.variables.map(variable => {
-      const { id, ...data } = variable;
-
-      if (!data.key || !data.value) {
-        if (id) {
-          return $client.services.deleteServiceVariable.mutate({ id });
-        }
-        return Promise.resolve();
-      }
-      
-      const mutationInput = {
-        ...data,
-        service_id: service.value!.id,
-        type: variableType,
-      };
-
+    if (!data.key || !data.value) {
       if (id) {
-        return $client.services.updateServiceVariable.mutate({ ...mutationInput, id });
-      } else {
-        return $client.services.createServiceVariable.mutate(mutationInput);
+        return $client.services.deleteServiceVariable.mutate({ id });
       }
-    }));
+      return Promise.resolve();
+    }
+    
+    const mutationInput = {
+      ...data,
+      service_id: service.value!.id,
+      type: variableType,
+    };
 
-    toast.add({ title: 'Environment variables saved successfully!', color: 'success' });
-    await fetchVariables();
-
-  } catch (e: any) {
-    toast.add({ title: 'Error saving variables.', description: e.message, color: 'error' });
-  } finally {
-    isSaving.value = false;
-  }
+    if (id) {
+      return $client.services.updateServiceVariable.mutate({ ...mutationInput, id });
+    } else {
+      return $client.services.createServiceVariable.mutate(mutationInput);
+    }
+  }));
+  
+  await fetchVariables();
 };
 </script>

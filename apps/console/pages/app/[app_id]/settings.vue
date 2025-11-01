@@ -38,14 +38,24 @@
       </template>
       <AppServiceConfiguration :service="localServiceConfig" ref="serviceConfigForm" />
       <template #footer>
-        <div class="flex justify-start">
+        <div class="flex justify-start gap-2">
           <UButton
             size="lg"
             :loading="isSaving"
             :disabled="!isChanged || hasValidationErrors"
-            @click="saveChanges"
+            @click="() => saveAndRebuild(() => saveServiceMetadata(), 'Service settings saved.')"
           >
-            Save Changes
+            Save and Rebuild
+          </UButton>
+          <UButton
+            size="lg"
+            :loading="isSaving"
+            :disabled="!isChanged || hasValidationErrors"
+            @click="() => saveOnly(() => saveServiceMetadata(), 'Service settings saved.')"
+            color="neutral"
+            variant="outline"
+          >
+            Save
           </UButton>
         </div>
       </template>
@@ -64,14 +74,24 @@
         </UFormField>
       </UForm>
       <template #footer>
-        <div class="flex justify-start">
+        <div class="flex justify-start gap-2">
           <UButton
             size="lg"
             :loading="isBranchSaving"
             :disabled="!isBranchChanged"
-            @click="saveBranch"
+            @click="saveBranchAndRebuild"
           >
-            Save Changes
+            Save and Rebuild
+          </UButton>
+          <UButton
+            size="lg"
+            :loading="isBranchSaving"
+            :disabled="!isBranchChanged"
+            @click="saveBranchOnly"
+            color="neutral"
+            variant="outline"
+          >
+            Save
           </UButton>
         </div>
       </template>
@@ -141,7 +161,7 @@ const notificationTypes = [
 ];
 
 const localServiceConfig = ref<ServiceSchema | null>(null);
-const isSaving = ref(false);
+const { isSaving, saveOnly, saveAndRebuild } = useSaveAndRebuild();
 const isChanged = ref(false);
 const isAppSaving = ref(false);
 const isAppChanged = ref(false);
@@ -215,98 +235,44 @@ onMounted(() => {
   fetchBranches();
 });
 
-const isBuildTriggering = ref(false);
-
-const triggerBuild = async () => {
-  if (!service.value?.id) return;
-  isBuildTriggering.value = true;
-  try {
-    const build = await $client.services.triggerBuild.mutate({ service_id: service.value.id });
-    toast.add({ 
-      title: 'Build triggered.', 
-      description: "Click to view build details and logs.",
-      color: 'success',
-      progress: false,
-      duration: 0,
-      actions: [{
-        label: 'View Build',
-        color: 'primary',
-        size: 'lg',
-        to: `/app/${applicationSchema.value?.id}/builds/${build.id}`
-      }]
-    });
-  } catch (e: any) {
-    toast.add({ title: 'Error triggering build', description: e.message, color: 'error' });
-  } finally {
-    isBuildTriggering.value = false;
-  }
-};
-
-const saveChanges = async () => {
+const saveServiceMetadata = async () => {
   if (!localServiceConfig.value?.metadata) return;
-
-  isSaving.value = true;
-  error.value = null;
-
-  try {
-    const { stack_type, id } = localServiceConfig.value;
-
-    await $client.services.updateServiceMetadata.mutate({
-      service_id: id,
-      stack_type,
-      metadata: localServiceConfig.value.metadata,
-    });
-
-    await refreshApplicationSchema();
-    toast.add({ 
-      title: 'Settings saved.',
-      description: 'Rebuild your service to apply changes.', 
-      color: 'success',
-      progress: false,
-      duration: 0,
-      actions: [{
-        label: 'Rebuild',
-        color: 'primary',
-        size: 'lg',
-        loading: isBuildTriggering.value,
-        onClick: () => triggerBuild()
-      }]
-    });
-  } catch (e: any) {
-    error.value = e.message;
-    toast.add({ title: 'Error saving settings', description: e.message, color: 'error' });
-  } finally {
-    isSaving.value = false;
-  }
+  
+  const { stack_type, id } = localServiceConfig.value;
+  await $client.services.updateServiceMetadata.mutate({
+    service_id: id,
+    stack_type,
+    metadata: localServiceConfig.value.metadata,
+  });
 };
 
-const saveBranch = async () => {
-  if (!service.value?.id || !selectedBranch.value) return;
-
+const saveBranchOnly = async () => {
   isBranchSaving.value = true;
   try {
-    await $client.services.updateService.mutate({
-      service_id: service.value.id,
-      branch: selectedBranch.value,
-    });
-    await refreshApplicationSchema();
-    isBranchChanged.value = false;
-    toast.add({ 
-      title: 'Branch updated.', 
-      description: 'Rebuild your service to apply changes.', 
-      color: 'success',
-      progress: false,
-      duration: 0,
-      actions: [{
-        label: 'Rebuild',
-        color: 'primary',
-        size: 'lg',
-        loading: isBuildTriggering.value,
-        onClick: () => triggerBuild()
-      }]
-    });
-  } catch (e: any) {
-    toast.add({ title: 'Error updating branch', description: e.message, color: 'error' });
+    await saveOnly(async () => {
+      if (!service.value?.id || !selectedBranch.value) return;
+      await $client.services.updateService.mutate({
+        service_id: service.value.id,
+        branch: selectedBranch.value,
+      });
+      isBranchChanged.value = false;
+    }, 'Branch updated.');
+  } finally {
+    isBranchSaving.value = false;
+  }
+};
+
+const saveBranchAndRebuild = async () => {
+  isBranchSaving.value = true;
+  try {
+    await saveAndRebuild(async () => {
+      if (!service.value?.id || !selectedBranch.value) return;
+      await $client.services.updateService.mutate({
+        service_id: service.value.id,
+        branch: selectedBranch.value,
+      });
+      isBranchChanged.value = false;
+    }, 'Branch updated.');
   } finally {
     isBranchSaving.value = false;
   }

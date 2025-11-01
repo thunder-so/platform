@@ -38,9 +38,14 @@
       </UButton>
     </UForm>
     <template #footer>
-      <UButton type="submit" :loading="isLoading" :disabled="!isDirty" @click="handleSave">
-        Save Changes
-      </UButton>
+      <div class="flex gap-2">
+        <UButton type="submit" :loading="isSaving" :disabled="!isDirty" @click="() => saveAndRebuild(() => saveHeaders(), 'Headers updated.')">
+          Save and Rebuild
+        </UButton>
+        <UButton type="submit" :loading="isSaving" :disabled="!isDirty" @click="() => saveOnly(() => saveHeaders(), 'Headers updated.')" color="neutral" variant="outline">
+          Save
+        </UButton>
+      </div>
     </template>
   </UCard>
 </template>
@@ -59,10 +64,10 @@ definePageMeta({
 const { currentService: service, refreshApplicationSchema } = useApplications();
 const { $client } = useNuxtApp();
 const toast = useToast();
+const { isSaving, saveOnly, saveAndRebuild } = useSaveAndRebuild();
 
 const form = ref<Form<SPAServiceMetadata> | null>(null);
 const state = ref<SPAServiceMetadata | null>(null);
-const isLoading = ref(false);
 const isDirty = ref(false);
 
 useNavigationGuard(isDirty);
@@ -96,31 +101,15 @@ const removeHeader = (index: number) => {
   }
 };
 
-async function handleSave() {
+const saveHeaders = async () => {
   if (!service.value || !state.value || !form.value) return;
-
-  try {
-    await form.value.validate();
-  }
-  catch (e) {
-    return;
-  }
-
-  isLoading.value = true;
-  try {
-    await $client.services.updateServiceMetadata.mutate({
-      service_id: service.value.id,
-      stack_type: 'SPA',
-      metadata: state.value
-    });
-    toast.add({ title: 'Headers updated successfully!', color: 'success' });
-    await refreshApplicationSchema();
-    isDirty.value = false;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'An unknown error occurred';
-    toast.add({ title: 'Failed to update headers', description: message, color: 'warning' });
-  } finally {
-    isLoading.value = false;
-  }
-}
+  
+  await form.value.validate();
+  await $client.services.updateServiceMetadata.mutate({
+    service_id: service.value.id,
+    stack_type: 'SPA',
+    metadata: state.value
+  });
+  isDirty.value = false;
+};
 </script>
