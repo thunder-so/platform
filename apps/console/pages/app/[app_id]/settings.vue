@@ -166,7 +166,7 @@ const isChanged = ref(false);
 const isAppSaving = ref(false);
 const isAppChanged = ref(false);
 const originalDisplayName = ref<string>('');
-const error = ref<string | null>(null);
+
 const toast = useToast();
 const overlay = useOverlay();
 
@@ -302,29 +302,12 @@ const saveAppChanges = async () => {
 
 async function deleteApplicationModal() {
   const applicationDeleteModal = overlay.create(AppApplicationDeleteModal, {
-    props: {application: applicationSchema.value}
+    props: {
+      application: applicationSchema.value,
+      serviceId: service.value?.id as string
+    }
   });
 
-  const result = await applicationDeleteModal.open().result;
-
-  if (result === applicationSchema.value?.id) {
-    await deleteApplication();
-  }
-};
-
-const deleteApplication = async () => {
-  error.value = null;
-  try {
-    await $client.applications.delete.mutate({ 
-      application_id: applicationSchema.value?.id as string,
-      service_id: service.value?.id as string
-    });
-    toast.add({ title: 'Application deleted successfully', color: 'success' });
-    await router.push('/');
-  } catch (e: any) {
-    error.value = e.message;
-    console.error("Error deleting application:", e);
-    toast.add({ title: 'Failed to delete application', description: e.message, color: 'error' });
-  }
+  await applicationDeleteModal.open().result;
 };
 </script>

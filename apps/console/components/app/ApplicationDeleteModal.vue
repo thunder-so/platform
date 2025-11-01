@@ -13,8 +13,8 @@
     </template>
     
     <template #footer="{ close }">
-      <UButton label="Cancel" color="neutral" variant="outline" @click="close" />
-      <UButton :disabled="!isDeleteEnabled" color="error" @click="emit('close', props.application?.id)">Delete</UButton>
+      <UButton label="Cancel" color="neutral" variant="outline" @click="close" :disabled="isDeleting" />
+      <UButton :disabled="!isDeleteEnabled" :loading="isDeleting" color="error" @click="deleteApplication">Delete</UButton>
     </template>
   </UModal>
 </template>
@@ -23,12 +23,35 @@
 import type { ApplicationSchema } from '~/server/validators/app';
 
 const props = defineProps<{
-  application: ApplicationSchema
+  application: ApplicationSchema,
+  serviceId: string
 }>()
 
-const emit = defineEmits<{ close: [applicationId: string | null] }>()
+const emit = defineEmits<{ close: [success: boolean] }>()
+
+const { $client } = useNuxtApp()
+const toast = useToast()
+const router = useRouter()
 
 const confirmationInput = ref('')
+const isDeleting = ref(false)
 
-const isDeleteEnabled = computed(() => confirmationInput.value === 'delete')
+const isDeleteEnabled = computed(() => confirmationInput.value === 'delete' && !isDeleting.value)
+
+const deleteApplication = async () => {
+  isDeleting.value = true
+  try {
+    await $client.applications.delete.mutate({ 
+      application_id: props.application.id,
+      service_id: props.serviceId
+    })
+    toast.add({ title: 'Application deleted successfully', color: 'success' })
+    emit('close', true)
+    await router.push('/')
+  } catch (e: any) {
+    toast.add({ title: 'Failed to delete application', description: e.message, color: 'error' })
+  } finally {
+    isDeleting.value = false
+  }
+}
 </script>
