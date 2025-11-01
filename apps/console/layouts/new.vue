@@ -3,35 +3,86 @@
     <Header />
 
     <UContainer>
-      <div class="mt-8 mb-6 pb-6 border-b border-muted">
-        <h1 class="text-2xl font-bold mb-6">{{ pageTitle }}</h1>
-        <div class="flex items-center space-x-4">
-          <div v-for="(step, index) in steps" :key="index" class="flex items-center">
-            <div :class="['step', { 'active': currentStep >= index + 1, 'completed': currentStep > index + 1 }]">
-              <span v-if="currentStep <= index + 1">{{ index + 1 }}</span>
-              <UIcon v-else name="i-heroicons-check" />
+      <div v-if="loading" class="flex justify-center items-center p-8">
+        <p>Loading ...</p>
+      </div>
+      <div v-else-if="error" class="flex justify-center items-center p-8">
+        <UAlert color="error" variant="soft" :title="`Error: ${error.message}`" />
+      </div>
+      <div v-else-if="providers.length === 0" class="flex justify-center items-center" style="height: 50vh;">
+        <UCard class="w-full max-w-lg">
+          <template #header>
+            <h2>Connect AWS Account</h2>
+          </template>
+          
+          <p class="mb-4 text-muted">Connect an AWS account to deploy your applications.</p>
+          <UButton
+            icon="i-mdi-aws"
+            size="lg"
+            :to="`/org/${selectedOrganization?.id}/aws`"
+            label="Connect AWS Account"
+          />
+        </UCard>
+      </div>
+      <div v-else-if="installations.length === 0" class="flex justify-center items-center" style="height: 50vh;">
+        <UCard class="w-full max-w-lg">
+          <template #header>
+            <h2>Connect to GitHub</h2>
+          </template>
+          
+          <p class="mb-4 text-muted">Install the Thunder.so GitHub App to see your repositories.</p>
+          <UButton
+            icon="i-uil-github"
+            size="lg"
+            @click="handleInstallApp"
+            :loading="installing"
+            label="Install GitHub App"
+          />
+        </UCard>
+      </div>
+      <div v-else>
+        <div class="mt-8 mb-6 pb-6 border-b border-muted">
+          <h1 class="text-2xl font-bold mb-6">{{ pageTitle }}</h1>
+          <div class="flex items-center space-x-4">
+            <div v-for="(step, index) in steps" :key="index" class="flex items-center">
+              <div :class="['step', { 'active': currentStep >= index + 1, 'completed': currentStep > index + 1 }]">
+                <span v-if="currentStep <= index + 1">{{ index + 1 }}</span>
+                <UIcon v-else name="i-heroicons-check" />
+              </div>
+              <span class="label leading-8" :class="{'font-bold': currentStep === index + 1}">{{ step.label }}</span>
+              <div v-if="index < steps.length - 1" class="separator"></div>
             </div>
-            <span class="label leading-8" :class="{'font-bold': currentStep === index + 1}">{{ step.label }}</span>
-            <div v-if="index < steps.length - 1" class="separator"></div>
           </div>
         </div>
-      </div>
 
-      <main class="mb-12">
-        <slot />
-      </main>
+        <main class="mb-12">
+          <slot />
+        </main>
+      </div>
     </UContainer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, onMounted, provide } from 'vue';
 import { useRoute } from 'vue-router';
 import { useNewApplicationFlow } from '~/composables/useNewApplicationFlow';
 
 const { currentStep, applicationSchema } = useNewApplicationFlow();
+const user = useSupabaseUser();
+const supabase = useSupabaseClient();
+const { selectedOrganization } = useMemberships();
+const { openInstallationPopup } = useGithubPopup();
+const toast = useToast();
 
 const route = useRoute();
+const installations = ref<any[]>([]);
+const providers = ref<any[]>([]);
+const loading = ref(true);
+const error = ref<{ message: string } | null>(null);
+const installing = ref(false);
+
+provide('installations', installations);
 
 const pageTitle = computed(() => {
   const stackType = route.query.stack_type;
@@ -58,6 +109,72 @@ const steps = [
     label: 'Deploy',
   }
 ];
+
+const fetchProviders = async () => {
+  if (!selectedOrganization.value) return;
+  
+  try {
+    const { data, error: fetchError } = await supabase
+      .from('providers')
+      .select('*')
+      .eq('organization_id', selectedOrganization.value.id)
+      .is('deleted_at', null);
+
+    if (fetchError) throw fetchError;
+    providers.value = data || [];
+  } catch (e: any) {
+    console.error('Error fetching providers:', e);
+  }
+};
+
+const fetchInstallations = async () => {
+  if (!user.value) {
+    loading.value = false;
+    return;
+  }
+  try {
+    const { data, error: fetchError } = await supabase
+      .from('installations')
+      .select('*')
+      .eq('user_id', user.value.id)
+      .is('deleted_at', null);
+
+    if (fetchError) throw fetchError;
+    installations.value = data || [];
+  } catch (e: any) {
+    console.error('Error fetching installations:', e);
+    error.value = { message: (e as Error).message || 'Error fetching Github installations.' };
+  } finally {
+    loading.value = false;
+  }
+};
+
+async function handleInstallApp() {
+  installing.value = true;
+  try {
+    await openInstallationPopup();
+    await fetchInstallations();
+    toast.add({
+      title: 'GitHub App installed successfully',
+      color: 'success'
+    });
+  } catch (error: any) {
+    if (error.message !== 'Installation cancelled') {
+      toast.add({
+        title: 'Installation failed',
+        description: error.message,
+        color: 'error'
+      });
+    }
+  } finally {
+    installing.value = false;
+  }
+}
+
+onMounted(async () => {
+  await fetchProviders();
+  fetchInstallations();
+});
 </script>
 
 <style scoped>
