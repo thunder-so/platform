@@ -20,13 +20,17 @@ export const useMemberships = () => {
       const { data, error } = await supabase
         .from('memberships')
         .select(`id, pending,
-          organizations:organization_id (id, name,
-            subscriptions(id, status, 
-              products(id, active, name, description, metadata)
+          organizations (
+            id, name,
+            subscriptions (
+              id, status,
+              products (
+                id, active, name, description, metadata
+              )
             )
           )
         `)
-        .is('organizations.deleted_at', null)
+        // .is('organizations.deleted_at', null)
         .eq('user_id', user.value.id)
         .eq('pending', false)
         .is('deleted_at', null)
