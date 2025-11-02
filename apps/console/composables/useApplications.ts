@@ -108,6 +108,12 @@ export const useApplications = () => {
     return currentEnvironment.value.services[0] ?? null;
   });
 
+  const hasAccessToApp = (appId: string): boolean => {
+    const { memberships } = useMemberships()
+    if (!appId || !applicationSchema.value) return false
+    return memberships.value.some(m => m.id === applicationSchema.value?.organization_id)
+  }
+
   return {
     applicationSchema,
     isLoading,
@@ -118,5 +124,6 @@ export const useApplications = () => {
     appId,
     currentEnvironment,
     currentService,
+    hasAccessToApp,
   };
 };

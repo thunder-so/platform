@@ -134,6 +134,10 @@ export const useMemberships = () => {
     return plans.value.find(p => p.id === 'free');
   });
 
+  const hasAccessToOrg = (orgId: string): boolean => {
+    return memberships.value.some(m => m.id === orgId)
+  }
+
   return {
     memberships: readonly(memberships),
     selectedOrganization,
@@ -141,6 +145,7 @@ export const useMemberships = () => {
     refreshMemberships,
     initializeSession,
     setSelectedOrganization,
-    currentPlan
+    currentPlan,
+    hasAccessToOrg
   }
 }

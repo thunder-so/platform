@@ -2,7 +2,13 @@
   <div>
     <Header :mobile-menu-items="links" />
     <UMain>
-      <div class="grid grid-cols-6 gap-0 min-h-[calc(100vh-4rem)]">
+      <AccessDenied 
+        v-if="!hasAccess" 
+        message="You do not have access to this organization."
+      >
+        <UButton to="/" variant="outline">Go to Dashboard</UButton>
+      </AccessDenied>
+      <div v-else class="grid grid-cols-6 gap-0 min-h-[calc(100vh-4rem)]">
         <div class="aside col-span-1 p-6 border-r border-muted lg:block hidden">
           <UNavigationMenu 
             v-if="selectedOrganization"
@@ -27,7 +33,7 @@
 import type { NavigationMenuItem } from '@nuxt/ui'
 
 const route = useRoute();
-const { setSelectedOrganization, selectedOrganization } = useMemberships();
+const { setSelectedOrganization, selectedOrganization, hasAccessToOrg } = useMemberships();
 
 const links = computed<NavigationMenuItem[]>(() => {
   const orgId = selectedOrganization.value?.id;
@@ -56,12 +62,14 @@ const links = computed<NavigationMenuItem[]>(() => {
   ];
 });
 
+const hasAccess = computed(() => {
+  const orgId = route.params.org_id as string
+  return orgId ? hasAccessToOrg(orgId) : true
+})
+
 watch(() => route.params.org_id, (newOrgId) => {
   if (newOrgId) {
-    const found = setSelectedOrganization(newOrgId as string);
-    if (!found) {
-      navigateTo('/404');
-    }
+    setSelectedOrganization(newOrgId as string)
   }
 }, { immediate: true });
 </script>

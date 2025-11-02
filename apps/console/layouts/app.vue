@@ -3,7 +3,13 @@
     <Header :mobile-menu-items="[...primaryLinks, ...manageLinks]" />
     <ClientOnly>
     <UMain>
-      <div class="grid grid-cols-6 gap-0 min-h-[calc(100vh-4rem)]">
+      <AccessDenied 
+        v-if="!hasAccess" 
+        message="You do not have access to this application."
+      >
+        <UButton to="/" variant="outline">Go to Dashboard</UButton>
+      </AccessDenied>
+      <div v-else class="grid grid-cols-6 gap-0 min-h-[calc(100vh-4rem)]">
         <div class="col-span-1 p-6 border-r border-muted lg:block hidden">
           <div v-if="applicationSchema">
             <div class="pb-2">
@@ -188,7 +194,7 @@ import { AppDeployCommitModal, AppDeployLatestModal } from '#components';
 
 const route = useRoute();
 const { $client } = useNuxtApp();
-const { applicationSchema, setApplicationSchemaById, currentEnvironment: environment, currentService, clearApplicationSchema } = useApplications();
+const { applicationSchema, setApplicationSchemaById, currentEnvironment: environment, currentService, clearApplicationSchema, hasAccessToApp } = useApplications();
 const provider = computed(() => environment.value?.provider);
 const service = computed(() => currentService.value);
 const toast = useToast();
@@ -293,12 +299,14 @@ async function deployCommit(sha?: string) {
   }
 }
 
-watch(() => route.params.app_id, (newAppId) => {
+const hasAccess = computed(() => {
+  const appId = route.params.app_id as string
+  return appId ? hasAccessToApp(appId) : true
+})
+
+watch(() => route.params.app_id, async (newAppId) => {
   if (newAppId) {
-    const found = setApplicationSchemaById(newAppId as string);
-    if (!found) {
-      navigateTo('/404');
-    }
+    await setApplicationSchemaById(newAppId as string)
   }
 }, { immediate: true });
 
