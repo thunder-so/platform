@@ -60,6 +60,7 @@ const overlay = useOverlay();
 const toast = useToast()
 const MemberInviteModal = resolveComponent('OrgMemberInviteModal');
 const MemberDeleteModal = resolveComponent('OrgMemberDeleteModal');
+const InviteDeleteModal = resolveComponent('OrgInviteDeleteModal');
 const UAvatar = resolveComponent('UAvatar');
 const UBadge = resolveComponent('UBadge');
 const orgId = selectedOrganization?.value?.id as string;
@@ -151,7 +152,7 @@ function getDropdownActions(member: any) {
         label: 'Remove Member',
         icon: 'i-lucide-trash',
         color: 'error',
-        onSelect: () => openDeleteModal(member)
+        onSelect: () => openMemberDeleteModal(member)
       }
     ]];
   } else {
@@ -160,7 +161,7 @@ function getDropdownActions(member: any) {
         label: 'Cancel Invite',
         icon: 'i-lucide-trash',
         color: 'error',
-        onSelect: () => openDeleteModal(member)
+        onSelect: () => openInviteDeleteModal(member)
       }
     ]];
   }
@@ -180,12 +181,22 @@ const openInviteModal = async () => {
   }
 };
 
-const openDeleteModal = async (member: any) => {
+const openMemberDeleteModal = async (member: any) => {
   const modal = overlay.create(MemberDeleteModal, {
     props: { 
       member,
       totalMembers: members.value.filter(m => !m.pending).length
     }
+  });
+  const result = await modal.open().result;
+  if (result) {
+    await fetchMembers();
+  }
+};
+
+const openInviteDeleteModal = async (invite: any) => {
+  const modal = overlay.create(InviteDeleteModal, {
+    props: { invite }
   });
   const result = await modal.open().result;
   if (result) {
