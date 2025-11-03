@@ -32,7 +32,6 @@ export const useMemberships = () => {
         `)
         // .is('organizations.deleted_at', null)
         .eq('user_id', user.value.id)
-        .eq('pending', false)
         .is('deleted_at', null)
 
       if (error) throw error
@@ -134,8 +133,14 @@ export const useMemberships = () => {
     return plans.value.find(p => p.id === 'free');
   });
 
-  const hasAccessToOrg = (orgId: string): boolean => {
-    return memberships.value.some(m => m.id === orgId)
+  const hasAccessToOrg = (orgId: string): 'member' | 'invitee' | 'no-access' => {
+    const membership = memberships.value.find(m => m.id === orgId)
+    if (!membership) return 'no-access'
+    return membership.pending ? 'invitee' : 'member'
+  }
+
+  const getPendingInvite = (orgId: string) => {
+    return memberships.value.find(m => m.id === orgId && m.pending)
   }
 
   return {
@@ -146,6 +151,7 @@ export const useMemberships = () => {
     initializeSession,
     setSelectedOrganization,
     currentPlan,
-    hasAccessToOrg
+    hasAccessToOrg,
+    getPendingInvite
   }
 }

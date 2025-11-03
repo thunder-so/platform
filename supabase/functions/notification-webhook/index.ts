@@ -5,6 +5,7 @@ import { BuildSuccessEmail } from './templates/BuildSuccessEmail.tsx';
 import { BuildFailureEmail } from './templates/BuildFailureEmail.tsx';
 import { DeploySuccessEmail } from './templates/DeploySuccessEmail.tsx';
 import { DeployFailureEmail } from './templates/DeployFailureEmail.tsx';
+import { TeamInviteEmail } from './templates/TeamInviteEmail.tsx';
 import { render } from 'npm:@react-email/render';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
@@ -20,6 +21,7 @@ const templates = {
   APP_BUILD_FAILURE: BuildFailureEmail,
   APP_DEPLOY_SUCCESS: DeploySuccessEmail,
   APP_DEPLOY_FAILURE: DeployFailureEmail,
+  TEAM_INVITE: TeamInviteEmail,
 };
 
 Deno.serve(async (req) => {
@@ -27,6 +29,27 @@ Deno.serve(async (req) => {
   const { organization_id, environment_id, type, metadata } = record;
 
   try {
+    // Handle team invitations differently
+    if (type === 'TEAM_INVITE') {
+      const Template = templates[type];
+      const html = await render(React.createElement(Template, metadata));
+      
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: 'Thunder <no-reply@ping.thunder.so>',
+          to: metadata.invitee_email,
+          subject: getSubject(type, metadata),
+          html,
+        }),
+      });
+
+      return new Response('OK', { status: 200 });
+    }
 
     // Get organization members with email preferences
     const { data: members } = await supabase
@@ -81,6 +104,8 @@ function getSubject(type: string, metadata: any): string {
       return `🚀 Deploy successful for ${metadata.application_name}`;
     case 'APP_DEPLOY_FAILURE':
       return `💥 Deploy failed for ${metadata.application_name}`;
+    case 'TEAM_INVITE':
+      return `You're invited to join ${metadata.organization_name} on Thunder`;
     default:
       return 'Thunder Notification';
   }

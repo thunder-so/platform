@@ -38,64 +38,49 @@ export const teamRouter = router({
       if (!organization) {
         throw new Error('Organization not found.');
       }
-      const organizationName = organization.name;
-
 
       const supabaseAdmin = createClient(
         process.env.SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_KEY!
       );
 
-      // Generate magic link for the user
+      // Generate magic link to get user ID (don't use the link)
       const { data: magicLinkData, error: magicLinkError } = await supabaseAdmin.auth.admin.generateLink({
         type: 'magiclink',
-        email: input.email,
-        options: {
-          redirectTo: `${process.env.SITE_URL}/confirm?organization_id=${input.organizationId}`,
-          data: {
-            organization_id: input.organizationId
-          }
-        }
+        email: input.email
       });
 
       if (magicLinkError) {
-        throw new Error(`Error generating magic link: ${magicLinkError.message}`);
+        throw new Error(`Error generating user: ${magicLinkError.message}`);
       }
 
-      const generatedLink = magicLinkData.properties.action_link;
-
-      // Create or update the membership record
-      // This handles both new users and existing users not yet in the organization
+      // Create membership record
       await db.insert(memberships).values({
         organization_id: input.organizationId,
-        user_id: magicLinkData.user.id, // Use the user ID from generateLink
+        user_id: magicLinkData.user.id,
         access: 'ADMIN',
         pending: true,
         updated_at: undefined,
         deleted_at: null,
       })
 
-      // Construct email content for the Edge Function
-      const emailSubject = `You're invited to join ${organizationName} on Thunder!`;
-      const emailHtml = `
-        <p>Hello,</p>
-        <p>You've been invited to join <strong>${organizationName}</strong> on Thunder.</p>
-        <p>Click the link below to accept the invitation:</p>
-        <p><a href="${generatedLink}">Accept Invitation</a></p>
-        <p>If you did not expect this invitation, you can safely ignore this email.</p>
-      `;
-
-      // Call the Supabase Edge Function to send the email
-      const { data: edgeFnData, error: edgeFnError } = await supabaseAdmin.functions.invoke('email-invite', {
+      // Send invitation via notification-webhook
+      const { error: webhookError } = await supabaseAdmin.functions.invoke('notification-webhook', {
         body: {
-          to: input.email,
-          subject: emailSubject,
-          html: emailHtml
+          record: {
+            type: 'TEAM_INVITE',
+            metadata: {
+              organization_name: organization.name,
+              organization_id: input.organizationId,
+              invitee_email: input.email,
+              invite_url: `${process.env.SITE_URL}/org/${input.organizationId}`
+            }
+          }
         }
       });
 
-      if (edgeFnError) {
-        throw new Error(`Error sending invitation email: ${edgeFnError.message}`);
+      if (webhookError) {
+        throw new Error(`Error sending invitation: ${webhookError.message}`);
       }
 
       return { success: true, message: 'Invitation sent.' };
@@ -150,34 +135,6 @@ export const teamRouter = router({
       return { success: true };
     }),
 
-  getPendingInvite: protectedProcedure
-    .input(z.object({ organizationId: z.string() }))
-    .query(async ({ input, ctx }) => {
-      const { user } = ctx
-      const invites = await db
-      .select({
-        organization: {
-          id: organizations.id,
-          name: organizations.name
-        },
-        membership: {
-          id: memberships.id,
-          access: memberships.access,
-        },
-      })
-      .from(memberships)
-      .leftJoin(organizations, eq(memberships.organization_id, organizations.id))
-      .where(
-        and(
-          eq(memberships.user_id, user.id),
-          eq(memberships.organization_id, input.organizationId),
-          eq(memberships.pending, true),
-        ),
-      )
-
-      return invites.length > 0 ? invites[0] : null
-    }),
-
   acceptInvite: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .mutation(async ({ ctx, input }) => {
@@ -203,5 +160,31 @@ export const teamRouter = router({
         .where(eq(memberships.id, membership.id))
 
       return { id: input.organizationId }
+    }),
+
+  removeInvite: protectedProcedure
+    .input(z.object({ inviteId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const { user } = ctx;
+
+      const [inviteToRemove] = await db.select().from(memberships).where(eq(memberships.id, input.inviteId));
+
+      if (!inviteToRemove) {
+        throw new Error('Invitation not found.');
+      }
+
+      if (!inviteToRemove.pending) {
+        throw new Error('Cannot remove active member using this method.');
+      }
+
+      const [removerMembership] = await db.select().from(memberships).where(and(eq(memberships.organization_id, inviteToRemove.organization_id), eq(memberships.user_id, user.id)));
+
+      if (!removerMembership || removerMembership.access !== 'ADMIN') {
+        throw new Error('Only admins can remove invitations.');
+      }
+
+      await db.update(memberships).set({ deleted_at: new Date() }).where(eq(memberships.id, input.inviteId));
+
+      return { success: true };
     }),
 })

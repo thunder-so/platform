@@ -32,8 +32,9 @@
                   <UAvatar :alt="item.name" size="xs" />
                   <span class="text-sm">{{ item.name }}</span>
                 </div>
-                <UBadge v-if="item.subscriptions && item.subscriptions.some(sub => sub.status === 'active')" size="md" color="warning" variant="outline">Pro</UBadge>
-                <UBadge v-else size="md" color="neutral" variant="outline">Hobby</UBadge>
+                <UBadge v-if="item.pending" size="md" color="secondary" variant="outline">Invited</UBadge>
+                <UBadge v-if="!item.pending && item.subscriptions && item.subscriptions.some(sub => sub.status === 'active')" size="md" color="info" variant="outline">Pro</UBadge>
+                <UBadge v-else-if="!item.pending" size="md" color="neutral" variant="outline">Hobby</UBadge>
               </div>
             </div>
             <hr class="border-gray-200 dark:border-gray-700 mt-1 mb-1" />

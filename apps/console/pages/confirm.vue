@@ -46,29 +46,7 @@ onMounted(async () => {
       throw new Error('Your login link has expired or is invalid.');
     }
 
-    // Handle implicit flow (invite links)
-    const accessToken = hashParams.get('access_token');
-    const refreshToken = hashParams.get('refresh_token');
-    const type = hashParams.get('type');
-    if (accessToken && refreshToken && type === 'magiclink') {
-      const { data, error: sessionError } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      });
-      if (sessionError) throw sessionError;
 
-      // Redirect based on organization_id
-      const organizationId = queryParams.organization_id;
-      if (organizationId && data?.user?.email) {
-        navigateTo({
-          path: '/invite',
-          query: {
-            organization_id: organizationId,
-          },
-          // replace: true
-        });
-      }
-    }
 
     // Handle PKCE flow (normal magic link and GitHub)
     const code = queryParams.code;
