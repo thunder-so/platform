@@ -1,6 +1,6 @@
 import { App } from "@octokit/app";
 import type { Endpoints, OctokitResponse } from "@octokit/types";
-import type { Branch } from '~/server/db/schema';
+import type { Branch } from '../db/schema';
 
 type GetInstallationMetadata = Endpoints['GET /user/installations']['response'];
 type GetInstallationRepositoriesResponse = Endpoints['GET /installation/repositories']['response'];

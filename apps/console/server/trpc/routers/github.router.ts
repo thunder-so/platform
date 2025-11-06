@@ -1,10 +1,10 @@
 import { z } from 'zod';
 import { protectedProcedure, router } from '../init';
 import { TRPCError } from '@trpc/server';
-import { db } from '~/server/db/db';
-import { installations, userAccessTokens } from '~/server/db/schema';
+import { db } from '../../db/db';
+import { installations, userAccessTokens } from '../../db/schema';
 import { sql, eq } from 'drizzle-orm';
-import GithubLibrary from '~/server/lib/github.library';
+import GithubLibrary from '../../lib/github.library';
 
 export const githubRouter = router({
     handleAppInstallationFlow: protectedProcedure

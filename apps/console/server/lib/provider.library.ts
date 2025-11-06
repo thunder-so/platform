@@ -7,9 +7,9 @@ import { Route53Client, ListHostedZonesCommand } from '@aws-sdk/client-route-53'
 import { ACMClient, ListCertificatesCommand } from '@aws-sdk/client-acm';
 import dns from 'dns/promises';
 import { TRPCError } from '@trpc/server';
-import { db } from '~/server/db/db';
+import { db } from '../db/db';
 import { providers, services } from '../db/schema';
-import { type ProviderSchema } from '~/server/validators/common';
+import { type ProviderSchema } from '../validators/common';
 import { sql, eq } from 'drizzle-orm';
 
 // A type for the initial validation scenario where the secret is not yet in the vault

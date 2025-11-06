@@ -3,8 +3,8 @@
  * On a bigger app, you will probably want to split this file up into multiple files.
  */
 import { createTRPCNuxtHandler } from 'trpc-nuxt/server'
-import { createTRPCContext } from '~/server/trpc/init'
-import { appRouter } from '~/server/trpc/routers'
+import { createTRPCContext } from '../../trpc/init'
+import { appRouter } from '../../trpc/routers'
 
 export default createTRPCNuxtHandler({
   router: appRouter,

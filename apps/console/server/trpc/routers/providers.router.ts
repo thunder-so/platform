@@ -1,11 +1,11 @@
 import { z } from 'zod';
 import { publicProcedure, protectedProcedure, router } from '../init';
 import { TRPCError } from '@trpc/server';
-import { db } from '~/server/db/db';
-import { providers } from '~/server/db/schema';
+import { db } from '../../db/db';
+import { providers } from '../../db/schema';
 import { sql } from 'drizzle-orm';
-import * as ProviderLibrary from '~/server/lib/provider.library';
-import { PlatformLibrary } from '~/server/lib/platform.library';
+import * as ProviderLibrary from '../../lib/provider.library';
+import { PlatformLibrary } from '../../lib/platform.library';
 
 export const providersRouter = router({
   addManualProvider: protectedProcedure

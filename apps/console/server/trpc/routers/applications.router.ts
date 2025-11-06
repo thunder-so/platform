@@ -1,12 +1,12 @@
 import { z } from 'zod';
 import { protectedProcedure, router } from '../init';
 import { TRPCError } from '@trpc/server';
-import { db } from '~/server/db/db';
+import { db } from '../../db/db';
 import { sql, eq } from 'drizzle-orm';
-import { applications, environments, services, serviceVariables, userAccessTokens, destroys, type Service, type Environment, type Provider, type UserAccessToken } from '~/server/db/schema';
-import { applicationInputSchema } from '~/server/validators/new';
-import { PlatformLibrary } from '~/server/lib/platform.library';
-import * as ProviderLibrary from '~/server/lib/provider.library';
+import { applications, environments, services, serviceVariables, userAccessTokens, destroys, type Service, type Environment, type Provider, type UserAccessToken } from '../../db/schema';
+import { applicationInputSchema } from '../../validators/new';
+import { PlatformLibrary } from '../../lib/platform.library';
+import * as ProviderLibrary from '../../lib/provider.library';
 
 export const applicationsRouter = router({
   update: protectedProcedure

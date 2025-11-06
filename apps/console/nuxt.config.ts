@@ -33,9 +33,13 @@ export default defineNuxtConfig({
     '@nuxt/ui',
     '@nuxtjs/supabase',
     '@polar-sh/nuxt',
-    '@nuxt/icon'
+    '@nuxt/icon',
+    '@posthog/nuxt'
   ],
   css: ['~/assets/css/main.css'],
+  alias: {
+    '~~/server': fileURLToPath(new URL('./server', import.meta.url))
+  },
   // modulesDir: [
   //   join(currentDir, '../../node_modules'), 
   //   join(currentDir, './node_modules')
@@ -46,7 +50,7 @@ export default defineNuxtConfig({
     redirectOptions: {
       login: '/login',
       callback: '/confirm',
-      exclude: ['/confirm', '/invite'],
+      exclude: ['/confirm'],
     },
     clientOptions: {
       auth: {
@@ -66,6 +70,15 @@ export default defineNuxtConfig({
       path: '/'
     }
   },
+  posthogConfig: {
+    publicKey: process.env.POSTHOG_API_KEY || '',
+    clientConfig: {
+      capture_exceptions: true, // Enables automatic exception capture on the client side (Vue)
+    },
+    serverConfig: {
+      enableExceptionAutocapture: true, // Enables automatic exception capture on the server side (Nitro)
+    },
+  },
   icon: {
     provider: 'iconify',
     serverBundle: false,
@@ -76,19 +89,18 @@ export default defineNuxtConfig({
     customCollections: [
       {
         prefix: 'custom',
-        dir: './assets/icons'
+        dir: 'app/assets/icons'
       },
     ],
   },
   nitro: {
-    preset: 'aws-lambda',
+    preset: process.env.NODE_ENV === 'development' ? 'bun' : 'aws-lambda',
     esbuild: {
       options: {
         target: 'esnext',
       },
     },
     inlineDynamicImports: process.env.NODE_ENV === 'development' ? true : false,
-    // inlineDynamicImports: false,
     experimental: {
       wasm: false,
       legacyExternals: process.env.NODE_ENV === 'development' ? false : true,

@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { protectedProcedure, router } from '../init'
-import { db } from '~/server/db/db'
-import { memberships, users, organizations, subscriptions } from '~/server/db/schema'
+import { db } from '../../db/db'
+import { memberships, users, organizations, subscriptions } from '../../db/schema'
 import { eq, and, isNull, sql } from 'drizzle-orm'
 import { createClient } from '@supabase/supabase-js'
 

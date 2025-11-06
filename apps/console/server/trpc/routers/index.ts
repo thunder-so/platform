@@ -1,4 +1,4 @@
-import { router, publicProcedure, protectedProcedure } from '~/server/trpc/init'
+import { router, publicProcedure, protectedProcedure } from '../init'
 import { organizationsRouter } from './organizations.router'
 import { teamRouter } from './team.router'
 import { providersRouter } from './providers.router'

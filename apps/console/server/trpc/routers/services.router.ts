@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { protectedProcedure, router } from '../init';
-import { db } from '~/server/db/db';
+import { db } from '../../db/db';
 import { eq, and } from 'drizzle-orm';
 import {
   services,
@@ -9,7 +9,7 @@ import {
   providers,
   builds,
   events,
-} from '~/server/db/schema';
+} from '../../db/schema';
 import {
   serviceVariableSchema,
   domainSchema,
@@ -17,17 +17,17 @@ import {
   FunctionServiceMetadataSchema,
   WebServiceMetadataSchema,
   type ProviderSchema,
-} from '~/server/validators/common';
-import { PlatformLibrary } from '~/server/lib/platform.library';
+} from '../../validators/common';
+import { PlatformLibrary } from '../../lib/platform.library';
 import { 
   triggerPipeline,   
   getCloudWatchLogs, 
   getCloudWatchLogsFromGroup,
   lookupHostedZoneAndCerts,
   verifyDomainDns,
-} from '~/server/lib/provider.library';
+} from '../../lib/provider.library';
 import { TRPCError } from '@trpc/server';
-import GithubLibrary from '~/server/lib/github.library';
+import GithubLibrary from '../../lib/github.library';
 
 // Schema for creating a variable (omits id) - require service_id for DB insert
 const createServiceVariableSchema = serviceVariableSchema.omit({ id: true }).extend({ service_id: z.string() });
