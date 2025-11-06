@@ -172,7 +172,7 @@ onMounted(() => {
 });
 
 const openInviteModal = async () => {
-  const modal = overlay.create(MemberInviteModal, {
+  const modal = overlay.create(MemberInviteModal as Component, {
     props: { organizationId: orgId }
   });
   const result = await modal.open().result;
@@ -182,7 +182,7 @@ const openInviteModal = async () => {
 };
 
 const openMemberDeleteModal = async (member: any) => {
-  const modal = overlay.create(MemberDeleteModal, {
+  const modal = overlay.create(MemberDeleteModal as Component, {
     props: { 
       member,
       totalMembers: members.value.filter(m => !m.pending).length
@@ -195,7 +195,7 @@ const openMemberDeleteModal = async (member: any) => {
 };
 
 const openInviteDeleteModal = async (invite: any) => {
-  const modal = overlay.create(InviteDeleteModal, {
+  const modal = overlay.create(InviteDeleteModal as Component, {
     props: { invite }
   });
   const result = await modal.open().result;

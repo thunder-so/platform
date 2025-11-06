@@ -120,10 +120,10 @@
 import { AppApplicationDeleteModal } from '#components'
 import { ref, computed, watch, onMounted } from 'vue';
 import AppServiceConfiguration from '~/components/app/ServiceConfiguration.vue';
-import type { ServiceSchema } from '~~/server/validators/common';
+import type { ServiceSchema } from '~~/server/validators/app';
 import { isEqual } from 'lodash-es';
 import { useNavigationGuard } from '~/composables/useNavigationGuard';
-import type { Branch } from '~~/server/validators/common';
+import type { Branch } from '~~/server/db/schema';
 
 definePageMeta({
   layout: 'app',

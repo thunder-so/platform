@@ -20,12 +20,17 @@ export default defineNuxtConfig({
       polarServer: process.env.POLAR_SERVER || 'sandbox',
     }
   },
+  experimental: {
+    externalVue: false
+  },
   build: {
     transpile: [
       'trpc-nuxt', 
       '@trpc/client', 
       '@trpc/server',
-      '@supabase/supabase-js'
+      '@supabase/supabase-js',
+      'entities',
+      'estree-walker'
     ],
   },
   modules: [
@@ -105,6 +110,16 @@ export default defineNuxtConfig({
       wasm: false,
       legacyExternals: process.env.NODE_ENV === 'development' ? false : true,
     },
+    rollupConfig: {
+      external: [
+        'vue'
+      ]
+    },
+    moduleSideEffects: [
+      'vue', 
+      'entities', 
+      'estree-walker'
+    ],
     routeRules: {
       '/api/trpc/**': {
         cors: true,

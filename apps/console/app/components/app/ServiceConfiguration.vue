@@ -9,7 +9,7 @@
 <script setup lang="ts">
 import { computed, shallowRef } from 'vue';
 import type { PropType } from 'vue';
-import type { ServiceSchema } from '~~/server/validators/common';
+import type { ServiceSchema } from '~~/server/validators/app';
 import ServiceConfigStatic from './ServiceConfigStatic.vue';
 import ServiceConfigFunction from './ServiceConfigFunction.vue';
 import ServiceConfigWeb from './ServiceConfigWeb.vue';

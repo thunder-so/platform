@@ -52,7 +52,7 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue';
-import type { ServiceVariable } from '~~/server/validators/common';
+import type { ServiceVariable } from '~~/server/db/schema';
 import { isEqual } from 'lodash-es';
 import { z } from 'zod';
 import { envVarSchema } from '~~/server/validators/common';

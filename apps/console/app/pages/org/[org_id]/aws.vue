@@ -51,10 +51,10 @@
 </template>
 
 <script setup lang="ts">
-import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
-import type { Provider } from '~~/server/validators/common'
-import { useClipboard } from '@vueuse/core'
-import { OrgProviderCreateStackModal, OrgProviderCreateCredentialsModal } from '#components'
+import type { TableColumn, DropdownMenuItem } from '@nuxt/ui';
+import type { Provider } from '~~/server/db/schema';
+import { useClipboard } from '@vueuse/core';
+import { OrgProviderCreateStackModal, OrgProviderCreateCredentialsModal } from '#components';
 import { computed } from 'vue';
 
 definePageMeta({

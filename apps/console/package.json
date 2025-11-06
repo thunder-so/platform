@@ -37,6 +37,7 @@
     "@thunderso/cdk-nuxt": "0.2.0",
     "@trpc/client": "11.5.0",
     "@trpc/server": "11.5.0",
+    "@vueuse/core": "12.8.2",
     "drizzle-cuid2": "2.1.0",
     "drizzle-orm": "0.44.5",
     "lodash-es": "4.17.21",
@@ -45,7 +46,6 @@
     "superjson": "2.2.2",
     "trpc-nuxt": "1.2.0",
     "tsx": "4.20.6",
-    "vue": "3.5.21",
     "vue-router": "4.5.1"
   },
   "devDependencies": {
@@ -54,6 +54,9 @@
     "dotenv": "17.2.2",
     "dotenv-cli": "10.0.0",
     "drizzle-kit": "0.31.4"
+  },
+  "peerDependencies": {
+    "vue": "3.5.21"
   },
   "trustedDependencies": [
     "@parcel/watcher"

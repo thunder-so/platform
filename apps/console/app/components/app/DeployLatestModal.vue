@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ServiceSchema, EnvironmentSchema } from '~~/server/validators/common';
+import type { ServiceSchema, EnvironmentSchema } from '~~/server/validators/app';
 import { useTimeAgo } from '@vueuse/core';
 
 const props = defineProps<{
