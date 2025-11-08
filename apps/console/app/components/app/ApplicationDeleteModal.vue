@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ApplicationSchema } from '~~/server/validators/common';
+import type { ApplicationSchema } from '~~/server/validators/app';
 
 const props = defineProps<{
   application: ApplicationSchema,

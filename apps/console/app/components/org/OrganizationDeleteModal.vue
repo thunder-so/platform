@@ -1,15 +1,3 @@
-<script setup lang="ts">
-const props = defineProps<{
-  org: any
-}>()
-
-const emit = defineEmits<{ close: [orgId: string | null] }>()
-
-const confirmationInput = ref('')
-
-const isDeleteEnabled = computed(() => confirmationInput.value === 'delete')
-</script>
-
 <template>
   <UModal 
     title="Delete workspace"
@@ -30,3 +18,15 @@ const isDeleteEnabled = computed(() => confirmationInput.value === 'delete')
     </template>
   </UModal>
 </template>
+
+<script setup lang="ts">
+const props = defineProps<{
+  org: any
+}>()
+
+const emit = defineEmits<{ close: [orgId: string | null] }>()
+
+const confirmationInput = ref('')
+
+const isDeleteEnabled = computed(() => confirmationInput.value === 'delete')
+</script>

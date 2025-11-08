@@ -1,11 +1,3 @@
-<script setup lang="ts">
-const props = defineProps<{
-  variable: any
-}>()
-
-const emit = defineEmits<{ close: [applicationId: string | null] }>()
-</script>
-
 <template>
   <UModal 
     title="Delete variable"
@@ -23,3 +15,11 @@ const emit = defineEmits<{ close: [applicationId: string | null] }>()
     </template>
   </UModal>
 </template>
+
+<script setup lang="ts">
+const props = defineProps<{
+  variable: any
+}>()
+
+const emit = defineEmits<{ close: [applicationId: string | null] }>()
+</script>
