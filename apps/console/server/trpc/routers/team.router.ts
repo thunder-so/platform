@@ -1,9 +1,11 @@
 import { z } from 'zod'
 import { protectedProcedure, router } from '../init'
 import { db } from '../../db/db'
-import { memberships, users, organizations, subscriptions } from '../../db/schema'
+import { memberships, users, organizations, subscriptions, ProductMetadata } from '../../db/schema'
 import { eq, and, isNull, sql } from 'drizzle-orm'
 import { createClient } from '@supabase/supabase-js'
+import { Polar } from '@polar-sh/sdk'
+import { TRPCError } from '@trpc/server'
 
 export const teamRouter = router({
   getMembers: protectedProcedure
@@ -52,6 +54,58 @@ export const teamRouter = router({
 
       if (magicLinkError) {
         throw new Error(`Error generating user: ${magicLinkError.message}`);
+      }
+
+      // Check seat availability for seat-based plans
+      const subscription = await db.query.subscriptions.findFirst({
+        where: and(
+          eq(subscriptions.organization_id, input.organizationId),
+          eq(subscriptions.status, 'active')
+        ),
+        with: { product: true }
+      });
+
+      if (subscription && (subscription.product?.metadata as ProductMetadata)?.prices?.[0]?.amount_type === 'seat_based') {
+        // Check seat availability via Polar API
+        const { private: { polarAccessToken, polarServer } } = useRuntimeConfig();
+        const polar = new Polar({
+          accessToken: polarAccessToken,
+          server: polarServer as 'sandbox' | 'production',
+        });
+
+        try {
+          const seatsList = await polar.customerSeats.listSeats({
+            subscriptionId: subscription.id
+          });
+          
+          if (seatsList.availableSeats <= 0) {
+            throw new TRPCError({
+              code: 'PRECONDITION_FAILED',
+              message: 'No available seats. Purchase more seats to invite members.',
+            });
+          }
+        } catch (polarError) {
+          console.error('Failed to check seat availability:', polarError);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Could not verify seat availability.',
+          });
+        }
+
+        // Assign seat via Polar
+        try {
+          await polar.customerSeats.assignSeat({
+            subscriptionId: subscription.id,
+            email: input.email,
+            externalCustomerId: magicLinkData.user.id,
+          });
+        } catch (polarError) {
+          console.error('Polar seat assignment failed:', polarError);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Could not assign seat.',
+          });
+        }
       }
 
       // Create membership record
@@ -154,12 +208,97 @@ export const teamRouter = router({
         throw new Error('Invite not found or already accepted.')
       }
 
+      // Claim seat for seat-based plans
+      const subscription = await db.query.subscriptions.findFirst({
+        where: and(
+          eq(subscriptions.organization_id, input.organizationId),
+          eq(subscriptions.status, 'active')
+        ),
+        with: { product: true }
+      });
+
+      if (subscription && (subscription.product?.metadata as ProductMetadata)?.prices?.[0]?.amount_type === 'seat_based') {
+        const { private: { polarAccessToken, polarServer } } = useRuntimeConfig();
+        const polar = new Polar({
+          accessToken: polarAccessToken,
+          server: polarServer as 'sandbox' | 'production',
+        });
+
+        const result = await polar.customerSeats.assignSeat({
+          subscriptionId: subscription.id,
+          // checkoutId: 
+          // orderId:
+          email: user.email,
+          externalCustomerId: user.id,
+          metadata: {
+            organization_id: input.organizationId
+          }
+        });
+      }
+
       await db
         .update(memberships)
         .set({ pending: false, updated_at: new Date() })
         .where(eq(memberships.id, membership.id))
 
       return { id: input.organizationId }
+    }),
+
+  getSeatUsage: protectedProcedure
+    .input(z.object({ organizationId: z.string() }))
+    .query(async ({ input }) => {
+      const subscription = await db.query.subscriptions.findFirst({
+        where: and(
+          eq(subscriptions.organization_id, input.organizationId),
+          eq(subscriptions.status, 'active')
+        ),
+        with: { product: true }
+      });
+
+      if (!subscription) {
+        return { used: 0, total: 1, isSeatBased: false };
+      }
+
+      const isSeatBased = (subscription.product?.metadata as ProductMetadata)?.prices?.[0]?.amount_type === 'seat_based';
+      
+      if (!isSeatBased) {
+        // Count current active members for non-seat-based plans
+        const activeMembersCount = await db.select({ count: sql`count(*)` })
+          .from(memberships)
+          .where(and(
+            eq(memberships.organization_id, input.organizationId),
+            eq(memberships.pending, false),
+            isNull(memberships.deleted_at)
+          ));
+        
+        return {
+          used: Number(activeMembersCount[0]?.count) || 0,
+          total: 1,
+          isSeatBased: false
+        };
+      }
+
+      // Fetch seat data from Polar API for seat-based plans
+      const { private: { polarAccessToken, polarServer } } = useRuntimeConfig();
+      const polar = new Polar({
+        accessToken: polarAccessToken,
+        server: polarServer as 'sandbox' | 'production',
+      });
+
+      try {
+        const seatsList = await polar.customerSeats.listSeats({
+          subscriptionId: subscription.id
+        });
+        
+        return {
+          used: seatsList.totalSeats - seatsList.availableSeats,
+          total: seatsList.totalSeats,
+          isSeatBased: true
+        };
+      } catch (polarError) {
+        console.error('Failed to fetch seat usage from Polar:', polarError);
+        return { used: 0, total: 1, isSeatBased: true };
+      }
     }),
 
   removeInvite: protectedProcedure
@@ -186,5 +325,57 @@ export const teamRouter = router({
       await db.update(memberships).set({ deleted_at: new Date() }).where(eq(memberships.id, input.inviteId));
 
       return { success: true };
+    }),
+
+  purchaseSeats: protectedProcedure
+    .input(z.object({ organizationId: z.string(), additionalSeats: z.number().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const { user } = ctx;
+      const { private: { polarAccessToken, polarServer } } = useRuntimeConfig();
+
+      const subscription = await db.query.subscriptions.findFirst({
+        where: and(
+          eq(subscriptions.organization_id, input.organizationId),
+          // eq(subscriptions.status, 'active')
+        )
+      });
+
+      if (!subscription) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'No active subscription found.',
+        });
+      }
+
+      const polar = new Polar({
+        accessToken: polarAccessToken,
+        server: polarServer as 'sandbox' | 'production',
+      });
+
+      try {
+        // For seat-based plans, purchasing seats requires creating a new checkout
+        // or modifying the subscription through the customer portal
+        // This is a simplified implementation - in practice, you'd redirect to checkout
+        const checkout = await polar.checkouts.create({
+          products: [subscription.product_id as string],
+          successUrl: `${process.env.SITE_URL}/org/${input.organizationId}/billing`,
+          customerEmail: user.email,
+          // externalId: user.id,
+          metadata: {
+            organization_id: input.organizationId,
+            seat_upgrade: 'true'
+          }
+        });
+        
+        return { checkoutUrl: checkout.url };
+
+        return { success: true };
+      } catch (polarError) {
+        console.error('Polar seat purchase failed:', polarError);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Could not purchase additional seats.',
+        });
+      }
     }),
 })

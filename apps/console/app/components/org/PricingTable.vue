@@ -1,6 +1,5 @@
 <template>
   <fieldset>
-    <legend class="text-md">Choose a plan:</legend>
     <div class="flex gap-4 my-4 justify-center">
       <UCard
         v-for="plan in plans"

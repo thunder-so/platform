@@ -22,7 +22,7 @@
         "@octokit/auth-app": "8.1.0",
         "@octokit/core": "7.0.3",
         "@octokit/types": "14.1.0",
-        "@polar-sh/nuxt": "0.3.11",
+        "@polar-sh/nuxt": "0.4.0",
         "@posthog/nuxt": "^0.0.25",
         "@thunderso/cdk-nuxt": "0.2.0",
         "@trpc/client": "11.5.0",
@@ -36,7 +36,6 @@
         "superjson": "2.2.2",
         "trpc-nuxt": "1.2.0",
         "tsx": "4.20.6",
-        "vue": "3.5.21",
         "vue-router": "4.5.1",
       },
       "devDependencies": {
@@ -45,6 +44,9 @@
         "dotenv": "17.2.2",
         "dotenv-cli": "10.0.0",
         "drizzle-kit": "0.31.4",
+      },
+      "peerDependencies": {
+        "vue": "3.5.21",
       },
     },
   },
@@ -530,11 +532,11 @@
 
     "@pkgjs/parseargs": ["@pkgjs/parseargs@0.11.0", "", {}, "sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg=="],
 
-    "@polar-sh/adapter-utils": ["@polar-sh/adapter-utils@0.2.8", "", { "dependencies": { "@polar-sh/sdk": "^0.35.3" } }, "sha512-VRCYectPSc8H63hYsGMNJK9rGy4WjpwL0G7LvnVHHYCpxBadkn90eWssS0AyaOsYaUiqCwwGcJd609UoDk3IQA=="],
+    "@polar-sh/adapter-utils": ["@polar-sh/adapter-utils@0.3.0", "", { "dependencies": { "@polar-sh/sdk": "^0.40.2" } }, "sha512-4B8uVlB6u2iwbF7COtAcaYbtW98+pSHEKwHIf0bUKC6xyClqa/3NivrtFXaoVv/tmFz6LRmWm7yloIlFjIR63g=="],
 
-    "@polar-sh/nuxt": ["@polar-sh/nuxt@0.3.11", "", { "dependencies": { "@nuxt/kit": "^3.15.4", "@polar-sh/adapter-utils": "0.2.8", "@polar-sh/sdk": "^0.35.3" } }, "sha512-/uw8oqDyRwsiQzUecBgs1FcX09RiO4JDFu549SEcLxvi5c/RUKmQ9J1BgZUcsT/c8ORBBTiKW1BsYWjPdbxybw=="],
+    "@polar-sh/nuxt": ["@polar-sh/nuxt@0.4.0", "", { "dependencies": { "@nuxt/kit": "^3.15.4", "@polar-sh/adapter-utils": "0.3.0", "@polar-sh/sdk": "^0.40.2" } }, "sha512-M69p4onWMptq7KvE7ccYILL5uO3Bsu6BXFOu76s/fJJ1Ji9Cr2C2e+jrE96EQ48xgERImSRMZ5G3ByXv3YdtOA=="],
 
-    "@polar-sh/sdk": ["@polar-sh/sdk@0.35.4", "", { "dependencies": { "standardwebhooks": "^1.0.0", "zod": "^3.25.76" }, "peerDependencies": { "@modelcontextprotocol/sdk": ">=1.5.0 <1.10.0" }, "optionalPeers": ["@modelcontextprotocol/sdk"], "bin": { "mcp": "bin/mcp-server.js" } }, "sha512-vv4Ptl5jNsHIZoLvzKr0wR+dGXJOpz8VWOOTEGqaiYx6YJvzIvrayg52qp8ZtBjsRBkySLZS2EVTV3wDHTACwA=="],
+    "@polar-sh/sdk": ["@polar-sh/sdk@0.40.3", "", { "dependencies": { "standardwebhooks": "^1.0.0", "zod": "^3.25.76" } }, "sha512-RDCqxg+scC9oPwwXj9KdL4NM44h7l8iu4PvlzPP7Z6E+0aOuBh/zskruoNUvna0WWvx8IP2I0JOkmHCJ0pgkuQ=="],
 
     "@polka/url": ["@polka/url@1.0.0-next.29", "", {}, "sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww=="],
 

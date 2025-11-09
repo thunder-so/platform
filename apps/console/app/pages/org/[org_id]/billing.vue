@@ -11,32 +11,30 @@
     <div v-else-if="subscription">
       <UCard>
         <template #header>
-          <h3>Current Subscription</h3>
+          <h3>Current subscription</h3>
         </template>
         
         <p><strong>Status:</strong> {{ subscription.status }}</p>
         <p><strong>Plan:</strong> {{ subscription.products?.name }}</p>
+        <p v-if="isSeatBasedPlan"><strong>Seats:</strong> {{ seatUsage.used }} of {{ seatUsage.total }} used</p>
         <p><strong>Current Period:</strong> {{ new Date(subscription.current_period_start).toLocaleDateString() }} - {{ new Date(subscription.current_period_end).toLocaleDateString() }}</p>
         <p v-if="subscription.cancel_at_period_end">Subscription will be canceled at the end of the current period.</p>
-        <UButton @click="manageSubscription" class="mt-4">Manage Subscription</UButton>
+        
+        <div class="flex gap-2 mt-4">
+          <UButton @click="manageSubscription">Manage Subscription</UButton>
+          <UButton v-if="isSeatBasedPlan" @click="purchaseMoreSeats" variant="outline">Purchase More Seats</UButton>
+        </div>
       </UCard>
     </div>
-    <div v-else>
+    <div>
       <ClientOnly>
-      <UCard>
-        <template #header>
-          <p>Subscription</p>
-        </template>
-
-        <p>This workspace is on the hobby plan.</p>
-      </UCard>
       <UCard class="mt-4">
         <template #header>
-          <p>Upgrade to a Pro plan</p>
+          <p>Plans and pricing</p>
         </template>
       
-        <PricingTable v-if="paidPlans.length > 0"
-          :plans="paidPlans"
+        <PricingTable v-if="plans.length > 0"
+          :plans="plans"
           :selectedPlan="selectedPlan"
           @update:selectedPlan="selectedPlan = $event"
         />
@@ -82,7 +80,23 @@ const error = ref<{ message: string } | null>(null);
 const selectedPlan = ref<string | undefined>(undefined);
 const isPageLoading = computed(() => isLoading.value || plansLoading.value);
 const isCreatingCheckout = ref(false);
-const paidPlans = computed<Product[]>(() => plans.value.filter(p => p.id !== 'free'));
+
+const isSeatBasedPlan = computed(() => {
+  return subscription.value?.products?.metadata?.prices?.[0]?.amount_type === 'seat_based';
+});
+
+const seatUsage = ref({ used: 0, total: 0 });
+
+const fetchSeatUsage = async () => {
+  if (!subscription.value || !isSeatBasedPlan.value) return;
+  
+  try {
+    const usage = await $client.team.getSeatUsage.query({ organizationId: orgId });
+    seatUsage.value = usage;
+  } catch (e) {
+    console.error('Error fetching seat usage:', e);
+  }
+};
 
 const subscribeToPlan = async () => {
   if (!selectedPlan.value) {
@@ -120,12 +134,14 @@ const fetchSubscription = async () => {
         products (*)
       `)
       .eq('organization_id', orgId)
-      .maybeSingle()
+      .order('created', { ascending: false })
 
     if (fetchError) {
       throw fetchError
     }
-    subscription.value = data
+    
+    subscription.value = Array.isArray(data) ? (data[0] || null) : data
+    await fetchSeatUsage()
   } catch (e) {
     error.value = { message: (e as Error).message || 'Error fetching subscriptions.' };
   } finally {
@@ -135,8 +151,9 @@ const fetchSubscription = async () => {
 
 onMounted(async () => {
   await fetchPlans()
-  fetchSubscription()
-  selectedPlan.value = paidPlans.value[0]?.id
+  await fetchSubscription()
+  await fetchSeatUsage()
+  selectedPlan.value = plans.value[0]?.id
 })
 
 const manageSubscription = async () => {
@@ -147,6 +164,21 @@ const manageSubscription = async () => {
   } catch (e) {
     console.error('Failed to get subscription management URL:', e)
     error.value = { message: 'Failed to get subscription management URL. See console for details.' };
+  }
+}
+
+const purchaseMoreSeats = async () => {
+  try {
+    const result = await $client.team.purchaseSeats.mutate({ 
+      organizationId: orgId, 
+      additionalSeats: 1 
+    });
+    if (result.checkoutUrl) {
+      window.location.href = result.checkoutUrl;
+    }
+  } catch (e) {
+    console.error('Failed to purchase seats:', e);
+    error.value = { message: 'Failed to purchase additional seats.' };
   }
 }
 </script>

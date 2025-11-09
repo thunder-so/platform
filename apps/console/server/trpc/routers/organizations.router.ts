@@ -54,33 +54,74 @@ export const organizationsRouter = router({
         access: 'ADMIN',
       })
 
-      // 4. Handle payment flow for paid plans
+      // 4. Handle payment flow
       let checkoutUrl: string | null = null
-      if (planId !== 'free') {
-        const polar = new Polar({
-          accessToken: polarAccessToken,
-          server: polarServer as 'sandbox' | 'production',
+      const polar = new Polar({
+        accessToken: polarAccessToken,
+        server: polarServer as 'sandbox' | 'production',
+      })
+
+      try {
+
+        // Check if customer exists in database
+        let existingCustomer = await db.query.customers.findFirst({
+          where: eq(customers.user_id, user.id)
         })
 
-        try {
+        let customer
+        if (existingCustomer) {
+          // Get existing customer from Polar
+          customer = await polar.customers.get({ id: existingCustomer.polar_customer_id })
+        } else {
+          // Create new customer in Polar
+          customer = await polar.customers.create({
+            email: user.email as string,
+            externalId: user.id,
+          })
+          
+          // Store customer in database
+          await db.insert(customers).values({
+            user_id: user.id,
+            organization_id: newOrg.id,
+            polar_customer_id: customer.id,
+          })
+        }
+
+        // Check if plan is free
+        const product = await polar.products.get({ id: planId })
+        const isFree = product.prices?.[0]?.amountType === 'free' || false
+
+        if (isFree) {
+          // Create subscription directly for free plans
+          await polar.subscriptions.create({
+            customerId: customer.id,
+            productId: planId,
+            metadata: {
+              user_id: user.id,
+              organization_id: newOrg.id,
+            },
+          })
+        } else {
+          // Create checkout for paid plans
           const checkout = await polar.checkouts.create({
             products: [planId],
             successUrl: `${siteUrl}${polarCheckoutSuccessUrl}`,
             customerEmail: user.email,
+            seats: 1,
             metadata: {
-              organization_id: newOrg.id,
               user_id: user.id,
+              organization_id: newOrg.id,
             },
           })
-
           checkoutUrl = checkout.url
-        } catch (polarError) {
-          console.error('Polar checkout creation failed:', polarError)
-          throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: 'Could not create a payment checkout session.',
-          })
         }
+      } catch (polarError) {
+        console.error('Polar operation failed:', polarError)
+        const errorMessage = polarError instanceof Error ? polarError.message : 'Unknown Polar error'
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Payment system error: ${errorMessage}`,
+        })
       }
 
       // 5. Return the new organization and checkout URL
@@ -158,8 +199,8 @@ export const organizationsRouter = router({
           successUrl: `${siteUrl}${polarCheckoutSuccessUrl}`,
           customerEmail: user.email,
           metadata: {
-            organization_id: organizationId,
             user_id: user.id,
+            organization_id: organizationId,
           },
         });
         return { checkoutUrl: checkout.url };

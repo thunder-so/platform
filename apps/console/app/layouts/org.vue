@@ -44,8 +44,10 @@
 import type { NavigationMenuItem } from '@nuxt/ui'
 
 const route = useRoute();
+const router = useRouter();
 const { setSelectedOrganization, selectedOrganization, hasAccessToOrg, getPendingInvite, refreshMemberships } = useMemberships();
 const { $client } = useNuxtApp();
+const toast = useToast()
 
 const links = computed<NavigationMenuItem[]>(() => {
   const orgId = selectedOrganization.value?.id;
@@ -95,8 +97,13 @@ const acceptInvite = async () => {
     await $client.team.acceptInvite.mutate({ organizationId: orgId })
     await refreshMemberships()
     await reloadNuxtApp()
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to accept invitation:', error)
+    toast.add({
+      title: 'Failed to accept invitation',
+      description: 'Please try again or contact support.',
+      color: 'error'
+    })
   } finally {
     loading.value = false
   }

@@ -17,7 +17,7 @@
 
     <template #footer>
       <UButton @click="createOrganization" :loading="loading" :disabled="!orgName.trim()" size="lg">
-        {{ selectedPlan === 'free' ? 'Create workspace' : 'Continue to payment' }}
+        {{ plans.find(p => p.id === selectedPlan)?.metadata?.prices?.[0]?.amount_type === 'free' ? 'Create workspace' : 'Continue to payment' }}
       </UButton>
     </template>
   </UCard>
@@ -44,7 +44,8 @@ const loading = ref(false);
 const error = ref<{ message: string } | null>(null);
 
 fetchPlans().then(() => {
-  selectedPlan.value = 'free';
+  const freePlan = plans.value.find(p => p.metadata?.prices?.[0]?.amount_type === 'free');
+  selectedPlan.value = freePlan?.id;
 });
 
 const createOrganization = async () => {
@@ -63,12 +64,12 @@ const createOrganization = async () => {
     });
 
     if (newOrg.checkoutUrl) {
-      // For paid plans, redirect to the Polar checkout page
+      // For paid plans, redirect to checkout
       window.location.href = newOrg.checkoutUrl;
     } else {
-      // For free plans, refresh state and redirect to the new organization's dashboard
+      // For free plans, direct redirect to dashboard
       await refreshMemberships();
-      toast.add({ title: 'Organization created successfully', color: 'success' });
+      toast.add({ title: 'Workspace created successfully', color: 'success' });
       await router.push(`/org/${newOrg.id}`);
     }
   } catch (e) {

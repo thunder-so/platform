@@ -33,8 +33,8 @@
                   <span class="text-sm">{{ item.name }}</span>
                 </div>
                 <UBadge v-if="item.pending" size="md" color="secondary" variant="outline">Invited</UBadge>
-                <UBadge v-if="!item.pending && item.subscriptions && item.subscriptions.some(sub => sub.status === 'active')" size="md" color="info" variant="outline">Pro</UBadge>
-                <UBadge v-else-if="!item.pending" size="md" color="neutral" variant="outline">Hobby</UBadge>
+                <UBadge v-else-if="item.isPaid" size="md" color="info" variant="outline">Pro</UBadge>
+                <UBadge v-else size="md" color="neutral" variant="outline">Free</UBadge>
               </div>
             </div>
             <hr class="border-gray-200 dark:border-gray-700 mt-1 mb-1" />
@@ -171,10 +171,20 @@ function selectOrganization(org: any) {
 }
 
 const isOrgPopoverOpen = ref(false)
+
+const isPaidOrg = (org: any) => {
+  return org.subscriptions?.some((sub: any) => 
+    (sub.status === 'active' || sub.status === 'trialing') && 
+    sub.metadata?.price?.amount_type && 
+    sub.metadata.price.amount_type !== 'free'
+  ) || false
+}
+
 const organizationItems = computed(() => [
   memberships.value.map(org => ({
     ...org,
     label: org.name,
+    isPaid: isPaidOrg(org),
     click: () => selectOrganization(org)
   }))
 ])

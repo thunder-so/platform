@@ -8,8 +8,8 @@ export const useMemberships = () => {
   const route = useRoute();
   const selectedOrgIdCookie = useCookie('selected-org-id');
   
-  const memberships = useState<Membership[]>('memberships', () => [])
-  const selectedOrganization = useState<Membership | undefined>('selectedOrganization', () => undefined)
+  const memberships = useState<any[]>('memberships', () => [])
+  const selectedOrganization = useState<any | undefined>('selectedOrganization', () => undefined)
   const isLoading = useState('memberships.loading', () => false)
 
   const refreshMemberships = async () => {
@@ -22,51 +22,20 @@ export const useMemberships = () => {
         .select(`id, pending,
           organizations (
             id, name,
-            subscriptions (
-              id, status,
-              products (
-                id, active, name, description, metadata
-              )
-            )
+            subscriptions (id, status, metadata)
           )
         `)
-        // .is('organizations.deleted_at', null)
         .eq('user_id', user.value.id)
         .is('deleted_at', null)
 
       if (error) throw error
 
-      const flattened: Membership[] = (data as any[])?.map((membership: any) => {
-        const org = membership.organizations;
-        let subs: any[] = [];
-        if (org.subscriptions && org.subscriptions.length > 0) {
-          subs = org.subscriptions.map((sub: any) => {
-            return {
-              id: sub.id,
-              status: sub.status,
-              products: sub.products ? {
-                id: sub.products.id,
-                name: sub.products.name,
-                description: sub.products.description ?? null,
-                metadata: sub.products.metadata,
-                prices: Array.isArray(sub.products.prices) ? sub.products.prices.map((price: any) => ({
-                  id: price.id,
-                  type: price.type,
-                  price_amount: price.price_amount,
-                  price_currency: price.price_currency,
-                  recurring_interval: price.recurring_interval
-                })) : []
-              } : undefined
-            };
-          });
-        }
-        return {
-          id: org.id,
-          name: org.name,
-          pending: membership.pending,
-          subscriptions: subs
-        };
-      }) || [];
+      const flattened = (data as any[])?.map((membership: any) => ({
+        id: membership.organizations.id,
+        name: membership.organizations.name,
+        pending: membership.pending,
+        subscriptions: membership.organizations.subscriptions || []
+      })) || [];
 
       memberships.value = flattened;
     } catch (e) {
@@ -115,19 +84,18 @@ export const useMemberships = () => {
     }
   }
 
-  // Centralized currentPlan computed property
   const { plans } = usePlans();
   const currentPlan = computed(() => {
     const org = selectedOrganization.value;
     if (!org) return plans.value.find(p => p.id === 'free');
-    const activeSub = org.subscriptions?.find(sub => sub.status === 'active');
-    if (activeSub && activeSub.products) {
-      // Return the product object as Plan
+    
+    const activeSub = org.subscriptions?.find(sub => sub.status === 'active' || sub.status === 'trialing');
+    if (activeSub?.metadata?.product) {
       return {
-        id: activeSub.products.id,
-        name: activeSub.products.name,
-        description: activeSub.products.description ?? null,
-        metadata: activeSub.products.metadata
+        id: activeSub.metadata.product.id,
+        name: activeSub.metadata.product.name,
+        description: activeSub.metadata.product.description ?? null,
+        metadata: { price: activeSub.metadata.price }
       };
     }
     return plans.value.find(p => p.id === 'free');
@@ -143,6 +111,10 @@ export const useMemberships = () => {
     return memberships.value.find(m => m.id === orgId && m.pending)
   }
 
+  const resetOrgIdCookie = () => {
+    selectedOrgIdCookie.value = null
+  }
+
   return {
     memberships: readonly(memberships),
     selectedOrganization,
@@ -152,6 +124,7 @@ export const useMemberships = () => {
     setSelectedOrganization,
     currentPlan,
     hasAccessToOrg,
-    getPendingInvite
+    getPendingInvite,
+    resetOrgIdCookie
   }
 }

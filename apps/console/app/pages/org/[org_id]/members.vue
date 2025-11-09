@@ -18,8 +18,8 @@
       icon="i-lucide-info"
       color="info"
       variant="soft"
-      title="Upgrade to add more team members"
-      description="The Hobby plan is limited to 1 member. Upgrade your plan to add more."
+      :title="seatUsage.isSeatBased ? 'No available seats' : 'Upgrade to add more team members'"
+      :description="seatUsage.isSeatBased ? 'All seats are in use. Purchase more seats to invite members.' : 'The Hobby plan is limited to 1 member. Upgrade your plan to add more.'"
       class="mb-4"
     />
     <div v-if="loading">
@@ -64,10 +64,14 @@ const InviteDeleteModal = resolveComponent('OrgInviteDeleteModal');
 const UAvatar = resolveComponent('UAvatar');
 const UBadge = resolveComponent('UBadge');
 const orgId = selectedOrganization?.value?.id as string;
-const maxMembers = computed(() => {
-  return currentPlan.value?.metadata?.metadata?.max_members ?? 1;
+
+const seatUsage = ref({ used: 0, total: 1, isSeatBased: false });
+const limitReached = computed(() => {
+  if (seatUsage.value.isSeatBased) {
+    return seatUsage.value.used >= seatUsage.value.total;
+  }
+  return members.value.length >= (currentPlan.value?.metadata?.metadata?.max_members ?? 1);
 });
-const limitReached = computed(() => members.value.length >= maxMembers.value);
 
 const members = ref<any[]>([]);
 const loading = ref(true);
@@ -167,7 +171,17 @@ function getDropdownActions(member: any) {
   }
 }
 
-onMounted(() => {
+const fetchSeatUsage = async () => {
+  try {
+    const usage = await $client.team.getSeatUsage.query({ organizationId: orgId });
+    seatUsage.value = usage;
+  } catch (e) {
+    console.error('Error fetching seat usage:', e);
+  }
+};
+
+onMounted(async () => {
+  await fetchSeatUsage();
   fetchMembers();
 });
 

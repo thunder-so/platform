@@ -12,13 +12,12 @@ console.log('🚀 Polar Webhook Edge Function initialized!')
 
 // Helper function to sync customer data
 async function syncCustomer(customerData: any, metadata: any) {
-  const userId = metadata?.user_id
+  const userId = customerData.external_id
   const organizationId = metadata?.organization_id
   const polarCustomerId = customerData.id
 
   if (!userId || !organizationId) {
-    console.error('Webhook Error: user_id or organization_id not found in metadata for customer.', { polarCustomerId })
-    // Acknowledge the event to prevent retries, but log the issue.
+    console.error('Webhook Error: external_id or organization_id not found for customer.', { polarCustomerId })
     return
   }
 
@@ -31,7 +30,6 @@ async function syncCustomer(customerData: any, metadata: any) {
     })
 
   if (error) {
-    // Log the error but don't throw, allowing the main process to continue if possible
     console.error('❌ Failed to sync customer:', error)
   } else {
     console.log(`✅ Successfully synced customer: ${polarCustomerId} for org ${organizationId}`)
@@ -80,17 +78,17 @@ Deno.serve(async (req) => {
       const subData = payload.data
 
       // Sync the customer record first using the subscription's metadata
-      // This ensures the customer record is up-to-date
       await syncCustomer(subData.customer, subData.metadata)
 
-      const userId = subData.metadata?.user_id
+      const userId = subData.customer.external_id
       const organizationId = subData.metadata?.organization_id
 
-      // The check is now inside syncCustomer, but we repeat it here for the subscription itself.
       if (!userId || !organizationId) {
-        console.error('Webhook Error: user_id and organization_id not found in subscription metadata.', { subscriptionId: subData.id })
+        console.error('Webhook Error: external_id and organization_id not found in subscription.', { subscriptionId: subData.id })
         return new Response('OK', { status: 200 })
       }
+
+
 
       // Upsert subscription
       const { error } = await supabase
@@ -108,6 +106,7 @@ Deno.serve(async (req) => {
           ended_at: subData.ended_at ? new Date(subData.ended_at).toISOString() : null,
           cancel_at: subData.cancel_at ? new Date(subData.cancel_at).toISOString() : null,
           canceled_at: subData.canceled_at ? new Date(subData.canceled_at).toISOString() : null,
+
           metadata: subData,
         })
 
@@ -117,7 +116,7 @@ Deno.serve(async (req) => {
       }
 
       console.log(`✅ Successfully synced subscription: ${subData.id}`)
-    }
+
 
     return new Response('OK', { status: 200 })
   } catch (error) {

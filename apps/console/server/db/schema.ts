@@ -393,7 +393,7 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
 }));
 
 /**
- * Export types for TypeScript
+ * Export DB types
  */
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -416,42 +416,109 @@ export type ServiceVariable = typeof serviceVariables.$inferSelect;
 export type NewServiceVariable = typeof serviceVariables.$inferInsert;
 export type ServiceSecret = typeof serviceSecrets.$inferSelect;
 export type NewServiceSecret = typeof serviceSecrets.$inferInsert;
-
 export type Domain = typeof domains.$inferSelect;
 export type NewDomain = typeof domains.$inferInsert;
 
-
-
-// Types for Polar Payment Integration
-export interface Price {
+/*
+ * Types for Polar.sh integration
+ */
+interface BasePrice {
   id: string;
-  type: string;
   created_at: string;
   product_id: string;
-  amount_type: string;
-  is_archived?: boolean;
+  is_archived: boolean;
   modified_at: string;
-  price_amount: number;
-  price_currency: string;
+}
+
+interface RecurringBasePrice extends BasePrice {
+  type: "recurring";
   recurring_interval: "month" | "year";
 }
 
-export interface ProductMetadata {
+interface OneTimeBasePrice extends BasePrice {
+  type: "one_time";
+  recurring_interval: null;
+}
+
+interface FixedPrice extends RecurringBasePrice {
+  amount_type: "fixed";
+  price_amount: number;
+  price_currency: string;
+}
+
+interface FreePrice extends RecurringBasePrice {
+  amount_type: "free";
+}
+
+interface SeatBasedPrice extends RecurringBasePrice {
+  amount_type: "seat_based";
+  price_currency: string;
+  price_per_seat: number;
+  seat_tiers: {
+    tiers: readonly {
+      min_seats: number;
+      max_seats: number | null;
+      price_per_seat: number;
+    }[];
+  };
+}
+
+interface OneTimePrice extends OneTimeBasePrice {
+  amount_type: "fixed";
+  price_amount: number;
+  price_currency: string;
+}
+
+export type Price = FixedPrice | FreePrice | SeatBasedPrice | OneTimePrice;
+
+interface BaseProductMetadata {
   id: string;
   name: string;
   medias: readonly any[];
-  prices: readonly Price[];
   benefits: readonly any[];
-  metadata: Record<string, any>;
   created_at: string;
   description: string;
   is_archived: boolean;
   modified_at: string;
-  is_recurring: boolean;
+  trial_interval: string | null;
   organization_id: string;
-  recurring_interval: "month" | "year";
+  trial_interval_count: number | null;
   attached_custom_fields: readonly any[];
 }
+
+interface RecurringProductMetadata extends BaseProductMetadata {
+  is_recurring: true;
+  recurring_interval: "month" | "year";
+  recurring_interval_count: number;
+}
+
+interface OneTimeProductMetadata extends BaseProductMetadata {
+  is_recurring: false;
+  recurring_interval: null;
+  recurring_interval_count: null;
+}
+
+interface PaidProductMetadata extends RecurringProductMetadata {
+  prices: readonly FixedPrice[];
+  metadata: Record<string, string>;
+}
+
+interface FreeProductMetadata extends RecurringProductMetadata {
+  prices: readonly FreePrice[];
+  metadata: Record<string, any>;
+}
+
+interface SeatBasedProductMetadata extends RecurringProductMetadata {
+  prices: readonly SeatBasedPrice[];
+  metadata: Record<string, any>;
+}
+
+interface LifetimeProductMetadata extends OneTimeProductMetadata {
+  prices: readonly OneTimePrice[];
+  metadata: Record<string, any>;
+}
+
+export type ProductMetadata = PaidProductMetadata | FreeProductMetadata | SeatBasedProductMetadata | LifetimeProductMetadata;
 
 export type DBProduct = typeof products.$inferSelect;
 export type Product = Omit<DBProduct, 'metadata'> & { metadata: ProductMetadata };
@@ -461,7 +528,9 @@ export type NewSubscription = typeof subscriptions.$inferInsert;
 export type Customer = typeof customers.$inferSelect;
 export type NewCustomer = typeof customers.$inferInsert;
 
-// Organization Memberships Schema
+/*
+ * Organization Memberships Schema
+ */
 export interface Membership {
   id: Organization['id'];
   name: Organization['name'];
@@ -473,7 +542,9 @@ export interface Membership {
   }>;
 }
 
-// Github Interfaces
+/*
+ * Github Interfaces
+ */
 export interface Branch {
   name: string;
   commit: {

@@ -71,12 +71,13 @@ import { ref, reactive, onMounted, inject } from 'vue';
 import { z } from 'zod';
 import { OrgOrganizationDeleteModal } from '#components'
 
-const { memberships, selectedOrganization, initializeSession } = useMemberships()
+const { memberships, selectedOrganization, initializeSession, refreshMemberships, resetOrgIdCookie } = useMemberships()
 
 definePageMeta({
   layout: 'org'
 });
 
+const router = useRouter();
 const supabase = useSupabaseClient();
 const toast = useToast();
 const overlay = useOverlay()
@@ -151,8 +152,12 @@ const deleteOrganization = async () => {
     const { $client } = useNuxtApp();
     await $client.organizations.delete.mutate({ orgId });
     confirmDelete.value = false;
-    await initializeSession();
-    await navigateTo('/');
+    
+    // Clear all organization state before navigation
+    selectedOrganization.value = undefined;
+    await resetOrgIdCookie();
+
+    router.push('/');
   } catch (e: any) {
     console.error("Error deleting organization:", e);
     alert("Failed to delete organization: " + e.message);
