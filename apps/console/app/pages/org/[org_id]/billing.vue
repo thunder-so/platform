@@ -15,7 +15,7 @@
         </template>
         
         <p><strong>Status:</strong> {{ subscription.status }}</p>
-        <p><strong>Plan:</strong> {{ subscription.products?.name }}</p>
+        <p><strong>Plan:</strong> {{ subscription.metadata?.product?.name }}</p>
         <p v-if="isSeatBasedPlan"><strong>Seats:</strong> {{ seatUsage.used }} of {{ seatUsage.total }} used</p>
         <p><strong>Current Period:</strong> {{ new Date(subscription.current_period_start).toLocaleDateString() }} - {{ new Date(subscription.current_period_end).toLocaleDateString() }}</p>
         <p v-if="subscription.cancel_at_period_end">Subscription will be canceled at the end of the current period.</p>
@@ -60,7 +60,14 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import PricingTable from '~/components/org/PricingTable.vue';
 import { usePlans } from '~/composables/usePlans';
-import type { Product } from '~~/server/db/schema';
+import type { Subscription, Price, ProductMetadata } from '~~/server/db/schema';
+
+type SubscriptionWithMetadata = Subscription & {
+  metadata?: {
+    price?: Price;
+    product?: ProductMetadata;
+  };
+};
 
 const route = useRoute()
 const supabase = useSupabaseClient()
@@ -74,7 +81,7 @@ definePageMeta({
 })
 
 const orgId = selectedOrganization.value?.id as string;
-const subscription = ref(null)
+const subscription = ref<SubscriptionWithMetadata | null>(null)
 const isLoading = ref(true)
 const error = ref<{ message: string } | null>(null);
 const selectedPlan = ref<string | undefined>(undefined);
@@ -82,7 +89,7 @@ const isPageLoading = computed(() => isLoading.value || plansLoading.value);
 const isCreatingCheckout = ref(false);
 
 const isSeatBasedPlan = computed(() => {
-  return subscription.value?.products?.metadata?.prices?.[0]?.amount_type === 'seat_based';
+  return subscription.value?.metadata?.price?.amount_type === 'seat_based';
 });
 
 const seatUsage = ref({ used: 0, total: 0 });
@@ -129,10 +136,7 @@ const fetchSubscription = async () => {
   try {
     const { data, error: fetchError } = await supabase
       .from('subscriptions')
-      .select(`
-        *,
-        products (*)
-      `)
+      .select('*')
       .eq('organization_id', orgId)
       .order('created', { ascending: false })
 
@@ -153,7 +157,7 @@ onMounted(async () => {
   await fetchPlans()
   await fetchSubscription()
   await fetchSeatUsage()
-  selectedPlan.value = plans.value[0]?.id
+  selectedPlan.value = subscription.value?.product_id || plans.value[0]?.id
 })
 
 const manageSubscription = async () => {
