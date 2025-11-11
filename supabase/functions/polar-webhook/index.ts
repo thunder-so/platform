@@ -88,8 +88,6 @@ Deno.serve(async (req) => {
         return new Response('OK', { status: 200 })
       }
 
-
-
       // Upsert subscription
       const { error } = await supabase
         .from('subscriptions')
@@ -106,7 +104,6 @@ Deno.serve(async (req) => {
           ended_at: subData.ended_at ? new Date(subData.ended_at).toISOString() : null,
           cancel_at: subData.cancel_at ? new Date(subData.cancel_at).toISOString() : null,
           canceled_at: subData.canceled_at ? new Date(subData.canceled_at).toISOString() : null,
-
           metadata: subData,
         })
 
@@ -116,7 +113,7 @@ Deno.serve(async (req) => {
       }
 
       console.log(`✅ Successfully synced subscription: ${subData.id}`)
-
+    }
 
     return new Response('OK', { status: 200 })
   } catch (error) {

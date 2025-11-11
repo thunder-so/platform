@@ -1,10 +1,10 @@
-import { nullable, z } from 'zod'
+import { z } from 'zod'
 import { protectedProcedure, router } from '../init'
 import { db } from '../../db/db'
-import { organizations, memberships, subscriptions, customers, applications } from '../../db/schema'
+import { organizations, memberships, subscriptions, customers, products, applications, type Customer, type Product, Subscription } from '../../db/schema'
 import { Polar } from '@polar-sh/sdk'
 import { TRPCError } from '@trpc/server'
-import { eq, and, inArray } from 'drizzle-orm'
+import { eq, and, isNull } from 'drizzle-orm'
 
 export const organizationsRouter = router({
   create: protectedProcedure
@@ -22,79 +22,78 @@ export const organizationsRouter = router({
         private: { polarAccessToken, polarServer, polarCheckoutSuccessUrl },
       } = useRuntimeConfig()
 
-      // 1. Find the selected plan from app.config
-      // const plans = useAppConfig().plans
-      // const selectedPlan = plans.find((p: any) => p.id === planId)
-      // if (!selectedPlan) {
-      //   throw new TRPCError({
-      //     code: 'BAD_REQUEST',
-      //     message: 'Invalid plan selected.',
-      //   })
-      // }
-
-      // 2. Create the organization in the database
-      const [newOrg] = await db
-        .insert(organizations)
-        .values({
-          name
-        })
-        .returning()
-
-      if (!newOrg) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Could not create organization.',
-        })
-      }
-
-      // 3. Create the membership for the user
-      await db.insert(memberships).values({
-        organization_id: newOrg.id,
-        user_id: user.id,
-        access: 'ADMIN',
-      })
-
-      // 4. Handle payment flow
-      let checkoutUrl: string | null = null
       const polar = new Polar({
         accessToken: polarAccessToken,
         server: polarServer as 'sandbox' | 'production',
       })
 
-      try {
+      let checkoutUrl: string | null = null
+      let newOrg
 
-        // Check if customer exists in database
-        let existingCustomer = await db.query.customers.findFirst({
-          where: eq(customers.user_id, user.id)
+      try {
+        const result = await db.transaction(async (tx) => {
+          // 1. Create organization and membership
+          const [org] = await tx.insert(organizations).values({ name }).returning()
+          
+          if (!org) {
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: 'Could not create organization.',
+            })
+          }
+
+          await tx.insert(memberships).values({
+            organization_id: org.id,
+            user_id: user.id,
+            access: 'ADMIN',
+          })
+
+          // 2. Get or create customer
+          let existingCustomer = await tx.query.customers.findFirst({
+            where: eq(customers.user_id, user.id)
+          })
+
+          let customer: Customer
+          if (existingCustomer) {
+            customer = existingCustomer
+          } else {
+            const newCustomer = await polar.customers.create({
+              email: user.email as string,
+              externalId: user.id,
+            })
+            
+            const [newCustomerRecord] = await tx.insert(customers).values({
+              user_id: user.id,
+              organization_id: org.id,
+              polar_customer_id: newCustomer.id,
+            }).returning()
+            customer = newCustomerRecord
+          }
+
+          // 3. Get product
+          const product = await tx.query.products.findFirst({
+            where: eq(products.id, planId)
+          }) as Product
+
+          if (!product?.metadata) {
+            throw new TRPCError({
+              code: 'NOT_FOUND',
+              message: 'Product not found.',
+            })
+          }
+
+          return { newOrg: org, customer, product }
         })
 
-        let customer
-        if (existingCustomer) {
-          // Get existing customer from Polar
-          customer = await polar.customers.get({ id: existingCustomer.polar_customer_id })
-        } else {
-          // Create new customer in Polar
-          customer = await polar.customers.create({
-            email: user.email as string,
-            externalId: user.id,
-          })
-          
-          // Store customer in database
-          await db.insert(customers).values({
-            user_id: user.id,
-            organization_id: newOrg.id,
-            polar_customer_id: customer.id,
-          })
-        }
+        newOrg = result.newOrg
+        const { customer, product } = result
 
-        // Check if plan is free
-        const product = await polar.products.get({ id: planId })
-        const isFree = product.prices?.[0]?.amountType === 'free' || false
+        const isFree = product.metadata.prices?.[0]?.amount_type === 'free' || false
 
         if (isFree) {
           // Create subscription directly for free plans
           await polar.subscriptions.create({
-            customerId: customer.id,
+            customerId: customer.polar_customer_id,
             productId: planId,
             metadata: {
               user_id: user.id,
@@ -124,7 +123,7 @@ export const organizationsRouter = router({
         })
       }
 
-      // 5. Return the new organization and checkout URL
+      // 4. Return the new organization and checkout URL
       return {
         ...newOrg,
         checkoutUrl,
@@ -139,6 +138,7 @@ export const organizationsRouter = router({
     )
     .query(async ({ ctx, input }) => {
       const { checkoutId } = input
+      const { user } = ctx
       const {
         private: { polarAccessToken, polarServer },
       } = useRuntimeConfig()
@@ -150,9 +150,8 @@ export const organizationsRouter = router({
 
       try {
         const checkout = await polar.checkouts.get({ id: checkoutId })
-        const organizationId = checkout.metadata?.organization_id as
-          | string
-          | undefined
+        const organizationId = checkout.metadata?.organization_id as string | undefined
+        // console.log("checkout", checkout)
 
         if (!organizationId) {
           throw new TRPCError({
@@ -161,9 +160,26 @@ export const organizationsRouter = router({
           })
         }
 
-        return {
-          organizationId,
+        // Assign seat only for new org creation (not plan switching)
+        const isNewOrg = !checkout.metadata?.plan_change
+        
+        if (isNewOrg) {
+          const isSeatBased = checkout.productPrice?.amountType === 'seat_based'
+          
+          if (isSeatBased) {
+            try {
+              const seat = await polar.customerSeats.assignSeat({
+                checkoutId: checkoutId,
+                customerId: checkout.customerId,
+              })
+              console.log('Seat assigned:', seat)
+            } catch (seatError) {
+              console.error('Seat assignment failed:', seatError)
+            }
+          }
         }
+
+        return { organizationId }
       } catch (error) {
         console.error('Failed to retrieve checkout session:', error)
         throw new TRPCError({
@@ -282,7 +298,7 @@ export const organizationsRouter = router({
       const existingApplications = await db.query.applications.findMany({
         where: and(
           eq(applications.organization_id, orgId),
-          eq(applications.deleted_at, null),
+          isNull(applications.deleted_at),
         ),
       })
 
@@ -323,7 +339,7 @@ export const organizationsRouter = router({
 
       return userMemberships.map((m) => ({
         ...m.organization,
-        subscription: m.organization.subscriptions.length > 0 ? 'Pro' : 'Free',
+        subscription: (m.organization.subscriptions as Subscription[]).length > 0 ? 'Pro' : 'Free',
       }));
     }),
 })

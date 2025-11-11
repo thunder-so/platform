@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { protectedProcedure, router } from '../init'
 import { db } from '../../db/db'
 import { memberships, users, organizations, subscriptions, ProductMetadata } from '../../db/schema'
-import { eq, and, isNull, sql } from 'drizzle-orm'
+import { eq, and, isNull, sql, or } from 'drizzle-orm'
 import { createClient } from '@supabase/supabase-js'
 import { Polar } from '@polar-sh/sdk'
 import { TRPCError } from '@trpc/server'
@@ -60,12 +60,11 @@ export const teamRouter = router({
       const subscription = await db.query.subscriptions.findFirst({
         where: and(
           eq(subscriptions.organization_id, input.organizationId),
-          eq(subscriptions.status, 'active')
-        ),
-        with: { product: true }
+          or(eq(subscriptions.status, 'active'), eq(subscriptions.status, 'trialing'))
+        )
       });
 
-      if (subscription && (subscription.product?.metadata as ProductMetadata)?.prices?.[0]?.amount_type === 'seat_based') {
+      if (subscription && (subscription.metadata as any)?.prices?.[0]?.amount_type === 'seat_based') {
         // Check seat availability via Polar API
         const { private: { polarAccessToken, polarServer } } = useRuntimeConfig();
         const polar = new Polar({
@@ -176,7 +175,7 @@ export const teamRouter = router({
         .where(and(
           eq(subscriptions.organization_id, membershipToRemove.organization_id),
           eq(subscriptions.user_id, membershipToRemove.user_id),
-          eq(subscriptions.status, 'active')
+          or(eq(subscriptions.status, 'active'), eq(subscriptions.status, 'trialing'))
         ))
         .limit(1);
 
@@ -212,19 +211,18 @@ export const teamRouter = router({
       const subscription = await db.query.subscriptions.findFirst({
         where: and(
           eq(subscriptions.organization_id, input.organizationId),
-          eq(subscriptions.status, 'active')
-        ),
-        with: { product: true }
+          or(eq(subscriptions.status, 'active'), eq(subscriptions.status, 'trialing'))
+        )
       });
 
-      if (subscription && (subscription.product?.metadata as ProductMetadata)?.prices?.[0]?.amount_type === 'seat_based') {
+      if (subscription && (subscription.metadata as any)?.prices?.[0]?.amount_type === 'seat_based') {
         const { private: { polarAccessToken, polarServer } } = useRuntimeConfig();
         const polar = new Polar({
           accessToken: polarAccessToken,
           server: polarServer as 'sandbox' | 'production',
         });
 
-        const result = await polar.customerSeats.assignSeat({
+        await polar.customerSeats.assignSeat({
           subscriptionId: subscription.id,
           // checkoutId: 
           // orderId:
@@ -250,32 +248,12 @@ export const teamRouter = router({
       const subscription = await db.query.subscriptions.findFirst({
         where: and(
           eq(subscriptions.organization_id, input.organizationId),
-          eq(subscriptions.status, 'active')
-        ),
-        with: { product: true }
+          or(eq(subscriptions.status, 'active'), eq(subscriptions.status, 'trialing'))
+        )
       });
 
       if (!subscription) {
         return { used: 0, total: 1, isSeatBased: false };
-      }
-
-      const isSeatBased = (subscription.product?.metadata as ProductMetadata)?.prices?.[0]?.amount_type === 'seat_based';
-      
-      if (!isSeatBased) {
-        // Count current active members for non-seat-based plans
-        const activeMembersCount = await db.select({ count: sql`count(*)` })
-          .from(memberships)
-          .where(and(
-            eq(memberships.organization_id, input.organizationId),
-            eq(memberships.pending, false),
-            isNull(memberships.deleted_at)
-          ));
-        
-        return {
-          used: Number(activeMembersCount[0]?.count) || 0,
-          total: 1,
-          isSeatBased: false
-        };
       }
 
       // Fetch seat data from Polar API for seat-based plans
@@ -363,13 +341,11 @@ export const teamRouter = router({
           // externalId: user.id,
           metadata: {
             organization_id: input.organizationId,
-            seat_upgrade: 'true'
+            plan_change: 'true'
           }
         });
         
         return { checkoutUrl: checkout.url };
-
-        return { success: true };
       } catch (polarError) {
         console.error('Polar seat purchase failed:', polarError);
         throw new TRPCError({

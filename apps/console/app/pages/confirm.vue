@@ -23,6 +23,7 @@ const supabase = useSupabaseClient();
 const user = useSupabaseUser();
 const route = useRoute();
 const { selectedOrganization, initializeSession } = useMemberships()
+const { $client } = useNuxtApp();
 const error = ref<{ message: string } | null>(null);
 
 const setupAndRedirect = async () => {
@@ -46,13 +47,20 @@ onMounted(async () => {
       throw new Error('Your login link has expired or is invalid.');
     }
 
-
-
     // Handle PKCE flow (normal magic link and GitHub)
     const code = queryParams.code;
     if (code) {
-      watch(user, (newUser) => {
+      watch(user, async (newUser) => {
         if (newUser) {
+          // Check for checkout_id to assign seat
+          const checkoutId = queryParams.checkout_id as string | undefined;
+          if (checkoutId) {
+            try {
+              await $client.organizations.verifyCheckout.query({ checkoutId });
+            } catch (err) {
+              console.error('Checkout verification failed:', err);
+            }
+          }
           setupAndRedirect();
         } 
       }, { immediate: true })
