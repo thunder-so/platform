@@ -113,6 +113,37 @@ Deno.serve(async (req) => {
       }
 
       console.log(`✅ Successfully synced subscription: ${subData.id}`)
+    } else if (eventType === 'order.created') {
+      const orderData = payload.data
+
+      // Sync the customer record first using the order's metadata
+      await syncCustomer(orderData.customer, orderData.metadata)
+
+      const userId = orderData.customer.external_id
+      const organizationId = orderData.metadata?.organization_id
+
+      if (!userId || !organizationId) {
+        console.error('Webhook Error: external_id and organization_id not found in order.', { orderId: orderData.id })
+        return new Response('OK', { status: 200 })
+      }
+
+      // Upsert order
+      const { error } = await supabase
+        .from('orders')
+        .upsert({
+          id: orderData.id,
+          user_id: userId,
+          organization_id: organizationId,
+          product_id: orderData.product?.id,
+          metadata: orderData,
+        })
+
+      if (error) {
+        console.error('❌ Failed to sync order:', error)
+        return new Response('OK', { status: 200 })
+      }
+
+      console.log(`✅ Successfully synced order: ${orderData.id}`)
     }
 
     return new Response('OK', { status: 200 })

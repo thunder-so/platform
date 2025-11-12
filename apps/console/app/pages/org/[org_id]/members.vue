@@ -70,7 +70,7 @@ const limitReached = computed(() => {
   if (seatUsage.value.isSeatBased) {
     return seatUsage.value.used >= seatUsage.value.total;
   }
-  return members.value.length >= (currentPlan.value?.metadata?.metadata?.max_members ?? 1);
+  // return members.value.length >= (currentPlan.value?.metadata?.metadata?.max_members ?? 1);
 });
 
 const members = ref<any[]>([]);

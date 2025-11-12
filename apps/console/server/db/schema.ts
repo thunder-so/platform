@@ -138,8 +138,26 @@ export const subscriptionsRelations = relations(subscriptions, ({ one }) => ({
   customer: one(customers, { fields: [subscriptions.user_id, subscriptions.organization_id], references: [customers.user_id, customers.organization_id] }),
 }));
 
+export const orders = pgTable('orders', {
+  id: text('id').primaryKey(),
+  user_id: uuid('user_id').notNull().references(() => users.id),
+  organization_id: text('organization_id').notNull().references(() => organizations.id),
+  product_id: text('product_id').references(() => products.id),
+  created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
+  metadata: jsonb('metadata'),
+}, (table) => ({
+  organization_idIdx: index('orders_organization_id_idx').on(table.organization_id),
+}));
+
+export const ordersRelations = relations(orders, ({ one }) => ({
+  user: one(users, { fields: [orders.user_id], references: [users.id] }),
+  organization: one(organizations, { fields: [orders.organization_id], references: [organizations.id] }),
+  product: one(products, { fields: [orders.product_id], references: [products.id] }),
+}));
+
 export const productsRelations = relations(products, ({ many }) => ({
   subscriptions: many(subscriptions),
+  orders: many(orders),
 }));
 
 /**
@@ -527,6 +545,8 @@ export type Subscription = typeof subscriptions.$inferSelect;
 export type NewSubscription = typeof subscriptions.$inferInsert;
 export type Customer = typeof customers.$inferSelect;
 export type NewCustomer = typeof customers.$inferInsert;
+export type Order = typeof orders.$inferSelect;
+export type NewOrder = typeof orders.$inferInsert;
 
 /*
  * Organization Memberships Schema

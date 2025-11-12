@@ -8,21 +8,30 @@
         </div>
       </div>
     </div>
-    <div v-else-if="subscription">
+    <div v-else-if="subscription || order">
       <UCard>
         <template #header>
-          <h3>Current subscription</h3>
+          <h3>{{ subscription ? 'Current subscription' : 'Lifetime purchase' }}</h3>
         </template>
         
-        <p><strong>Status:</strong> {{ subscription.status }}</p>
-        <p><strong>Plan:</strong> {{ subscription.metadata?.product?.name }}</p>
-        <p v-if="isSeatBasedPlan"><strong>Seats:</strong> {{ seatUsage.used }} of {{ seatUsage.total }} used</p>
-        <p><strong>Current Period:</strong> {{ new Date(subscription.current_period_start).toLocaleDateString() }} - {{ new Date(subscription.current_period_end).toLocaleDateString() }}</p>
-        <p v-if="subscription.cancel_at_period_end">Subscription will be canceled at the end of the current period.</p>
+        <div v-if="subscription">
+          <p><strong>Status:</strong> {{ subscription.status }}</p>
+          <p><strong>Plan:</strong> {{ subscription.metadata?.product?.name }}</p>
+          <p v-if="isSeatBasedPlan"><strong>Seats:</strong> {{ seatUsage.used }} of {{ seatUsage.total }} used</p>
+          <p><strong>Current Period:</strong> {{ new Date(subscription.current_period_start).toLocaleDateString() }} - {{ new Date(subscription.current_period_end).toLocaleDateString() }}</p>
+          <p v-if="subscription.cancel_at_period_end">Subscription will be canceled at the end of the current period.</p>
+          
+          <div class="flex gap-2 mt-4">
+            <UButton @click="manageSubscription">Manage Subscription</UButton>
+            <UButton v-if="isSeatBasedPlan" @click="purchaseMoreSeats" variant="outline">Purchase More Seats</UButton>
+          </div>
+        </div>
         
-        <div class="flex gap-2 mt-4">
-          <UButton @click="manageSubscription">Manage Subscription</UButton>
-          <UButton v-if="isSeatBasedPlan" @click="purchaseMoreSeats" variant="outline">Purchase More Seats</UButton>
+        <div v-else-if="order">
+          <p><strong>Plan:</strong> Lifetime</p>
+          <p><strong>Purchased:</strong> {{ new Date(order.created_at).toLocaleDateString() }}</p>
+          <p><strong>Status:</strong> Active (Lifetime)</p>
+          <p>You have unlimited access to all features.</p>
         </div>
       </UCard>
     </div>
@@ -60,7 +69,7 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import PricingTable from '~/components/org/PricingTable.vue';
 import { usePlans } from '~/composables/usePlans';
-import type { Subscription, Price, ProductMetadata } from '~~/server/db/schema';
+import type { Subscription, Order, Price, ProductMetadata } from '~~/server/db/schema';
 
 type SubscriptionWithMetadata = Subscription & {
   metadata?: {
@@ -82,6 +91,7 @@ definePageMeta({
 
 const orgId = selectedOrganization.value?.id as string;
 const subscription = ref<SubscriptionWithMetadata | null>(null)
+const order = ref<Order | null>(null)
 const isLoading = ref(true)
 const error = ref<{ message: string } | null>(null);
 const selectedPlan = ref<string | undefined>(undefined);
@@ -153,11 +163,31 @@ const fetchSubscription = async () => {
   }
 }
 
+const fetchOrder = async () => {
+  try {
+    const { data, error: fetchError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('organization_id', orgId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+
+    if (fetchError) {
+      throw fetchError
+    }
+    
+    order.value = Array.isArray(data) ? (data[0] || null) : data
+  } catch (e) {
+    console.error('Error fetching orders:', e)
+  }
+}
+
 onMounted(async () => {
   await fetchPlans()
   await fetchSubscription()
+  await fetchOrder()
   await fetchSeatUsage()
-  selectedPlan.value = subscription.value?.product_id || plans.value[0]?.id
+  selectedPlan.value = subscription.value?.product_id || order.value?.product_id || plans.value[0]?.id
 })
 
 const manageSubscription = async () => {

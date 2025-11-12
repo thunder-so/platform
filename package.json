@@ -12,7 +12,8 @@
     "deploy:services": "cd services && turbo run deploy --filter=services"
   },
   "devDependencies": {
-    "turbo": "^2.5.4"
+    "turbo": "^2.5.4",
+    "supabase": "^2.58.5"
   },
   "workspaces": [
     "packages/*",

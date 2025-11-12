@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { protectedProcedure, router } from '../init'
 import { db } from '../../db/db'
-import { memberships, users, organizations, subscriptions, ProductMetadata } from '../../db/schema'
+import { memberships, users, organizations, subscriptions, orders, ProductMetadata } from '../../db/schema'
 import { eq, and, isNull, sql, or } from 'drizzle-orm'
 import { createClient } from '@supabase/supabase-js'
 import { Polar } from '@polar-sh/sdk'
@@ -35,7 +35,7 @@ export const teamRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { user } = ctx;
 
-      // Fetch organization name for the email
+      // Fetch organization
       const [organization] = await db.select().from(organizations).where(eq(organizations.id, input.organizationId));
       if (!organization) {
         throw new Error('Organization not found.');
@@ -245,6 +245,7 @@ export const teamRouter = router({
   getSeatUsage: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .query(async ({ input }) => {
+      // Check for active subscription first
       const subscription = await db.query.subscriptions.findFirst({
         where: and(
           eq(subscriptions.organization_id, input.organizationId),
@@ -252,31 +253,75 @@ export const teamRouter = router({
         )
       });
 
-      if (!subscription) {
-        return { used: 0, total: 1, isSeatBased: false };
+      if (subscription) {
+        const isSeatBased = (subscription.metadata as any)?.prices?.[0]?.amount_type === 'seat_based';
+        
+        if (isSeatBased) {
+          // Fetch seat data from Polar API for seat-based plans
+          const { private: { polarAccessToken, polarServer } } = useRuntimeConfig();
+          const polar = new Polar({
+            accessToken: polarAccessToken,
+            server: polarServer as 'sandbox' | 'production',
+          });
+
+          try {
+            const seatsList = await polar.customerSeats.listSeats({
+              subscriptionId: subscription.id
+            });
+            
+            return {
+              used: seatsList.totalSeats - seatsList.availableSeats,
+              total: seatsList.totalSeats,
+              isSeatBased: true
+            };
+          } catch (polarError) {
+            console.error('Failed to fetch seat usage from Polar:', polarError);
+            return { used: 0, total: 1, isSeatBased: true };
+          }
+        } else {
+          // For non-seat-based subscriptions (Pro Monthly/Annual)
+          const memberCount = await db.select({ count: sql`count(*)` })
+            .from(memberships)
+            .where(and(
+              eq(memberships.organization_id, input.organizationId),
+              eq(memberships.pending, false),
+              isNull(memberships.deleted_at)
+            ));
+          
+          const maxMembers = parseInt((subscription.metadata as any)?.metadata?.max_members || '99');
+          
+          return {
+            used: Number(memberCount[0]?.count || 0),
+            total: maxMembers,
+            isSeatBased: false
+          };
+        }
       }
 
-      // Fetch seat data from Polar API for seat-based plans
-      const { private: { polarAccessToken, polarServer } } = useRuntimeConfig();
-      const polar = new Polar({
-        accessToken: polarAccessToken,
-        server: polarServer as 'sandbox' | 'production',
+      // Check for lifetime order
+      const order = await db.query.orders.findFirst({
+        where: eq(orders.organization_id, input.organizationId)
       });
 
-      try {
-        const seatsList = await polar.customerSeats.listSeats({
-          subscriptionId: subscription.id
-        });
+      if (order) {
+        // Lifetime plan - unlimited members (99)
+        const memberCount = await db.select({ count: sql`count(*)` })
+          .from(memberships)
+          .where(and(
+            eq(memberships.organization_id, input.organizationId),
+            eq(memberships.pending, false),
+            isNull(memberships.deleted_at)
+          ));
         
         return {
-          used: seatsList.totalSeats - seatsList.availableSeats,
-          total: seatsList.totalSeats,
-          isSeatBased: true
+          used: Number(memberCount[0]?.count || 0),
+          total: 99,
+          isSeatBased: false
         };
-      } catch (polarError) {
-        console.error('Failed to fetch seat usage from Polar:', polarError);
-        return { used: 0, total: 1, isSeatBased: true };
       }
+
+      // Default for free plan
+      return { used: 0, total: 1, isSeatBased: false };
     }),
 
   removeInvite: protectedProcedure

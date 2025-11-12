@@ -102,16 +102,23 @@ export const organizationsRouter = router({
           })
         } else {
           // Create checkout for paid plans
-          const checkout = await polar.checkouts.create({
+          const isSeatBased = product.metadata.prices?.[0]?.amount_type === 'seat_based'
+          const checkoutData: any = {
             products: [planId],
             successUrl: `${siteUrl}${polarCheckoutSuccessUrl}`,
             customerEmail: user.email,
-            seats: 1,
             metadata: {
               user_id: user.id,
               organization_id: newOrg.id,
             },
-          })
+          }
+          
+          // Only add seats for seat-based plans
+          if (isSeatBased) {
+            checkoutData.seats = 1
+          }
+          
+          const checkout = await polar.checkouts.create(checkoutData)
           checkoutUrl = checkout.url
         }
       } catch (polarError) {
