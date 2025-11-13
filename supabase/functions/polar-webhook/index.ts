@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
       }
 
       console.log(`✅ Successfully synced subscription: ${subData.id}`)
-    } else if (eventType === 'order.created') {
+    } else if (eventType === 'order.created' || eventType === 'order.updated') {
       const orderData = payload.data
 
       // Sync the customer record first using the order's metadata

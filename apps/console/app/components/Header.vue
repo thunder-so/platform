@@ -177,7 +177,7 @@ const isPaidOrg = (org: any) => {
     (sub.status === 'active' || sub.status === 'trialing') && 
     sub.metadata?.price?.amount_type && 
     sub.metadata.price.amount_type !== 'free'
-  ) || false
+  ) || org.orders?.length > 0 || false
 }
 
 const organizationItems = computed(() => [

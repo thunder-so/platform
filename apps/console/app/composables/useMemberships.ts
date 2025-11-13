@@ -22,7 +22,8 @@ export const useMemberships = () => {
         .select(`id, pending,
           organizations (
             id, name,
-            subscriptions (id, status, metadata)
+            subscriptions (id, status, metadata),
+            orders (id, metadata)
           )
         `)
         .eq('user_id', user.value.id)
@@ -34,7 +35,8 @@ export const useMemberships = () => {
         id: membership.organizations.id,
         name: membership.organizations.name,
         pending: membership.pending,
-        subscriptions: membership.organizations.subscriptions || []
+        subscriptions: membership.organizations.subscriptions || [],
+        orders: membership.organizations.orders || []
       })) || [];
 
       memberships.value = flattened;
@@ -98,6 +100,17 @@ export const useMemberships = () => {
         metadata: { price: activeSub.metadata.price }
       };
     }
+    
+    const order = org.orders?.[0];
+    if (order?.metadata?.product) {
+      return {
+        id: order.metadata.product.id,
+        name: order.metadata.product.name,
+        description: order.metadata.product.description ?? null,
+        metadata: { price: order.metadata.price }
+      };
+    }
+    
     return plans.value.find(p => p.id === 'free');
   });
 

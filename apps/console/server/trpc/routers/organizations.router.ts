@@ -115,7 +115,7 @@ export const organizationsRouter = router({
           
           // Only add seats for seat-based plans
           if (isSeatBased) {
-            checkoutData.seats = 1
+            checkoutData.seats = 3
           }
           
           const checkout = await polar.checkouts.create(checkoutData)
