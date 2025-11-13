@@ -11,3 +11,20 @@ ALTER TABLE "orders" ADD CONSTRAINT "orders_user_id_users_id_fk" FOREIGN KEY ("u
 ALTER TABLE "orders" ADD CONSTRAINT "orders_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "orders" ADD CONSTRAINT "orders_product_id_products_id_fk" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "orders_organization_id_idx" ON "orders" USING btree ("organization_id");
+
+--> statement-breakpoint
+ALTER TABLE "orders" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE POLICY "View orders in org" ON orders
+  FOR SELECT USING (
+    organization_id IN (
+      SELECT organization_id FROM memberships 
+      WHERE user_id = auth.uid() AND deleted_at IS NULL
+    )
+  );--> statement-breakpoint
+CREATE POLICY "Manage orders as owner/admin" ON orders
+  FOR ALL USING (
+    organization_id IN (
+      SELECT organization_id FROM memberships 
+      WHERE user_id = auth.uid() AND access IN ('OWNER', 'ADMIN') AND deleted_at IS NULL
+    )
+  );
