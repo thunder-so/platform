@@ -39,6 +39,7 @@ export const usersRelations = relations(users, ({ many }) => ({
 export const organizations = pgTable('organizations', {
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
   name: text('name').notNull(),
+  pending: boolean('pending').default(true).notNull(),
   metadata: jsonb('metadata'),
   created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),

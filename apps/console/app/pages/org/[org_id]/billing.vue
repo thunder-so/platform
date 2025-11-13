@@ -8,7 +8,7 @@
         </div>
       </div>
     </div>
-    <div v-else-if="subscription || order">
+    <div v-else>
       <UCard>
         <template #header>
           <h3>{{ subscription ? 'Current subscription' : 'Lifetime purchase' }}</h3>

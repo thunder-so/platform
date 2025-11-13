@@ -155,6 +155,13 @@
       "when": 1762938831677,
       "tag": "0021_fixed_rachel_grey",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1763033389969,
+      "tag": "0022_redundant_wolf_cub",
+      "breakpoints": true
     }
   ]
 }

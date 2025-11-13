@@ -21,7 +21,7 @@ export const useMemberships = () => {
         .from('memberships')
         .select(`id, pending,
           organizations (
-            id, name,
+            id, name, pending,
             subscriptions (id, status, metadata),
             orders (id, metadata)
           )
@@ -35,9 +35,10 @@ export const useMemberships = () => {
         id: membership.organizations.id,
         name: membership.organizations.name,
         pending: membership.pending,
+        orgPending: membership.organizations.pending,
         subscriptions: membership.organizations.subscriptions || [],
         orders: membership.organizations.orders || []
-      })) || [];
+      })).filter((org: any) => !org.orgPending) || [];
 
       memberships.value = flattened;
     } catch (e) {

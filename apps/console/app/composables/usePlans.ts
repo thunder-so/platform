@@ -29,7 +29,8 @@ export const usePlans = () => {
   };
 
   const getSeatPrice = (plan: Product) => {
-    return plan.metadata?.prices?.[0]?.price_per_seat || 0;
+    const price = plan.metadata?.prices?.[0];
+    return price?.amount_type === 'seat_based' ? (price as any).price_per_seat || 0 : 0;
   };
 
   return {

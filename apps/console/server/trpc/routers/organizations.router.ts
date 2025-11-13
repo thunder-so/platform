@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { protectedProcedure, router } from '../init'
 import { db } from '../../db/db'
-import { organizations, memberships, subscriptions, customers, products, applications, type Customer, type Product, Subscription } from '../../db/schema'
+import { organizations, memberships, subscriptions, customers, products, applications, type Customer, type Product, type Subscription } from '../../db/schema'
 import { Polar } from '@polar-sh/sdk'
 import { TRPCError } from '@trpc/server'
 import { eq, and, isNull } from 'drizzle-orm'
@@ -100,6 +100,8 @@ export const organizationsRouter = router({
               organization_id: newOrg.id,
             },
           })
+          // Set pending to false for free plans
+          await db.update(organizations).set({ pending: false }).where(eq(organizations.id, newOrg.id))
         } else {
           // Create checkout for paid plans
           const isSeatBased = product.metadata.prices?.[0]?.amount_type === 'seat_based'
@@ -186,6 +188,9 @@ export const organizationsRouter = router({
           }
         }
 
+        // Set pending to false after successful checkout
+        await db.update(organizations).set({ pending: false }).where(eq(organizations.id, organizationId))
+        
         return { organizationId }
       } catch (error) {
         console.error('Failed to retrieve checkout session:', error)
