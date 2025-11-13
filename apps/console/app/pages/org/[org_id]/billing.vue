@@ -90,9 +90,15 @@ definePageMeta({
 })
 
 const orgId = selectedOrganization.value?.id as string;
-const subscription = ref<SubscriptionWithMetadata | null>(null)
-const order = ref<Order | null>(null)
-const isLoading = ref(true)
+const subscription = computed(() => {
+  const org = selectedOrganization.value;
+  return org?.subscriptions?.find(sub => sub.status === 'active' || sub.status === 'trialing') || null;
+});
+const order = computed(() => {
+  const org = selectedOrganization.value;
+  return org?.orders?.[0] || null;
+});
+const isLoading = ref(false)
 const error = ref<{ message: string } | null>(null);
 const selectedPlan = ref<string | undefined>(undefined);
 const isPageLoading = computed(() => isLoading.value || plansLoading.value);
@@ -141,53 +147,10 @@ const subscribeToPlan = async () => {
   }
 };
 
-const fetchSubscription = async () => {
-  error.value = null
-  try {
-    const { data, error: fetchError } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('organization_id', orgId)
-      .order('created', { ascending: false })
-
-    if (fetchError) {
-      throw fetchError
-    }
-    
-    subscription.value = Array.isArray(data) ? (data[0] || null) : data
-    await fetchSeatUsage()
-  } catch (e) {
-    error.value = { message: (e as Error).message || 'Error fetching subscriptions.' };
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const fetchOrder = async () => {
-  try {
-    const { data, error: fetchError } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('organization_id', orgId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-
-    if (fetchError) {
-      throw fetchError
-    }
-    
-    order.value = Array.isArray(data) ? (data[0] || null) : data
-  } catch (e) {
-    console.error('Error fetching orders:', e)
-  }
-}
-
 onMounted(async () => {
   await fetchPlans()
-  await fetchSubscription()
-  await fetchOrder()
   await fetchSeatUsage()
-  selectedPlan.value = subscription.value?.product_id || order.value?.product_id || plans.value[0]?.id
+  selectedPlan.value = subscription.value?.metadata?.product?.id || order.value?.metadata?.product?.id || plans.value[0]?.id
 })
 
 const manageSubscription = async () => {

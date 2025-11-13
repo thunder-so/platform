@@ -22,8 +22,8 @@ export const useMemberships = () => {
         .select(`id, pending,
           organizations (
             id, name, pending,
-            subscriptions (id, status, metadata),
-            orders (id, metadata)
+            subscriptions (id, status, metadata, current_period_start, current_period_end, cancel_at_period_end),
+            orders (id, metadata, created_at)
           )
         `)
         .eq('user_id', user.value.id)
