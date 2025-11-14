@@ -326,7 +326,6 @@ export const servicesRouter = router({
       const { service_id } = input;
       // return all non-deleted domains for the service
       const rows = await db.query.domains.findMany({ where: eq(domains.service_id, service_id) });
-      // console.log('listDomains rows:', rows);
       if (!rows || rows.length === 0) return [];
       return rows.filter(r => !r.deleted_at);
     }),

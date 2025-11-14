@@ -175,7 +175,6 @@ const fetchSeatUsage = async () => {
   try {
     const usage = await $client.team.getSeatUsage.query({ organizationId: orgId });
     seatUsage.value = usage;
-    console.log('Seat usage:', usage)
   } catch (e) {
     console.error('Error fetching seat usage:', e);
   }

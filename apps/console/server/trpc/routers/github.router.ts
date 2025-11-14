@@ -73,7 +73,6 @@ export const githubRouter = router({
         const github = new GithubLibrary();
 
         const packageJsonContent = await github.getFileContent(owner, repo, installation_id, 'package.json');
-        // console.log('>>>> DEBUG: packageJsonContent is:', packageJsonContent);
 
         if (!packageJsonContent) {
           return { success: false, message: 'A package.json file was not found at the root of your repository.' };
@@ -134,8 +133,6 @@ export const githubRouter = router({
         } else if (hasYarnLock) {
           startcmd = 'yarn start';
         }
-
-        // console.log(`Detected runtime: ${runtime_version}, install command: ${installcmd}, build command: ${buildcmd}, start command: ${startcmd}`);
 
         return {
           runtime_version,

@@ -74,7 +74,6 @@ export const applicationsRouter = router({
           `GitHub UAT for app ${newApplication.name} in env ${newEnvironment.name}`,
           env.region
         );
-        console.log('Created/Updated secret in provider with ARN:', accessTokenSecretArn);
 
         await tx.update(userAccessTokens)
           .set({ environment_id: newEnvironment.id, resource: accessTokenSecretArn })

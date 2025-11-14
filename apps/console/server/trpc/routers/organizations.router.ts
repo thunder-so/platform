@@ -160,7 +160,6 @@ export const organizationsRouter = router({
       try {
         const checkout = await polar.checkouts.get({ id: checkoutId })
         const organizationId = checkout.metadata?.organization_id as string | undefined
-        // console.log("checkout", checkout)
 
         if (!organizationId) {
           throw new TRPCError({
@@ -181,7 +180,6 @@ export const organizationsRouter = router({
                 checkoutId: checkoutId,
                 customerId: checkout.customerId,
               })
-              console.log('Seat assigned:', seat)
             } catch (seatError) {
               console.error('Seat assignment failed:', seatError)
             }
