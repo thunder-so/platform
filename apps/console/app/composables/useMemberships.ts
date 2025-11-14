@@ -1,6 +1,15 @@
-import type { Membership } from '~~/server/db/schema';
+import type { Organization, Membership, Subscription, Order, ProductMetadata, Price } from '~~/server/db/schema';
 import { usePlans } from '~/composables/usePlans';
 import { computed } from 'vue';
+
+type OrganizationWithMetadata = {
+  id: string;
+  name: string;
+  pending: boolean;
+  orgPending: boolean;
+  subscriptions: Subscription[];
+  orders: Order[];
+};
 
 export const useMemberships = () => {
   const user = useSupabaseUser()
@@ -8,8 +17,8 @@ export const useMemberships = () => {
   const route = useRoute();
   const selectedOrgIdCookie = useCookie('selected-org-id');
   
-  const memberships = useState<any[]>('memberships', () => [])
-  const selectedOrganization = useState<any | undefined>('selectedOrganization', () => undefined)
+  const memberships = useState<OrganizationWithMetadata[]>('memberships', () => [])
+  const selectedOrganization = useState<OrganizationWithMetadata | undefined>('selectedOrganization', () => undefined)
   const isLoading = useState('memberships.loading', () => false)
 
   const refreshMemberships = async () => {
@@ -93,23 +102,29 @@ export const useMemberships = () => {
     if (!org) return plans.value.find(p => p.id === 'free');
     
     const activeSub = org.subscriptions?.find(sub => sub.status === 'active' || sub.status === 'trialing');
-    if (activeSub?.metadata?.product) {
-      return {
-        id: activeSub.metadata.product.id,
-        name: activeSub.metadata.product.name,
-        description: activeSub.metadata.product.description ?? null,
-        metadata: { price: activeSub.metadata.price }
-      };
+    if (activeSub?.metadata) {
+      const metadata = activeSub.metadata as { product: ProductMetadata; price: Price };
+      if (metadata.product) {
+        return {
+          id: metadata.product.id,
+          name: metadata.product.name,
+          description: metadata.product.description ?? null,
+          metadata: { price: metadata.price }
+        };
+      }
     }
     
     const order = org.orders?.[0];
-    if (order?.metadata?.product) {
-      return {
-        id: order.metadata.product.id,
-        name: order.metadata.product.name,
-        description: order.metadata.product.description ?? null,
-        metadata: { price: order.metadata.price }
-      };
+    if (order?.metadata) {
+      const metadata = order.metadata as { product: ProductMetadata; price: Price };
+      if (metadata.product) {
+        return {
+          id: metadata.product.id,
+          name: metadata.product.name,
+          description: metadata.product.description ?? null,
+          metadata: { price: metadata.price }
+        };
+      }
     }
     
     return plans.value.find(p => p.id === 'free');

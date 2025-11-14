@@ -11,27 +11,77 @@
     <div v-else>
       <UCard>
         <template #header>
-          <h3>{{ subscription ? 'Current subscription' : 'Lifetime purchase' }}</h3>
-        </template>
-        
-        <div v-if="subscription">
-          <p><strong>Status:</strong> {{ subscription.status }}</p>
-          <p><strong>Plan:</strong> {{ subscription.metadata?.product?.name }}</p>
-          <p v-if="isSeatBasedPlan"><strong>Seats:</strong> {{ seatUsage.used }} of {{ seatUsage.total }} used</p>
-          <p><strong>Current Period:</strong> {{ new Date(subscription.current_period_start).toLocaleDateString() }} - {{ new Date(subscription.current_period_end).toLocaleDateString() }}</p>
-          <p v-if="subscription.cancel_at_period_end">Subscription will be canceled at the end of the current period.</p>
-          
-          <div class="flex gap-2 mt-4">
-            <UButton @click="manageSubscription">Manage Subscription</UButton>
-            <UButton v-if="isSeatBasedPlan" @click="purchaseMoreSeats" variant="outline">Purchase More Seats</UButton>
+          <div class="flex justify-between items-center">
+            <h3>Billing information</h3>
+            <UButton v-if="subscription" @click="manageSubscription" color="neutral" variant="outline">
+              Manage Subscription
+            </UButton>
           </div>
-        </div>
-        
-        <div v-else-if="order">
-          <p><strong>Plan:</strong> Lifetime</p>
-          <p><strong>Purchased:</strong> {{ new Date(order.created_at).toLocaleDateString() }}</p>
-          <p><strong>Status:</strong> Active (Lifetime)</p>
-          <p>You have unlimited access to all features.</p>
+        </template>
+
+        <UAlert 
+          v-if="subscription?.status === 'trialing'"
+            color="info"
+            variant="subtle"
+            title="Heads up!"
+            description="You will be charged when your trial ends."
+            icon="i-lucide-terminal"
+            class="mb-4"
+          />
+
+        <div class="flex items-top gap-4">
+          <div class="flex-1 ml-3">
+            <div class="grid grid-cols-3 gap-2 w-full mb-4">
+              <div class="flex flex-col text-left">
+                <h4>Plan</h4>
+                <p class="text-sm text-muted">{{ subscription?.metadata?.product?.name || order?.metadata?.product?.name || 'Free' }}</p>
+              </div>
+
+              <div v-if="subscription" class="flex flex-col text-left">
+                <h4>Status</h4>
+                <div>
+                  <UBadge v-if="subscription?.status === 'active'" color="success" variant="subtle">
+                    ACTIVE
+                  </UBadge>
+                  <UBadge v-else-if="subscription?.status === 'trialing'" color="info" variant="subtle">
+                    TRIAL
+                  </UBadge>
+                  <UBadge v-else-if="subscription?.status === 'past_due'" color="warning" variant="subtle">
+                    PAST DUE
+                  </UBadge>
+                  <UBadge v-else-if="subscription?.status === 'canceled'" color="warning" variant="subtle">
+                    CANCELLED
+                  </UBadge>
+                  <UBadge v-else-if="subscription?.status === 'unpaid'" color="warning" variant="subtle">
+                    UNPAID
+                  </UBadge>
+                  <UBadge v-else color="warning" variant="subtle">
+                    {{ subscription?.status }}
+                  </UBadge>
+                </div>                
+              </div>
+
+              <div v-if="order" class="flex flex-col text-left">
+                <h4>Purchased</h4>
+                <p class="text-sm text-muted">{{ formatDate(order.created_at) }}</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 w-full">
+              <div v-if="subscription" class="flex flex-col text-left">
+                <h4>Billing cycle</h4>
+                <p class="text-sm text-muted">{{ formatDate(subscription.current_period_start) }} - {{ formatDate(subscription.current_period_end) }}</p>
+              </div>
+
+              <div v-if="isSeatBasedPlan" class="flex flex-col text-left">
+                <div>
+                  <h4>Seats</h4>
+                  <p class="text-sm text-muted mb-2">{{ seatUsage.used }} / {{ seatUsage.total }}</p>
+                  <!-- <UButton @click="purchaseMoreSeats" variant="outline">Purchase More Seats</UButton>   -->
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </UCard>
     </div>
@@ -79,6 +129,13 @@ type SubscriptionWithMetadata = Subscription & {
   };
 };
 
+type OrderWithMetadata = Order & {
+  metadata?: {
+    price?: Price;
+    product?: ProductMetadata;
+  };
+};
+
 const route = useRoute()
 const supabase = useSupabaseClient()
 const { selectedOrganization } = useMemberships()
@@ -91,13 +148,13 @@ definePageMeta({
 })
 
 const orgId = selectedOrganization.value?.id as string;
-const subscription = computed(() => {
+const subscription = computed((): SubscriptionWithMetadata | null => {
   const org = selectedOrganization.value;
-  return org?.subscriptions?.find(sub => sub.status === 'active' || sub.status === 'trialing') || null;
+  return org?.subscriptions?.find(sub => sub.status === 'active' || sub.status === 'trialing') as SubscriptionWithMetadata || null;
 });
-const order = computed(() => {
+const order = computed((): OrderWithMetadata | null => {
   const org = selectedOrganization.value;
-  return org?.orders?.[0] || null;
+  return org?.orders?.[0] as OrderWithMetadata || null;
 });
 const isLoading = ref(false)
 const error = ref<{ message: string } | null>(null);
@@ -106,10 +163,16 @@ const isPageLoading = computed(() => isLoading.value || plansLoading.value);
 const isCreatingCheckout = ref(false);
 
 const isSeatBasedPlan = computed(() => {
-  return subscription.value?.metadata?.price?.amount_type === 'seat_based';
+  if (!subscription.value?.metadata) return false;
+  return subscription.value.metadata.price?.amount_type === 'seat_based';
 });
 
 const seatUsage = ref({ used: 0, total: 0 });
+
+// Helper functions
+const formatDate = (date: string | Date) => {
+  return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+};
 
 const fetchSeatUsage = async () => {
   if (!subscription.value || !isSeatBasedPlan.value) return;
