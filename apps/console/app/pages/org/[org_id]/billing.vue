@@ -42,9 +42,10 @@
           <p>Plans and pricing</p>
         </template>
       
-        <PricingTable v-if="plans.length > 0"
+        <BillingPricingTable v-if="plans.length > 0"
           :plans="plans"
           :selectedPlan="selectedPlan"
+          :currentPlan="subscription?.metadata?.product?.id || order?.metadata?.product?.id"
           @update:selectedPlan="selectedPlan = $event"
         />
 
@@ -67,7 +68,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
-import PricingTable from '~/components/org/PricingTable.vue';
+import BillingPricingTable from '~/components/org/BillingPricingTable.vue';
 import { usePlans } from '~/composables/usePlans';
 import type { Subscription, Order, Price, ProductMetadata } from '~~/server/db/schema';
 

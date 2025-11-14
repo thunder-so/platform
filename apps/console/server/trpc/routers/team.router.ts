@@ -288,7 +288,7 @@ export const teamRouter = router({
               isNull(memberships.deleted_at)
             ));
           
-          const maxMembers = parseInt((subscription.metadata as any)?.metadata?.max_members || '99');
+          const maxMembers = parseInt((subscription.metadata as any)?.metadata?.max_members || '1');
           
           return {
             used: Number(memberCount[0]?.count || 0),

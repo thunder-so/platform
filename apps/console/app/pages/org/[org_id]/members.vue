@@ -19,7 +19,7 @@
       color="info"
       variant="soft"
       :title="seatUsage.isSeatBased ? 'No available seats' : 'Upgrade to add more team members'"
-      :description="seatUsage.isSeatBased ? 'All seats are in use. Purchase more seats to invite members.' : 'The Hobby plan is limited to 1 member. Upgrade your plan to add more.'"
+      :description="seatUsage.isSeatBased ? 'All seats are in use. Purchase more seats to invite members.' : 'The free plan is limited to 1 member. Upgrade your plan to add more.'"
       class="mb-4"
     />
     <div v-if="loading">
@@ -70,7 +70,7 @@ const limitReached = computed(() => {
   if (seatUsage.value.isSeatBased) {
     return seatUsage.value.used >= seatUsage.value.total;
   }
-  // return members.value.length >= (currentPlan.value?.metadata?.metadata?.max_members ?? 1);
+  return seatUsage.value.used >= seatUsage.value.total;
 });
 
 const members = ref<any[]>([]);
@@ -175,6 +175,7 @@ const fetchSeatUsage = async () => {
   try {
     const usage = await $client.team.getSeatUsage.query({ organizationId: orgId });
     seatUsage.value = usage;
+    console.log('Seat usage:', usage)
   } catch (e) {
     console.error('Error fetching seat usage:', e);
   }
