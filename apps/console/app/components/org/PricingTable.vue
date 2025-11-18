@@ -8,26 +8,45 @@
         :class="{ 'border-success': selectedPlan === plan.id }"
       >
         <template #header>
-          <h2 class="text-xl font-bold">{{ plan.name }}</h2>
-          <p class="text-sm color-gray-500">{{ plan.description }}</p>
+          <h2 class="text-md">{{ plan.name }}</h2>
+          <p class="text-sm text-muted">{{ plan.description }}</p>
+        </template>
+        
+        <div class="h-42">
+          <div class="text-2xl my-2">
+            <div v-if="plan?.metadata.prices[0]?.amount_type === 'free'">
+              <ul class="feature-list">
+                <li>1 team member</li>
+                <li>1 AWS Account</li>
+                <li>Unlimited apps</li>
+              </ul>
+              <span>0 USD</span>
+              <span class="block text-sm text-muted">Free for life</span>
+            </div>
+            <div v-else-if="plan?.metadata.prices[0]?.amount_type === 'seat_based'">
+              <ul class="feature-list">
+                <li>Unlimited AWS accounts</li>
+                <li>Unlimited apps</li>
+                <li>Priority support</li>
+              </ul>
+              <span>{{ plan?.metadata.prices[0]?.price_per_seat / 100 }} <span class="uppercase">{{ plan?.metadata.prices[0]?.price_currency }}</span></span>
+              <span class="block text-sm text-muted">per seat per {{ plan.metadata.prices[0]?.recurring_interval }}</span>
+            </div>
+            <div v-else-if="plan?.metadata.prices[0]?.type === 'one_time'">
+              <ul class="feature-list">
+                <li>Unlimited team members</li>
+                <li>Unlimited AWS accounts</li>
+                <li>Priority support for life</li>
+              </ul>
+              <span>{{ plan?.metadata.prices[0]?.price_amount / 100 }} <span class="uppercase">{{ plan?.metadata.prices[0]?.price_currency }}</span></span>
+              <span class="block text-sm text-muted">one-time payment</span>
+            </div>
 
-          <div class="text-2xl my-4">
-            <p v-if="plan.id === 'free'">
-              <span>${{ plan?.metadata.prices[0]?.price_amount / 100 }} <span class="uppercase">{{ plan?.metadata.prices[0]?.price_currency }}</span></span>
-            </p>
-            <p v-else-if="plan?.metadata.prices[0]?.amount_type === 'free'">
-              <span>Free</span>
-            </p>
-            <p v-else-if="plan?.metadata.prices[0]?.amount_type === 'seat_based'">
-              <span>${{ plan?.metadata.prices[0]?.price_per_seat / 100 }} <span class="uppercase">{{ plan?.metadata.prices[0]?.price_currency }}</span></span>
-              <span class="block text-sm">per {{ plan.metadata.prices[0]?.recurring_interval }} per seat</span>
-            </p>
-            <p v-else>
-              <span>${{ plan?.metadata.prices[0]?.price_amount / 100 }} <span class="uppercase">{{ plan?.metadata.prices[0]?.price_currency }}</span></span>
-              <span class="block text-sm">per {{ plan.metadata.prices[0]?.recurring_interval }}</span>
+            <p v-if="plan?.metadata.trial_interval_count && plan?.metadata.trial_interval">
+              <span class="text-xs text-muted">{{ plan?.metadata.trial_interval_count }} {{ plan?.metadata.trial_interval }} free trial</span>
             </p>
           </div>
-        </template>
+        </div>
 
         <template #footer>
           <UButton
@@ -45,6 +64,9 @@
       </UCard>
     </div>
   </fieldset>
+  <!-- <div>
+    <p class="text-sm text-muted">View <a href="https://thunder.so/pricing" target="_blank">pricing details</a>.</p>
+  </div> -->
 </template>
 
 <script setup lang="ts">
@@ -67,3 +89,29 @@ const props = defineProps({
 
 const emit = defineEmits(['update:selectedPlan']);
 </script>
+
+<style scoped>
+@reference "~/assets/css/main.css";
+
+.feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px 0;
+}
+
+.feature-list li {
+  position: relative;
+  padding-left: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  @apply text-muted;
+}
+
+.feature-list li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: #10b981;
+  font-weight: bold;
+}
+</style>
