@@ -17,7 +17,7 @@
             <div v-if="plan?.metadata.prices[0]?.amount_type === 'free'">
               <ul class="feature-list">
                 <li>1 team member</li>
-                <li>1 AWS Account</li>
+                <li>1 AWS account</li>
                 <li>Unlimited apps</li>
               </ul>
               <span>0 USD</span>
