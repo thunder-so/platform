@@ -1,5 +1,7 @@
 <template>
   <fieldset>
+    <!-- {{ isLifetimePlan }} -->
+
     <div class="flex gap-4 my-4 justify-center">
       <UCard
         v-for="plan in plans"
@@ -15,12 +17,9 @@
             <h2 class="text-md">{{ plan.name }}</h2>
             <p class="text-sm text-muted">{{ plan.description }}</p>
           </div>
-          <UBadge v-if="currentPlan === plan.id" color="success" variant="soft" class="mt-2">
-            Current Plan
-          </UBadge>
         </template>
         
-        <div class="h-42">
+        <div class="min-h-42">
           <div class="text-2xl my-2">
             <div v-if="plan?.metadata.prices[0]?.amount_type === 'free'">
               <ul class="feature-list">
@@ -53,17 +52,27 @@
         </div>
 
         <template #footer>
-          <UButton
-            type="button"
-            :variant="currentPlan === plan.id ? 'solid' : (selectedPlan === plan.id ? 'solid' : 'outline')"
-            :color="currentPlan === plan.id ? 'success' : (selectedPlan === plan.id ? 'primary' : 'neutral')"
-            :disabled="currentPlan === plan.id || disableSelection"
-            @click="emit('update:selectedPlan', plan.id)"
-            size="lg"
-            block
-          >
-            {{ currentPlan === plan.id ? 'Current Plan' : (selectedPlan === plan.id ? 'Selected' : 'Select Plan') }}
-          </UButton>
+          <div v-if="isLifetimePlan">
+            <UButton v-if="currentPlan === plan.id" color="success" variant="soft" size="lg" block disabled>
+              Current Plan
+            </UButton>
+            <UButton v-else color="neutral" variant="outline" size="lg" block disabled>
+              Not Available
+            </UButton>
+          </div>
+          <div v-else>
+            <UButton
+              type="button"
+              :variant="currentPlan === plan.id ? 'solid' : (selectedPlan === plan.id ? 'solid' : 'outline')"
+              :color="currentPlan === plan.id ? 'success' : (selectedPlan === plan.id ? 'primary' : 'neutral')"
+              :disabled="currentPlan === plan.id || disableSelection"
+              @click="emit('update:selectedPlan', plan.id)"
+              size="lg"
+              block
+            >
+              {{ currentPlan === plan.id ? 'Current Plan' : (selectedPlan === plan.id ? 'Selected' : 'Select Plan') }}
+            </UButton>
+          </div>
         </template>
       </UCard>
     </div>
@@ -75,6 +84,7 @@
 
 <script setup lang="ts">
 import type { Product } from '~~/server/db/schema';
+import { computed } from 'vue';
 
 const props = defineProps({
   plans: {
@@ -93,6 +103,14 @@ const props = defineProps({
     type: Boolean,
     default: false,
   }
+});
+
+const isLifetimePlan = computed(() => {
+  if (!props.currentPlan || !props.plans.length) return false;
+  const current = props.plans.find(p => p.id === props.currentPlan);
+  if (!current) return false;
+
+  return current.metadata?.prices?.[0]?.type === 'one_time';
 });
 
 const emit = defineEmits(['update:selectedPlan']);

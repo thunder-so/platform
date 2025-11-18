@@ -85,7 +85,7 @@
         </div>
       </UCard>
     </div>
-    <div>
+    <div v-if="!isLifetimePlan">
       <ClientOnly>
       <UCard class="mt-4">
         <template #header>
@@ -102,11 +102,11 @@
         <template #footer>
           <UButton 
           @click="subscribeToPlan" 
-          :disabled="!selectedPlan" 
+          :disabled="!isPlanChangeValid" 
           :loading="isCreatingCheckout"
-          size="lg"
+          size="lg"          
         >
-            Upgrade to Pro
+            Change plan
           </UButton>
         </template>
       </UCard>
@@ -167,6 +167,15 @@ const isSeatBasedPlan = computed(() => {
   return subscription.value.metadata.price?.amount_type === 'seat_based';
 });
 
+const isLifetimePlan = computed(() => {
+  return !!order.value && order.value.metadata?.product?.prices?.[0]?.type === 'one_time';
+});
+
+const isPlanChangeValid = computed(() => {
+  const currentPlanId = subscription.value?.metadata?.product?.id || order.value?.metadata?.product?.id;
+  return selectedPlan.value && selectedPlan.value !== currentPlanId;
+});
+
 const seatUsage = ref({ used: 0, total: 0 });
 
 // Helper functions
@@ -214,7 +223,7 @@ const subscribeToPlan = async () => {
 onMounted(async () => {
   await fetchPlans()
   await fetchSeatUsage()
-  selectedPlan.value = subscription.value?.metadata?.product?.id || order.value?.metadata?.product?.id || plans.value[0]?.id
+  selectedPlan.value = subscription.value?.metadata?.product?.id || order.value?.metadata?.product?.id
 })
 
 const manageSubscription = async () => {
