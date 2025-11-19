@@ -204,10 +204,12 @@ export const organizationsRouter = router({
       z.object({
         organizationId: z.string(),
         productId: z.string(),
+        seats: z.number().optional(),
+        plan_change: z.boolean().optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const { organizationId, productId } = input;
+      const { organizationId, productId, seats, plan_change } = input;
       const { user } = ctx;
       const {
         public: { siteUrl },
@@ -220,15 +222,20 @@ export const organizationsRouter = router({
       });
 
       try {
-        const checkout = await polar.checkouts.create({
+        const checkoutData: any = {
           products: [productId],
           successUrl: `${siteUrl}${polarCheckoutSuccessUrl}`,
           customerEmail: user.email,
           metadata: {
             user_id: user.id,
             organization_id: organizationId,
+            plan_change: plan_change ?? true,
           },
-        });
+        };
+        if (seats) {
+          checkoutData.seats = seats;
+        }
+        const checkout = await polar.checkouts.create(checkoutData);
         return { checkoutUrl: checkout.url };
       } catch (polarError) {
         console.error('Polar checkout creation failed:', polarError);

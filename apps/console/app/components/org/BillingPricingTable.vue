@@ -1,7 +1,5 @@
 <template>
   <fieldset>
-    <!-- {{ isLifetimePlan }} -->
-
     <div class="flex gap-4 my-4 justify-center">
       <UCard
         v-for="plan in plans"

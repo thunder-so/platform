@@ -207,10 +207,17 @@ const subscribeToPlan = async () => {
 
   isCreatingCheckout.value = true;
   try {
-    const { checkoutUrl } = await $client.organizations.createCheckoutSession.mutate({
+    const mutationPayload: { organizationId: string; productId: string; seats?: number; plan_change: boolean; } = {
       organizationId: orgId as string,
       productId: selected.id,
-    });
+      plan_change: true,
+    };
+
+    if (selected.metadata?.prices?.[0]?.amount_type === 'seat_based') {
+      mutationPayload.seats = Math.max(seatUsage.value.used, 1);
+    }
+
+    const { checkoutUrl } = await $client.organizations.createCheckoutSession.mutate(mutationPayload);
     window.location.href = checkoutUrl;
   } catch (e) {
     console.error('Error creating checkout session:', e);

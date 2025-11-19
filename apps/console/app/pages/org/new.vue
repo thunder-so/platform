@@ -57,20 +57,23 @@ const createOrganization = async () => {
   loading.value = true;
   error.value = null;
 
+  const selected = plans.value.find(p => p.id === selectedPlan.value);
+  const isFreePlan = selected?.metadata?.prices?.[0]?.amount_type === 'free';
+
   try {
     const newOrg = await $client.organizations.create.mutate({
       name: orgName.value,
       planId: selectedPlan.value,
     });
 
-    if (newOrg.checkoutUrl) {
-      // For paid plans, redirect to checkout
-      window.location.href = newOrg.checkoutUrl;
-    } else {
+    if (isFreePlan) {
       // For free plans, direct redirect to dashboard
       await refreshMemberships();
       toast.add({ title: 'Workspace created successfully', color: 'success' });
       await router.push(`/org/${newOrg.id}`);
+    } else {
+      // For paid plans, redirect to checkout
+      window.location.href = newOrg.checkoutUrl!;
     }
   } catch (e) {
     console.error('Error creating organization:', e);
