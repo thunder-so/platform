@@ -15,13 +15,14 @@
     </div>
 
     <UAlert
-      v-if="limitReached"
+      v-if="limitReached && isFree"
       icon="i-lucide-info"
       color="info"
       variant="soft"
       title="Upgrade to add more AWS Accounts"
       description="The free plan is limited to 1 AWS Account. Upgrade your plan to add more."
       class="mb-4"
+      :actions="[{ label: 'Upgrade', color: 'primary', to: `/org/${orgId}/billing` }]"
     />
 
     <div v-if="loading">
@@ -78,6 +79,8 @@ const maxProviders = computed(() => {
   return currentPlan.value?.metadata?.metadata?.max_providers ?? 1;
 });
 const limitReached = computed(() => providers.value.length >= maxProviders.value);
+const isFree = computed(() => currentPlan.value?.metadata?.prices?.[0]?.amount_type === 'free');
+const isLifetime = computed(() => currentPlan.value?.metadata?.type === 'one_time');
 
 const UBadge = resolveComponent('UBadge')
 const UDropdownMenu = resolveComponent('UDropdownMenu')

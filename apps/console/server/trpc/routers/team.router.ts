@@ -264,12 +264,13 @@ export const teamRouter = router({
   getSeatUsage: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .query(async ({ input }) => {
-      // Check for active subscription first
+      // Check for active subscription first - get the most recent one
       const subscription = await db.query.subscriptions.findFirst({
         where: and(
           eq(subscriptions.organization_id, input.organizationId),
           or(eq(subscriptions.status, 'active'), eq(subscriptions.status, 'trialing'))
-        )
+        ),
+        orderBy: (subscriptions, { desc }) => [desc(subscriptions.created)]
       });
 
       if (subscription) {

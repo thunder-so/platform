@@ -14,13 +14,25 @@
     </div>
 
     <UAlert
-      v-if="limitReached"
+      v-if="limitReached && !isLifetime && !seatUsage.isSeatBased"
       icon="i-lucide-info"
       color="info"
       variant="soft"
-      :title="seatUsage.isSeatBased ? 'No available seats' : 'Upgrade to add more team members'"
-      :description="seatUsage.isSeatBased ? 'All seats are in use. Purchase more seats to invite members.' : 'The free plan is limited to 1 member. Upgrade your plan to add more.'"
+      :title="isFree ? 'Upgrade to add more team members' : 'No available seats'"
+      :description="'The free plan is limited to 1 member. Upgrade your plan to add more.'"
       class="mb-4"
+      :actions="[{ label: 'Upgrade', color: 'primary', to: `/org/${orgId}/billing` }]"
+    />
+
+    <UAlert
+      v-if="seatUsage.isSeatBased && !isLifetime"
+      icon="i-lucide-users"
+      :color="limitReached ? 'warning' : 'info'"
+      variant="soft"
+      :title="`${seatUsage.used}/${seatUsage.total} seats used`"
+      :description="limitReached ? 'All seats are in use. Purchase more seats to invite members.' : 'You can invite more team members.'"
+      class="mb-4"
+      :actions="[{ label: 'Buy more seats', color: 'primary', onClick: buyMoreSeats }]"
     />
     <div v-if="loading">
       <div class="flex flex-col gap-4 mt-7">
@@ -72,6 +84,8 @@ const limitReached = computed(() => {
   }
   return seatUsage.value.used >= seatUsage.value.total;
 });
+const isFree = computed(() => currentPlan.value?.metadata?.prices?.[0]?.amount_type === 'free');
+const isLifetime = computed(() => currentPlan.value?.metadata?.type === 'one_time');
 
 const members = ref<any[]>([]);
 const loading = ref(true);
@@ -215,6 +229,19 @@ const openInviteDeleteModal = async (invite: any) => {
   const result = await modal.open().result;
   if (result) {
     await fetchMembers();
+  }
+};
+
+const buyMoreSeats = async () => {
+  try {
+    const result = await $client.organizations.createCheckoutSession.mutate({
+      organizationId: orgId,
+      productId: currentPlan.value?.id as string,
+      seats: 3
+    });
+    window.location.href = result.checkoutUrl;
+  } catch (error) {
+    toast.add({ title: 'Failed to create checkout session', color: 'error' });
   }
 };
 </script>
