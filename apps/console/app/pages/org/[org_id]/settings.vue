@@ -89,10 +89,9 @@ const hasApplications = ref(false);
 const confirmDelete = ref(false);
 const deleting = ref(false);
 const hasActiveSubscription = computed(() => {
-  const currentOrgMembership = memberships.value.find(
-    (m) => m.id === orgId
-  );
-  return currentOrgMembership?.status === "active";
+  return selectedOrganization.value?.subscriptions?.some(
+    sub => sub.status === 'active' || sub.status === 'trialing'
+  ) || false;
 });
 const isFormValid = computed(() => {
   return state.newDisplayName && state.newDisplayName.length >= 3;

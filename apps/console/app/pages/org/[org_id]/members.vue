@@ -84,8 +84,12 @@ const limitReached = computed(() => {
   }
   return seatUsage.value.used >= seatUsage.value.total;
 });
-const isFree = computed(() => currentPlan.value?.metadata?.prices?.[0]?.amount_type === 'free');
-const isLifetime = computed(() => currentPlan.value?.metadata?.type === 'one_time');
+const isFree = computed(() => {
+  const metadata = currentPlan.value?.metadata as any;
+  const price = metadata?.prices?.[0] || metadata?.price;
+  return price?.amount_type === 'free';
+});
+const isLifetime = computed(() => (currentPlan.value?.metadata as any)?.type === 'one_time');
 const isTrialing = computed(() => selectedOrganization.value?.subscriptions?.some(sub => sub.status === 'trialing'));
 
 const members = ref<any[]>([]);
@@ -242,8 +246,6 @@ const buyMoreSeats = async () => {
     if (result.success) {
       await fetchSeatUsage();
       toast.add({ title: 'Seats updated successfully', color: 'success' });
-    } else if (result.checkoutUrl) {
-      window.location.href = result.checkoutUrl;
     }
   } catch (error) {
     toast.add({ title: 'Failed to purchase seats', color: 'error' });
