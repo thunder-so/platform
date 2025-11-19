@@ -277,27 +277,40 @@ export const teamRouter = router({
         const isSeatBased = (subscription.metadata as any)?.prices?.[0]?.amount_type === 'seat_based';
         
         if (isSeatBased) {
-          // Fetch seat data from Polar API for seat-based plans
-          const { private: { polarAccessToken, polarServer } } = useRuntimeConfig();
-          const polar = new Polar({
-            accessToken: polarAccessToken,
-            server: polarServer as 'sandbox' | 'production',
-          });
-
+          // For seat-based plans, count actual members
+          const memberCount = await db.select({ count: sql`count(*)` })
+            .from(memberships)
+            .where(and(
+              eq(memberships.organization_id, input.organizationId),
+              eq(memberships.pending, false),
+              isNull(memberships.deleted_at)
+            ));
+          
+          // Try to get seat count from Polar API as fallback
+          let totalSeats = 1;
           try {
+            const { private: { polarAccessToken, polarServer } } = useRuntimeConfig();
+            const polar = new Polar({
+              accessToken: polarAccessToken,
+              server: polarServer as 'sandbox' | 'production',
+            });
+            
             const seatsList = await polar.customerSeats.listSeats({
               subscriptionId: subscription.id
             });
-            
-            return {
-              used: seatsList.totalSeats - seatsList.availableSeats,
-              total: seatsList.totalSeats,
-              isSeatBased: true
-            };
+            totalSeats = seatsList.totalSeats;
           } catch (polarError) {
-            console.error('Failed to fetch seat usage from Polar:', polarError);
-            return { used: 0, total: 1, isSeatBased: true };
+            console.error('Failed to fetch seat count from Polar:', polarError);
+            // Fallback to metadata or default
+            totalSeats = (subscription.metadata as any)?.seats || 
+                        ((subscription.metadata as any)?.price?.seat_tiers?.tiers?.[0]?.min_seats) || 1;
           }
+          
+          return {
+            used: Number(memberCount[0]?.count || 0),
+            total: totalSeats,
+            isSeatBased: true
+          };
         } else {
           // For non-seat-based subscriptions (Pro Monthly/Annual)
           const memberCount = await db.select({ count: sql`count(*)` })
@@ -379,8 +392,9 @@ export const teamRouter = router({
       const subscription = await db.query.subscriptions.findFirst({
         where: and(
           eq(subscriptions.organization_id, input.organizationId),
-          // eq(subscriptions.status, 'active')
-        )
+          or(eq(subscriptions.status, 'active'), eq(subscriptions.status, 'trialing'))
+        ),
+        orderBy: (subscriptions, { desc }) => [desc(subscriptions.created)]
       });
 
       if (!subscription) {
@@ -396,26 +410,34 @@ export const teamRouter = router({
       });
 
       try {
-        // For seat-based plans, purchasing seats requires creating a new checkout
-        // or modifying the subscription through the customer portal
-        // This is a simplified implementation - in practice, you'd redirect to checkout
-        const checkout = await polar.checkouts.create({
-          products: [subscription.product_id as string],
-          successUrl: `${process.env.SITE_URL}/org/${input.organizationId}/billing`,
-          customerEmail: user.email,
-          // externalId: user.id,
-          metadata: {
-            organization_id: input.organizationId,
-            plan_change: 'true'
+        // For trial subscriptions, prevent seat updates to avoid creating new subscription
+        if (subscription.status === 'trialing') {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'Cannot purchase seats during trial period. Please wait until your trial converts to an active subscription.',
+          });
+        }
+        
+        // For active subscriptions, update seat count
+        const seatsList = await polar.customerSeats.listSeats({
+          subscriptionId: subscription.id
+        });
+        
+        const newSeatCount = seatsList.totalSeats + input.additionalSeats;
+        
+        await polar.subscriptions.update({
+          id: subscription.id,
+          subscriptionUpdate: {
+            seats: newSeatCount
           }
         });
         
-        return { checkoutUrl: checkout.url };
+        return { success: true };
       } catch (polarError) {
-        console.error('Polar seat purchase failed:', polarError);
+        console.error('Polar seat update failed:', polarError);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: 'Could not purchase additional seats.',
+          message: 'Could not update seat count.',
         });
       }
     }),

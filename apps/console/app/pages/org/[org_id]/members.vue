@@ -30,9 +30,9 @@
       :color="limitReached ? 'warning' : 'info'"
       variant="soft"
       :title="`${seatUsage.used}/${seatUsage.total} seats used`"
-      :description="limitReached ? 'All seats are in use. Purchase more seats to invite members.' : 'You can invite more team members.'"
+      :description="isTrialing ? 'Seat purchases available after trial period.' : (limitReached ? 'All seats are in use. Purchase more seats to invite members.' : 'You can invite more team members.')"
       class="mb-4"
-      :actions="[{ label: 'Buy more seats', color: 'primary', onClick: buyMoreSeats }]"
+      :actions="isTrialing ? [] : [{ label: 'Buy more seats', color: 'primary', onClick: buyMoreSeats }]"
     />
     <div v-if="loading">
       <div class="flex flex-col gap-4 mt-7">
@@ -86,6 +86,7 @@ const limitReached = computed(() => {
 });
 const isFree = computed(() => currentPlan.value?.metadata?.prices?.[0]?.amount_type === 'free');
 const isLifetime = computed(() => currentPlan.value?.metadata?.type === 'one_time');
+const isTrialing = computed(() => selectedOrganization.value?.subscriptions?.some(sub => sub.status === 'trialing'));
 
 const members = ref<any[]>([]);
 const loading = ref(true);
@@ -234,14 +235,18 @@ const openInviteDeleteModal = async (invite: any) => {
 
 const buyMoreSeats = async () => {
   try {
-    const result = await $client.organizations.createCheckoutSession.mutate({
+    const result = await $client.team.purchaseSeats.mutate({
       organizationId: orgId,
-      productId: currentPlan.value?.id as string,
-      seats: 3
+      additionalSeats: 3
     });
-    window.location.href = result.checkoutUrl;
+    if (result.success) {
+      await fetchSeatUsage();
+      toast.add({ title: 'Seats updated successfully', color: 'success' });
+    } else if (result.checkoutUrl) {
+      window.location.href = result.checkoutUrl;
+    }
   } catch (error) {
-    toast.add({ title: 'Failed to create checkout session', color: 'error' });
+    toast.add({ title: 'Failed to purchase seats', color: 'error' });
   }
 };
 </script>
