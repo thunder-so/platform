@@ -28,6 +28,13 @@ const error = ref<{ message: string } | null>(null);
 
 const setupAndRedirect = async () => {
   await initializeSession();
+  
+  // If no organization is selected after initialization, wait and retry
+  if (!selectedOrganization.value) {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await initializeSession();
+  }
+  
   navigateTo({ 
     path: `/org/${selectedOrganization.value?.id}`, 
     replace: true 
@@ -56,6 +63,8 @@ onMounted(async () => {
           if (checkoutId) {
             try {
               await $client.organizations.verifyCheckout.query({ checkoutId });
+              // Force a fresh membership refresh after checkout verification
+              await new Promise(resolve => setTimeout(resolve, 500));
             } catch (err) {
               console.error('Checkout verification failed:', err);
             }

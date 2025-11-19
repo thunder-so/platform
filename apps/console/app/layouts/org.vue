@@ -109,9 +109,14 @@ const acceptInvite = async () => {
   }
 }
 
-watch(() => route.params.org_id, (newOrgId) => {
+watch(() => route.params.org_id, async (newOrgId) => {
   if (newOrgId) {
-    setSelectedOrganization(newOrgId as string)
+    const success = setSelectedOrganization(newOrgId as string);
+    // If setting the organization failed, try refreshing memberships once
+    if (!success) {
+      await refreshMemberships();
+      setSelectedOrganization(newOrgId as string);
+    }
   }
 }, { immediate: true });
 </script>
