@@ -2,8 +2,15 @@
   <div>
     <Header :mobile-menu-items="links" />
     <UMain>
+      <div v-if="isLoading" class="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+        <div class="flex flex-col items-center gap-4">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div class="text-sm text-muted">Loading...</div>
+        </div>
+      </div>
+      
       <AccessDenied 
-        v-if="accessStatus === 'no-access'" 
+        v-else-if="accessStatus === 'no-access'" 
         message="You do not have access to this organization."
       >
         <UButton to="/" variant="outline">Go to Dashboard</UButton>
@@ -45,7 +52,7 @@ import type { NavigationMenuItem } from '@nuxt/ui'
 
 const route = useRoute();
 const router = useRouter();
-const { setSelectedOrganization, selectedOrganization, hasAccessToOrg, getPendingInvite, refreshMemberships } = useMemberships();
+const { setSelectedOrganization, selectedOrganization, hasAccessToOrg, getPendingInvite, refreshMemberships, isLoading } = useMemberships();
 const { $client } = useNuxtApp();
 const toast = useToast()
 
