@@ -56,7 +56,7 @@ export const teamRouter = router({
         throw new Error(`Error generating user: ${magicLinkError.message}`);
       }
 
-      // Check seat availability for seat-based plans
+      // Check plan limits
       const subscription = await db.query.subscriptions.findFirst({
         where: and(
           eq(subscriptions.organization_id, input.organizationId),
@@ -64,6 +64,25 @@ export const teamRouter = router({
         )
       });
 
+      // Check for free plan limits
+      if (subscription && (subscription.metadata as any)?.prices?.[0]?.amount_type === 'free') {
+        const memberCount = await db.select({ count: sql`count(*)` })
+          .from(memberships)
+          .where(and(
+            eq(memberships.organization_id, input.organizationId),
+            eq(memberships.pending, false),
+            isNull(memberships.deleted_at)
+          ));
+        
+        if (Number(memberCount[0]?.count || 0) >= 1) {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'Free plan is limited to 1 team member. Upgrade to add more members.',
+          });
+        }
+      }
+
+      // Check seat availability for seat-based plans
       if (subscription && (subscription.metadata as any)?.prices?.[0]?.amount_type === 'seat_based') {
         // Check seat availability via Polar API
         const { private: { polarAccessToken, polarServer } } = useRuntimeConfig();

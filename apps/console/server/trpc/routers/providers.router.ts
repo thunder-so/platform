@@ -2,8 +2,8 @@ import { z } from 'zod';
 import { publicProcedure, protectedProcedure, router } from '../init';
 import { TRPCError } from '@trpc/server';
 import { db } from '../../db/db';
-import { providers } from '../../db/schema';
-import { sql } from 'drizzle-orm';
+import { providers, subscriptions, orders } from '../../db/schema';
+import { sql, eq, and, or, isNull } from 'drizzle-orm';
 import * as ProviderLibrary from '../../lib/provider.library';
 import { PlatformLibrary } from '../../lib/platform.library';
 
@@ -19,6 +19,30 @@ export const providersRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const { organizationId, alias, accessKeyId, secretAccessKey } = input;
+
+      // Check free plan limits
+      const subscription = await db.query.subscriptions.findFirst({
+        where: and(
+          eq(subscriptions.organization_id, organizationId),
+          or(eq(subscriptions.status, 'active'), eq(subscriptions.status, 'trialing'))
+        )
+      });
+
+      if (subscription && (subscription.metadata as any)?.prices?.[0]?.amount_type === 'free') {
+        const providerCount = await db.select({ count: sql`count(*)` })
+          .from(providers)
+          .where(and(
+            eq(providers.organization_id, organizationId),
+            isNull(providers.deleted_at)
+          ));
+        
+        if (Number(providerCount[0]?.count || 0) >= 1) {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'Free plan is limited to 1 AWS account. Upgrade to add more AWS accounts.',
+          });
+        }
+      }
 
       const tempProvider = {
         access_key_id: accessKeyId,
