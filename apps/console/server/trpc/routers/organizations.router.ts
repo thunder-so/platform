@@ -336,6 +336,49 @@ export const organizationsRouter = router({
       return { success: true }
     }),
 
+  switchToFreePlan: protectedProcedure
+    .input(
+      z.object({
+        organizationId: z.string(),
+        productId: z.string(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { organizationId, productId } = input;
+      const { user } = ctx;
+      const {
+        private: { polarAccessToken, polarServer },
+      } = useRuntimeConfig();
+
+      const polar = new Polar({
+        accessToken: polarAccessToken,
+        server: polarServer as 'sandbox' | 'production',
+      });
+
+      const customer = await db.query.customers.findFirst({
+        where: eq(customers.organization_id, organizationId),
+      });
+
+      if (!customer) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Customer not found.',
+        });
+      }
+
+      await polar.subscriptions.create({
+        customerId: customer.polar_customer_id,
+        productId: productId,
+        metadata: {
+          user_id: user.id,
+          organization_id: organizationId,
+          plan_change: true,
+        },
+      });
+
+      return { success: true };
+    }),
+
   getUserMemberships: protectedProcedure
     .query(async ({ ctx }) => {
       const { user } = ctx;

@@ -31,7 +31,7 @@ export const useMemberships = () => {
         .select(`id, pending,
           organizations (
             id, name, pending,
-            subscriptions (id, status, metadata, current_period_start, current_period_end, cancel_at_period_end),
+            subscriptions (id, status, metadata, current_period_start, current_period_end, cancel_at_period_end, created),
             orders (id, metadata, created_at)
           )
         `)
@@ -45,7 +45,9 @@ export const useMemberships = () => {
         name: membership.organizations.name,
         pending: membership.pending,
         orgPending: membership.organizations.pending,
-        subscriptions: membership.organizations.subscriptions || [],
+        subscriptions: (membership.organizations.subscriptions || [])
+          .filter((sub: any) => sub.status !== 'canceled')
+          .sort((a: any, b: any) => new Date(b.created || 0).getTime() - new Date(a.created || 0).getTime()),
         orders: membership.organizations.orders || []
       })).filter((org: any) => !org.orgPending) || [];
 
@@ -101,7 +103,10 @@ export const useMemberships = () => {
     const org = selectedOrganization.value;
     if (!org) return plans.value.find(p => p.id === 'free');
     
-    const activeSub = org.subscriptions?.find(sub => sub.status === 'active' || sub.status === 'trialing');
+    const activeSub = org.subscriptions
+      ?.filter(sub => sub.status !== 'canceled')
+      ?.sort((a, b) => new Date(b.created || 0).getTime() - new Date(a.created || 0).getTime())
+      ?.[0];
     if (activeSub?.metadata) {
       const metadata = activeSub.metadata as { product: ProductMetadata; price: Price };
       if (metadata.product) {

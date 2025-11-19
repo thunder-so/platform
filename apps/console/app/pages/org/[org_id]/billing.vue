@@ -119,8 +119,9 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
 import BillingPricingTable from '~/components/org/BillingPricingTable.vue';
+import PlanDowngradeModal from '~/components/org/PlanDowngradeModal.vue';
 import { usePlans } from '~/composables/usePlans';
-import type { Subscription, Order, Price, ProductMetadata } from '~~/server/db/schema';
+import type { Subscription, Order, Price, ProductMetadata, Product } from '~~/server/db/schema';
 
 type SubscriptionWithMetadata = Subscription & {
   metadata?: {
@@ -142,6 +143,7 @@ const { selectedOrganization } = useMemberships()
 const { $client } = useNuxtApp()
 const { plans, isLoading: plansLoading, fetchPlans } = usePlans();
 const toast = useToast();
+const overlay = useOverlay();
 
 definePageMeta({
   layout: 'org',
@@ -161,6 +163,7 @@ const error = ref<{ message: string } | null>(null);
 const selectedPlan = ref<string | undefined>(undefined);
 const isPageLoading = computed(() => isLoading.value || plansLoading.value);
 const isCreatingCheckout = ref(false);
+const pendingDowngradePlan = ref<Product | null>(null);
 
 const isSeatBasedPlan = computed(() => {
   if (!subscription.value?.metadata) return false;
@@ -177,6 +180,20 @@ const isPlanChangeValid = computed(() => {
 });
 
 const seatUsage = ref({ used: 0, total: 0 });
+
+const isDowngrade = computed(() => {
+  if (!selectedPlan.value || !subscription.value?.metadata?.product) return false;
+  
+  const currentPlan = plans.value.find(p => p.id === subscription.value?.metadata?.product?.id);
+  const targetPlan = plans.value.find(p => p.id === selectedPlan.value);
+  
+  if (!currentPlan || !targetPlan) return false;
+  
+  const currentIsPaid = currentPlan.metadata?.prices?.[0]?.amount_type !== 'free';
+  const targetIsFree = targetPlan.metadata?.prices?.[0]?.amount_type === 'free';
+  
+  return currentIsPaid && targetIsFree;
+});
 
 // Helper functions
 const formatDate = (date: string | Date) => {
@@ -195,35 +212,74 @@ const fetchSeatUsage = async () => {
 };
 
 const subscribeToPlan = async () => {
-  if (!selectedPlan.value) {
-    console.error('No plan selected.');
-    return;
-  }
+  if (!selectedPlan.value) return;
+  
   const selected = plans.value.find(p => p.id === selectedPlan.value);
-  if (!selected) {
-    console.error('Invalid plan selected.');
+  if (!selected) return;
+
+  if (isDowngrade.value) {
+    pendingDowngradePlan.value = selected;
+    showDowngradeModal();
     return;
   }
+
+  const isFree = selected.metadata?.prices?.[0]?.amount_type === 'free';
 
   isCreatingCheckout.value = true;
   try {
-    const mutationPayload: { organizationId: string; productId: string; seats?: number; plan_change: boolean; } = {
-      organizationId: orgId as string,
-      productId: selected.id,
-      plan_change: true,
-    };
+    if (isFree) {
+      await $client.organizations.switchToFreePlan.mutate({
+        organizationId: orgId,
+        productId: selected.id,
+      });
+      
+      toast.add({
+        title: 'Plan Updated',
+        description: 'Successfully switched to free plan.',
+        color: 'success',
+      });
+      
+      await refreshCookie('supabase-auth-token');
+    } else {
+      const mutationPayload: { organizationId: string; productId: string; seats?: number; plan_change: boolean; } = {
+        organizationId: orgId as string,
+        productId: selected.id,
+        plan_change: true,
+      };
 
-    if (selected.metadata?.prices?.[0]?.amount_type === 'seat_based') {
-      mutationPayload.seats = Math.max(seatUsage.value.used, 1);
+      if (selected.metadata?.prices?.[0]?.amount_type === 'seat_based') {
+        mutationPayload.seats = Math.max(seatUsage.value.used, 1);
+      }
+
+      const { checkoutUrl } = await $client.organizations.createCheckoutSession.mutate(mutationPayload);
+      window.location.href = checkoutUrl;
     }
-
-    const { checkoutUrl } = await $client.organizations.createCheckoutSession.mutate(mutationPayload);
-    window.location.href = checkoutUrl;
   } catch (e) {
-    console.error('Error creating checkout session:', e);
-    error.value = { message: 'Failed to create checkout session. Please try again.' };
+    console.error('Error changing plan:', e);
+    error.value = { message: 'Failed to change plan. Please try again.' };
   } finally {
     isCreatingCheckout.value = false;
+  }
+};
+
+const showDowngradeModal = async () => {
+  const modal = overlay.create(PlanDowngradeModal, {
+    props: {
+      targetPlan: pendingDowngradePlan.value,
+      currentSubscription: subscription.value,
+      organizationId: orgId
+    }
+  });
+  
+  try {
+    const result = await modal.open().result;
+    if (result) {
+      pendingDowngradePlan.value = null;
+      await refreshCookie('supabase-auth-token');
+    }
+  } catch (e) {
+    // Modal was closed/cancelled
+    pendingDowngradePlan.value = null;
   }
 };
 

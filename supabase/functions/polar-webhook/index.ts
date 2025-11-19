@@ -88,6 +88,22 @@ Deno.serve(async (req) => {
         return new Response('OK', { status: 200 })
       }
 
+      // Handle plan changes - cancel old subscriptions when switching to free
+      if (eventType === 'subscription.created' && subData.metadata?.plan_change) {
+        const { error: cancelError } = await supabase
+          .from('subscriptions')
+          .update({ status: 'canceled', canceled_at: new Date().toISOString() })
+          .eq('organization_id', organizationId)
+          .eq('status', 'active')
+          .neq('id', subData.id)
+        
+        if (cancelError) {
+          console.error('❌ Failed to cancel old subscriptions:', cancelError)
+        } else {
+          console.log(`✅ Canceled old subscriptions for org ${organizationId}`)
+        }
+      }
+
       // Upsert subscription
       const { error } = await supabase
         .from('subscriptions')

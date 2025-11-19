@@ -173,11 +173,15 @@ function selectOrganization(org: any) {
 const isOrgPopoverOpen = ref(false)
 
 const isPaidOrg = (org: any) => {
-  return org.subscriptions?.some((sub: any) => 
-    (sub.status === 'active' || sub.status === 'trialing') && 
-    sub.metadata?.price?.amount_type && 
-    sub.metadata.price.amount_type !== 'free'
-  ) || org.orders?.length > 0 || false
+  const activeSub = org.subscriptions
+    ?.filter((sub: any) => sub.status !== 'canceled')
+    ?.sort((a: any, b: any) => new Date(b.created || 0).getTime() - new Date(a.created || 0).getTime())
+    ?.[0];
+  
+  const isPaidSub = activeSub?.metadata?.price?.amount_type && 
+    activeSub.metadata.price.amount_type !== 'free';
+  
+  return isPaidSub || org.orders?.length > 0 || false;
 }
 
 const organizationItems = computed(() => [
