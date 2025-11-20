@@ -102,7 +102,7 @@ export default class GithubLibrary {
           operation: 'getRepositories',
           installation_count: installation_ids.length,
           error: error instanceof Error ? error.message : 'Unknown error'
-        }).catch(err => console.error('Analytics tracking failed:', err));
+        });
         throw error as Error;
       }
     }
