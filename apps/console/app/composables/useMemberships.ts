@@ -25,7 +25,6 @@ export const useMemberships = () => {
 
   const refreshMemberships = async () => {
     if (!user.value?.sub || isLoading.value) return
-    console.log('refreshing memberships for user', user.value.sub)
 
     isLoading.value = true
     try {

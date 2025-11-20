@@ -4,13 +4,15 @@
       <template #header>
         <div class="flex items-center space-x-2">
           <Icon name="mdi:github" class="w-6 h-6" />
-          <h2>Github Authorization</h2>
+          <h2>Github authorization</h2>
         </div>
       </template>
       
       <div v-if="loading" class="text-center py-8">
-        <Icon name="svg-spinners:180-ring-with-bg" class="w-8 h-8 mx-auto" />
-        <p class="mt-2 text-sm text-gray-600">Processing authorization...</p>
+        <div class="flex flex-col items-center gap-4 mx-auto">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div class="text-sm text-muted">Processing authorization...</div>
+        </div>
       </div>
       
       <div v-else-if="error" class="text-center py-4">

@@ -103,7 +103,6 @@ export const teamRouter = router({
           const seatsList = await polar.customerSeats.listSeats({
             subscriptionId: subscription.id
           });
-          console.log('Seats List:', seatsList);
           
           trackServerEvent('seat_availability_validated', {
             org_id: input.organizationId,

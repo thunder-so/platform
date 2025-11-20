@@ -1,6 +1,11 @@
 <template>
   <div>
-    <div v-if="loading">Loading...</div>
+    <div v-if="loading" class="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+      <div class="flex flex-col items-center gap-4">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div class="text-sm text-muted">Loading...</div>
+      </div>
+    </div>
     
     <div v-else-if="error">
       <UAlert color="error" variant="soft" title="Payment Processing Error" :description="error.message" />
