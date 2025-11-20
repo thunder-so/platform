@@ -97,7 +97,7 @@ onMounted(async () => {
       throw new Error('Invalid authorization parameters')
     }
   } catch (err: any) {
-    $posthog().capture('github_oauth_failed', {
+    $posthog().capture('github_flow_failed', {
       error: err.message
     });
     error.value = err.message || 'Authorization failed'

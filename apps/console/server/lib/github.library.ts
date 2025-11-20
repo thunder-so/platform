@@ -46,7 +46,7 @@ export default class GithubLibrary {
         }
       });
 
-      await trackServerEvent('github_installation_validated', {
+      trackServerEvent('github_installation_validated', {
         installation_id,
         account_type: (metadata.data.account && 'type' in metadata.data.account) ? metadata.data.account.type : 'unknown'
       });
@@ -90,7 +90,7 @@ export default class GithubLibrary {
           return acc;
         }, {} as Record<number, GetInstallationRepositoriesResponse['data']['repositories']>);
         
-        await trackServerEvent('github_repositories_loaded', {
+        trackServerEvent('github_repositories_loaded', {
           installation_count: installation_ids.length,
           total_repositories: results.reduce((sum, { repositories }) => sum + repositories.length, 0)
         });
@@ -98,11 +98,11 @@ export default class GithubLibrary {
         return repositoriesMap;
       } 
       catch (error) {
-        await trackServerEvent('github_api_failure', {
+        trackServerEvent('github_api_failure', {
           operation: 'getRepositories',
-          installation_ids: installation_ids,
+          installation_count: installation_ids.length,
           error: error instanceof Error ? error.message : 'Unknown error'
-        });
+        }).catch(err => console.error('Analytics tracking failed:', err));
         throw error as Error;
       }
     }
@@ -188,7 +188,7 @@ export default class GithubLibrary {
         }
       });
 
-      await trackServerEvent('github_commits_fetched', {
+      trackServerEvent('github_commits_fetched', {
         owner,
         repo,
         branch,
@@ -224,12 +224,11 @@ export default class GithubLibrary {
         if (!Array.isArray(response.data) && response.data.type === 'file') {
           const content = Buffer.from(response.data.content, 'base64').toString('utf-8');
           
-          await trackServerEvent('github_file_scanned', {
+          trackServerEvent('github_file_scanned', {
             owner,
             repo,
             path,
-            installation_id,
-            file_size: content.length
+            installation_id
           });
           
           return content;
@@ -239,7 +238,7 @@ export default class GithubLibrary {
         if (error.status === 404) {
           return null;
         }
-        await trackServerEvent('github_api_failure', {
+        trackServerEvent('github_api_failure', {
           operation: 'getFileContent',
           owner,
           repo,
@@ -313,7 +312,7 @@ export default class GithubLibrary {
               throw new Error(data.error);
           }
           
-          await trackServerEvent('github_token_exchanged', {
+          trackServerEvent('github_token_exchanged', {
             success: true
           });
           
@@ -322,7 +321,7 @@ export default class GithubLibrary {
           }
       }
       catch (error) {
-          await trackServerEvent('github_api_failure', {
+          trackServerEvent('github_api_failure', {
             operation: 'exchangeCodeForUserToken',
             error: error instanceof Error ? error.message : 'Unknown error'
           });

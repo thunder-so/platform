@@ -87,14 +87,14 @@ export async function getCallerIdentity(provider: ManualProvider) {
         const stsClient = await getAwsClient(STSClient, provider);
         const callerIdentity = await stsClient.send(new GetCallerIdentityCommand({}));
         
-        await trackServerEvent('aws_sts_identity_validated', {
+        trackServerEvent('aws_sts_identity_validated', {
             account_id: callerIdentity.Account,
             user_id: callerIdentity.UserId
         });
         
         return callerIdentity;
     } catch (error: any) {
-        await trackServerEvent('aws_service_failure', {
+        trackServerEvent('aws_service_failure', {
             service: 'sts',
             operation: 'getCallerIdentity',
             error: error.message
@@ -140,7 +140,7 @@ export async function createOrUpdateSecret(provider: ProviderSchema, name: strin
             Description: description,
         }));
         
-        await trackServerEvent('aws_secret_created', {
+        trackServerEvent('aws_secret_created', {
             secret_name: name,
             secret_arn: response.ARN,
             region: region
@@ -155,7 +155,7 @@ export async function createOrUpdateSecret(provider: ProviderSchema, name: strin
                 Description: description,
             }));
             
-            await trackServerEvent('aws_secret_updated', {
+            trackServerEvent('aws_secret_updated', {
                 secret_name: name,
                 secret_arn: response.ARN,
                 region: region
@@ -163,7 +163,7 @@ export async function createOrUpdateSecret(provider: ProviderSchema, name: strin
             
             return response.ARN || '';
         } else {
-            await trackServerEvent('aws_service_failure', {
+            trackServerEvent('aws_service_failure', {
                 service: 'secrets-manager',
                 operation: 'createOrUpdateSecret',
                 error: error.message
@@ -212,7 +212,7 @@ export async function triggerPipeline(providerId: string, serviceId: string, sha
     });
     const response = await codePipelineClient.send(command);
 
-    await trackServerEvent('aws_pipeline_triggered', {
+    trackServerEvent('aws_pipeline_triggered', {
       pipeline_name: pipelineName,
       execution_id: response.pipelineExecutionId,
       service_id: serviceId,
@@ -222,7 +222,7 @@ export async function triggerPipeline(providerId: string, serviceId: string, sha
     console.log('Pipeline triggered successfully:', response.pipelineExecutionId);
     return response.pipelineExecutionId;
   } catch (error) {
-    await trackServerEvent('aws_service_failure', {
+    trackServerEvent('aws_service_failure', {
       service: 'codepipeline',
       operation: 'triggerPipeline',
       pipeline_name: pipelineName,
@@ -252,7 +252,7 @@ export async function getCloudWatchLogs(provider: ProviderSchema, logGroupName: 
             nextForwardToken: response.nextForwardToken,
         };
     } catch (error) {
-        await trackServerEvent('aws_service_failure', {
+        trackServerEvent('aws_service_failure', {
             service: 'cloudwatch',
             operation: 'getLogEvents',
             log_group: logGroupName,
@@ -283,7 +283,7 @@ export async function getCloudWatchLogsFromGroup(provider: ProviderSchema, logGr
             nextForwardToken: response.nextToken,
         };
     } catch (error) {
-        await trackServerEvent('aws_service_failure', {
+        trackServerEvent('aws_service_failure', {
             service: 'cloudwatch',
             operation: 'filterLogEvents',
             log_group: logGroupName,
@@ -319,7 +319,7 @@ export async function lookupHostedZoneAndCerts(provider: ProviderSchema | Manual
             return certDomain === domain || certDomain.endsWith(domain) || domain.endsWith(certDomain);
         }).map(c => ({ arn: c.CertificateArn, domain: c.DomainName }));
 
-        await trackServerEvent('aws_route53_lookup_completed', {
+        trackServerEvent('aws_route53_lookup_completed', {
             domain: domain,
             hosted_zone_found: !!hosted_zone_id,
             certificates_found: certs.length
@@ -327,7 +327,7 @@ export async function lookupHostedZoneAndCerts(provider: ProviderSchema | Manual
 
         return { hosted_zone_id, certificates: certs };
     } catch (error) {
-        await trackServerEvent('aws_service_failure', {
+        trackServerEvent('aws_service_failure', {
             service: 'route53',
             operation: 'lookupHostedZoneAndCerts',
             domain: domain,

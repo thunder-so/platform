@@ -22,7 +22,7 @@ import { ref, reactive } from 'vue';
 import { z } from 'zod';
 import { TRPCClientError } from '@trpc/client'
 
-const { $client } = useNuxtApp();
+const { $client, $posthog } = useNuxtApp();
 const props = defineProps<{ organizationId: string }>();
 const emit = defineEmits<{ close: [boolean] }>();
 
@@ -38,7 +38,6 @@ const state = reactive({
 const inviteMember = async () => {
   inviting.value = true;
   error.value = null;
-  const { $posthog } = useNuxtApp();
   
   try {
     await $client.team.inviteMember.mutate({ organizationId: props.organizationId, email: state.emailToInvite });

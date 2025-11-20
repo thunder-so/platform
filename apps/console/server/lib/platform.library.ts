@@ -77,7 +77,7 @@ export class PlatformLibrary {
       expiration: creds.Expiration ? new Date(creds.Expiration) : undefined,
     };
     
-    await trackServerEvent('cross_account_role_assumed', {
+    trackServerEvent('cross_account_role_assumed', {
       role_arn: process.env.RUNNER_ASSUME_ROLE_ARN
     });
     
@@ -114,7 +114,7 @@ export class PlatformLibrary {
         nextToken,
       }));
       
-      await trackServerEvent('cloudwatch_logs_fetched', {
+      trackServerEvent('cloudwatch_logs_fetched', {
         log_group: logGroupName,
         log_stream: logStreamName,
         events_count: response.events?.length || 0
@@ -125,7 +125,7 @@ export class PlatformLibrary {
         nextForwardToken: response.nextForwardToken,
       };
     } catch (error) {
-      await trackServerEvent('aws_service_failure', {
+      trackServerEvent('aws_service_failure', {
         service: 'cloudwatch',
         operation: 'getLogEvents',
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -154,7 +154,7 @@ export class PlatformLibrary {
         MessageAttributes: messageAttributes,
       }));
       
-      await trackServerEvent('sqs_build_message_sent', {
+      trackServerEvent('sqs_build_message_sent', {
         queue_url: queueUrl,
         message_group_id: messageGroupId,
         stack_type: messageAttributes?.stackType?.StringValue,
@@ -163,7 +163,7 @@ export class PlatformLibrary {
       
       this.logger.info('SQS message sent successfully', { messageGroupId });
     } catch (error) {
-      await trackServerEvent('aws_service_failure', {
+      trackServerEvent('aws_service_failure', {
         service: 'sqs',
         operation: 'sendMessage',
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -200,14 +200,14 @@ export class PlatformLibrary {
         Overwrite: true,
       }));
       
-      await trackServerEvent('aws_secret_created', {
+      trackServerEvent('aws_secret_created', {
         parameter_name: name,
         parameter_type: 'SecureString'
       });
       
       this.logger.info('SSM parameter created successfully', { parameterName: name });
     } catch (error) {
-      await trackServerEvent('secret_storage_failure', {
+      trackServerEvent('secret_storage_failure', {
         parameter_name: name,
         error: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -351,7 +351,7 @@ export class PlatformLibrary {
         });
       }
       
-      await trackServerEvent('build_triggered_server', {
+      trackServerEvent('build_triggered_server', {
         service_id: serviceData.id,
         stack_type: serviceData.stack_type,
         command: 'delete',
@@ -376,7 +376,7 @@ export class PlatformLibrary {
         });
       }
       
-      await trackServerEvent('build_triggered_server', {
+      trackServerEvent('build_triggered_server', {
         service_id: serviceData.id,
         stack_type: serviceData.stack_type,
         command: 'build',

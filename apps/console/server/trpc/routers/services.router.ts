@@ -103,7 +103,7 @@ export const servicesRouter = router({
           input.region
         );
         
-        await trackServerEvent('cloudwatch_logs_fetched', {
+        trackServerEvent('cloudwatch_logs_fetched', {
           log_group: logGroupName,
           log_stream: logStreamName,
           region: input.region,
@@ -114,7 +114,7 @@ export const servicesRouter = router({
           ...logs
         };
       } catch (error) {
-        await trackServerEvent('aws_service_failure', {
+        trackServerEvent('aws_service_failure', {
           service: 'cloudwatch',
           operation: 'getDeployLogs',
           error: error instanceof Error ? error.message : 'Unknown error'
@@ -176,7 +176,7 @@ export const servicesRouter = router({
         environment.region as string
       );
       
-      await trackServerEvent('cloudwatch_logs_fetched', {
+      trackServerEvent('cloudwatch_logs_fetched', {
         log_group: logGroupName,
         service_id: input.service_id,
         stack_type: service.stack_type,
@@ -224,7 +224,7 @@ export const servicesRouter = router({
         service?.environment?.region as string
       );
       
-      await trackServerEvent('pipeline_triggered_manual', {
+      trackServerEvent('pipeline_triggered_manual', {
         provider_id: providerId,
         service_id: serviceId,
         sha: sha || 'latest',
@@ -369,7 +369,7 @@ export const servicesRouter = router({
 
       const result = await lookupHostedZoneAndCerts(provider as any, domain);
       
-      await trackServerEvent('route53_lookup_performed', {
+      trackServerEvent('route53_lookup_performed', {
         provider_id: provider_id,
         domain: domain,
         found_hosted_zone: !!result.hosted_zone_id
@@ -384,7 +384,7 @@ export const servicesRouter = router({
       const { domain, expectedCname, expectedTxt, service_id } = input;
       const result = await verifyDomainDns(domain, expectedCname, expectedTxt);
 
-      await trackServerEvent('dns_verification_performed', {
+      trackServerEvent('dns_verification_performed', {
         domain: domain,
         service_id: service_id,
         verified: result.verified,

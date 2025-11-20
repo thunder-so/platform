@@ -37,13 +37,6 @@ export const providersRouter = router({
             isNull(providers.deleted_at)
           ));
         
-        await trackServerEvent('plan_limit_enforced', {
-          org_id: organizationId,
-          plan_type: 'free',
-          current_providers: Number(providerCount[0]?.count || 0),
-          limit: 1
-        });
-        
         if (Number(providerCount[0]?.count || 0) >= 1) {
           throw new TRPCError({
             code: 'PRECONDITION_FAILED',
@@ -74,13 +67,13 @@ export const providersRouter = router({
       try {
         callerIdentity = await ProviderLibrary.getCallerIdentity(tempProvider);
         
-        await trackServerEvent('aws_credentials_validated', {
+        trackServerEvent('aws_credentials_validated', {
           org_id: organizationId,
           account_id: callerIdentity.Account,
           method: 'access_key'
         });
       } catch (error: any) {
-        await trackServerEvent('aws_credentials_validation_failed', {
+        trackServerEvent('aws_credentials_validation_failed', {
           org_id: organizationId,
           method: 'access_key',
           error: error.message
@@ -98,7 +91,7 @@ export const providersRouter = router({
         const secret_id = vaultResult.rows[0]?.create_secret as string | undefined;
 
         if (!secret_id) {
-          await trackServerEvent('secret_storage_failure', {
+          trackServerEvent('secret_storage_failure', {
             org_id: organizationId,
             error: 'vault.create_secret returned false or unexpected value'
           });
@@ -129,7 +122,7 @@ export const providersRouter = router({
           .returning();
 
         if (!data) {
-          await trackServerEvent('database_transaction_failed', {
+          trackServerEvent('database_transaction_failed', {
             operation: 'provider_create',
             org_id: organizationId,
             error: 'Drizzle insert returned no data'
@@ -141,7 +134,7 @@ export const providersRouter = router({
           });
         }
 
-        await trackServerEvent('aws_provider_created_server', {
+        trackServerEvent('aws_provider_created_server', {
           provider_id: data.id,
           org_id: organizationId,
           account_id: data.account_id,
@@ -150,7 +143,7 @@ export const providersRouter = router({
 
         return data;
       } catch (error) {
-        await trackServerEvent('aws_provider_creation_failed', {
+        trackServerEvent('aws_provider_creation_failed', {
           org_id: organizationId,
           method: 'access_key',
           error: error instanceof Error ? error.message : 'Unknown error'
@@ -188,13 +181,13 @@ export const providersRouter = router({
           });
         }
 
-        await trackServerEvent('aws_provider_deleted_server', {
+        trackServerEvent('aws_provider_deleted_server', {
           provider_id: data.id
         });
 
         return data;
       } catch (error) {
-        await trackServerEvent('aws_provider_deletion_failed', {
+        trackServerEvent('aws_provider_deletion_failed', {
           provider_id: providerId,
           error: error instanceof Error ? error.message : 'Unknown error'
         });

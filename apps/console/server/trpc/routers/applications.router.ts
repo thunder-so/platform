@@ -76,7 +76,7 @@ export const applicationsRouter = router({
           env.region
         );
         
-        await trackServerEvent('aws_secret_created', {
+        trackServerEvent('aws_secret_created', {
           secret_name: secretName,
           app_id: newApplication.id,
           env_id: newEnvironment.id
@@ -110,8 +110,7 @@ export const applicationsRouter = router({
           );
         }
 
-        await trackServerEvent('database_transaction_completed', {
-          operation: 'application_create',
+        trackServerEvent('application_created', {
           app_id: newApplication.id,
           service_id: newService.id,
           stack_type: service.stack_type
@@ -151,7 +150,7 @@ export const applicationsRouter = router({
           await tx.update(applications).set({ deleted_at: new Date() }).where(eq(applications.id, application_id));
         });
       } catch (updateErr) {
-        await trackServerEvent('database_transaction_failed', {
+        trackServerEvent('database_transaction_failed', {
           operation: 'application_delete',
           app_id: application_id,
           error: updateErr instanceof Error ? updateErr.message : 'Unknown error'

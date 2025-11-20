@@ -63,7 +63,7 @@ export const organizationsRouter = router({
               externalId: user.id,
             })
             
-            await trackServerEvent('polar_customer_auto_created', {
+            trackServerEvent('polar_customer_auto_created', {
               customer_id: newCustomer.id,
               user_id: user.id,
               org_id: org.id
@@ -108,7 +108,7 @@ export const organizationsRouter = router({
             },
           })
           
-          await trackServerEvent('polar_subscription_auto_created', {
+          trackServerEvent('polar_subscription_auto_created', {
             customer_id: customer.polar_customer_id,
             product_id: planId,
             org_id: newOrg.id,
@@ -118,7 +118,7 @@ export const organizationsRouter = router({
           // Set pending to false for free plans
           await db.update(organizations).set({ pending: false }).where(eq(organizations.id, newOrg.id))
           
-          await trackServerEvent('org_auto_activated', {
+          trackServerEvent('org_auto_activated', {
             org_id: newOrg.id,
             activation_method: 'free_plan'
           });
@@ -144,7 +144,7 @@ export const organizationsRouter = router({
           checkoutUrl = checkout.url
         }
       } catch (polarError) {
-        await trackServerEvent('polar_api_failure', {
+        trackServerEvent('polar_api_failure', {
           operation: 'organization_create',
           error: polarError instanceof Error ? polarError.message : 'Unknown Polar error'
         });
@@ -207,7 +207,7 @@ export const organizationsRouter = router({
           }
         }
 
-        await trackServerEvent('checkout_session_verified', {
+        trackServerEvent('checkout_session_verified', {
           checkout_id: checkoutId,
           org_id: organizationId,
           is_new_org: isNewOrg,
@@ -217,14 +217,14 @@ export const organizationsRouter = router({
         // Set pending to false after successful checkout
         await db.update(organizations).set({ pending: false }).where(eq(organizations.id, organizationId))
         
-        await trackServerEvent('org_activated', {
+        trackServerEvent('org_activated', {
           org_id: organizationId,
           activation_method: 'checkout_verification'
         });
         
         return { organizationId }
       } catch (error) {
-        await trackServerEvent('polar_api_failure', {
+        trackServerEvent('polar_api_failure', {
           operation: 'checkout_verification',
           checkout_id: checkoutId,
           error: error instanceof Error ? error.message : 'Unknown error'
