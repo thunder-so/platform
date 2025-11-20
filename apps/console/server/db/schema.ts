@@ -561,11 +561,6 @@ export interface Membership {
     subscriptions?: Array<Subscription>;
     orders?: Array<Order>;
   };
-  // subscriptions?: Array<{
-  //   id: Subscription['id'];
-  //   status: Subscription['status'];
-  //   products?: Product;
-  // }>;
 }
 
 /*
