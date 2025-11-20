@@ -556,11 +556,16 @@ export interface Membership {
   id: Organization['id'];
   name: Organization['name'];
   pending: boolean;
-  subscriptions?: Array<{
-    id: Subscription['id'];
-    status: Subscription['status'];
-    products?: Product;
-  }>;
+  orgPending: boolean;
+  organizations: Array<Organization> & {
+    subscriptions?: Array<Subscription>;
+    orders?: Array<Order>;
+  };
+  // subscriptions?: Array<{
+  //   id: Subscription['id'];
+  //   status: Subscription['status'];
+  //   products?: Product;
+  // }>;
 }
 
 /*

@@ -136,7 +136,7 @@ const fetchInstallations = async () => {
     const { data, error: fetchError } = await supabase
       .from('installations')
       .select('*')
-      .eq('user_id', user.value.id)
+      .eq('user_id', user.value.sub)
       .is('deleted_at', null);
 
     if (fetchError) throw fetchError;

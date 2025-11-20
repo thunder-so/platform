@@ -180,7 +180,7 @@ async function fetchInstallations() {
   const { data, error } = await supabase
     .from('installations')
     .select('*')
-    .eq('user_id', user.value.id)
+    .eq('user_id', user.value.sub)
     .is('deleted_at', null)
   if (error) {
     console.error('Error fetching installations:', error)
@@ -217,7 +217,7 @@ async function loadEmailPreference() {
   const { data } = await supabase
     .from('users')
     .select('email_enabled')
-    .eq('id', user.value.id)
+    .eq('id', user.value.sub)
     .single()
   emailNotificationsEnabled.value = data?.email_enabled ?? true
   originalEmailNotificationsEnabled.value = emailNotificationsEnabled.value
@@ -232,7 +232,7 @@ async function savePreferences() {
       .update({
         email_enabled: emailNotificationsEnabled.value
       })
-      .eq('id', user.value.id)
+      .eq('id', user.value.sub)
     originalEmailNotificationsEnabled.value = emailNotificationsEnabled.value
     toast.add({
       title: 'Preferences saved successfully',

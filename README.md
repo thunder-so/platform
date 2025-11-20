@@ -77,6 +77,13 @@ supabase functions deploy github-webhook --no-verify-jwt
 supabase functions deploy polar-webhook --no-verify-jwt
 ```
 
+### Generate Supabase Database Types
+
+```sh
+set $PROJECT_REF=arjvdjwyetmbrvualaey
+npx supabase gen types typescript --project-id "$PROJECT_REF" --schema public > database.types.ts
+```
+
 ### Deploy Services CDK Stacks
 
 ```sh

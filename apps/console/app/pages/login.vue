@@ -45,7 +45,7 @@ definePageMeta({
   middleware: [
     function(to, from) {
         const user = useSupabaseUser();
-        if (user.value) {
+        if (user.value?.sub) {
             return navigateTo({ path: '/' });
         }
     }

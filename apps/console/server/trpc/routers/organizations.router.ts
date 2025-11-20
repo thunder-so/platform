@@ -45,13 +45,13 @@ export const organizationsRouter = router({
 
           await tx.insert(memberships).values({
             organization_id: org.id,
-            user_id: user.id,
+            user_id: user.sub,
             access: 'ADMIN',
           })
 
           // 2. Get or create customer
           let existingCustomer = await tx.query.customers.findFirst({
-            where: eq(customers.user_id, user.id)
+            where: eq(customers.user_id, user.sub)
           })
 
           let customer: Customer
@@ -60,17 +60,17 @@ export const organizationsRouter = router({
           } else {
             const newCustomer = await polar.customers.create({
               email: user.email as string,
-              externalId: user.id,
+              externalId: user.sub,
             })
             
             trackServerEvent('polar_customer_auto_created', {
               customer_id: newCustomer.id,
-              user_id: user.id,
+              user_id: user.sub,
               org_id: org.id
             });
             
             const [newCustomerRecord] = await tx.insert(customers).values({
-              user_id: user.id,
+              user_id: user.sub,
               organization_id: org.id,
               polar_customer_id: newCustomer.id,
             }).returning()
@@ -103,7 +103,7 @@ export const organizationsRouter = router({
             customerId: customer.polar_customer_id,
             productId: planId,
             metadata: {
-              user_id: user.id,
+              user_id: user.sub,
               organization_id: newOrg.id,
             },
           })
@@ -130,7 +130,7 @@ export const organizationsRouter = router({
             successUrl: `${siteUrl}${polarCheckoutSuccessUrl}`,
             customerEmail: user.email,
             metadata: {
-              user_id: user.id,
+              user_id: user.sub,
               organization_id: newOrg.id,
             },
           }
@@ -265,7 +265,7 @@ export const organizationsRouter = router({
           successUrl: `${siteUrl}${polarCheckoutSuccessUrl}`,
           customerEmail: user.email,
           metadata: {
-            user_id: user.id,
+            user_id: user.sub,
             organization_id: organizationId,
             plan_change: plan_change ?? true,
           },
@@ -337,7 +337,7 @@ export const organizationsRouter = router({
       const membership = await db.query.memberships.findFirst({
         where: and(
           eq(memberships.organization_id, orgId),
-          eq(memberships.user_id, user.id),
+          eq(memberships.user_id, user.sub),
           eq(memberships.access, 'ADMIN')
         ),
       })
@@ -408,7 +408,7 @@ export const organizationsRouter = router({
         customerId: customer.polar_customer_id,
         productId: productId,
         metadata: {
-          user_id: user.id,
+          user_id: user.sub,
           organization_id: organizationId,
           plan_change: true,
         },
@@ -421,7 +421,7 @@ export const organizationsRouter = router({
     .query(async ({ ctx }) => {
       const { user } = ctx;
       const userMemberships = await db.query.memberships.findMany({
-        where: eq(memberships.user_id, user.id),
+        where: eq(memberships.user_id, user.sub),
         with: {
           organization: {
             with: {

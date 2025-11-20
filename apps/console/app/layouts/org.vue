@@ -116,27 +116,12 @@ const acceptInvite = async () => {
   }
 }
 
-watch(() => route.params.org_id, async (newOrgId) => {
-  if (newOrgId) {
-    try {
-      const success = setSelectedOrganization(newOrgId as string);
-      // If setting the organization failed, try refreshing memberships once
-      if (!success) {
-        await refreshMemberships();
-        const retrySuccess = setSelectedOrganization(newOrgId as string);
-        if (!retrySuccess) {
-          console.error('Failed to set organization after refresh:', newOrgId);
-          // Optionally navigate to a safe route or show an error
-        }
-      }
-    } catch (error) {
-      console.error('Error in organization selection:', error);
-      toast.add({
-        title: 'Failed to load organization',
-        description: 'Please try again or contact support.',
-        color: 'error'
-      });
+watch(() => route.params.org_id, async (newOrgId, oldOrgId) => {
+  if (newOrgId && newOrgId !== oldOrgId) {
+    const success = setSelectedOrganization(newOrgId as string);
+    if (!success) {
+      console.error('Organization not found:', newOrgId);
     }
   }
-}, { immediate: true });
+});
 </script>

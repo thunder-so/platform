@@ -23,7 +23,7 @@ export const githubRouter = router({
         }
 
         const [installation] = await db.insert(installations).values({
-          user_id: ctx.user.id,
+          user_id: ctx.user.sub,
           installation_id: input.installation_id,
           metadata: metadata,
         }).returning();
@@ -178,9 +178,9 @@ export const githubRouter = router({
           }
 
           // Store the user access token in the vault
-          const secretName = `access_token_${ctx.user.id}_${Date.now()}`;
+          const secretName = `access_token_${ctx.user.sub}_${Date.now()}`;
           const vaultResult = await db.execute(
-            sql`SELECT vault.create_secret(${access_token}, ${secretName}, ${`Github User Access Token for user ${ctx.user.id}`}) as create_secret`
+            sql`SELECT vault.create_secret(${access_token}, ${secretName}, ${`Github User Access Token for user ${ctx.user.sub}`}) as create_secret`
           );
 
           const create_secret = String(vaultResult.rows[0]?.create_secret);
@@ -191,7 +191,7 @@ export const githubRouter = router({
           // Insert the user access token into the database
           const userAccessTokenResult = await db.insert(userAccessTokens).values({
               secret_id: create_secret,
-              user_id: ctx.user.id,
+              user_id: ctx.user.sub,
               environment_id: sql`NULL`
             }).returning();
 

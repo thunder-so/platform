@@ -22,6 +22,7 @@
 const supabase = useSupabaseClient();
 const user = useSupabaseUser();
 const route = useRoute();
+const redirectInfo = useSupabaseCookieRedirect();
 const { selectedOrganization, initializeSession } = useMemberships()
 const { $client } = useNuxtApp();
 const error = ref<{ message: string } | null>(null);
@@ -35,8 +36,11 @@ const setupAndRedirect = async () => {
     await initializeSession();
   }
   
+  // Get redirect path from cookie and clear it
+  const redirectPath = redirectInfo.pluck();
+  
   navigateTo({ 
-    path: `/org/${selectedOrganization.value?.id}`, 
+    path: redirectPath || `/org/${selectedOrganization.value?.id}`, 
     replace: true 
   });
 }
@@ -57,7 +61,7 @@ onMounted(async () => {
     const code = queryParams.code;
     if (code) {
       watch(user, async (newUser) => {
-        if (newUser) {
+        if (newUser?.sub) {
           // Check for checkout_id to assign seat
           const checkoutId = queryParams.checkout_id as string | undefined;
           if (checkoutId) {

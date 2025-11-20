@@ -200,7 +200,7 @@ export const teamRouter = router({
         throw new Error('Membership not found.');
       }
 
-      const [removerMembership] = await db.select().from(memberships).where(and(eq(memberships.organization_id, membershipToRemove.organization_id), eq(memberships.user_id, user.id)));
+      const [removerMembership] = await db.select().from(memberships).where(and(eq(memberships.organization_id, membershipToRemove.organization_id), eq(memberships.user_id, user.sub)));
 
       if (!removerMembership || removerMembership.access !== 'ADMIN') {
         throw new Error('Only admins can remove members.');
@@ -247,7 +247,7 @@ export const teamRouter = router({
         .from(memberships)
         .where(
           and(
-            eq(memberships.user_id, user.id),
+            eq(memberships.user_id, user.sub),
             eq(memberships.organization_id, input.organizationId),
             eq(memberships.pending, true),
           ),
@@ -281,7 +281,7 @@ export const teamRouter = router({
           trackServerEvent('polar_seat_claimed', {
             org_id: input.organizationId,
             subscription_id: subscription.id,
-            user_id: user.id
+            user_id: user.sub
           });
         } catch (polarError) {
           trackServerEvent('polar_api_failure', {
@@ -417,7 +417,7 @@ export const teamRouter = router({
         throw new Error('Cannot remove active member using this method.');
       }
 
-      const [removerMembership] = await db.select().from(memberships).where(and(eq(memberships.organization_id, inviteToRemove.organization_id), eq(memberships.user_id, user.id)));
+      const [removerMembership] = await db.select().from(memberships).where(and(eq(memberships.organization_id, inviteToRemove.organization_id), eq(memberships.user_id, user.sub)));
 
       if (!removerMembership || removerMembership.access !== 'ADMIN') {
         throw new Error('Only admins can remove invitations.');

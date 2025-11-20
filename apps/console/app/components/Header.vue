@@ -104,14 +104,14 @@
         :content="{ align: 'end', side: 'bottom' }"
       >
         <UButton size="lg" color="neutral" variant="ghost">
-          <UAvatar :src="user?.user_metadata.avatar_url" :alt="user?.user_metadata.full_name" size="xs" class="h-5 w-5" />
+          <UAvatar :src="user?.user_metadata?.avatar_url" :alt="user?.user_metadata?.full_name" size="xs" class="h-5 w-5" />
         </UButton>
 
         <template #content>
           <div class="flex items-center px-4 py-3 space-x-3">
-            <UAvatar :src="user?.user_metadata.avatar_url" :alt="user?.user_metadata.full_name" size="sm" />
+            <UAvatar :src="user?.user_metadata?.avatar_url" :alt="user?.user_metadata?.full_name" size="sm" />
             <div class="flex flex-col">
-              <span class="text-sm">{{ user?.user_metadata.full_name }}</span>
+              <span class="text-sm">{{ user?.user_metadata?.full_name }}</span>
               <span class="text-xs text-gray-400">{{ user?.email }}</span>
             </div>
           </div>

@@ -16,13 +16,15 @@ export const useMemberships = () => {
   const supabase = useSupabaseClient()
   const route = useRoute();
   const selectedOrgIdCookie = useCookie('selected-org-id');
+  const { $posthog } = useNuxtApp();
   
   const memberships = useState<OrganizationWithMetadata[]>('memberships', () => [])
   const selectedOrganization = useState<OrganizationWithMetadata | undefined>('selectedOrganization', () => undefined)
   const isLoading = useState('memberships.loading', () => false)
+  const isInitialized = useState('memberships.initialized', () => false)
 
   const refreshMemberships = async () => {
-    if (!user.value) return
+    if (!user.value?.sub || isLoading.value) return
 
     isLoading.value = true
     try {
@@ -35,13 +37,13 @@ export const useMemberships = () => {
             orders (id, metadata, created_at)
           )
         `)
-        .eq('user_id', user.value.id)
+        .eq('user_id', user.value.sub)
         .is('deleted_at', null)
 
       if (error) throw error
 
-      const flattened = (data as any[])?.map((membership: any) => ({
-        id: membership.organizations.id,
+      const flattened = (data as any[])?.map((membership: Membership) => ({
+        id: membership.organizations?.id,
         name: membership.organizations.name,
         pending: membership.pending,
         orgPending: membership.organizations.pending,
@@ -52,8 +54,7 @@ export const useMemberships = () => {
       })).filter((org: any) => !org.orgPending) || [];
 
       memberships.value = flattened;
-    } catch (e) {
-      const { $posthog } = useNuxtApp();
+    } catch (e) {      
       $posthog().capture('membership_fetch_failed', {
         user_id: user.value.id,
         error: (e as Error).message
@@ -65,7 +66,10 @@ export const useMemberships = () => {
   }
 
   const initializeSession = async () => {
+    if (isInitialized.value || !user.value?.sub) return
+    
     await refreshMemberships();
+    isInitialized.value = true
 
     const orgIdFromRoute = route.params.org_id as string | undefined;
 

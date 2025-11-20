@@ -39,7 +39,8 @@ export default defineNuxtConfig({
     '@nuxtjs/supabase',
     '@polar-sh/nuxt',
     '@nuxt/icon',
-    '@posthog/nuxt'
+    '@posthog/nuxt',
+    '@vueuse/nuxt'
   ],
   css: ['~/assets/css/main.css'],
   alias: {
@@ -52,19 +53,17 @@ export default defineNuxtConfig({
   supabase: {
     url: process.env.SUPABASE_URL,
     key: process.env.SUPABASE_KEY,
+    secretKey: process.env.SUPABASE_SECRET_KEY,
+    types: fileURLToPath(new URL('./database.types.ts', import.meta.url)),
+    useSsrCookies: true,
     redirectOptions: {
       login: '/login',
       callback: '/confirm',
       exclude: ['/confirm'],
+      saveRedirectToCookie: true
     },
     clientOptions: {
       auth: {
-        flowType: 'pkce',
-        // flowType: 'implicit',
-        detectSessionInUrl: true,
-        // persistSession: false, // recommended for lambda
-        persistSession: process.env.NODE_ENV === 'development' ? true : false,
-        autoRefreshToken: true
       }
     },
     cookieOptions: {
