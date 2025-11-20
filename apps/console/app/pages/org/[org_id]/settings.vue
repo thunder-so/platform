@@ -67,11 +67,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, inject } from 'vue';
+import { ref, reactive, onMounted, inject, watch } from 'vue';
 import { z } from 'zod';
 import { OrgOrganizationDeleteModal } from '#components'
 
-const { memberships, selectedOrganization, initializeSession, refreshMemberships, resetOrgIdCookie } = useMemberships()
+const { memberships, selectedOrganization, setSelectedOrganization, initializeSession, refreshMemberships, resetOrgIdCookie } = useMemberships()
 
 definePageMeta({
   layout: 'org'
@@ -123,6 +123,12 @@ const schema = z.object({
 
 const state = reactive({
   newDisplayName: selectedOrganization.value?.name,
+});
+
+watch(() => selectedOrganization.value?.name, (newName) => {
+  if (newName) {
+    state.newDisplayName = newName;
+  }
 });
 
 onMounted(async () => {
@@ -177,8 +183,8 @@ const updateOrganization = async () => {
       .single();
 
     if (data && selectedOrganization) {
-      selectedOrganization.value = data;
-      await initializeSession();
+      await refreshMemberships();
+      await setSelectedOrganization(data.id)
     }
 
     if (updateError) throw updateError;

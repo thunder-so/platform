@@ -21,10 +21,11 @@ export const useMemberships = () => {
   const memberships = useState<OrganizationWithMetadata[]>('memberships', () => [])
   const selectedOrganization = useState<OrganizationWithMetadata | undefined>('selectedOrganization', () => undefined)
   const isLoading = useState('memberships.loading', () => false)
-  const isInitialized = useState('memberships.initialized', () => false)
+  // const isInitialized = useState('memberships.initialized', () => false)
 
   const refreshMemberships = async () => {
     if (!user.value?.sub || isLoading.value) return
+    console.log('refreshing memberships for user', user.value.sub)
 
     isLoading.value = true
     try {
@@ -66,10 +67,10 @@ export const useMemberships = () => {
   }
 
   const initializeSession = async () => {
-    if (isInitialized.value || !user.value?.sub) return
+    // if (isInitialized.value || !user.value?.sub) return
     
     await refreshMemberships();
-    isInitialized.value = true
+    // isInitialized.value = true
 
     const orgIdFromRoute = route.params.org_id as string | undefined;
 

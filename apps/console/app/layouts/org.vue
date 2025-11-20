@@ -1,6 +1,7 @@
 <template>
   <div>
     <Header :mobile-menu-items="links" />
+    <ClientOnly>
     <UMain>
       <div v-if="isLoading" class="flex items-center justify-center min-h-[calc(100vh-4rem)]">
         <div class="flex flex-col items-center gap-4">
@@ -44,6 +45,7 @@
         </div>
       </div>
     </UMain>
+    </ClientOnly>
   </div>
 </template>
 
