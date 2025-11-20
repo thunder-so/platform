@@ -43,17 +43,16 @@ export const useMemberships = () => {
       if (error) throw error
 
       const flattened = (data as any[])?.map((membership: Membership) => ({
-        id: membership.organizations[0]?.id,
-        name: membership.organizations[0]?.name,
+        id: membership.organizations?.id,
+        name: membership.organizations?.name,
         pending: membership.pending,
-        orgPending: membership.organizations[0]?.pending,
+        orgPending: membership.organizations?.pending,
         subscriptions: (membership.organizations.subscriptions || [])
           .filter((sub: any) => sub.status !== 'canceled')
           .sort((a: any, b: any) => new Date(b.created || 0).getTime() - new Date(a.created || 0).getTime()),
         orders: membership.organizations.orders || []
       })).filter((org: any) => !org.orgPending) || [];
 
-      // @ts-expect-error 
       memberships.value = flattened;
     } catch (e) {      
       $posthog().capture('membership_fetch_failed', {

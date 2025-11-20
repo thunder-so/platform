@@ -557,7 +557,7 @@ export interface Membership {
   name: Organization['name'];
   pending: boolean;
   orgPending: boolean;
-  organizations: Array<Organization> & {
+  organizations: Organization & {
     subscriptions?: Array<Subscription>;
     orders?: Array<Order>;
   };
