@@ -56,12 +56,13 @@ export const teamRouter = router({
         throw new Error(`Error generating user: ${magicLinkError.message}`);
       }
 
-      // Check plan limits
+      // Check plan limits - get the latest subscription
       const subscription = await db.query.subscriptions.findFirst({
         where: and(
           eq(subscriptions.organization_id, input.organizationId),
           or(eq(subscriptions.status, 'active'), eq(subscriptions.status, 'trialing'))
-        )
+        ),
+        orderBy: (subscriptions, { desc }) => [desc(subscriptions.created)]
       });
 
       // Check for free plan limits
@@ -84,7 +85,6 @@ export const teamRouter = router({
 
       // Check seat availability for seat-based plans
       if (subscription && (subscription.metadata as any)?.prices?.[0]?.amount_type === 'seat_based') {
-        // Check seat availability via Polar API
         const { private: { polarAccessToken, polarServer } } = useRuntimeConfig();
         const polar = new Polar({
           accessToken: polarAccessToken,
@@ -95,6 +95,7 @@ export const teamRouter = router({
           const seatsList = await polar.customerSeats.listSeats({
             subscriptionId: subscription.id
           });
+          console.log('Seats List:', seatsList);
           
           if (seatsList.availableSeats <= 0) {
             throw new TRPCError({
@@ -115,7 +116,6 @@ export const teamRouter = router({
           await polar.customerSeats.assignSeat({
             subscriptionId: subscription.id,
             email: input.email,
-            externalCustomerId: magicLinkData.user.id,
           });
         } catch (polarError) {
           console.error('Polar seat assignment failed:', polarError);
@@ -243,13 +243,7 @@ export const teamRouter = router({
 
         await polar.customerSeats.assignSeat({
           subscriptionId: subscription.id,
-          // checkoutId: 
-          // orderId:
           email: user.email,
-          externalCustomerId: user.id,
-          metadata: {
-            organization_id: input.organizationId
-          }
         });
       }
 
@@ -277,17 +271,7 @@ export const teamRouter = router({
         const isSeatBased = (subscription.metadata as any)?.prices?.[0]?.amount_type === 'seat_based';
         
         if (isSeatBased) {
-          // For seat-based plans, count actual members
-          const memberCount = await db.select({ count: sql`count(*)` })
-            .from(memberships)
-            .where(and(
-              eq(memberships.organization_id, input.organizationId),
-              eq(memberships.pending, false),
-              isNull(memberships.deleted_at)
-            ));
-          
-          // Try to get seat count from Polar API as fallback
-          let totalSeats = 1;
+          // For seat-based plans, get seat info from Polar API
           try {
             const { private: { polarAccessToken, polarServer } } = useRuntimeConfig();
             const polar = new Polar({
@@ -298,33 +282,45 @@ export const teamRouter = router({
             const seatsList = await polar.customerSeats.listSeats({
               subscriptionId: subscription.id
             });
-            totalSeats = seatsList.totalSeats;
+            
+            return {
+              used: seatsList.totalSeats - seatsList.availableSeats,
+              total: seatsList.totalSeats,
+              isSeatBased: true
+            };
           } catch (polarError) {
-            console.error('Failed to fetch seat count from Polar:', polarError);
-            // Fallback to metadata or default
-            totalSeats = (subscription.metadata as any)?.seats || 
-                        ((subscription.metadata as any)?.price?.seat_tiers?.tiers?.[0]?.min_seats) || 1;
+            console.error('Failed to fetch seat info from Polar:', polarError);
+            // Fallback: count from database
+            const memberCount = await db.select({ count: sql`count(*)` })
+              .from(memberships)
+              .where(and(
+                eq(memberships.organization_id, input.organizationId),
+                isNull(memberships.deleted_at)
+              ));
+            
+            const totalSeats = (subscription.metadata as any)?.seats || 
+                              ((subscription.metadata as any)?.price?.seat_tiers?.tiers?.[0]?.min_seats) || 1;
+            
+            return {
+              used: Number(memberCount[0]?.count || 0),
+              total: totalSeats,
+              isSeatBased: true
+            };
           }
-          
-          return {
-            used: Number(memberCount[0]?.count || 0),
-            total: totalSeats,
-            isSeatBased: true
-          };
         } else {
           // For non-seat-based subscriptions (Pro Monthly/Annual)
           const memberCount = await db.select({ count: sql`count(*)` })
             .from(memberships)
             .where(and(
               eq(memberships.organization_id, input.organizationId),
-              eq(memberships.pending, false),
               isNull(memberships.deleted_at)
             ));
           
           const maxMembers = parseInt((subscription.metadata as any)?.metadata?.max_members || '1');
-          
+          const used = Number(memberCount[0]?.count || 0);
+
           return {
-            used: Number(memberCount[0]?.count || 0),
+            used,
             total: maxMembers,
             isSeatBased: false
           };
@@ -342,7 +338,6 @@ export const teamRouter = router({
           .from(memberships)
           .where(and(
             eq(memberships.organization_id, input.organizationId),
-            eq(memberships.pending, false),
             isNull(memberships.deleted_at)
           ));
         

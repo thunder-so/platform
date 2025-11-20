@@ -12,7 +12,7 @@
     </template>
     <template #footer="{ close }">
       <UButton label="Close" color="neutral" variant="outline" @click="close" />
-      <UButton type="submit" :loading="inviting">Invite</UButton>
+      <UButton @click="inviteMember" :loading="inviting">Invite</UButton>
     </template>
   </UModal>
 </template>

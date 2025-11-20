@@ -211,6 +211,7 @@ const openInviteModal = async () => {
   const result = await modal.open().result;
   if (result) {
     await fetchMembers();
+    await fetchSeatUsage();
   }
 };
 
