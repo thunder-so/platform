@@ -1,8 +1,7 @@
 <template>
   <div>
     <Header />
-
-    <UContainer>
+    <ClientOnly>
       <div v-if="loading" class="flex items-center justify-center min-h-[calc(100vh-4rem)]">
         <div class="flex flex-col items-center gap-4">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -18,7 +17,7 @@
             <h2>Connect AWS Account</h2>
           </template>
           
-          <p class="mb-4 text-muted">Connect an AWS account to deploy your applications.</p>
+          <p class="mb-4 text-sm text-muted">Connect an AWS account to deploy your applications.</p>
           <UButton
             icon="i-mdi-aws"
             size="lg"
@@ -33,7 +32,7 @@
             <h2>Connect to GitHub</h2>
           </template>
           
-          <p class="mb-4 text-muted">Install the Thunder.so GitHub App to see your repositories.</p>
+          <p class="mb-4 text-sm text-muted">Install the Thunder.so GitHub App to see your repositories.</p>
           <UButton
             icon="i-uil-github"
             size="lg"
@@ -44,25 +43,27 @@
         </UCard>
       </div>
       <div v-else>
-        <div class="mt-8 mb-6 pb-6 border-b border-muted">
-          <h1 class="text-2xl font-bold mb-6">{{ pageTitle }}</h1>
-          <div class="flex items-center space-x-4">
-            <div v-for="(step, index) in steps" :key="index" class="flex items-center">
-              <div :class="['step', { 'active': currentStep >= index + 1, 'completed': currentStep > index + 1 }]">
-                <span v-if="currentStep <= index + 1">{{ index + 1 }}</span>
-                <UIcon v-else name="i-heroicons-check" />
+        <UContainer>
+          <div class="mt-8 mb-6 pb-6 border-b border-muted">
+            <h1 class="text-2xl font-bold mb-6">{{ pageTitle }}</h1>
+            <div class="flex items-center space-x-4">
+              <div v-for="(step, index) in steps" :key="index" class="flex items-center">
+                <div :class="['step', { 'active': currentStep >= index + 1, 'completed': currentStep > index + 1 }]">
+                  <span v-if="currentStep <= index + 1">{{ index + 1 }}</span>
+                  <UIcon v-else name="i-heroicons-check" />
+                </div>
+                <span class="label leading-8" :class="{'font-bold': currentStep === index + 1}">{{ step.label }}</span>
+                <div v-if="index < steps.length - 1" class="separator"></div>
               </div>
-              <span class="label leading-8" :class="{'font-bold': currentStep === index + 1}">{{ step.label }}</span>
-              <div v-if="index < steps.length - 1" class="separator"></div>
             </div>
           </div>
-        </div>
 
-        <main class="mb-12">
-          <slot />
-        </main>
+          <main class="mb-12">
+            <slot />
+          </main>
+        </UContainer>
       </div>
-    </UContainer>
+    </ClientOnly>
   </div>
 </template>
 

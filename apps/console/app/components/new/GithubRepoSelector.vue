@@ -31,8 +31,11 @@
         </div>
         <div v-else class="repo-list">
           <div v-if="filteredRepositories.length === 0" class="text-center py-8">
-            <p class="text-sm text-muted">No repositories found.</p>
-            <p class="text-sm text-muted">Make sure your GitHub account/organization has repositories and they are accessible to the Thunder app.</p>
+            <UEmpty
+              icon="i-logos-github"
+              title="No repositories found"
+              description="Make sure your GitHub account or organization has repositories and they are accessible to the Thunder app."
+            />
           </div>
           <div 
             v-for="repo in filteredRepositories" 

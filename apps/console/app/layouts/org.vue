@@ -63,7 +63,7 @@ const links = computed<NavigationMenuItem[]>(() => {
   if (!orgId) return [];
   return [
     {
-      label: 'Applications',
+      label: 'Projects',
       to: `/org/${orgId}`,
     },
     {

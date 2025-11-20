@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="flex justify-between items-center mb-4">
-      <h3 class="text-lg font-medium">Applications</h3>
+      <h3 class="text-lg font-medium">Projects</h3>
       <UButton 
         color="neutral" 
         variant="outline" 
@@ -34,7 +34,17 @@
         @update:sorting="(state) => { sortState = state; saveSortState(state) }"
       />
     </div>
-    <div v-else>No applications found for this organization.</div>
+    <div v-else>
+      <UEmpty
+        icon="i-lucide-inbox"
+        title="No projects found"
+        description="There are no projects in this workspace yet. Import a Github repository to get started."
+      >
+        <template #actions>
+          <UButton to="/new" color="primary" variant="solid" label="Import repository" />
+        </template>
+      </UEmpty>
+    </div>
   </div>
 </template>
 

@@ -54,7 +54,7 @@
         :content="{ align: 'end', side: 'bottom' }"
       >
         <UButton size="lg" icon="i-heroicons-plus-20-solid" color="neutral" variant="outline">
-          New
+          Project
         </UButton>
         
         <template #content>

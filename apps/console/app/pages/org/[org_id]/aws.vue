@@ -46,7 +46,17 @@
       <UTable :data="providers" :columns="columns" />
     </div>
     <div v-else>
-      <p>No AWS accounts connected yet.</p>
+      <UEmpty
+        icon="i-lucide-cloud"
+        title="No AWS accounts connected"
+        description="Connect an AWS account to manage cloud resources for this organization."
+      >
+        <template #actions>
+          <UDropdownMenu :items="addNewItems">
+            <UButton color="primary" variant="solid" label="Add AWS Account" />
+          </UDropdownMenu>
+        </template>
+      </UEmpty>
     </div>
   </div>
 </template>
