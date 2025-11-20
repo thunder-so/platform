@@ -29,7 +29,7 @@
     </template>
     
     <template #footer="{ close }">
-      <UButton label="Cancel" color="neutral" variant="outline" @click="handleClose(close)" />
+      <UButton label="Cancel" color="neutral" variant="ghost" @click="handleClose(close)" />
       <UButton :disabled="!selectedCommit" :loading="isDeploying" @click="handleDeploy(close)">Deploy Commit</UButton>
     </template>
   </UModal>

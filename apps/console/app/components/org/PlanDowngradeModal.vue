@@ -24,7 +24,7 @@
     </template>
     
     <template #footer="{ close }">
-      <UButton label="Cancel" color="neutral" variant="outline" @click="close" />
+      <UButton label="Cancel" color="neutral" variant="ghost" @click="close" />
       <UButton label="Confirm Downgrade" color="warning" :loading="isProcessing" @click="confirm" />
     </template>
   </UModal>

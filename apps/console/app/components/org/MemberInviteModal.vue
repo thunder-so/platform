@@ -11,7 +11,7 @@
       </div>
     </template>
     <template #footer="{ close }">
-      <UButton label="Close" color="neutral" variant="outline" @click="close" />
+      <UButton label="Cancel" color="neutral" variant="ghost" @click="close" />
       <UButton @click="inviteMember" :loading="inviting">Invite</UButton>
     </template>
   </UModal>

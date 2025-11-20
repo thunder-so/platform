@@ -18,10 +18,10 @@
     
     <template #footer="{ close }">
       <div v-if="mode === 'cannotDelete'">
-        <UButton label="Close" color="neutral" @click="close" />
+        <UButton label="Close" color="neutral" variant="outline" @click="close" />
       </div>
       <div v-else class="flex gap-2">
-        <UButton label="Cancel" color="neutral" variant="outline" @click="close" />
+        <UButton label="Cancel" color="neutral" variant="ghost" @click="close" />
         <UButton :disabled="!isDeleteEnabled" color="error" @click="emit('close', props.provider.id)">Delete</UButton>
       </div>
     </template>

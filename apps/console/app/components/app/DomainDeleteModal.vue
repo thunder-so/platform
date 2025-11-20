@@ -12,7 +12,7 @@
     </template>
 
     <template #footer="{ close }">
-      <UButton label="Cancel" color="neutral" variant="outline" @click="close" />
+      <UButton label="Cancel" color="neutral" variant="ghost" @click="close" />
       <UButton :disabled="!isDeleteEnabled" color="error" @click="emit('close', domain.id)">Delete</UButton>
     </template>
   </UModal>

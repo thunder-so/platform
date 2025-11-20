@@ -10,7 +10,7 @@
     </template>
     
     <template #footer="{ close }">
-      <UButton label="Cancel" color="neutral" variant="outline" @click="close" />
+      <UButton label="Cancel" color="neutral" variant="ghost" @click="close" />
       <UButton color="neutral" @click="emit('close', alias)">Save</UButton>
     </template>
   </UModal>

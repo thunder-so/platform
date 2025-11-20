@@ -27,7 +27,7 @@
     </template>
 
     <template #footer="{ close }">
-      <UButton label="Cancel" color="neutral" variant="outline" @click="handleClose(close)" />
+      <UButton label="Cancel" color="neutral" variant="ghost" @click="handleClose(close)" />
       <UButton :disabled="!latest" :loading="isDeploying" @click="handleConfirm(close)">Deploy</UButton>
     </template>
   </UModal>

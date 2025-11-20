@@ -32,7 +32,7 @@
     </template>
 
     <template #footer="{ close }">
-      <UButton label="Cancel" color="neutral" variant="outline" @click="close" />
+      <UButton label="Cancel" color="neutral" variant="ghost" @click="close" />
       <UButton :loading="isSaving" :disabled="!isDirty || !formIsValid || !isDomainValid" color="primary" @click="handleSubmit()">Save</UButton>
     </template>
   </UModal>
