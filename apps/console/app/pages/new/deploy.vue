@@ -118,9 +118,15 @@ const hasUat = computed(() => {
 const handleAuthorize = async () => {
   setOAuthError(false);
   authorizing.value = true;
+  const { $posthog } = useNuxtApp();
+  
   try {
     const userAccessToken = await openOAuthPopup();
     setUat(userAccessToken);
+    $posthog().capture('github_user_token_generated', {
+      app_name: applicationSchema.value.display_name,
+      repo: `${applicationSchema.value.environments?.[0]?.services?.[0]?.owner}/${applicationSchema.value.environments?.[0]?.services?.[0]?.repo}`
+    });
     toast.add({
       title: 'GitHub authorization successful',
       color: 'success'
@@ -128,6 +134,10 @@ const handleAuthorize = async () => {
   } catch (error: any) {
     if (error.message !== 'OAuth cancelled') {
       setOAuthError(true);
+      $posthog().capture('github_user_token_failed', {
+        error: error.message,
+        app_name: applicationSchema.value.display_name
+      });
       toast.add({
         title: 'Authorization failed',
         description: error.message,
@@ -145,16 +155,30 @@ const installApplication = async () => {
     return;
   }
   isDeploying.value = true;
+  const { $posthog } = useNuxtApp();
+  
   try {
     const result = await $client.applications.create.mutate({
       organization_id: selectedOrganization.value?.id as string,
       ...(applicationSchema.value as any)
     });
     if (result.newApplicationId) {
+      $posthog().capture('app_created', {
+        app_id: result.newApplicationId,
+        app_name: applicationSchema.value.display_name,
+        stack_type: applicationSchema.value.environments?.[0]?.services?.[0]?.stack_type,
+        repo: `${applicationSchema.value.environments?.[0]?.services?.[0]?.owner}/${applicationSchema.value.environments?.[0]?.services?.[0]?.repo}`,
+        org_id: selectedOrganization.value?.id
+      });
       clearApplicationSchema();
       router.push(`/app/${result.newApplicationId}`);
     }
   } catch (error) {
+    $posthog().capture('app_creation_failed', {
+      app_name: applicationSchema.value.display_name,
+      error: (error as Error).message,
+      org_id: selectedOrganization.value?.id
+    });
     console.error('Failed to install application:', error);
     // Here you could show a toast or other error notification
   } finally {

@@ -5,6 +5,7 @@ import { organizations, memberships, subscriptions, customers, products, applica
 import { Polar } from '@polar-sh/sdk'
 import { TRPCError } from '@trpc/server'
 import { eq, and, isNull } from 'drizzle-orm'
+import { trackServerEvent } from '../../utils/analytics'
 
 export const organizationsRouter = router({
   create: protectedProcedure
@@ -62,6 +63,12 @@ export const organizationsRouter = router({
               externalId: user.id,
             })
             
+            await trackServerEvent('polar_customer_auto_created', {
+              customer_id: newCustomer.id,
+              user_id: user.id,
+              org_id: org.id
+            });
+            
             const [newCustomerRecord] = await tx.insert(customers).values({
               user_id: user.id,
               organization_id: org.id,
@@ -100,8 +107,21 @@ export const organizationsRouter = router({
               organization_id: newOrg.id,
             },
           })
+          
+          await trackServerEvent('polar_subscription_auto_created', {
+            customer_id: customer.polar_customer_id,
+            product_id: planId,
+            org_id: newOrg.id,
+            plan_type: 'free'
+          });
+          
           // Set pending to false for free plans
           await db.update(organizations).set({ pending: false }).where(eq(organizations.id, newOrg.id))
+          
+          await trackServerEvent('org_auto_activated', {
+            org_id: newOrg.id,
+            activation_method: 'free_plan'
+          });
         } else {
           // Create checkout for paid plans
           const isSeatBased = product.metadata.prices?.[0]?.amount_type === 'seat_based'
@@ -124,6 +144,10 @@ export const organizationsRouter = router({
           checkoutUrl = checkout.url
         }
       } catch (polarError) {
+        await trackServerEvent('polar_api_failure', {
+          operation: 'organization_create',
+          error: polarError instanceof Error ? polarError.message : 'Unknown Polar error'
+        });
         console.error('Polar operation failed:', polarError)
         const errorMessage = polarError instanceof Error ? polarError.message : 'Unknown Polar error'
         throw new TRPCError({
@@ -170,27 +194,41 @@ export const organizationsRouter = router({
 
         // Assign seat only for new org creation (not plan switching)
         const isNewOrg = !checkout.metadata?.plan_change
+        const isSeatBased = checkout.productPrice?.amountType === 'seat_based'
         
-        if (isNewOrg) {
-          const isSeatBased = checkout.productPrice?.amountType === 'seat_based'
-          
-          if (isSeatBased) {
-            try {
-              const seat = await polar.customerSeats.assignSeat({
-                checkoutId: checkoutId,
-                customerId: checkout.customerId,
-              })
-            } catch (seatError) {
-              console.error('Seat assignment failed:', seatError)
-            }
+        if (isNewOrg && isSeatBased) {
+          try {
+            const seat = await polar.customerSeats.assignSeat({
+              checkoutId: checkoutId,
+              customerId: checkout.customerId,
+            })
+          } catch (seatError) {
+            console.error('Seat assignment failed:', seatError)
           }
         }
 
+        await trackServerEvent('checkout_session_verified', {
+          checkout_id: checkoutId,
+          org_id: organizationId,
+          is_new_org: isNewOrg,
+          is_seat_based: isSeatBased
+        });
+        
         // Set pending to false after successful checkout
         await db.update(organizations).set({ pending: false }).where(eq(organizations.id, organizationId))
         
+        await trackServerEvent('org_activated', {
+          org_id: organizationId,
+          activation_method: 'checkout_verification'
+        });
+        
         return { organizationId }
       } catch (error) {
+        await trackServerEvent('polar_api_failure', {
+          operation: 'checkout_verification',
+          checkout_id: checkoutId,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
         console.error('Failed to retrieve checkout session:', error)
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',

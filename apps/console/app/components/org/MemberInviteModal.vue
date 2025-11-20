@@ -38,11 +38,21 @@ const state = reactive({
 const inviteMember = async () => {
   inviting.value = true;
   error.value = null;
+  const { $posthog } = useNuxtApp();
+  
   try {
     await $client.team.inviteMember.mutate({ organizationId: props.organizationId, email: state.emailToInvite });
+    $posthog().capture('member_invited', {
+      org_id: props.organizationId,
+      invited_email: state.emailToInvite
+    });
     state.emailToInvite = '';
     emit('close', true);
   } catch (e: any) {
+    $posthog().capture('member_invite_failed', {
+      org_id: props.organizationId,
+      error: e.message
+    });
     if (e instanceof TRPCClientError) {
       error.value = { message: e.message };
     } else {

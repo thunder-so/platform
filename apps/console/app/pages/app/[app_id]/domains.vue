@@ -173,6 +173,12 @@ const openDelete = async (domain: any) => {
     if (result) {
       try {
         await $client.services.deleteDomain.mutate({ id: result });
+        const { $posthog } = useNuxtApp();
+        $posthog().capture('domain_deleted', {
+          domain: domain.domain,
+          service_id: service.value?.id,
+          app_id: currentEnvironment.value?.id
+        });
         toast.add({ title: 'Domain deleted', color: 'neutral' });
         if (service.value?.id) await fetchDomains(service.value.id);
       } catch (err: any) {
@@ -187,11 +193,22 @@ const openDelete = async (domain: any) => {
 
 const verifyDomain = async (d: any) => {
   verifyingId.value = d.id;
+  const { $posthog } = useNuxtApp();
   try {
     const res = await $client.services.verifyDomain.mutate({ domain: d.domain, service_id: service.value?.id });
     if (res.verified) {
+      $posthog().capture('domain_verified', {
+        domain: d.domain,
+        service_id: service.value?.id,
+        app_id: currentEnvironment.value?.id
+      });
       toast.add({ title: 'Domain verified', color: 'success' });
     } else {
+      $posthog().capture('domain_verification_failed', {
+        domain: d.domain,
+        service_id: service.value?.id,
+        app_id: currentEnvironment.value?.id
+      });
       toast.add({ title: 'Not verified', description: 'DNS records not found yet.', color: 'warning' });
     }
   if (service.value?.id) await fetchDomains(service.value.id);
@@ -207,6 +224,10 @@ const openAddModal = async () => {
   try {
     const result = await modal.open().result;
     if (result && service.value?.id) {
+      const { $posthog } = useNuxtApp();
+      $posthog().capture('domain_added', {
+        service_id: service.value.id
+      });
       await fetchDomains(service.value.id);
     }
   } catch (e) {

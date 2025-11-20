@@ -6,6 +6,7 @@ import { providers, subscriptions, orders } from '../../db/schema';
 import { sql, eq, and, or, isNull } from 'drizzle-orm';
 import * as ProviderLibrary from '../../lib/provider.library';
 import { PlatformLibrary } from '../../lib/platform.library';
+import { trackServerEvent } from '../../utils/analytics';
 
 export const providersRouter = router({
   addManualProvider: protectedProcedure
@@ -36,6 +37,13 @@ export const providersRouter = router({
             isNull(providers.deleted_at)
           ));
         
+        await trackServerEvent('plan_limit_enforced', {
+          org_id: organizationId,
+          plan_type: 'free',
+          current_providers: Number(providerCount[0]?.count || 0),
+          limit: 1
+        });
+        
         if (Number(providerCount[0]?.count || 0) >= 1) {
           throw new TRPCError({
             code: 'PRECONDITION_FAILED',
@@ -65,7 +73,18 @@ export const providersRouter = router({
       let callerIdentity;
       try {
         callerIdentity = await ProviderLibrary.getCallerIdentity(tempProvider);
+        
+        await trackServerEvent('aws_credentials_validated', {
+          org_id: organizationId,
+          account_id: callerIdentity.Account,
+          method: 'access_key'
+        });
       } catch (error: any) {
+        await trackServerEvent('aws_credentials_validation_failed', {
+          org_id: organizationId,
+          method: 'access_key',
+          error: error.message
+        });
         throw error;
       }
 
@@ -79,6 +98,10 @@ export const providersRouter = router({
         const secret_id = vaultResult.rows[0]?.create_secret as string | undefined;
 
         if (!secret_id) {
+          await trackServerEvent('secret_storage_failure', {
+            org_id: organizationId,
+            error: 'vault.create_secret returned false or unexpected value'
+          });
           console.error('Error storing secret in vault: vault.create_secret returned false or an unexpected value');
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
@@ -106,6 +129,11 @@ export const providersRouter = router({
           .returning();
 
         if (!data) {
+          await trackServerEvent('database_transaction_failed', {
+            operation: 'provider_create',
+            org_id: organizationId,
+            error: 'Drizzle insert returned no data'
+          });
           console.error('Error inserting provider: Drizzle insert returned no data');
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
@@ -113,8 +141,20 @@ export const providersRouter = router({
           });
         }
 
+        await trackServerEvent('aws_provider_created_server', {
+          provider_id: data.id,
+          org_id: organizationId,
+          account_id: data.account_id,
+          method: 'access_key'
+        });
+
         return data;
       } catch (error) {
+        await trackServerEvent('aws_provider_creation_failed', {
+          org_id: organizationId,
+          method: 'access_key',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
         console.error('Error in addManualProvider:', error);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
@@ -148,8 +188,16 @@ export const providersRouter = router({
           });
         }
 
+        await trackServerEvent('aws_provider_deleted_server', {
+          provider_id: data.id
+        });
+
         return data;
       } catch (error) {
+        await trackServerEvent('aws_provider_deletion_failed', {
+          provider_id: providerId,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
         console.error('Error in deleteProvider:', error);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',

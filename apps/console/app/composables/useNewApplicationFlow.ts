@@ -218,6 +218,8 @@ export const useNewApplicationFlow = () => {
       service_variables: [],
     };
 
+    const { $posthog } = useNuxtApp();
+
     if (stackType === 'SPA') {
       let metadata = { ...STACK_DEFAULTS.SPA };
       try {
@@ -226,9 +228,19 @@ export const useNewApplicationFlow = () => {
           scanError.value = buildSettings.message;
         } else if (buildSettings) {
           metadata.buildProps = { ...metadata.buildProps, ...buildSettings };
+          $posthog().capture('repo_scanned', {
+            success: true,
+            stack_type: 'SPA',
+            repo: `${owner}/${repo}`
+          });
         }
       } catch (e: any) {
         console.error("scan error:", e);
+        $posthog().capture('repo_scan_failed', {
+          stack_type: 'SPA',
+          error: e.message,
+          repo: `${owner}/${repo}`
+        });
         scanError.value = e.message || e;
       }
       return {
@@ -255,11 +267,22 @@ export const useNewApplicationFlow = () => {
               ...metadata.functionProps,
               dockerFile: 'Dockerfile'
             };
+            $posthog().capture('repo_scanned', {
+              success: true,
+              stack_type: 'FUNCTION',
+              has_dockerfile: true,
+              repo: `${owner}/${repo}`
+            });
           } else {
             scanError.value = dockerFileStatus.message as string;
           }
       } catch (e: any) {
         console.error("scan error:", e);
+        $posthog().capture('repo_scan_failed', {
+          stack_type: 'FUNCTION',
+          error: e.message,
+          repo: `${owner}/${repo}`
+        });
       }
       return {
         ...baseService,
@@ -281,11 +304,22 @@ export const useNewApplicationFlow = () => {
       const dockerFileStatus = await $client.github.scanForDockerfile.query({ owner, repo, installation_id });
       if (dockerFileStatus.success) {
         metadata.buildProps.buildSystem = 'Custom Dockerfile';
+        $posthog().capture('repo_scanned', {
+          success: true,
+          stack_type: 'WEB_SERVICE',
+          has_dockerfile: true,
+          repo: `${owner}/${repo}`
+        });
       } else {
         scanError.value = dockerFileStatus.message as string;
       }
     } catch (e: any) {
       console.error("scan error:", e);
+      $posthog().capture('repo_scan_failed', {
+        stack_type: 'WEB_SERVICE',
+        error: e.message,
+        repo: `${owner}/${repo}`
+      });
     }
     return {
       ...baseService,
@@ -298,6 +332,14 @@ export const useNewApplicationFlow = () => {
   const setApplicationSchema = async (owner: string, repo: string, installation_id: number, stack_type: string | null) => {
     isLoading.value = true;
     scanError.value = null;
+
+    const { $posthog } = useNuxtApp();
+    $posthog().capture('app_create_started', {
+      repo_owner: owner,
+      repo_name: repo,
+      stack_type: stack_type || 'SPA',
+      installation_id
+    });
 
     try {
         const getValidStackType = (): ValidStackType => {
@@ -330,8 +372,20 @@ export const useNewApplicationFlow = () => {
             },
           ],
         };
+        
+        $posthog().capture('app_configured', {
+          repo_owner: owner,
+          repo_name: repo,
+          stack_type: validStackType,
+          has_scan_error: !!scanError.value
+        });
     } catch (e: any) {
         console.error("Failed to configure application:", e);
+        $posthog().capture('app_create_failed', {
+          repo_owner: owner,
+          repo_name: repo,
+          error: e.message
+        });
         scanError.value = e.message || 'An unexpected error occurred during configuration.';
     } finally {
         isLoading.value = false;

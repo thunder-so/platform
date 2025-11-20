@@ -217,6 +217,16 @@ const subscribeToPlan = async () => {
   const selected = plans.value.find(p => p.id === selectedPlan.value);
   if (!selected) return;
 
+  const currentPlanId = subscription.value?.metadata?.product?.id || order.value?.metadata?.product?.id;
+  const { $posthog } = useNuxtApp();
+  
+  $posthog().capture('billing_plan_change_started', {
+    from_plan: currentPlanId,
+    to_plan: selected.id,
+    org_id: orgId,
+    is_downgrade: isDowngrade.value
+  });
+
   if (isDowngrade.value) {
     pendingDowngradePlan.value = selected;
     showDowngradeModal();
@@ -231,6 +241,13 @@ const subscribeToPlan = async () => {
       await $client.organizations.switchToFreePlan.mutate({
         organizationId: orgId,
         productId: selected.id,
+      });
+      
+      $posthog().capture('billing_plan_changed', {
+        from_plan: currentPlanId,
+        to_plan: selected.id,
+        org_id: orgId,
+        plan_type: 'free'
       });
       
       toast.add({
@@ -252,10 +269,22 @@ const subscribeToPlan = async () => {
       }
 
       const { checkoutUrl } = await $client.organizations.createCheckoutSession.mutate(mutationPayload);
+      $posthog().capture('checkout_initiated', {
+        from_plan: currentPlanId,
+        to_plan: selected.id,
+        org_id: orgId,
+        plan_change: true
+      });
       window.location.href = checkoutUrl;
     }
   } catch (e) {
     console.error('Error changing plan:', e);
+    $posthog().capture('billing_plan_change_failed', {
+      from_plan: currentPlanId,
+      to_plan: selected.id,
+      error: (e as Error).message,
+      org_id: orgId
+    });
     error.value = { message: 'Failed to change plan. Please try again.' };
   } finally {
     isCreatingCheckout.value = false;
@@ -291,6 +320,11 @@ onMounted(async () => {
 
 const manageSubscription = async () => {
   try {
+    const { $posthog } = useNuxtApp();
+    $posthog().capture('billing_portal_accessed', {
+      org_id: orgId,
+      current_plan: subscription.value?.metadata?.product?.id
+    });
     const { url } = await $client.organizations.createPortalSession.mutate({ organizationId: orgId })
     window.location.href = url
 
@@ -301,16 +335,26 @@ const manageSubscription = async () => {
 }
 
 const purchaseMoreSeats = async () => {
+  const { $posthog } = useNuxtApp();
   try {
     const result = await $client.team.purchaseSeats.mutate({ 
       organizationId: orgId, 
       additionalSeats: 1 
     });
     if (result.checkoutUrl) {
+      $posthog().capture('seat_purchase_initiated', {
+        org_id: orgId,
+        additional_seats: 1,
+        current_seats: seatUsage.value.total
+      });
       window.location.href = result.checkoutUrl;
     }
   } catch (e) {
     console.error('Failed to purchase seats:', e);
+    $posthog().capture('seat_purchase_failed', {
+      org_id: orgId,
+      error: (e as Error).message
+    });
     error.value = { message: 'Failed to purchase additional seats.' };
   }
 }

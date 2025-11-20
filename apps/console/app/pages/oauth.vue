@@ -42,15 +42,25 @@ const closePopup = () => {
 onMounted(async () => {
   if (!process.client) return
   
+  const { $posthog } = useNuxtApp();
+  
   try {
     const query = route.query
     
     if (query.installation_id && query.setup_action === 'install' && query.code) {
+      $posthog().capture('github_app_installation_started', {
+        installation_id: query.installation_id
+      });
+      
       const response = await $client.github.handleAppInstallationFlow.query({
         installation_id: Number(query.installation_id as string)
       })
       
       if (response) {
+        $posthog().capture('github_app_installation_success', {
+          installation_id: query.installation_id
+        });
+        
         if (window.opener) {
           window.opener.postMessage({
             type: 'GITHUB_INSTALLATION_SUCCESS',
@@ -62,11 +72,17 @@ onMounted(async () => {
         throw new Error('Installation failed')
       }
     } else if (query.code && query.state) {
+      $posthog().capture('github_oauth_started');
+      
       const response = await $client.github.handleOAuthFlow.mutate({
         code: query.code as string
       })
       
       if (response?.user_access_token) {
+        $posthog().capture('github_oauth_completed', {
+          success: true
+        });
+        
         if (window.opener) {
           window.opener.postMessage({
             type: 'GITHUB_OAUTH_SUCCESS',
@@ -81,6 +97,9 @@ onMounted(async () => {
       throw new Error('Invalid authorization parameters')
     }
   } catch (err: any) {
+    $posthog().capture('github_oauth_failed', {
+      error: err.message
+    });
     error.value = err.message || 'Authorization failed'
   } finally {
     loading.value = false

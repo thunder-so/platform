@@ -53,6 +53,11 @@ export const useMemberships = () => {
 
       memberships.value = flattened;
     } catch (e) {
+      const { $posthog } = useNuxtApp();
+      $posthog().capture('membership_fetch_failed', {
+        user_id: user.value.id,
+        error: (e as Error).message
+      });
       console.error('error loading memberships')
     } finally {
       isLoading.value = false

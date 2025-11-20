@@ -5,6 +5,7 @@
 import { createTRPCNuxtHandler } from 'trpc-nuxt/server'
 import { createTRPCContext } from '../../trpc/init'
 import { appRouter } from '../../trpc/routers'
+import { PostHog } from 'posthog-node'
 
 export default createTRPCNuxtHandler({
   router: appRouter,
@@ -14,8 +15,30 @@ export default createTRPCNuxtHandler({
     console.error('api/trpc/[trpc]: Path:', path);
     console.error('api/trpc/[trpc]: Type:', type);
     console.error('api/trpc/[trpc]: Error:', error);
-    // console.error('api/trpc/[trpc]: Input:', input);
-    // console.error('api/trpc/[trpc]: Context:', ctx);
-    // console.error('api/trpc/[trpc]: Req:', req);
+    
+    // Track tRPC errors with PostHog
+    try {
+      const runtimeConfig = useRuntimeConfig();
+      
+      const posthog = new PostHog(
+        runtimeConfig.public.posthogPublicKey,
+        { host: runtimeConfig.public.posthogHost }
+      );
+      
+      posthog.capture({
+        distinctId: ctx?.user?.id || 'anonymous',
+        event: 'trpc_error',
+        properties: {
+          path,
+          type,
+          error_message: error.message,
+          error_code: error.code
+        }
+      });
+      
+      posthog.shutdown();
+    } catch (e) {
+      // Silently fail analytics
+    }
   }
 })

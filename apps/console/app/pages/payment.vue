@@ -52,8 +52,19 @@ onMounted(async () => {
   try {
     const org = await $client.organizations.verifyCheckout.query({ checkoutId: checkoutId as string })
     organizationId.value = org.organizationId
+    
+    const { $posthog } = useNuxtApp();
+    $posthog().capture('payment_completed', {
+      checkout_id: checkoutId,
+      org_id: org.organizationId
+    });
   } catch (e) {
     console.error('Error fetching organization by checkout ID:', e);
+    const { $posthog } = useNuxtApp();
+    $posthog().capture('payment_verification_failed', {
+      checkout_id: checkoutId,
+      error: (e as Error).message
+    });
     error.value = { message: (e as Error).message || 'Error fetching organization by checkout ID' };
   } finally {
     loading.value = false

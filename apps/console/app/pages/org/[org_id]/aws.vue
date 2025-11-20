@@ -91,9 +91,19 @@ const providerEditModal = resolveComponent('OrgProviderUpdateModal')
 const providerDeleteModal = resolveComponent('OrgProviderDeleteModal')
 
 const addNewAccountStack = () => {
+  const { $posthog } = useNuxtApp();
+  $posthog().capture('aws_connection_started', {
+    method: 'cloudformation',
+    org_id: orgId
+  });
   providerCreateStackModal.open({ organizationId: orgId })
 };
 const addNewAccountCredentials = () => {
+  const { $posthog } = useNuxtApp();
+  $posthog().capture('aws_connection_started', {
+    method: 'access_key',
+    org_id: orgId
+  });
   providerCreateCredentialsModal.open({ organizationId: orgId })
 };
 
@@ -243,6 +253,11 @@ const fetchProviders = async () => {
     if (fetchError) throw fetchError
     providers.value = data
   } catch (e: any) {
+    const { $posthog } = useNuxtApp();
+    $posthog().capture('aws_providers_fetch_failed', {
+      error: e.message,
+      org_id: orgId
+    });
     error.value = e
   } finally {
     loading.value = false
@@ -305,6 +320,16 @@ onMounted(() => {
       .channel(`organization_providers:${orgId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'providers', filter: `organization_id=eq.${orgId}` }, payload => {
         console.info('Change received!', payload)
+        if (payload.eventType === 'INSERT') {
+          const { $posthog } = useNuxtApp();
+          $posthog().capture('aws_account_connected', {
+            provider_id: payload.new.id,
+            method: payload.new.stack_name ? 'cloudformation' : 'access_key',
+            account_id: payload.new.account_id,
+            region: payload.new.region,
+            org_id: orgId
+          });
+        }
         fetchProviders() // Re-fetch providers on any change
       })
       .subscribe()

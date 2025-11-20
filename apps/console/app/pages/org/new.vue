@@ -60,10 +60,23 @@ const createOrganization = async () => {
   const selected = plans.value.find(p => p.id === selectedPlan.value);
   const isFreePlan = selected?.metadata?.prices?.[0]?.amount_type === 'free';
 
+  const { $posthog } = useNuxtApp();
+  $posthog().capture('org_create_started', {
+    plan_type: isFreePlan ? 'free' : 'paid',
+    plan_id: selectedPlan.value,
+    org_name: orgName.value
+  });
+
   try {
     const newOrg = await $client.organizations.create.mutate({
       name: orgName.value,
       planId: selectedPlan.value,
+    });
+
+    $posthog().capture('org_created', {
+      org_id: newOrg.id,
+      plan_type: isFreePlan ? 'free' : 'paid',
+      plan_id: selectedPlan.value
     });
 
     if (isFreePlan) {
@@ -73,10 +86,18 @@ const createOrganization = async () => {
       await router.push(`/org/${newOrg.id}`);
     } else {
       // For paid plans, redirect to checkout
+      $posthog().capture('checkout_initiated', {
+        org_id: newOrg.id,
+        plan_id: selectedPlan.value
+      });
       window.location.href = newOrg.checkoutUrl!;
     }
   } catch (e) {
     console.error('Error creating organization:', e);
+    $posthog().capture('org_create_failed', {
+      error: (e as Error).message,
+      plan_id: selectedPlan.value
+    });
     error.value = { message: (e as Error).message };
   } finally {
     loading.value = false;

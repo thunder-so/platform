@@ -7,6 +7,7 @@ import { applications, environments, services, serviceVariables, userAccessToken
 import { applicationInputSchema } from '../../validators/new';
 import { PlatformLibrary } from '../../lib/platform.library';
 import * as ProviderLibrary from '../../lib/provider.library';
+import { trackServerEvent } from '../../utils/analytics';
 
 export const applicationsRouter = router({
   update: protectedProcedure
@@ -74,6 +75,12 @@ export const applicationsRouter = router({
           `GitHub UAT for app ${newApplication.name} in env ${newEnvironment.name}`,
           env.region
         );
+        
+        await trackServerEvent('aws_secret_created', {
+          secret_name: secretName,
+          app_id: newApplication.id,
+          env_id: newEnvironment.id
+        });
 
         await tx.update(userAccessTokens)
           .set({ environment_id: newEnvironment.id, resource: accessTokenSecretArn })
@@ -103,6 +110,13 @@ export const applicationsRouter = router({
           );
         }
 
+        await trackServerEvent('database_transaction_completed', {
+          operation: 'application_create',
+          app_id: newApplication.id,
+          service_id: newService.id,
+          stack_type: service.stack_type
+        });
+        
         return { newApplicationId: newApplication.id, newServiceId: newService.id };
       });
 
@@ -137,6 +151,11 @@ export const applicationsRouter = router({
           await tx.update(applications).set({ deleted_at: new Date() }).where(eq(applications.id, application_id));
         });
       } catch (updateErr) {
+        await trackServerEvent('database_transaction_failed', {
+          operation: 'application_delete',
+          app_id: application_id,
+          error: updateErr instanceof Error ? updateErr.message : 'Unknown error'
+        });
         console.error('Failed to soft-delete resources after delete request:', updateErr);
         return { success: false, message: 'Failed to delete database record.' };
       }

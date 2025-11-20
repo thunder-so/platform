@@ -239,21 +239,35 @@ const saveServiceMetadata = async () => {
   if (!localServiceConfig.value?.metadata) return;
   
   const { stack_type, id } = localServiceConfig.value;
+  const { $posthog } = useNuxtApp();
+  
   await $client.services.updateServiceMetadata.mutate({
     service_id: id,
     stack_type,
     metadata: localServiceConfig.value.metadata,
   });
+  
+  $posthog().capture('app_settings_updated', {
+    service_id: id,
+    stack_type,
+    app_id: applicationSchema.value?.id
+  });
 };
 
 const saveBranchOnly = async () => {
   isBranchSaving.value = true;
+  const { $posthog } = useNuxtApp();
   try {
     await saveOnly(async () => {
       if (!service.value?.id || !selectedBranch.value) return;
       await $client.services.updateService.mutate({
         service_id: service.value.id,
         branch: selectedBranch.value,
+      });
+      $posthog().capture('branch_changed', {
+        service_id: service.value.id,
+        new_branch: selectedBranch.value,
+        app_id: applicationSchema.value?.id
       });
       isBranchChanged.value = false;
     }, 'Branch updated.');
@@ -264,12 +278,19 @@ const saveBranchOnly = async () => {
 
 const saveBranchAndRebuild = async () => {
   isBranchSaving.value = true;
+  const { $posthog } = useNuxtApp();
   try {
     await saveAndRebuild(async () => {
       if (!service.value?.id || !selectedBranch.value) return;
       await $client.services.updateService.mutate({
         service_id: service.value.id,
         branch: selectedBranch.value,
+      });
+      $posthog().capture('branch_changed', {
+        service_id: service.value.id,
+        new_branch: selectedBranch.value,
+        app_id: applicationSchema.value?.id,
+        rebuild: true
       });
       isBranchChanged.value = false;
     }, 'Branch updated.');
@@ -282,11 +303,17 @@ const saveAppChanges = async () => {
   if (!applicationSchema.value?.id || !applicationSchema.value?.display_name) return;
 
   isAppSaving.value = true;
+  const { $posthog } = useNuxtApp();
 
   try {
     await $client.applications.update.mutate({
       application_id: applicationSchema.value.id,
       display_name: applicationSchema.value.display_name,
+    });
+
+    $posthog().capture('app_name_changed', {
+      app_id: applicationSchema.value.id,
+      new_name: applicationSchema.value.display_name
     });
 
     await refreshApplicationSchema();
@@ -306,6 +333,18 @@ async function deleteApplicationModal() {
     }
   });
 
-  await applicationDeleteModal.open().result;
+  try {
+    const result = await applicationDeleteModal.open().result;
+    if (result) {
+      const { $posthog } = useNuxtApp();
+      $posthog().capture('app_deleted', {
+        app_id: applicationSchema.value?.id,
+        app_name: applicationSchema.value?.display_name,
+        stack_type: service.value?.stack_type
+      });
+    }
+  } catch (e) {
+    // Modal was cancelled
+  }
 };
 </script>

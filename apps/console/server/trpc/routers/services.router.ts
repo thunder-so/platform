@@ -28,6 +28,7 @@ import {
 } from '../../lib/provider.library';
 import { TRPCError } from '@trpc/server';
 import GithubLibrary from '../../lib/github.library';
+import { trackServerEvent } from '../../utils/analytics';
 
 // Schema for creating a variable (omits id) - require service_id for DB insert
 const createServiceVariableSchema = serviceVariableSchema.omit({ id: true }).extend({ service_id: z.string() });
@@ -101,10 +102,23 @@ export const servicesRouter = router({
           input.nextToken, 
           input.region
         );
+        
+        await trackServerEvent('cloudwatch_logs_fetched', {
+          log_group: logGroupName,
+          log_stream: logStreamName,
+          region: input.region,
+          log_type: 'deploy'
+        });
+        
         return { 
           ...logs
         };
       } catch (error) {
+        await trackServerEvent('aws_service_failure', {
+          service: 'cloudwatch',
+          operation: 'getDeployLogs',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
         throw new TRPCError({ 
           code: 'INTERNAL_SERVER_ERROR', 
           message: error instanceof Error ? error.message : 'Failed to fetch logs'
@@ -162,6 +176,13 @@ export const servicesRouter = router({
         environment.region as string
       );
       
+      await trackServerEvent('cloudwatch_logs_fetched', {
+        log_group: logGroupName,
+        service_id: input.service_id,
+        stack_type: service.stack_type,
+        log_type: 'runtime'
+      });
+      
       return { 
         ...logs
       };
@@ -196,12 +217,21 @@ export const servicesRouter = router({
         where: eq(services.id, serviceId),
         with: { environment: true }
       });
-      return await triggerPipeline(
+      const result = await triggerPipeline(
         providerId, 
         serviceId, 
         sha, 
         service?.environment?.region as string
       );
+      
+      await trackServerEvent('pipeline_triggered_manual', {
+        provider_id: providerId,
+        service_id: serviceId,
+        sha: sha || 'latest',
+        region: service?.environment?.region
+      });
+      
+      return result;
     }),
 
   updateService: protectedProcedure
@@ -338,6 +368,13 @@ export const servicesRouter = router({
       if (!provider) throw new TRPCError({ code: 'NOT_FOUND', message: 'Provider not found.' });
 
       const result = await lookupHostedZoneAndCerts(provider as any, domain);
+      
+      await trackServerEvent('route53_lookup_performed', {
+        provider_id: provider_id,
+        domain: domain,
+        found_hosted_zone: !!result.hosted_zone_id
+      });
+      
       return result;
     }),
 
@@ -346,6 +383,13 @@ export const servicesRouter = router({
     .mutation(async ({ input }) => {
       const { domain, expectedCname, expectedTxt, service_id } = input;
       const result = await verifyDomainDns(domain, expectedCname, expectedTxt);
+
+      await trackServerEvent('dns_verification_performed', {
+        domain: domain,
+        service_id: service_id,
+        verified: result.verified,
+        method: result.method
+      });
 
       if (result.verified && service_id) {
         await db.update(domains).set({ verified: true, verified_at: new Date(), verification_method: result.method, verification_meta: result }).where(eq(domains.service_id, service_id));

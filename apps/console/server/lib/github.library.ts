@@ -1,8 +1,9 @@
 import { App } from "@octokit/app";
 import type { Endpoints, OctokitResponse } from "@octokit/types";
 import type { Branch } from '../db/schema';
+import { trackServerEvent } from '../utils/analytics';
 
-type GetInstallationMetadata = Endpoints['GET /user/installations']['response'];
+type GetInstallationMetadata = Endpoints['GET /app/installations/{installation_id}']['response'];
 type GetInstallationRepositoriesResponse = Endpoints['GET /installation/repositories']['response'];
 type ListBranchesResponse = Endpoints['GET /repos/{owner}/{repo}/branches']['response'];
 type GetRepoResponse = Endpoints['GET /repos/{owner}/{repo}']['response'];
@@ -45,6 +46,11 @@ export default class GithubLibrary {
         }
       });
 
+      await trackServerEvent('github_installation_validated', {
+        installation_id,
+        account_type: (metadata.data.account && 'type' in metadata.data.account) ? metadata.data.account.type : 'unknown'
+      });
+
       return metadata?.data;
     }
 
@@ -79,12 +85,24 @@ export default class GithubLibrary {
         );
         
         // Convert the results array to an object with installation_id as keys
-        return results.reduce((acc, { installation_id, repositories }) => {
+        const repositoriesMap = results.reduce((acc, { installation_id, repositories }) => {
           acc[installation_id] = repositories;
           return acc;
         }, {} as Record<number, GetInstallationRepositoriesResponse['data']['repositories']>);
+        
+        await trackServerEvent('github_repositories_loaded', {
+          installation_count: installation_ids.length,
+          total_repositories: results.reduce((sum, { repositories }) => sum + repositories.length, 0)
+        });
+        
+        return repositoriesMap;
       } 
       catch (error) {
+        await trackServerEvent('github_api_failure', {
+          operation: 'getRepositories',
+          installation_ids: installation_ids,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
         throw error as Error;
       }
     }
@@ -170,6 +188,14 @@ export default class GithubLibrary {
         }
       });
 
+      await trackServerEvent('github_commits_fetched', {
+        owner,
+        repo,
+        branch,
+        installation_id,
+        commits_count: commitsResponse.data.length
+      });
+      
       return commitsResponse.data;
     }
 
@@ -197,6 +223,15 @@ export default class GithubLibrary {
 
         if (!Array.isArray(response.data) && response.data.type === 'file') {
           const content = Buffer.from(response.data.content, 'base64').toString('utf-8');
+          
+          await trackServerEvent('github_file_scanned', {
+            owner,
+            repo,
+            path,
+            installation_id,
+            file_size: content.length
+          });
+          
           return content;
         }
         return null;
@@ -204,6 +239,13 @@ export default class GithubLibrary {
         if (error.status === 404) {
           return null;
         }
+        await trackServerEvent('github_api_failure', {
+          operation: 'getFileContent',
+          owner,
+          repo,
+          path,
+          error: error.message
+        });
         throw error;
       }
     }
@@ -271,11 +313,19 @@ export default class GithubLibrary {
               throw new Error(data.error);
           }
           
+          await trackServerEvent('github_token_exchanged', {
+            success: true
+          });
+          
           return {
               access_token: data.access_token
           }
       }
       catch (error) {
+          await trackServerEvent('github_api_failure', {
+            operation: 'exchangeCodeForUserToken',
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
           throw error;
       }
     }

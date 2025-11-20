@@ -71,6 +71,11 @@ export const useApplications = () => {
       return applicationSchema.value;
     } catch (e) {
       isError.value = true;
+      const { $posthog } = useNuxtApp();
+      $posthog().capture('app_fetch_failed', {
+        app_id: id,
+        error: (e as Error).message
+      });
       console.error("Failed to fetch or validate application schema", e);
       return null;
     }

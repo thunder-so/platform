@@ -11,6 +11,7 @@ import { db } from '../db/db';
 import { providers, services } from '../db/schema';
 import { type ProviderSchema } from '../validators/common';
 import { sql, eq } from 'drizzle-orm';
+import { trackServerEvent } from '../utils/analytics';
 
 // A type for the initial validation scenario where the secret is not yet in the vault
 type ManualProvider = ProviderSchema & { secret_access_key: string };
@@ -85,8 +86,20 @@ export async function getCallerIdentity(provider: ManualProvider) {
     try {
         const stsClient = await getAwsClient(STSClient, provider);
         const callerIdentity = await stsClient.send(new GetCallerIdentityCommand({}));
+        
+        await trackServerEvent('aws_sts_identity_validated', {
+            account_id: callerIdentity.Account,
+            user_id: callerIdentity.UserId
+        });
+        
         return callerIdentity;
     } catch (error: any) {
+        await trackServerEvent('aws_service_failure', {
+            service: 'sts',
+            operation: 'getCallerIdentity',
+            error: error.message
+        });
+        
         if (error.name === 'InvalidClientTokenId' || error.name === 'SignatureDoesNotMatch') {
             throw new TRPCError({
                 code: 'BAD_REQUEST',
@@ -126,6 +139,13 @@ export async function createOrUpdateSecret(provider: ProviderSchema, name: strin
             SecretString: secretString,
             Description: description,
         }));
+        
+        await trackServerEvent('aws_secret_created', {
+            secret_name: name,
+            secret_arn: response.ARN,
+            region: region
+        });
+        
         return response.ARN || '';
     } catch (error: any) {
         if (error.constructor.name === 'ResourceExistsException') {
@@ -134,8 +154,20 @@ export async function createOrUpdateSecret(provider: ProviderSchema, name: strin
                 SecretString: secretString,
                 Description: description,
             }));
+            
+            await trackServerEvent('aws_secret_updated', {
+                secret_name: name,
+                secret_arn: response.ARN,
+                region: region
+            });
+            
             return response.ARN || '';
         } else {
+            await trackServerEvent('aws_service_failure', {
+                service: 'secrets-manager',
+                operation: 'createOrUpdateSecret',
+                error: error.message
+            });
             console.error('Error creating or updating secret:', error);
             throw new TRPCError({
                 code: 'INTERNAL_SERVER_ERROR',
@@ -180,9 +212,22 @@ export async function triggerPipeline(providerId: string, serviceId: string, sha
     });
     const response = await codePipelineClient.send(command);
 
+    await trackServerEvent('aws_pipeline_triggered', {
+      pipeline_name: pipelineName,
+      execution_id: response.pipelineExecutionId,
+      service_id: serviceId,
+      sha: sha
+    });
+
     console.log('Pipeline triggered successfully:', response.pipelineExecutionId);
     return response.pipelineExecutionId;
   } catch (error) {
+    await trackServerEvent('aws_service_failure', {
+      service: 'codepipeline',
+      operation: 'triggerPipeline',
+      pipeline_name: pipelineName,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
     console.error('Error triggering pipeline:', error);
     throw new TRPCError({
       code: 'INTERNAL_SERVER_ERROR',
@@ -207,6 +252,12 @@ export async function getCloudWatchLogs(provider: ProviderSchema, logGroupName: 
             nextForwardToken: response.nextForwardToken,
         };
     } catch (error) {
+        await trackServerEvent('aws_service_failure', {
+            service: 'cloudwatch',
+            operation: 'getLogEvents',
+            log_group: logGroupName,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
         console.error('Error fetching logs from CloudWatch:', error);
         throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
@@ -232,6 +283,12 @@ export async function getCloudWatchLogsFromGroup(provider: ProviderSchema, logGr
             nextForwardToken: response.nextToken,
         };
     } catch (error) {
+        await trackServerEvent('aws_service_failure', {
+            service: 'cloudwatch',
+            operation: 'filterLogEvents',
+            log_group: logGroupName,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
         console.error('Error fetching logs from CloudWatch log group:', error);
         throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
@@ -262,8 +319,20 @@ export async function lookupHostedZoneAndCerts(provider: ProviderSchema | Manual
             return certDomain === domain || certDomain.endsWith(domain) || domain.endsWith(certDomain);
         }).map(c => ({ arn: c.CertificateArn, domain: c.DomainName }));
 
+        await trackServerEvent('aws_route53_lookup_completed', {
+            domain: domain,
+            hosted_zone_found: !!hosted_zone_id,
+            certificates_found: certs.length
+        });
+
         return { hosted_zone_id, certificates: certs };
     } catch (error) {
+        await trackServerEvent('aws_service_failure', {
+            service: 'route53',
+            operation: 'lookupHostedZoneAndCerts',
+            domain: domain,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
         console.error('Error in lookupHostedZoneAndCerts:', error);
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to lookup hosted zone or certificates.' });
     }

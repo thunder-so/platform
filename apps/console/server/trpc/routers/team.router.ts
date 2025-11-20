@@ -6,6 +6,7 @@ import { eq, and, isNull, sql, or } from 'drizzle-orm'
 import { createClient } from '@supabase/supabase-js'
 import { Polar } from '@polar-sh/sdk'
 import { TRPCError } from '@trpc/server'
+import { trackServerEvent } from '../../utils/analytics'
 
 export const teamRouter = router({
   getMembers: protectedProcedure
@@ -75,6 +76,13 @@ export const teamRouter = router({
             isNull(memberships.deleted_at)
           ));
         
+        await trackServerEvent('plan_limit_enforced', {
+          org_id: input.organizationId,
+          plan_type: 'free',
+          current_members: Number(memberCount[0]?.count || 0),
+          limit: 1
+        });
+        
         if (Number(memberCount[0]?.count || 0) >= 1) {
           throw new TRPCError({
             code: 'PRECONDITION_FAILED',
@@ -97,6 +105,13 @@ export const teamRouter = router({
           });
           console.log('Seats List:', seatsList);
           
+          await trackServerEvent('seat_availability_validated', {
+            org_id: input.organizationId,
+            subscription_id: subscription.id,
+            available_seats: seatsList.availableSeats,
+            total_seats: seatsList.totalSeats
+          });
+          
           if (seatsList.availableSeats <= 0) {
             throw new TRPCError({
               code: 'PRECONDITION_FAILED',
@@ -104,6 +119,11 @@ export const teamRouter = router({
             });
           }
         } catch (polarError) {
+          await trackServerEvent('polar_api_failure', {
+            operation: 'seat_availability_check',
+            subscription_id: subscription.id,
+            error: polarError instanceof Error ? polarError.message : 'Unknown error'
+          });
           console.error('Failed to check seat availability:', polarError);
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
@@ -117,7 +137,18 @@ export const teamRouter = router({
             subscriptionId: subscription.id,
             email: input.email,
           });
+          
+          await trackServerEvent('polar_seat_auto_assigned', {
+            org_id: input.organizationId,
+            subscription_id: subscription.id,
+            email: input.email
+          });
         } catch (polarError) {
+          await trackServerEvent('polar_api_failure', {
+            operation: 'seat_assignment',
+            subscription_id: subscription.id,
+            error: polarError instanceof Error ? polarError.message : 'Unknown error'
+          });
           console.error('Polar seat assignment failed:', polarError);
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
@@ -244,6 +275,12 @@ export const teamRouter = router({
         await polar.customerSeats.assignSeat({
           subscriptionId: subscription.id,
           email: user.email,
+        });
+        
+        await trackServerEvent('polar_seat_claimed', {
+          org_id: input.organizationId,
+          subscription_id: subscription.id,
+          user_id: user.id
         });
       }
 
@@ -427,8 +464,21 @@ export const teamRouter = router({
           }
         });
         
+        await trackServerEvent('subscription_seat_updated', {
+          org_id: input.organizationId,
+          subscription_id: subscription.id,
+          old_seat_count: seatsList.totalSeats,
+          new_seat_count: newSeatCount,
+          additional_seats: input.additionalSeats
+        });
+        
         return { success: true };
       } catch (polarError) {
+        await trackServerEvent('polar_api_failure', {
+          operation: 'seat_update',
+          subscription_id: subscription.id,
+          error: polarError instanceof Error ? polarError.message : 'Unknown error'
+        });
         console.error('Polar seat update failed:', polarError);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
