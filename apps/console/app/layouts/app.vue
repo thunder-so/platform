@@ -3,12 +3,17 @@
     <Header :mobile-menu-items="[...primaryLinks, ...manageLinks]" />
     <ClientOnly>
     <UMain>
-      <AccessDenied 
-        v-if="!hasAccess" 
-        message="You do not have access to this application."
-      >
+      <div v-if="isLoading" class="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+        <div class="flex flex-col items-center gap-4">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div class="text-sm text-muted">Loading...</div>
+        </div>
+      </div>
+
+      <AccessDenied v-else-if="!hasAccess" message="You do not have access to this application or it no longer exists.">
         <UButton to="/" variant="outline">Go to Dashboard</UButton>
       </AccessDenied>
+
       <div v-else class="grid grid-cols-6 gap-0 min-h-[calc(100vh-4rem)]">
         <div class="col-span-1 p-6 border-r border-muted lg:block hidden">
           <div v-if="applicationSchema">
@@ -49,7 +54,6 @@
         <div class="p-6 lg:col-span-5 col-span-10">
           <div class="border-b border-muted pb-6 mb-6">
             <UContainer>
-            <ClientOnly>
               <div class="flex justify-between">
                 <div>
                   <div class="flex items-center gap-4 mb-4">
@@ -172,7 +176,6 @@
                   <USkeleton class="h-10 w-24" />
                 </div>
               </template>
-            </ClientOnly>
             </UContainer> 
           </div>
           <UContainer>
@@ -194,7 +197,7 @@ import { AppDeployCommitModal, AppDeployLatestModal } from '#components';
 
 const route = useRoute();
 const { $client } = useNuxtApp();
-const { applicationSchema, setApplicationSchemaById, currentEnvironment: environment, currentService, clearApplicationSchema, hasAccessToApp } = useApplications();
+const { applicationSchema, setApplicationSchemaById, currentEnvironment: environment, currentService, clearApplicationSchema, hasAccessToApp, isLoading } = useApplications();
 const provider = computed(() => environment.value?.provider);
 const service = computed(() => currentService.value);
 const toast = useToast();
