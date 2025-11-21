@@ -22,7 +22,7 @@
                 > 
                   <template #leading>
                     <p class="flex items-center">
-                      <Icon name="mdi:github" class="w-5 h-5 text-muted mr-2" />
+                      <Icon name="tabler:brand-github" class="w-5 h-5 text-muted mr-2" />
                       <span class="text-sm text-muted">{{applicationSchema.environments?.[0]?.services?.[0]?.owner}}/{{applicationSchema.environments?.[0]?.services?.[0]?.repo}}</span>
                     </p>
                   </template>
@@ -81,8 +81,11 @@
         </template>
       </UCard>
     </ClientOnly>
-    <div v-else class="flex justify-center items-center p-8">
-      <p>Scanning your repository...</p>
+    <div v-else class="flex items-center justify-center min-h-[calc(50vh-4rem)]">
+      <div class="flex flex-col items-center gap-4">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div class="text-sm text-muted">Scanning your repository...</div>
+      </div>
     </div>
 </template>
 

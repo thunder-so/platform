@@ -6,7 +6,7 @@
     <UCard>
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-3">
-          <Icon name="mdi:github" class="w-6 h-6 text-gray-700" />
+          <Icon name="tabler:brand-github" class="w-6 h-6 text-gray-700" />
           <div>
             <h3 class="text-md font-medium">{{ applicationSchema.display_name }}</h3>
             <a 
@@ -19,10 +19,10 @@
           </div>
         </div>
         
-        <Icon name="mdi:arrow-right" class="w-5 h-5 text-gray-400" />
+        <Icon name="tabler:arrow-right" class="w-5 h-5 text-gray-400" />
         
         <div class="flex items-center space-x-3">
-          <Icon name="mdi:aws" class="w-6 h-6 text-orange-500" />
+          <Icon name="tabler:brand-aws" class="w-6 h-6 text-orange-500" />
           <div>
             <h3 class="text-md font-medium">{{ applicationSchema.environments?.[0]?.provider?.alias }}</h3>
             <p class="text-sm text-gray-600">
@@ -45,7 +45,7 @@
             variant="soft"
             title="Authorization failed!"
             description="Failed to generate an access token from your Github account."
-            icon="i-lucide-terminal"
+            icon="tabler:terminal"
           />
         </div>
 
@@ -54,7 +54,7 @@
           <p class="text-sm text-muted-foreground">The access token will be used by AWS CodePipeline to watch for changes in your Github repository via webhook. Find out more at our <NuxtLink class="no-underline hover:underline" to="https://www.thunder.so/docs/aws">documentation</NuxtLink>.</p>
           <UButton 
             size="lg"
-            icon="mdi:github"
+            icon="tabler:brand-github"
             @click="handleAuthorize" 
             :loading="authorizing" 
             :disabled="authorizing">Authorize with GitHub
@@ -66,7 +66,7 @@
             variant="soft"
             title="Authorization Successful!"
             description="You have successfully generated an access token. Now we can proceed with the deployment."
-            icon="i-lucide-github"
+            icon="tabler:brand-github"
           />
         </div>
       </ClientOnly>
@@ -76,7 +76,7 @@
           <div class="flex justify-start">
             <UButton
               size="lg"
-              icon="mdi:aws"
+              icon="tabler:brand-aws"
               :disabled="!hasUat || isDeploying"
               :loading="isDeploying"
               @click="installApplication"

@@ -30,11 +30,11 @@
               <UInput v-model="redirect.destination" placeholder="Destination URL (e.g., /new-path)" class="w-full" />
             </UFormField>
             <div class="col-span-1">
-              <UButton icon="lucide:trash" color="error" variant="ghost" @click="removeRedirect(index)" />
+              <UButton icon="tabler:trash" color="error" variant="ghost" @click="removeRedirect(index)" />
             </div>
           </div>
         </div>
-        <UButton color="primary" variant="outline" icon="i-heroicons-plus-circle-20-solid" @click="addRedirect" class="mt-4">
+        <UButton color="primary" variant="outline" icon="tabler:plus" @click="addRedirect" class="mt-4">
           Add Redirect
         </UButton>
       </div>
@@ -52,11 +52,11 @@
               <UInput v-model="rewrite.destination" placeholder="Destination Path (e.g., /index.html)" class="w-full" />
             </UFormField>
             <div class="col-span-1">
-              <UButton icon="lucide:trash" color="error" variant="ghost" @click="removeRewrite(index)" />
+              <UButton icon="tabler:trash" color="error" variant="ghost" @click="removeRewrite(index)" />
             </div>
           </div>
         </div>
-        <UButton color="primary" variant="outline" icon="i-heroicons-plus-circle-20-solid" @click="addRewrite" class="mt-4">
+        <UButton color="primary" variant="outline" icon="tabler:circle-plus" @click="addRewrite" class="mt-4">
           Add Rewrite
         </UButton>
       </div>

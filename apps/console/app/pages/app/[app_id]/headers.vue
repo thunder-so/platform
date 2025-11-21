@@ -29,11 +29,11 @@
           <UInput v-model="header.value" placeholder="Header Value (e.g., SAMEORIGIN)" class="w-full" />
         </UFormField>
         <div class="col-span-1">
-          <UButton icon="lucide:trash" color="error" variant="ghost" @click="removeHeader(index)" />
+          <UButton icon="tabler:trash" color="error" variant="ghost" @click="removeHeader(index)" />
         </div>
       </div>
 
-      <UButton color="primary" variant="outline" icon="i-heroicons-plus-circle-20-solid" @click="addHeader">
+      <UButton color="primary" variant="outline" icon="tabler:plus" @click="addHeader">
         Add Header
       </UButton>
     </UForm>

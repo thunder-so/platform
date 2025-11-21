@@ -5,7 +5,7 @@
       <UCard>
         <template #header>
           <div class="flex items-center gap-2">
-            <Icon name="ix:info" class="text-blue-500" size="16" />
+            <Icon name="tabler:info-circle" class="text-blue-500" size="16" />
             <h3>Stack update available</h3>
           </div>
         </template>
@@ -115,7 +115,7 @@
                   class="inline-flex text-muted hover:text-white transition-colors"
                 >
                   <span class="flex items-center gap-1">
-                    <Icon name="mdi:source-branch" class="w-4 h-4" />
+                    <Icon name="tabler:git-branch" class="w-4 h-4" />
                     <span class="text-sm">{{service?.branch}}</span>
                   </span>
                 </NuxtLink>
@@ -128,7 +128,7 @@
                     class="inline-flex text-muted hover:text-white transition-colors"
                   >
                     <span class="flex items-center gap-1">
-                      <Icon name="fa6-solid:code-commit" class="w-4 h-4" />
+                      <Icon name="tabler:git-commit" class="w-4 h-4" />
                       <span class="text-sm">{{ activity.sourceDetails?.revisionId?.substring(0, 7) }}</span>
                     </span>
                   </NuxtLink>
@@ -146,22 +146,22 @@
             mode="click"
             :content="{ align: 'end', side: 'bottom' }"
           >
-            <UButton size="sm" icon="i-heroicons-ellipsis-horizontal" color="neutral" variant="ghost" />
+            <UButton size="sm" icon="tabler:dots-vertical" color="neutral" variant="ghost" />
             
             <template #content>
               <div class="py-1">
                 <NuxtLink v-if="activity.type === 'event'" :to="`/app/${applicationSchema?.id}/deploys/${activity.id}`" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800">
-                  <Icon name="i-heroicons-eye" class="mr-2" />
+                  <Icon name="tabler:eye" class="mr-2" />
                   <span>Inspect Deployment</span>
                 </NuxtLink>
 
                 <NuxtLink v-if="activity.type === 'build'" :to="`/app/${applicationSchema?.id}/builds/${activity.id}`" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800">
-                  <Icon name="i-heroicons-eye" class="mr-2" />
+                  <Icon name="tabler:eye" class="mr-2" />
                   <span>Inspect Build</span>
                 </NuxtLink>
 
                 <div @click="() => copyUrl(activity.id, activity.type)" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800 cursor-pointer">
-                  <Icon name="i-heroicons-clipboard" class="mr-2" />
+                  <Icon name="tabler:clipboard" class="mr-2" />
                   <span>Copy URL</span>
                 </div>
               </div>

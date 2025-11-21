@@ -19,7 +19,7 @@
           
           <p class="mb-4 text-sm text-muted">Connect an AWS account to deploy your applications.</p>
           <UButton
-            icon="i-mdi-aws"
+            icon="tabler:brand-aws"
             size="lg"
             :to="`/org/${selectedOrganization?.id}/aws`"
             label="Connect AWS Account"
@@ -50,7 +50,7 @@
               <div v-for="(step, index) in steps" :key="index" class="flex items-center">
                 <div :class="['step', { 'active': currentStep >= index + 1, 'completed': currentStep > index + 1 }]">
                   <span v-if="currentStep <= index + 1">{{ index + 1 }}</span>
-                  <UIcon v-else name="i-heroicons-check" />
+                  <UIcon v-else name="tabler:check" />
                 </div>
                 <span class="label leading-8" :class="{'font-bold': currentStep === index + 1}">{{ step.label }}</span>
                 <div v-if="index < steps.length - 1" class="separator"></div>

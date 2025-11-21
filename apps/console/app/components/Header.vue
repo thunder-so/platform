@@ -16,7 +16,7 @@
           color="neutral" 
           variant="outline" 
           class="w-60 justify-between"
-          trailing-icon="i-heroicons-chevron-down-20-solid"
+          trailing-icon="tabler:chevron-down"
         >
           <div class="flex items-center space-x-2">
             <UAvatar :alt="selectedOrganization?.name" size="xs" />
@@ -38,8 +38,8 @@
               </div>
             </div>
             <hr class="border-gray-200 dark:border-gray-700 mt-1 mb-1" />
-            <NuxtLink to="/org/new" class="flex items-center px-3 py-2 space-x-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
-              <Icon name="i-heroicons-plus-circle-20-solid" size="sm" />
+            <NuxtLink to="/org/new" class="flex items-center px-4 py-2 space-x-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
+              <Icon name="tabler:plus" size="sm" />
               <span class="text-sm">New workspace</span>
             </NuxtLink>
           </div>
@@ -53,7 +53,7 @@
         mode="click"
         :content="{ align: 'end', side: 'bottom' }"
       >
-        <UButton size="lg" icon="i-heroicons-plus-20-solid" color="neutral" variant="outline">
+        <UButton size="lg" icon="tabler:plus" color="neutral" variant="outline">
           Project
         </UButton>
         
@@ -62,7 +62,7 @@
             <template v-for="(group, index) in newMenuItems" :key="index">
               <div v-for="item in group" :key="item.to">
                 <NuxtLink :to="item.to" class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">
-                  <Icon :name="item.icon" class="mr-2" />
+                  <Icon :name="item.icon" class="mr-3 w-4 h-4" />
                   <span>{{ item.label }}</span>
                 </NuxtLink>
               </div>
@@ -77,18 +77,18 @@
         mode="click"
         :content="{ align: 'end', side: 'bottom' }"
       >
-        <UButton size="lg" icon="i-heroicons-question-mark-circle" color="neutral" variant="outline" />
+        <UButton size="lg" icon="tabler:question-mark" color="neutral" variant="outline" />
         
         <template #content>
           <div class="py-1">
             <template v-for="(group, index) in helpMenuItems" :key="index">
               <div v-for="item in group" :key="item.label">
                 <NuxtLink v-if="item.to" :to="item.to" target="_blank" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800">
-                  <Icon :name="item.icon" class="mr-2" />
+                  <Icon :name="item.icon" class="mr-3 w-4 h-4" />
                   <span>{{ item.label }}</span>
                 </NuxtLink>
                 <div v-else-if="item.click" @click="() => { item.click(); isHelpPopoverOpen = false }" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800 cursor-pointer">
-                  <Icon :name="item.icon" class="mr-2" />
+                  <Icon :name="item.icon" class="mr-3 w-4 h-4" />
                   <span>{{ item.label }}</span>
                 </div>
               </div>
@@ -120,11 +120,11 @@
             <template v-for="(group, index) in userMenuItems" :key="index">
               <div v-for="item in group" :key="item.label">
                 <NuxtLink v-if="item.to" :to="item.to" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800">
-                  <Icon :name="item.icon" class="mr-2" />
+                  <Icon :name="item.icon" class="mr-3 w-4 h-4" />
                   <span>{{ item.label }}</span>
                 </NuxtLink>
                 <div v-else-if="item.click" @click="() => { item.click(); isUserPopoverOpen = false }" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800 cursor-pointer">
-                  <Icon :name="item.icon" class="mr-2" />
+                  <Icon :name="item.icon" class="mr-3 w-4 h-4" />
                   <span>{{ item.label }}</span>
                 </div>
               </div>
@@ -199,17 +199,17 @@ const newMenuItems = ref([
     { 
       label: 'New Static Site', 
       to: '/new?stack_type=SPA',
-      icon: 'streamline:browser-website-1-solid'
+      icon: 'tabler:file'
     },
     { 
       label: 'New Lambda Function', 
       to: '/new?stack_type=FUNCTION',
-      icon: 'simple-icons:awslambda'
+      icon: 'tabler:lambda'
     },
     { 
       label: 'New Web Service', 
       to: '/new?stack_type=WEB_SERVICE',
-      icon: 'mdi:web'
+      icon: 'tabler:server'
     },
   ],
 ]);
@@ -219,17 +219,17 @@ const helpMenuItems = ref([
   [
     { 
       label: 'Docs', 
-      icon: 'i-heroicons-book-open-20-solid',
+      icon: 'tabler:book',
       to: 'https://www.thunder.so/docs/'
     },
     { 
       label: 'Community',
-      icon: 'ic:round-discord',
+      icon: 'tabler:brand-discord',
       to: 'https://discord.gg/nZwr6c5c6v' 
     },
     { 
       label: 'Feedback', 
-      icon: 'i-heroicons-chat-bubble-left-right-20-solid',
+      icon: 'tabler:messages',
       click: async () => { 
         // open feedback modal
       }
@@ -242,12 +242,12 @@ const userMenuItems = ref([
   [
     { 
       label: 'Account Settings', 
-      icon: 'i-heroicons-user-circle-20-solid',
+      icon: 'tabler:user-hexagon',
       to: '/profile' 
     },
     { 
       label: 'Logout', 
-      icon: 'i-heroicons-arrow-right-on-rectangle-20-solid',
+      icon: 'tabler:logout',
       click: async () => { 
         await supabase.auth.signOut(); 
         await navigateTo('/login'); 

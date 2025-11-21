@@ -53,7 +53,7 @@
               </div>
               <div class="flex items-center gap-2">
                 <!-- <UButton size="sm" color="danger" variant="outlined" @click="openDelete(d)">Delete</UButton> -->
-                <UButton icon="lucide:trash" color="error" variant="ghost" @click="openDelete(d)" />
+                <UButton icon="tabler:trash" color="error" variant="ghost" @click="openDelete(d)" />
               </div>
             </li>
           </ul>

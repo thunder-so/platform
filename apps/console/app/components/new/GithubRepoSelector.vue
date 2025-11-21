@@ -9,7 +9,7 @@
             :items="installationItems" 
             value-key="value" 
             :avatar="selectedAvatar" 
-            trailing-icon="mdi:chevron-down"
+            trailing-icon="tabler:chevron-down"
             size="lg"
             class="w-48" 
           />
@@ -32,7 +32,7 @@
         <div v-else class="repo-list">
           <div v-if="filteredRepositories.length === 0" class="text-center py-8">
             <UEmpty
-              icon="i-logos-github"
+              icon="tabler:brand-github"
               title="No repositories found"
               description="Make sure your GitHub account or organization has repositories and they are accessible to the Thunder app."
             />
@@ -70,7 +70,7 @@
           </div>
           <UButton
             variant="subtle"
-            icon="i-uil-github"
+            icon="tabler:brand-github"
             size="lg"
             @click="handleImportRepositories"
             label="Import repositories"

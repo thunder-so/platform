@@ -6,7 +6,7 @@
         color="neutral" 
         variant="outline" 
         size="lg" 
-        :trailing-icon="limitReached ? 'i-lucide-lock' : 'i-lucide-user-plus'"
+        :icon="limitReached ? 'tabler:lock' : 'tabler:user-plus'"
         label="Invite Member" 
         @click="openInviteModal" 
         :disabled="limitReached"
@@ -15,7 +15,7 @@
 
     <UAlert
       v-if="limitReached && !isLifetime && !seatUsage.isSeatBased"
-      icon="i-lucide-info"
+      icon="tabler:info-circle"
       color="info"
       variant="soft"
       :title="isFree ? 'Upgrade to add more team members' : 'No available seats'"
@@ -26,7 +26,7 @@
 
     <UAlert
       v-if="seatUsage.isSeatBased && !isLifetime"
-      icon="i-lucide-users"
+      icon="tabler:users"
       :color="limitReached ? 'warning' : 'info'"
       variant="soft"
       :title="`${seatUsage.used}/${seatUsage.total} seats used`"
@@ -127,7 +127,7 @@ const columns = [
     cell: ({ row }) => h('div', { class: 'text-right' }, [
       h(resolveComponent('UDropdownMenu'), { items: getDropdownActions(row.original) }, () =>
         h(resolveComponent('UButton'), {
-          icon: 'i-lucide-ellipsis-vertical',
+          icon: 'tabler:dots-vertical',
           color: 'neutral',
           variant: 'ghost',
           'aria-label': 'Actions'
@@ -173,7 +173,7 @@ function getDropdownActions(member: any) {
     return [[
       {
         label: 'Remove Member',
-        icon: 'i-lucide-trash',
+        icon: 'tabler:trash',
         color: 'error',
         onSelect: () => openMemberDeleteModal(member)
       }
@@ -182,7 +182,7 @@ function getDropdownActions(member: any) {
     return [[
       {
         label: 'Cancel Invite',
-        icon: 'i-lucide-trash',
+        icon: 'tabler:trash',
         color: 'error',
         onSelect: () => openInviteDeleteModal(member)
       }

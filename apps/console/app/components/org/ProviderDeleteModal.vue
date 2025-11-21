@@ -5,7 +5,7 @@
   >
     <template #body>
       <div v-if="mode === 'cannotDelete'">
-        <UAlert icon="i-heroicons-exclamation-triangle" color="warning" variant="outline" title="This provider is currently associated with one or more active applications and cannot be deleted." />
+        <UAlert icon="tabler:alert-triangle" color="warning" variant="outline" title="This provider is currently associated with one or more active applications and cannot be deleted." />
       </div>
       <div v-else>
         <p class="text-sm text-muted">Are you sure you want to delete the provider <code class="text-white">{{ provider.alias }}</code>?</p>

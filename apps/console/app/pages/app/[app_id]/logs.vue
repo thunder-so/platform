@@ -24,7 +24,7 @@
         <UButton
             size="sm"
             variant="outline"
-            icon="i-heroicons-arrow-path"
+            icon="tabler:rotate"
             :loading="refreshing"
             :disabled="refreshing"
             @click="refreshNow"

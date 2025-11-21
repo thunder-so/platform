@@ -3,7 +3,7 @@
     <template #body>
       <div class="space-y-4">
         <UAlert
-          icon="i-lucide-info"
+          icon="tabler:info-circle"
           color="warning"
           variant="soft"
           title="This will cancel the pending invitation"

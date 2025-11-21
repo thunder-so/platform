@@ -3,7 +3,7 @@
     <UCard class="max-w-md">
       <template #header>
         <div class="flex items-center gap-2">
-          <Icon name="i-lucide-shield-x" class="text-error" size="20" />
+          <Icon name="tabler:shield-x" class="text-error" size="20" />
           <h3>Access Denied</h3>
         </div>
       </template>

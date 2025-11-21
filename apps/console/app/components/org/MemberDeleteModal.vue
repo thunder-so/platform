@@ -4,7 +4,7 @@
       <div class="space-y-4">
         <UAlert
           v-if="isLastMember"
-          icon="i-lucide-alert-triangle"
+          icon="tabler:alert-triangle"
           color="error"
           variant="soft"
           title="Cannot remove last member"
@@ -13,7 +13,7 @@
         
         <UAlert
           v-else-if="isBillingOwner"
-          icon="i-lucide-credit-card"
+          icon="tabler:credit-card"
           color="error"
           variant="soft"
           title="Cannot remove billing owner"
@@ -25,7 +25,7 @@
             Are you sure you want to remove <strong>{{ member.user.full_name || member.user.email }}</strong> from this organization?
           </p>
           <UAlert
-            icon="i-lucide-alert-triangle"
+            icon="tabler:alert-triangle"
             color="warning"
             variant="soft"
             title="This action cannot be undone"

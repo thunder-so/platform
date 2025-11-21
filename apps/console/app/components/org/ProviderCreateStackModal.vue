@@ -24,7 +24,7 @@
                     :color="copied ? 'success' : 'neutral'"
                     variant="link"
                     size="sm"
-                    :icon="copied ? 'i-lucide-copy-check' : 'i-lucide-copy'"
+                    :icon="copied ? 'tabler:copy-check' : 'tabler:copy'"
                     aria-label="Copy to clipboard"
                     @click="copy(cloudformationUrl)"
                   />
@@ -40,7 +40,7 @@
       <div class="flex justify-end items-center gap-4">
         <UButton variant="ghost" @click="emit('close', true)">Cancel</UButton>
         <UButton
-          icon="i-lucide-external-link"
+          icon="tabler:external-link"
           trailing
           :disabled="!isAliasValid"
           @click="openCloudFormation"

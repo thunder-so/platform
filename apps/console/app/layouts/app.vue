@@ -13,7 +13,7 @@
         <div class="col-span-1 p-6 border-r border-muted lg:block hidden">
           <div v-if="applicationSchema">
             <div class="pb-2">
-              <UButton :to="`/org/${applicationSchema?.organization_id}`" variant="ghost" size="sm" leading-icon="i-lucide-arrow-left">
+              <UButton :to="`/org/${applicationSchema?.organization_id}`" variant="ghost" size="sm" leading-icon="tabler:arrow-left">
                 Dashboard
               </UButton>
             </div>
@@ -66,7 +66,7 @@
                         class="text-muted hover:text-white transition-colors"
                       >
                         <span class="flex items-center justify-center gap-1">
-                          <Icon name="mdi:github" class="w-4 h-4 mt-1" />
+                          <Icon name="tabler:brand-github" class="w-4 h-4 mt-1" />
                           <span class="text-sm">{{service?.owner}} / {{service?.repo}}</span>
                         </span>
                       </NuxtLink>
@@ -76,13 +76,13 @@
                         class="text-muted hover:text-white transition-colors"
                       >
                         <span class="flex items-center justify-center gap-1">
-                          <Icon name="mdi:source-branch" class="w-4 h-4 mt-1" />
+                          <Icon name="tabler:git-branch" class="w-4 h-4 mt-1" />
                           <span class="text-sm">{{service?.branch}}</span>
                         </span>
                       </NuxtLink>
                     </div>
                     <div class="flex items-center justify-center gap-2">
-                      <Icon name="mdi:aws" class="h-5 w-5 mt-1 text-muted" />
+                      <Icon name="tabler:brand-aws" class="h-5 w-5 mt-1 text-muted" />
                       <span class="text-sm text-muted">{{ provider?.alias }} / {{ environment?.region }}</span>
                     </div>
                   </div>
@@ -93,7 +93,7 @@
                       class="inline-block text-sm text-muted hover:text-white transition-colors"
                     >
                       <span class="flex items-center gap-1">
-                        <Icon name="mdi:link" class="w-4 h-4 mt-1 text-muted" />
+                        <Icon name="tabler:link" class="w-4 h-4 mt-1 text-muted" />
                         <span>{{service.resources.CloudFrontDistributionUrl}}</span>
                       </span>
                     </NuxtLink>
@@ -105,7 +105,7 @@
                       class="inline-block text-sm text-muted hover:text-white transition-colors"
                     >
                       <span class="flex items-center gap-1">
-                        <Icon name="mdi:link" class="w-4 h-4 mt-1 text-muted" />
+                        <Icon name="tabler:link" class="w-4 h-4 mt-1 text-muted" />
                         <span>{{service.resources.ApiGatewayUrl}}</span>
                       </span>
                     </NuxtLink>
@@ -117,7 +117,7 @@
                       class="inline-block text-sm text-muted hover:text-white transition-colors"
                     >
                       <span class="flex items-center gap-1">
-                        <Icon name="mdi:link" class="w-4 h-4 mt-1 text-muted" />
+                        <Icon name="tabler:link" class="w-4 h-4 mt-1 text-muted" />
                         <span>{{service.resources.LoadBalancerDNS}}</span>
                       </span>
                     </NuxtLink>
@@ -137,7 +137,7 @@
                         size="lg" 
                         color="neutral" 
                         variant="outline" 
-                        trailing-icon="i-lucide-chevron-down"
+                        trailing-icon="tabler:chevron-down"
                       />
 
                       <template #content>

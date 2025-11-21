@@ -7,7 +7,7 @@
           color="neutral"
           variant="outline"
           size="lg"
-          :trailing-icon="limitReached ? 'i-lucide-lock' : 'i-lucide-chevron-down'"
+          :trailing-icon="limitReached ? 'tabler:lock' : 'tabler:chevron-down'"
           label="Add New"
           :disabled="limitReached"
         />
@@ -16,7 +16,7 @@
 
     <UAlert
       v-if="limitReached && isFree"
-      icon="i-lucide-info"
+      icon="tabler:info-circle"
       color="info"
       variant="soft"
       title="Upgrade to add more AWS Accounts"
@@ -39,7 +39,7 @@
         variant="soft"
         title="Error loading AWS accounts"
         description="There was an issue fetching your AWS accounts. Please try again later."
-        icon="i-lucide-alert-triangle"
+        icon="tabler:alert-triangle"
       />
     </div>
     <div v-else-if="providers.length">
@@ -47,7 +47,7 @@
     </div>
     <div v-else>
       <UEmpty
-        icon="i-lucide-cloud"
+        icon="tabler:brand-aws"
         title="No AWS accounts connected"
         description="Connect an AWS account to manage cloud resources for this organization."
       >
@@ -125,7 +125,7 @@ const addNewItems: DropdownMenuItem[] = [
   },
   {
     label: 'Using CloudFormation',
-    icon: 'mdi:aws',
+    icon: 'tabler:brand-aws',
     onSelect: addNewAccountStack
   }
 ]
@@ -135,13 +135,13 @@ function getDropdownActions(provider: Provider): DropdownMenuItem[][] {
   if (provider.stack_id) {
     linkToStack.push({
       label: 'View stack in CloudFormation',
-      icon: 'mdi:aws',
+      icon: 'tabler:brand-aws',
       onSelect: () => {
         window.open(`https://console.aws.amazon.com/go/view?arn=${provider.stack_id}`, '_blank')
       }
     }, {
       label: 'Edit IAM Role',
-      icon: 'mdi:aws',
+      icon: 'tabler:brand-aws',
       onSelect: () => {
         window.open(`https://console.aws.amazon.com/go/view?arn=${provider.role_arn}`, '_blank')
       }
@@ -153,7 +153,7 @@ function getDropdownActions(provider: Provider): DropdownMenuItem[][] {
     [
       {
         label: 'Edit',
-        icon: 'i-lucide-edit',
+        icon: 'tabler:edit',
         onSelect: async () => {
           const modal = overlay.create(providerEditModal, {
             props: { provider }
@@ -168,7 +168,7 @@ function getDropdownActions(provider: Provider): DropdownMenuItem[][] {
       },
       {
         label: 'Delete',
-        icon: 'i-lucide-trash',
+        icon: 'tabler:trash',
         color: 'error',
         onSelect: async () => {
           // Check for associated environments
@@ -241,7 +241,7 @@ const columns = [
     cell: ({ row }) => h('div', { class: 'text-right' }, [
       h(UDropdownMenu, { items: getDropdownActions(row.original) }, () =>
         h(UButton, {
-          icon: 'i-lucide-ellipsis-vertical',
+          icon: 'tabler:dots-vertical',
           color: 'neutral',
           variant: 'ghost',
           'aria-label': 'Actions'

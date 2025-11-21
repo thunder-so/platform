@@ -3,7 +3,7 @@
     <UCard class="w-full max-w-md">
       <template #header>
         <div class="flex items-center space-x-2">
-          <Icon name="mdi:github" class="w-6 h-6" />
+          <Icon name="tabler:brand-github" class="w-6 h-6" />
           <h2>Github authorization</h2>
         </div>
       </template>

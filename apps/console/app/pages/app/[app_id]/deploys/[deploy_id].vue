@@ -69,7 +69,7 @@
                     class="inline-flex text-muted hover:text-white transition-colors"
                   >
                     <span class="flex items-center gap-1">
-                      <Icon name="mdi:source-branch" class="w-4 h-4" />
+                      <Icon name="tabler:git-branch" class="w-4 h-4" />
                       <span class="text-sm">{{service?.branch}}</span>
                     </span>
                   </NuxtLink>
@@ -81,7 +81,7 @@
                     class="inline-flex text-muted hover:text-white transition-colors"
                   >
                     <span class="flex items-center gap-1">
-                      <Icon name="fa6-solid:code-commit" class="w-4 h-4" />
+                      <Icon name="tabler:git-commit" class="w-4 h-4" />
                       <span class="text-sm">{{ deployData.pipeline_metadata?.revisionId?.substring(0, 7) }}</span>
                     </span>
                   </NuxtLink>
@@ -112,7 +112,7 @@
           <UButton
             size="sm"
             variant="outline"
-            icon="i-heroicons-arrow-path"
+            icon="tabler:rotate"
             :loading="refreshing"
             :disabled="refreshing"
             @click="refreshNow"

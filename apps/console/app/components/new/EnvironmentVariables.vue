@@ -19,10 +19,10 @@
         />
       </UFormField>
       <div class="col-span-1">
-        <UButton icon="heroicons:trash" color="error" variant="ghost" @click="removeVariable(index)" />
+        <UButton icon="tabler:trash" color="error" variant="ghost" @click="removeVariable(index)" />
       </div>
     </div>
-    <UButton color="primary" variant="outline" icon="i-heroicons-plus-circle-20-solid" class="mt-2" @click="addVariable">Add Variable</UButton>
+    <UButton color="primary" variant="outline" icon="tabler:plus" class="mt-2" @click="addVariable">Add Variable</UButton>
   </UForm>
 </template>
 

@@ -29,7 +29,7 @@
           <h2>Github accounts</h2>
           <div>
             <UButton
-              icon="i-lucide-plus"
+              icon="tabler:plus"
               @click="handleInstallApp"
               :loading="installing"
             >
@@ -158,7 +158,7 @@ const columns = [
     cell: ({ row }) => h('div', { class: 'text-right' }, [
       h(resolveComponent('UDropdownMenu'), { items: getDropdownActions(row.original) }, () =>
         h(resolveComponent('UButton'), {
-          icon: 'i-lucide-ellipsis-vertical',
+          icon: 'tabler:dots-vertical',
           color: 'neutral',
           variant: 'ghost',
           'aria-label': 'Actions'

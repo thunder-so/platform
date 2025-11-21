@@ -17,7 +17,7 @@
       <UCard>
         <template #header>
           <div class="flex items-center gap-4">
-            <UIcon name="lucide:circle-check" class="w-6 h-6 text-green-500" />
+            <UIcon name="tabler:circle-check" class="w-6 h-6 text-green-500" />
             <h1>Payment Successful</h1>
           </div>
         </template>

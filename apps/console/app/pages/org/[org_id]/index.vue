@@ -6,7 +6,7 @@
         color="neutral" 
         variant="outline" 
         size="lg" 
-        trailing-icon="i-lucide-plus"
+        icon="tabler:plus"
         label="Import repository" 
         to="/new" 
       />
@@ -36,7 +36,7 @@
     </div>
     <div v-else>
       <UEmpty
-        icon="i-lucide-inbox"
+        icon="tabler:inbox"
         title="No projects found"
         description="There are no projects in this workspace yet. Import a Github repository to get started."
       >
@@ -89,9 +89,9 @@ const columns = [
         label: 'Name',
         icon: isSorted
           ? isSorted === 'asc'
-            ? 'i-lucide-arrow-up-narrow-wide'
-            : 'i-lucide-arrow-down-wide-narrow'
-          : 'i-lucide-arrow-up-down',
+            ? 'tabler:arrows-up-down'
+            : 'tabler:arrows-up-down'
+          : 'tabler:arrows-up-down',
         class: '-mx-2.5',
         onClick: () => column.toggleSorting(column.getIsSorted() === 'asc')
       })
@@ -126,9 +126,9 @@ const columns = [
         label: 'Region',
         icon: isSorted
           ? isSorted === 'asc'
-            ? 'i-lucide-arrow-up-narrow-wide'
-            : 'i-lucide-arrow-down-wide-narrow'
-          : 'i-lucide-arrow-up-down',
+            ? 'tabler:arrows-up-down'
+            : 'tabler:arrows-up-down'
+          : 'tabler:arrows-up-down',
         class: '-mx-2.5',
         onClick: () => column.toggleSorting(column.getIsSorted() === 'asc')
       })
@@ -147,9 +147,9 @@ const columns = [
           label: 'Updated',
           icon: isSorted
             ? isSorted === 'asc'
-              ? 'i-lucide-arrow-up-narrow-wide'
-              : 'i-lucide-arrow-down-wide-narrow'
-            : 'i-lucide-arrow-up-down',
+              ? 'tabler:arrows-up-down'
+              : 'tabler:arrows-up-down'
+            : 'tabler:arrows-up-down',
           class: '-mx-2.5',
           onClick: () => column.toggleSorting(column.getIsSorted() === 'asc')
         })

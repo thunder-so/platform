@@ -25,7 +25,7 @@
             variant="subtle"
             title="Heads up!"
             description="You will be charged when your trial ends."
-            icon="i-lucide-terminal"
+            icon="tabler:terminal"
             class="mb-4"
           />
 
