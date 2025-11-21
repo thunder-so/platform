@@ -341,12 +341,12 @@ const getStatusIcon = (status?: string | null) => {
     return 'line-md:loading-loop';
   }
   if (['FAILED', 'CANCELED'].includes(normalizedStatus)) {
-    return 'material-symbols:warning-outline-rounded';
+    return 'tabler:alert-square';
   }
   if (normalizedStatus === 'SUCCEEDED') {
-    return 'material-symbols:bookmark-check';
+    return 'tabler:square-check';
   }
-  return 'ix:about';
+  return 'tabler:info-square';
 };
 
 const getStatusIconClass = (status?: string | null) => {

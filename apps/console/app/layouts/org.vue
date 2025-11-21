@@ -34,7 +34,7 @@
             :items="links"
             orientation="vertical" 
             :ui="{
-              link: 'p-3'
+              link: 'p-3 gap-2'
             }"
           />
         </div>
@@ -65,22 +65,27 @@ const links = computed<NavigationMenuItem[]>(() => {
     {
       label: 'Projects',
       to: `/org/${orgId}`,
+      icon: 'tabler:apps'
     },
     {
       label: 'AWS Accounts',
       to: `/org/${orgId}/aws`,
+      icon: 'tabler:brand-aws'
     },
     {
       label: 'Members',
       to: `/org/${orgId}/members`,
+      icon: 'tabler:users'
     },
     {
       label: 'Billing',
       to: `/org/${orgId}/billing`,
+      icon: 'tabler:credit-card'
     },
     {
       label: 'Settings',
       to: `/org/${orgId}/settings`,
+      icon: 'tabler:settings'
     },
   ];
 });

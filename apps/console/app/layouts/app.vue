@@ -17,22 +17,20 @@
       <div v-else class="grid grid-cols-6 gap-0 min-h-[calc(100vh-4rem)]">
         <div class="col-span-1 p-6 border-r border-muted lg:block hidden">
           <div v-if="applicationSchema">
-            <div class="pb-2">
+            <!-- <div class="pb-2">
               <UButton :to="`/org/${applicationSchema?.organization_id}`" variant="ghost" size="sm" leading-icon="tabler:arrow-left">
                 Dashboard
               </UButton>
-            </div>
+            </div> -->
 
             <UNavigationMenu 
               :items="primaryLinks"
               orientation="vertical" 
-              class="mb-4"
               :ui="{
                 link: 'p-3'
               }"
             />
 
-            <hr class="border border-muted mb-4" />
             <UNavigationMenu 
               :items="manageLinks"
               orientation="vertical" 

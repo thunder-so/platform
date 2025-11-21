@@ -223,7 +223,7 @@ const helpMenuItems = ref([
       to: 'https://www.thunder.so/docs/'
     },
     { 
-      label: 'Community',
+      label: 'Discord community',
       icon: 'tabler:brand-discord',
       to: 'https://discord.gg/nZwr6c5c6v' 
     },

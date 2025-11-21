@@ -120,7 +120,7 @@ const addNewAccountCredentials = () => {
 const addNewItems: DropdownMenuItem[] = [
   {
     label: 'Using Access Key',
-    icon: 'material-symbols:key-outline',
+    icon: 'tabler:key',
     onSelect: addNewAccountCredentials
   },
   {
