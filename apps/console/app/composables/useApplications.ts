@@ -66,7 +66,7 @@ export const useApplications = () => {
 
       if (error) throw error;
       
-      applicationSchema.value = data as ApplicationSchema;
+      applicationSchema.value = (data || {}) as unknown as ApplicationSchema;
       appId.value = applicationSchema.value.id;
       return applicationSchema.value;
     } catch (e) {
@@ -99,11 +99,7 @@ export const useApplications = () => {
     isError.value = false;
   };
 
-  const route = useRoute();
-
   const currentEnvironment = computed(() => {
-    // if (!applicationSchema.value || !route.params.env_id) return null;
-    // return applicationSchema.value.environments.find(e => e.id === route.params.env_id);
     if (!applicationSchema.value) return null;
     return applicationSchema.value.environments[0] ?? null;
   });
@@ -129,6 +125,6 @@ export const useApplications = () => {
     appId,
     currentEnvironment,
     currentService,
-    hasAccessToApp,
+    hasAccessToApp
   };
 };

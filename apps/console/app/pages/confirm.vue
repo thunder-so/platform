@@ -1,20 +1,19 @@
 <template>
   <div>
+    <ClientOnly>
     <div v-if="error" class="text-center p-4">
       <UAlert color="error" variant="soft" :title="error.message" />
       <p>
         <UButton to="/login" class="mt-4">Go to Login</UButton>
       </p>
     </div>
-    <div v-else class="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
-      <UCard>
-        <div class="p-6 space-y-4 md:space-y-6 sm:p-8">
-          <ClientOnly>
-            <div class="text-center">Logging you in...</div>
-          </ClientOnly>
-        </div>
-      </UCard>
+    <div v-else class="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+      <div class="flex flex-col items-center gap-4">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div class="text-sm text-muted">Logging you in...</div>
+      </div>
     </div>
+    </ClientOnly>
   </div>
 </template>
 

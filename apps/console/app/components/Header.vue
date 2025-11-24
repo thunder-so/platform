@@ -14,9 +14,9 @@
         <UButton 
           size="lg"
           color="neutral" 
-          variant="outline" 
-          class="w-60 justify-between"
-          trailing-icon="tabler:chevron-down"
+          variant="ghost" 
+          class="w-52 justify-between"
+          trailing-icon="heroicons:chevron-up-down-solid"
         >
           <div class="flex items-center space-x-2">
             <UAvatar :alt="selectedOrganization?.name" size="xs" />
@@ -38,7 +38,7 @@
               </div>
             </div>
             <hr class="border-gray-200 dark:border-gray-700 mt-1 mb-1" />
-            <NuxtLink to="/org/new" class="flex items-center px-4 py-2 space-x-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
+            <NuxtLink to="/org/new" class="flex items-center px-4 py-2 space-x-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
               <Icon name="tabler:plus" size="sm" />
               <span class="text-sm">New workspace</span>
             </NuxtLink>
@@ -48,6 +48,27 @@
     </template>
 
     <template #right>
+      <!-- <UModal v-model:open="commandOpen">
+        <UButton
+          label="Search..."
+          color="neutral"
+          variant="subtle"
+          icon="tabler:search"
+          title="Quick Navigation"
+          description="Quickly navigate to workspaces and projects."
+        />
+
+        <template #content>
+          <UCommandPalette
+            v-model:search-term="commandSearch"
+            :groups="commandGroups"
+            :loading="appsLoading"
+            class="h-80"
+            close
+          />
+        </template>
+      </UModal> -->
+      
       <UPopover
         v-model:open="isNewPopoverOpen"
         mode="click"
@@ -146,11 +167,13 @@
         }"
       />
     </template>
-  </UHeader>
+  </UHeader> 
 </template>
 
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
+
+// const { commandOpen, commandSearch, commandGroups, appsLoading, onPaletteSelect } = useCommandPalette()
 
 interface Props {
   mobileMenuItems?: NavigationMenuItem[]

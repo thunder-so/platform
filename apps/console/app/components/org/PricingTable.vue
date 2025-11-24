@@ -43,7 +43,7 @@
             </div>
 
             <p v-if="plan?.metadata.trial_interval_count && plan?.metadata.trial_interval">
-              <span class="text-xs text-muted">{{ plan?.metadata.trial_interval_count }} {{ plan?.metadata.trial_interval }} free trial</span>
+              <span class="text-xs text-muted italic">{{ plan?.metadata.trial_interval_count }} {{ plan?.metadata.trial_interval }} free trial</span>
             </p>
           </div>
         </div>

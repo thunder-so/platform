@@ -36,9 +36,9 @@
     </div>
     <div v-else>
       <UEmpty
-        icon="tabler:inbox"
-        title="No projects found"
-        description="There are no projects in this workspace yet. Import a Github repository to get started."
+        icon="tabler:apps"
+        title="No projects yet"
+        description="There are no projects in this workspace. Import a Github repository to get started."
       >
         <template #actions>
           <UButton to="/new" color="primary" variant="solid" label="Import repository" />
@@ -53,10 +53,11 @@ definePageMeta({
   layout: 'org'
 })
 
-const supabase = useSupabaseClient()
 const { selectedOrganization } = useMemberships()
 
-const applications = ref([])
+const { applicationsByOrganization, fetchApplicationsByOrganization } = useOrganizations()
+
+const applications = ref<any[]>([])
 const loading = ref(true)
 const error = ref<{ message: string } | null>(null);
 const orgId = selectedOrganization?.value?.id as string
@@ -172,7 +173,7 @@ const columnVisibility = ref({
   id: false
 })
 
-const sortState = ref([])
+const sortState = ref<any[]>([])
 
 // Load sort state from localStorage
 const loadSortState = () => {
@@ -196,21 +197,14 @@ sortState.value = loadSortState()
 onMounted(async () => {
   loading.value = true
   try {
-    const { data: appData, error: appError } = await supabase
-      .from('applications')
-      .select(`id, name, display_name, created_at,
-        environments(region,
-          services(stack_type, updated_at)
-        )
-      `)
-      .eq('organization_id', orgId)
-      .is('deleted_at', null)
+    // ensure composable has data for this org
+    await fetchApplicationsByOrganization(orgId)
 
-    if (appError) throw appError
+    const appData = applicationsByOrganization.value[orgId] || []
 
-    const flattenedData = appData.flatMap(app => 
-      app.environments.flatMap(env => 
-        env.services.map(service => ({
+    const flattenedData = (appData || []).flatMap((app: any) =>
+      (app.environments || []).flatMap((env: any) =>
+        (env.services || []).map((service: any) => ({
           id: app.id,
           display_name: app.display_name,
           created_at: app.created_at,

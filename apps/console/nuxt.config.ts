@@ -6,6 +6,7 @@ const currentDir = dirname(fileURLToPath(import.meta.url))
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-05-15',
+  telemetry: false,
   devtools: { enabled: false },
   runtimeConfig: {
     public: {
@@ -107,6 +108,7 @@ export default defineNuxtConfig({
     inlineDynamicImports: process.env.NODE_ENV === 'development' ? true : false,
     experimental: {
       wasm: false,
+      websocket: false,
       legacyExternals: process.env.NODE_ENV === 'development' ? false : true,
     },
     rollupConfig: {

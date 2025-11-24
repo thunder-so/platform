@@ -1,15 +1,19 @@
 <template>
-  <UCard>
-    <template #header>
-      <h1>New Workspace</h1>
-    </template>
-    
+  <UCard variant="outline">
     <UForm :state="{ orgName, selectedPlan }" @submit.prevent="createOrganization" class="space-y-4">
-      <UFormField label="Workspace Name" name="orgName" required>
-        <UInput id="org-name" v-model="orgName" type="text" size="xl" required />
+      <UFormField label="Workspace name" description="A unique identifier for your workspace." name="orgName" class="grid grid-cols-3 gap-4" required>
+        <UInput v-model="orgName" placeholder="" class="w-128" size="xl" required />
       </UFormField>
 
-      <div v-if="plansLoading">Loading plans...</div>
+      <hr class="text-gray-700 mt-6" />
+
+      <div v-if="plansLoading" class="flex items-center justify-center min-h-[calc(48vh)]">
+        <div class="flex flex-col items-center gap-4">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div class="text-sm text-muted">Loading plans...</div>
+        </div>
+      </div>
+      
       <PricingTable v-else :plans="plans" :selectedPlan="selectedPlan" @update:selectedPlan="selectedPlan = $event" />
 
       <UAlert v-if="error" color="error" variant="soft" :title="error.message" />

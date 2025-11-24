@@ -79,7 +79,7 @@ const toast = useToast()
 const { copy } = useClipboard()
 const overlay = useOverlay()
 
-const providers = ref([])
+const providers = ref<Provider[]>([])
 const loading = ref(true)
 const error = ref<{ message: string } | null>(null);
 const orgId = selectedOrganization.value?.id as string;
