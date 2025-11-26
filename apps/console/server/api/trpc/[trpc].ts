@@ -21,8 +21,8 @@ export default createTRPCNuxtHandler({
       const runtimeConfig = useRuntimeConfig();
       
       const posthog = new PostHog(
-        runtimeConfig.public.posthogPublicKey,
-        { host: runtimeConfig.public.posthogHost }
+        runtimeConfig.public.posthogPublicKey as string,
+        { host: runtimeConfig.public.posthogHost as string }
       );
       
       posthog.capture({

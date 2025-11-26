@@ -12,8 +12,10 @@ export default defineNuxtConfig({
     public: {
       siteUrl: process.env.SITE_URL || 'http://localhost:3000',
       providerStack: process.env.PROVIDER_STACK,
-      GITHUB_APP: process.env.GH_APP,
-      GITHUB_CLIENT_ID: process.env.GH_CLIENT_ID,
+      githubApp: process.env.GH_APP,
+      githubClientId: process.env.GH_CLIENT_ID,
+      posthogHost: process.env.POSTHOG_HOST,
+      posthogPublicKey: process.env.POSTHOG_API_KEY || '',
     },
     private: {
       polarAccessToken: process.env.POLAR_ACCESS_TOKEN,

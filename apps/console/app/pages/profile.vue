@@ -92,7 +92,7 @@ definePageMeta({
   layout: 'org'
 })
 
-const githubApp = useRuntimeConfig().public.GITHUB_APP
+const githubApp = useRuntimeConfig().public.githubApp
 const siteUrl = useRuntimeConfig().public.siteUrl
 const base = useRequestURL().origin
 

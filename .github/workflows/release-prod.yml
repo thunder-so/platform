@@ -1,0 +1,308 @@
+name: Release to Production
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '.changeset/*.md'
+
+concurrency:
+  group: release-prod
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+jobs:
+  detect-changes:
+    name: Detect Changed Packages
+    runs-on: ubuntu-latest
+    outputs:
+      changed-services: ${{ steps.detect.outputs.changed-services }}
+      changed-functions: ${{ steps.detect.outputs.changed-functions }}
+      has-changes: ${{ steps.detect.outputs.has-changes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed packages from changeset
+        id: detect
+        run: |
+          # Find all changeset files
+          CHANGESETS=$(find .changeset -name "*.md" -type f ! -name "README.md" | head -20)
+          
+          if [ -z "$CHANGESETS" ]; then
+            echo "No changesets found"
+            exit 1
+          fi
+          
+          # Check which packages are mentioned in changesets
+          SERVICES_CHANGED="false"
+          FUNCTIONS_CHANGED="false"
+          
+          for file in $CHANGESETS; do
+            if grep -q "ping-service\|provider-service\|runner-service\|thunder-services" "$file"; then
+              SERVICES_CHANGED="true"
+            fi
+            if grep -q "notification-webhook\|github-webhook\|polar-webhook" "$file"; then
+              FUNCTIONS_CHANGED="true"
+            fi
+          done
+          
+          echo "changed-services=$SERVICES_CHANGED" >> $GITHUB_OUTPUT
+          echo "changed-functions=$FUNCTIONS_CHANGED" >> $GITHUB_OUTPUT
+          echo "has-changes=true" >> $GITHUB_OUTPUT
+
+  version:
+    name: Version Packages
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has-changes == 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v1
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Version packages
+        run: bun changeset version
+
+      - name: Commit version changes
+        run: |
+          git config --local user.email "release@thunder.so"
+          git config --local user.name "Thunder Release Bot"
+          git add .
+          git commit -m "chore: release new versions" || true
+          git push
+
+  deploy-services:
+    name: Deploy Services
+    runs-on: ubuntu-latest
+    needs: [detect-changes, version]
+    if: needs.detect-changes.outputs.changed-services == 'true'
+    environment:
+      name: production
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ secrets.RUNNER_REGION }} # From sandbox deploy-services-all
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}        # From sandbox deploy-services-all
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }} # From sandbox deploy-services-all
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v1
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build services
+        run: bun run build:services
+
+      - name: Deploy Provider Service
+        run: cd services && bun run deploy:prod:provider
+        continue-on-error: true
+        id: deploy-provider
+
+      - name: Check Provider deployment status
+        if: steps.deploy-provider.outcome == 'failure'
+        run: |
+          echo "Provider deployment failed"
+          exit 1
+
+      - name: Deploy Runner Service
+        run: cd services && bun run deploy:prod:runner
+        continue-on-error: true
+        id: deploy-runner
+
+      - name: Check Runner deployment status
+        if: steps.deploy-runner.outcome == 'failure'
+        run: |
+          echo "Runner deployment failed"
+          exit 1
+
+      - name: Deploy Ping Service
+        run: cd services && bun run deploy:prod:ping
+        continue-on-error: true
+        id: deploy-ping
+
+      - name: Check Ping deployment status
+        if: steps.deploy-ping.outcome == 'failure'
+        run: |
+          echo "Ping deployment failed"
+          exit 1
+
+      - name: Services deployed successfully
+        run: echo "All services deployed successfully"
+
+  deploy-functions:
+    name: Deploy Supabase Functions
+    runs-on: ubuntu-latest
+    needs: [detect-changes, version]
+    if: needs.detect-changes.outputs.changed-functions == 'true'
+    environment:
+      name: production
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      GITHUB_WEBHOOK_SECRET: ${{ secrets.GITHUB_WEBHOOK_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v1
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Deploy notification-webhook
+        run: supabase functions deploy notification-webhook --project-ref $SUPABASE_PROJECT_ID
+        continue-on-error: true
+        id: deploy-notification
+
+      - name: Check notification-webhook deployment
+        if: steps.deploy-notification.outcome == 'failure'
+        run: |
+          echo "notification-webhook deployment failed"
+          exit 1
+
+      - name: Deploy github-webhook
+        run: supabase functions deploy github-webhook --project-ref $SUPABASE_PROJECT_ID
+        continue-on-error: true
+        id: deploy-github
+
+      - name: Check github-webhook deployment
+        if: steps.deploy-github.outcome == 'failure'
+        run: |
+          echo "github-webhook deployment failed"
+          exit 1
+
+      - name: Deploy polar-webhook
+        run: supabase functions deploy polar-webhook --project-ref $SUPABASE_PROJECT_ID
+        continue-on-error: true
+        id: deploy-polar
+
+      - name: Check polar-webhook deployment
+        if: steps.deploy-polar.outcome == 'failure'
+        run: |
+          echo "polar-webhook deployment failed"
+          exit 1
+
+  deploy-console:
+    name: Deploy Console
+    runs-on: ubuntu-latest
+    needs: [detect-changes, deploy-functions]
+    if: always() && (needs.deploy-functions.result == 'success' || (needs.detect-changes.outputs.changed-functions == 'false' && needs.deploy-services.result == 'success'))
+    environment:
+      name: production
+      url: 'https://console.thunder.so'
+    env:
+      # aws
+      NODE_ENV: production
+      SITE_URL: ${{ secrets.SITE_URL }}
+      AWS_ACCOUNT: ${{ secrets.AWS_ACCOUNT }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      # supabase
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      # services
+      PROVIDER_STACK: ${{ secrets.PROVIDER_STACK }}
+      RUNNER_REGION: ${{ secrets.RUNNER_REGION }}
+      RUNNER_ASSUME_ROLE_ARN: ${{ secrets.RUNNER_ASSUME_ROLE_ARN }}
+      RUNNER_SERVICE: ${{ secrets.RUNNER_SERVICE }}
+      # github
+      GH_APP: ${{ secrets.GH_APP }}
+      GH_APP_ID: ${{ secrets.GH_APP_ID }}
+      GH_PRIVATE_KEY: ${{ secrets.GH_PRIVATE_KEY }}
+      GH_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
+      GH_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
+      # polar
+      POLAR_SERVER: ${{ secrets.POLAR_SERVER }}
+      POLAR_ACCESS_TOKEN: ${{ secrets.POLAR_ACCESS_TOKEN }}
+      POLAR_CHECKOUT_SUCCESS_URL: ${{ secrets.POLAR_CHECKOUT_SUCCESS_URL }}      
+      # posthog
+      POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
+      POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v1
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build console
+        run: bun run build:console
+
+      - name: Deploy console
+        run: cd apps/console && bun run deploy:prod
+        continue-on-error: true
+        id: deploy-console
+
+      - name: Check console deployment
+        if: steps.deploy-console.outcome == 'failure'
+        run: |
+          echo "Console deployment failed"
+          exit 1
+
+  tag-release:
+    name: Create Release Tags
+    runs-on: ubuntu-latest
+    needs: [detect-changes, deploy-console]
+    if: needs.deploy-console.result == 'success'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - uses: oven-sh/setup-bun@v1
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Create git tags
+        run: |
+          git config --local user.email "release@thunder.so"
+          git config --local user.name "Thunder Release Bot"
+          bun changeset tag
+
+      - name: Push tags
+        run: git push --follow-tags
+
+  rollback:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: [detect-changes, deploy-services, deploy-functions, deploy-console]
+    if: failure() && needs.detect-changes.outputs.has-changes == 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Revert version changes
+        run: |
+          git config --local user.email "release@thunder.so"
+          git config --local user.name "Thunder Release Bot"
+          # Find the last version commit and revert it
+          git reset --hard HEAD~1
+          git push --force-with-lease
+
+      - name: Create rollback notification
+        run: echo "⚠️ Production release failed and has been rolled back. Check the workflow logs for details."

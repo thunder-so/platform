@@ -28,9 +28,9 @@ if (!EVENT_TARGET) {
 }
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
   throw new Error('Supabase URL, Key, and Service Key not found.');
 }
 
@@ -167,7 +167,7 @@ export const handler: SQSHandler = async (event) => {
           const build = buildDetails.builds[0];
           console.log('Fetched build details:', JSON.stringify(build, null, 2));
           const startTime = build.startTime;
-          const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+          const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY);
 
           if (command === 'delete') {
             console.log('Updating Supabase for delete command');

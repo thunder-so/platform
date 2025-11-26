@@ -1,5 +1,6 @@
 {
   "name": "console",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,7 +12,8 @@
     "db:pull": "dotenv -e .env --  npx drizzle-kit introspect",
     "db:generate": "dotenv -e .env -- npx drizzle-kit generate",
     "db:migrate": "dotenv -e .env -- npx drizzle-kit migrate",
-    "deploy:sandbox": "dotenv -e .env -- cdk deploy --all --app=\"npx tsx stack/sandbox.ts\" --profile burner"
+    "deploy:sandbox": "dotenv -e .env -- cdk deploy --all --app=\"npx tsx stack/sandbox.ts\" --profile burner",
+    "deploy:prod": "cdk deploy --all --app=\"npx tsx stack/production.ts\""
   },
   "dependencies": {
     "@aws-sdk/client-acm": "3.936.0",

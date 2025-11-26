@@ -1,0 +1,13 @@
+{
+  "name": "supabase-functions",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "deploy:prod:notification-webhook": "supabase functions deploy notification-webhook --project-ref $PROD_SUPABASE_PROJECT_ID",
+    "deploy:prod:github-webhook": "supabase functions deploy github-webhook --project-ref $PROD_SUPABASE_PROJECT_ID",
+    "deploy:prod:polar-webhook": "supabase functions deploy polar-webhook --project-ref $PROD_SUPABASE_PROJECT_ID",
+    "deploy:sandbox:notification-webhook": "supabase functions deploy notification-webhook --project-ref $SANDBOX_SUPABASE_PROJECT_ID",
+    "deploy:sandbox:github-webhook": "supabase functions deploy github-webhook --project-ref $SANDBOX_SUPABASE_PROJECT_ID",
+    "deploy:sandbox:polar-webhook": "supabase functions deploy polar-webhook --project-ref $SANDBOX_SUPABASE_PROJECT_ID"
+  }
+}

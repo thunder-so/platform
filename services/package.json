@@ -5,19 +5,19 @@
   "scripts": {
     "build": "tsc",
     "cdk": "cdk",
-    "deploy:sandbox": "dotenv -e .env -- cdk deploy --all --app \"npx tsx bin/ping.ts && npx tsx bin/provider.ts && npx tsx bin/runner.ts\" --context environment=sandbox",
-    "deploy:production": "cdk deploy --all --app \"npx tsx bin/ping.ts && npx tsx bin/provider.ts && npx tsx bin/runner.ts\" --context environment=production",
     "synth": "cdk synth",
-    "deploy:provider:sandbox": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/provider.ts\" --context environment=sandbox --profile burner",
-    "deploy:provider:production": "cdk deploy --app \"npx tsx bin/provider.ts\" --context environment=production",
-    "deploy:runner:sandbox": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/runner.ts\" --context environment=sandbox --profile burner",
-    "deploy:runner:production": "cdk deploy --app \"npx tsx bin/runner.ts\" --context environment=production",
-    "deploy:ping:sandbox": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=sandbox --profile burner",
-    "deploy:ping:production": "cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=production"
+    "deploy:sandbox": "dotenv -e .env -- cdk deploy --all --app \"npx tsx bin/ping.ts && npx tsx bin/provider.ts && npx tsx bin/runner.ts\" --context environment=sandbox",
+    "deploy:sandbox:provider": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/provider.ts\" --context environment=sandbox --profile burner",
+    "deploy:sandbox:runner": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/runner.ts\" --context environment=sandbox --profile burner",
+    "deploy:sandbox:ping": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=sandbox --profile burner",
+    "deploy:prod:provider": "cdk deploy --app \"npx tsx bin/provider.ts\" --context environment=production",
+    "deploy:prod:runner": "cdk deploy --app \"npx tsx bin/runner.ts\" --context environment=production",
+    "deploy:prod:ping": "cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=production"
   },
   "devDependencies": {
     "aws-cdk": "2.1023.0",
     "aws-cdk-lib": "2.208.0",
+    "@types/aws-lambda": "^8.10.159",
     "dotenv-cli": "7.4.2",
     "typescript": "5.9.2"
   },
@@ -29,6 +29,7 @@
     "@aws-sdk/client-sts": "3.922.0",
     "@supabase/supabase-js": "2.53.0",
     "aws-cloudformation-custom-resource": "5.0.0",
+    "aws-lambda": "^1.0.7",
     "constructs": "10.4.2"
   }
 }

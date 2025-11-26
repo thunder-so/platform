@@ -1,0 +1,23 @@
+{
+  "$schema": "https://changesets.releases.com/config.json",
+  "changelog": [
+    "@changesets/cli/changelog",
+    { "repo": "thunder-so/platform" }
+  ],
+  "commit": true,
+  "fixed": [],
+  "linked": [],
+  "access": "restricted",
+  "baseBranch": "master",
+  "updateInternalDependencies": "minor",
+  "ignore": [],
+  "privatePackages": {
+    "version": true,
+    "tag": true
+  },
+  "bumpVersionsWithWorkspaceProtocolOnly": true,
+  "snapshot": {
+    "useCalendarVersioning": true,
+    "prereleaseTemplate": "{tag}.{datetime}"
+  }
+}

@@ -1,0 +1,276 @@
+name: Deploy to Sandbox
+
+on:
+  workflow_dispatch:
+    inputs:
+      workspace:
+        description: 'Workspace to deploy'
+        required: true
+        type: choice
+        options:
+          - all
+          - console
+          - services-all
+          - services-provider
+          - services-runner
+          - services-ping
+          - supabase-all
+          - supabase-notification
+          - supabase-github
+          - supabase-polar
+
+concurrency:
+  group: sandbox-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+jobs:
+  deploy-console:
+    name: Deploy Console to Sandbox
+    runs-on: ubuntu-latest
+    if: contains('all,console', github.event.inputs.workspace)
+    environment:
+      name: sandbox
+      url: 'https://sandbox.thunder.so'
+    env:
+      # aws
+      NODE_ENV: production
+      SITE_URL: ${{ secrets.SITE_URL }}
+      AWS_ACCOUNT: ${{ secrets.AWS_ACCOUNT }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      # supabase
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      # services
+      PROVIDER_STACK: ${{ secrets.PROVIDER_STACK }}
+      RUNNER_REGION: ${{ secrets.RUNNER_REGION }}
+      RUNNER_ASSUME_ROLE_ARN: ${{ secrets.RUNNER_ASSUME_ROLE_ARN }}
+      RUNNER_SERVICE: ${{ secrets.RUNNER_SERVICE }}
+      # github
+      GH_APP: ${{ secrets.GH_APP }}
+      GH_APP_ID: ${{ secrets.GH_APP_ID }}
+      GH_PRIVATE_KEY: ${{ secrets.GH_PRIVATE_KEY }}
+      GH_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
+      GH_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
+      # polar
+      POLAR_SERVER: ${{ secrets.POLAR_SERVER }}
+      POLAR_ACCESS_TOKEN: ${{ secrets.POLAR_ACCESS_TOKEN }}
+      POLAR_CHECKOUT_SUCCESS_URL: ${{ secrets.POLAR_CHECKOUT_SUCCESS_URL }}      
+      # posthog
+      POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
+      POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v1
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build console
+        run: bun run build:console
+
+      - name: Deploy to AWS
+        run: npx cdk deploy --app "npx tsx stack/sandbox.ts" --require-approval never
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+
+  deploy-services-all:
+    name: Deploy All Services to Sandbox
+    runs-on: ubuntu-latest
+    if: github.event.inputs.workspace == 'services-all' || github.event.inputs.workspace == 'all'
+    environment:
+      name: sandbox
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ secrets.RUNNER_REGION }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v1
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build services
+        run: bun run build:services
+
+      - name: Deploy all services to sandbox
+        run: cd services && bun run deploy:sandbox
+
+  deploy-services-provider:
+    name: Deploy Provider Service to Sandbox
+    runs-on: ubuntu-latest
+    if: contains('services-provider,services-all,all', github.event.inputs.workspace)
+    environment:
+      name: sandbox
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v1
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build services
+        run: bun run build:services
+
+      - name: Deploy provider service to sandbox
+        run: cd services && bun run deploy:sandbox:provider
+
+  deploy-services-runner:
+    name: Deploy Runner Service to Sandbox
+    runs-on: ubuntu-latest
+    if: contains('services-runner,services-all,all', github.event.inputs.workspace)
+    environment:
+      name: sandbox
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v1
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build services
+        run: bun run build:services
+
+      - name: Deploy runner service to sandbox
+        run: cd services && bun run deploy:sandbox:runner
+
+  deploy-services-ping:
+    name: Deploy Ping Service to Sandbox
+    runs-on: ubuntu-latest
+    if: contains('services-ping,services-all,all', github.event.inputs.workspace)
+    environment:
+      name: sandbox
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v1
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build services
+        run: bun run build:services
+
+      - name: Deploy ping service to sandbox
+        run: cd services && bun run deploy:sandbox:ping
+
+  deploy-supabase-all:
+    name: Deploy All Supabase Functions to Sandbox
+    runs-on: ubuntu-latest
+    if: github.event.inputs.workspace == 'supabase-all' || github.event.inputs.workspace == 'all'
+    environment:
+      name: sandbox
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      GITHUB_WEBHOOK_SECRET: ${{ secrets.GITHUB_WEBHOOK_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy all supabase functions to sandbox
+        run: |
+          supabase functions deploy notification-webhook --project-ref $SUPABASE_PROJECT_ID
+          supabase functions deploy github-webhook --project-ref $SUPABASE_PROJECT_ID
+          supabase functions deploy polar-webhook --project-ref $SUPABASE_PROJECT_ID
+
+  deploy-supabase-notification:
+    name: Deploy notification-webhook to Sandbox
+    runs-on: ubuntu-latest
+    if: contains('supabase-notification,supabase-all,all', github.event.inputs.workspace)
+    environment:
+      name: sandbox
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy notification-webhook to sandbox
+        run: supabase functions deploy notification-webhook --project-ref $SUPABASE_PROJECT_ID
+
+  deploy-supabase-github:
+    name: Deploy github-webhook to Sandbox
+    runs-on: ubuntu-latest
+    if: contains('supabase-github,supabase-all,all', github.event.inputs.workspace)
+    environment:
+      name: sandbox
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      GITHUB_WEBHOOK_SECRET: ${{ secrets.GITHUB_WEBHOOK_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy github-webhook to sandbox
+        run: supabase functions deploy github-webhook --project-ref $SUPABASE_PROJECT_ID
+
+  deploy-supabase-polar:
+    name: Deploy polar-webhook to Sandbox
+    runs-on: ubuntu-latest
+    if: contains('supabase-polar,supabase-all,all', github.event.inputs.workspace)
+    environment:
+      name: sandbox
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy polar-webhook to sandbox
+        run: supabase functions deploy polar-webhook --project-ref $SUPABASE_PROJECT_ID

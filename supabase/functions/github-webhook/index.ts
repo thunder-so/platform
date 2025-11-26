@@ -3,14 +3,14 @@ import { createClient } from 'npm:@supabase/supabase-js'
 import { Webhooks } from 'npm:@octokit/webhooks'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const supabaseSecretKey = Deno.env.get('SUPABASE_SECRET_KEY')!
 const githubWebhookSecret = Deno.env.get('GITHUB_WEBHOOK_SECRET')!
 
 const webhooks = new Webhooks({
     secret: githubWebhookSecret,
 });
 
-const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+const supabase = createClient(supabaseUrl, supabaseSecretKey, {
   auth: { persistSession: false },
 })
 

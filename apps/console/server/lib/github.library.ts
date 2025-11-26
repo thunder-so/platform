@@ -11,10 +11,10 @@ type GetContentResponse = Endpoints['GET /repos/{owner}/{repo}/contents/{path}']
 type ListCommitsResponse = Endpoints['GET /repos/{owner}/{repo}/commits']['response'];
 
 export default class GithubLibrary {
-    private appId = process.env.GITHUB_APP_ID;
-    private privateKey = this.base64decode(process.env.GITHUB_PRIVATE_KEY);
+    private appId = process.env.GH_APP_ID;
+    private privateKey = this.base64decode(process.env.GH_PRIVATE_KEY);
     private clientId = process.env.GH_CLIENT_ID;
-    private clientSecret = process.env.GITHUB_CLIENT_SECRET;
+    private clientSecret = process.env.GH_CLIENT_SECRET;
 
     private base64decode(key: string | undefined): string {
         if (!key) return '';

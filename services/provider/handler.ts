@@ -8,9 +8,9 @@ import {
 } from 'aws-cloudformation-custom-resource';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
   throw new Error('Supabase URL and Service Key not found.');
 }
 
@@ -35,7 +35,7 @@ function Create(resource: CustomResource<ResourceProperties>, logger: Logger): P
     }
 
     try {
-      const supabase = createClient(SUPABASE_URL as string, SUPABASE_SERVICE_KEY as string);
+      const supabase = createClient(SUPABASE_URL as string, SUPABASE_SECRET_KEY as string);
       const { data, error } = await supabase
         .from('providers')
         .insert({
@@ -70,7 +70,7 @@ function Update(resource: CustomResource<ResourceProperties>, logger: Logger): P
     const { Alias, OrganizationId, RoleArn, Region, AccountId, StackName } = resource.event.ResourceProperties;
 
     try {
-      const supabase = createClient(SUPABASE_URL as string, SUPABASE_SERVICE_KEY as string);
+      const supabase = createClient(SUPABASE_URL as string, SUPABASE_SECRET_KEY as string);
       const { data, error } = await supabase
         .from('providers')
         .update({
@@ -103,7 +103,7 @@ function Delete(resource: CustomResource<ResourceProperties>, logger: Logger): P
     const { Alias, OrganizationId, StackName } = resource.event.ResourceProperties;
 
     try {
-      const supabase = createClient(SUPABASE_URL as string, SUPABASE_SERVICE_KEY as string);
+      const supabase = createClient(SUPABASE_URL as string, SUPABASE_SECRET_KEY as string);
       const { data, error } = await supabase
         .from('providers')
         .update({ deleted_at: new Date().toISOString() })

@@ -8,9 +8,9 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const REGION = process.env.REGION;
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
   throw new Error('Supabase URL, Key, and Service Key not found.');
 }
 
@@ -268,7 +268,7 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
   const buildStatus = event.detail['build-status'];
   const buildLogs = event.detail['additional-information']?.logs;
 
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY);
 
   try {
     // Get build details from CodeBuild

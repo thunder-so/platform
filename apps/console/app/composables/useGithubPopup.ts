@@ -4,7 +4,7 @@ export const useGithubPopup = () => {
   
   const openInstallationPopup = (): Promise<any> => {
     return new Promise((resolve, reject) => {
-      const githubApp = config.public.GITHUB_APP
+      const githubApp = config.public.githubApp
       const redirectUri = `${window.location.origin}/oauth`
       const url = `https://github.com/apps/${githubApp}/installations/new?redirect_uri=${redirectUri}`
       
@@ -40,7 +40,7 @@ export const useGithubPopup = () => {
   
   const openOAuthPopup = (): Promise<any> => {
     return new Promise((resolve, reject) => {
-      const githubClientId = config.public.GITHUB_CLIENT_ID
+      const githubClientId = config.public.githubClientId
       const redirectUri = `${window.location.origin}/oauth`
       const state = Math.random().toString(36).substring(7)
       const scope = 'user'
