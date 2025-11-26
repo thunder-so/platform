@@ -4,7 +4,7 @@ import { Webhooks } from 'npm:@octokit/webhooks'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseSecretKey = Deno.env.get('SUPABASE_SECRET_KEY')!
-const githubWebhookSecret = Deno.env.get('GITHUB_WEBHOOK_SECRET')!
+const githubWebhookSecret = Deno.env.get('GH_WEBHOOK_SECRET')!
 
 const webhooks = new Webhooks({
     secret: githubWebhookSecret,

@@ -24,7 +24,7 @@ These secrets must be configured in both the `production` and `sandbox` environm
 | `GH_CLIENT_ID` | `Iv1...` | The client ID of your GitHub App. |
 | `GH_CLIENT_SECRET` | `...` | The client secret for your GitHub App. |
 | `GH_PRIVATE_KEY` | `LS0...LQo=` | The base64-encoded private key for your GitHub App. |
-| `GITHUB_WEBHOOK_SECRET` | `...` | Secret used to secure the GitHub webhook Supabase function. |
+| `GH_WEBHOOK_SECRET` | `...` | Secret used to secure the GitHub webhook Supabase function. |
 | `POLAR_ACCESS_TOKEN` | `polar_oat_...` | Access token for Polar integration. |
 | `POLAR_CHECKOUT_SUCCESS_URL`| `/payment?id={CHECKOUT_ID}` | The success URL for Polar checkouts. |
 | `POLAR_SERVER` | `sandbox` or `production` | The Polar environment to use. |
