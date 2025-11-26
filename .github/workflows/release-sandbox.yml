@@ -71,13 +71,13 @@ jobs:
       - uses: oven-sh/setup-bun@v1
 
       - name: Install dependencies
-        run: bun install
+        run: cd apps/console && bun install
 
       - name: Build console
-        run: bun run build:console
+        run: cd apps/console && bun run build
 
       - name: Deploy to AWS
-        run: npx cdk deploy --app "npx tsx stack/sandbox.ts" --require-approval never
+        run: cd apps/console && npx cdk deploy --app "npx tsx stack/sandbox.ts" --require-approval never
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -101,10 +101,10 @@ jobs:
       - uses: oven-sh/setup-bun@v1
 
       - name: Install dependencies
-        run: bun install
+        run: cd services && bun install
 
       - name: Build services
-        run: bun run build:services
+        run: cd services && bun run build
 
       - name: Deploy all services to sandbox
         run: cd services && bun run deploy:sandbox
@@ -126,10 +126,10 @@ jobs:
       - uses: oven-sh/setup-bun@v1
 
       - name: Install dependencies
-        run: bun install
+        run: cd services && bun install
 
       - name: Build services
-        run: bun run build:services
+        run: cd services && bun run build
 
       - name: Deploy provider service to sandbox
         run: cd services && bun run deploy:sandbox:provider
@@ -151,10 +151,10 @@ jobs:
       - uses: oven-sh/setup-bun@v1
 
       - name: Install dependencies
-        run: bun install
+        run: cd services && bun install
 
       - name: Build services
-        run: bun run build:services
+        run: cd services && bun run build
 
       - name: Deploy runner service to sandbox
         run: cd services && bun run deploy:sandbox:runner
@@ -176,10 +176,10 @@ jobs:
       - uses: oven-sh/setup-bun@v1
 
       - name: Install dependencies
-        run: bun install
+        run: cd services && bun install
 
       - name: Build services
-        run: bun run build:services
+        run: cd services && bun run build
 
       - name: Deploy ping service to sandbox
         run: cd services && bun run deploy:sandbox:ping
@@ -200,12 +200,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: supabase/setup-cli@v1
-        with:
-          version: latest
+      - uses: oven-sh/setup-bun@v1
 
       - name: Install notification-webhook dependencies
-        run: cd supabase/functions/notification-webhook && deno install
+        run: cd supabase/functions/notification-webhook && bun install
+
+      - name: Install Supabase CLI manually
+        run: |
+          curl -sL https://supabase.com/install.sh | sh
+          echo "$HOME/.supabase/bin" >> $GITHUB_PATH
 
       - name: Deploy all supabase functions to sandbox
         run: |
@@ -228,12 +231,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: supabase/setup-cli@v1
-        with:
-          version: latest
+      - uses: oven-sh/setup-bun@v1
 
       - name: Install notification-webhook dependencies
-        run: cd supabase/functions/notification-webhook && deno install
+        run: cd supabase/functions/notification-webhook && bun install
+
+      - name: Install Supabase CLI manually
+        run: |
+          curl -sL https://supabase.com/install.sh | sh
+          echo "$HOME/.supabase/bin" >> $GITHUB_PATH
 
       - name: Deploy notification-webhook to sandbox
         run: supabase functions deploy notification-webhook --project-ref $SUPABASE_PROJECT_ID
