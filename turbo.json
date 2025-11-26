@@ -3,7 +3,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".aws-sam/build/**"]
+      "outputs": [".output/**", "dist/**", ".aws-sam/build/**"]
     },
     "deploy": {
       "dependsOn": ["build"],

@@ -102,9 +102,3 @@ Create a `.env` file in the `services` directory.
 |---|---|---|
 | `AWS_PROFILE` | `sandbox` | The AWS profile to use from your `~/.aws/credentials` file for CDK deployments. |
 | `AWS_REGION` | `us-east-1` | The default AWS region for CDK deployments. |
-
----
-
-## Obtaining Credentials
-
-The methods for obtaining AWS and Supabase credentials remain the same. Please refer to a previous version of this document if needed. It is recommended to use separate accounts/projects for `production` and `sandbox`.

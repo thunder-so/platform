@@ -112,7 +112,7 @@ jobs:
   deploy-services-provider:
     name: Deploy Provider Service to Sandbox
     runs-on: ubuntu-latest
-    if: contains('services-provider,services-all,all', github.event.inputs.workspace)
+    if: github.event.inputs.workspace == 'services-provider'
     environment:
       name: sandbox
     env:
@@ -137,7 +137,7 @@ jobs:
   deploy-services-runner:
     name: Deploy Runner Service to Sandbox
     runs-on: ubuntu-latest
-    if: contains('services-runner,services-all,all', github.event.inputs.workspace)
+    if: github.event.inputs.workspace == 'services-runner'
     environment:
       name: sandbox
     env:
@@ -162,7 +162,7 @@ jobs:
   deploy-services-ping:
     name: Deploy Ping Service to Sandbox
     runs-on: ubuntu-latest
-    if: contains('services-ping,services-all,all', github.event.inputs.workspace)
+    if: github.event.inputs.workspace == 'services-ping'
     environment:
       name: sandbox
     env:
@@ -204,6 +204,9 @@ jobs:
         with:
           version: latest
 
+      - name: Install notification-webhook dependencies
+        run: cd supabase/functions/notification-webhook && deno install
+
       - name: Deploy all supabase functions to sandbox
         run: |
           supabase functions deploy notification-webhook --project-ref $SUPABASE_PROJECT_ID
@@ -213,7 +216,7 @@ jobs:
   deploy-supabase-notification:
     name: Deploy notification-webhook to Sandbox
     runs-on: ubuntu-latest
-    if: contains('supabase-notification,supabase-all,all', github.event.inputs.workspace)
+    if: github.event.inputs.workspace == 'supabase-notification'
     environment:
       name: sandbox
     env:
@@ -229,13 +232,16 @@ jobs:
         with:
           version: latest
 
+      - name: Install notification-webhook dependencies
+        run: cd supabase/functions/notification-webhook && deno install
+
       - name: Deploy notification-webhook to sandbox
         run: supabase functions deploy notification-webhook --project-ref $SUPABASE_PROJECT_ID
 
   deploy-supabase-github:
     name: Deploy github-webhook to Sandbox
     runs-on: ubuntu-latest
-    if: contains('supabase-github,supabase-all,all', github.event.inputs.workspace)
+    if: github.event.inputs.workspace == 'supabase-github'
     environment:
       name: sandbox
     env:
@@ -257,7 +263,7 @@ jobs:
   deploy-supabase-polar:
     name: Deploy polar-webhook to Sandbox
     runs-on: ubuntu-latest
-    if: contains('supabase-polar,supabase-all,all', github.event.inputs.workspace)
+    if: github.event.inputs.workspace == 'supabase-polar'
     environment:
       name: sandbox
     env:

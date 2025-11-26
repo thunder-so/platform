@@ -167,6 +167,9 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Install notification-webhook dependencies
+        run: cd supabase/functions/notification-webhook && bun install
+
       - name: Deploy notification-webhook
         run: supabase functions deploy notification-webhook --project-ref $SUPABASE_PROJECT_ID
         continue-on-error: true
