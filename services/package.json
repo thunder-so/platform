@@ -22,6 +22,7 @@
     "typescript": "5.9.2"
   },
   "dependencies": {
+    "@thunder/types": "*",
     "@aws-lambda-powertools/parameters": "2.24.1",
     "@aws-sdk/client-cloudformation": "3.922.0",
     "@aws-sdk/client-codebuild": "3.922.0",

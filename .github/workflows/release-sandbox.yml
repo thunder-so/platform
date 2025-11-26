@@ -206,9 +206,7 @@ jobs:
         run: cd supabase/functions/notification-webhook && bun install
 
       - name: Install Supabase CLI manually
-        run: |
-          curl -sL https://supabase.com/install.sh | sh
-          echo "$HOME/.supabase/bin" >> $GITHUB_PATH
+        run: bun install -g supabase
 
       - name: Deploy all supabase functions to sandbox
         run: |
@@ -237,9 +235,7 @@ jobs:
         run: cd supabase/functions/notification-webhook && bun install
 
       - name: Install Supabase CLI manually
-        run: |
-          curl -sL https://supabase.com/install.sh | sh
-          echo "$HOME/.supabase/bin" >> $GITHUB_PATH
+        run: bun install -g supabase
 
       - name: Deploy notification-webhook to sandbox
         run: supabase functions deploy notification-webhook --project-ref $SUPABASE_PROJECT_ID

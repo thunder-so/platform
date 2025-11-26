@@ -15,7 +15,11 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "composite": true,
-    "types": ["node"]
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@thunder/types": ["../packages/types/src"]
+    }
   },
   "include": ["**/*.ts"],
   "exclude": ["node_modules", "dist", "cdk.out"]
