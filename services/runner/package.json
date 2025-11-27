@@ -1,5 +1,8 @@
 {
   "name": "runner-service",
   "version": "0.1.0",
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@thunder/types": "*"
+  }
 }

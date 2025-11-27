@@ -210,6 +210,7 @@ jobs:
 
       - name: Deploy all supabase functions to sandbox
         run: |
+          export PATH="$HOME/.bun/bin:$PATH"
           supabase functions deploy notification-webhook --project-ref $SUPABASE_PROJECT_ID
           supabase functions deploy github-webhook --project-ref $SUPABASE_PROJECT_ID
           supabase functions deploy polar-webhook --project-ref $SUPABASE_PROJECT_ID
@@ -238,7 +239,9 @@ jobs:
         run: bun install -g supabase
 
       - name: Deploy notification-webhook to sandbox
-        run: supabase functions deploy notification-webhook --project-ref $SUPABASE_PROJECT_ID
+        run: |
+          export PATH="$HOME/.bun/bin:$PATH"
+          supabase functions deploy notification-webhook --project-ref $SUPABASE_PROJECT_ID
 
   deploy-supabase-github:
     name: Deploy github-webhook to Sandbox
