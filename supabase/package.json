@@ -9,5 +9,13 @@
     "deploy:sandbox:notification-webhook": "supabase functions deploy notification-webhook --project-ref $SANDBOX_SUPABASE_PROJECT_ID",
     "deploy:sandbox:github-webhook": "supabase functions deploy github-webhook --project-ref $SANDBOX_SUPABASE_PROJECT_ID",
     "deploy:sandbox:polar-webhook": "supabase functions deploy polar-webhook --project-ref $SANDBOX_SUPABASE_PROJECT_ID"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.86.0",
+    "@octokit/webhooks": "14.1.3",
+    "react": "18.2.0",
+    "react-email": "2.1.0",
+    "@react-email/components": "0.0.15",
+    "@react-email/render": "0.0.12"
   }
 }

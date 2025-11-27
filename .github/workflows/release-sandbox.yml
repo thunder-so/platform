@@ -192,17 +192,19 @@ jobs:
         with:
           version: latest
 
-      - name: Install bun
-        run: curl -fsSL https://bun.sh/install | bash
+      - name: Install Deno
+        run: |
+          curl -fsSL https://deno.land/install.sh | sh
+          export PATH="$HOME/.deno/bin:$PATH"
 
       - name: Install notification-webhook dependencies
         run: |
           source /home/runner/.bash_profile 
-          cd supabase/functions/notification-webhook && bun install
+          cd supabase/functions/notification-webhook && deno install
 
       - name: Deploy all supabase functions to sandbox
         run: |
-          export PATH="$HOME/.bun/bin:$PATH"
+          cd supabase
           supabase functions deploy notification-webhook --project-ref $SUPABASE_PROJECT_ID
           supabase functions deploy github-webhook --project-ref $SUPABASE_PROJECT_ID
           supabase functions deploy polar-webhook --project-ref $SUPABASE_PROJECT_ID
@@ -226,16 +228,20 @@ jobs:
         with:
           version: latest
 
-      - name: Install bun
-        run: curl -fsSL https://bun.sh/install | bash
+      - name: Install Deno
+        run: |
+          curl -fsSL https://deno.land/install.sh | sh
+          export PATH="$HOME/.deno/bin:$PATH"
 
       - name: Install notification-webhook dependencies
         run: |
           source /home/runner/.bash_profile 
-          cd supabase/functions/notification-webhook && bun install
+          cd supabase/functions/notification-webhook && deno install
 
       - name: Deploy notification-webhook to sandbox
-        run: supabase functions deploy notification-webhook --project-ref $SUPABASE_PROJECT_ID
+        run: |
+          cd supabase
+          supabase functions deploy notification-webhook --project-ref $SUPABASE_PROJECT_ID
 
   deploy-supabase-github:
     name: Deploy github-webhook to Sandbox
@@ -278,4 +284,6 @@ jobs:
           version: latest
 
       - name: Deploy polar-webhook to sandbox
-        run: supabase functions deploy polar-webhook --project-ref $SUPABASE_PROJECT_ID
+        run: |
+          cd supabase
+          supabase functions deploy polar-webhook --project-ref $SUPABASE_PROJECT_ID

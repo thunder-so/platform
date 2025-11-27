@@ -79,6 +79,7 @@
         "aws-cdk": "2.1023.0",
         "aws-cdk-lib": "2.208.0",
         "dotenv-cli": "7.4.2",
+        "tsx": "^4.20.6",
         "typescript": "5.9.2",
       },
     },
