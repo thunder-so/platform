@@ -203,7 +203,7 @@ jobs:
 
       - name: Deploy all supabase functions to sandbox
         run: |
-          cd supabase && deno install
+          cd supabase
           supabase functions deploy notification-webhook --project-ref $SUPABASE_PROJECT_ID
           supabase functions deploy github-webhook --project-ref $SUPABASE_PROJECT_ID
           supabase functions deploy polar-webhook --project-ref $SUPABASE_PROJECT_ID
@@ -238,7 +238,7 @@ jobs:
 
       - name: Deploy notification-webhook to sandbox
         run: |
-          cd supabase && deno install
+          cd supabase
           supabase functions deploy notification-webhook --project-ref $SUPABASE_PROJECT_ID
 
   deploy-supabase-github:
@@ -282,6 +282,4 @@ jobs:
           version: latest
 
       - name: Deploy polar-webhook to sandbox
-        run: |
-          cd supabase && deno install
-          supabase functions deploy polar-webhook --project-ref $SUPABASE_PROJECT_ID
+        run: supabase functions deploy polar-webhook --project-ref $SUPABASE_PROJECT_ID
