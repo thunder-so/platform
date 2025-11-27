@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": ["deno.window"],
+    "strict": true,
+    "nodeModulesDir": "auto"
+  },
+  "imports": {
+    "jsr:@supabase/functions-js/edge-runtime.d.ts": "https://esm.sh/@supabase/functions-js@2.86.0/src/edge-runtime.d.ts"
+  }
+}
