@@ -6,7 +6,7 @@
     "build": "tsc",
     "cdk": "cdk",
     "synth": "cdk synth",
-    "deploy:sandbox": "dotenv -e .env -- cdk deploy --all --app \"npx tsx bin/ping.ts && npx tsx bin/provider.ts && npx tsx bin/runner.ts\" --context environment=sandbox",
+    "deploy:sandbox": "dotenv -e .env -- cdk deploy --all --app \"npx tsx bin/ping.ts && npx tsx bin/provider.ts && npx tsx bin/runner.ts\" --context environment=sandbox --profile burner",
     "deploy:sandbox:provider": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/provider.ts\" --context environment=sandbox --profile burner",
     "deploy:sandbox:runner": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/runner.ts\" --context environment=sandbox --profile burner",
     "deploy:sandbox:ping": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=sandbox --profile burner",
@@ -15,9 +15,10 @@
     "deploy:prod:ping": "cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=production"
   },
   "devDependencies": {
+    "@types/aws-lambda": "^8.10.159",
+    "@types/node": "^24.10.1",
     "aws-cdk": "2.1023.0",
     "aws-cdk-lib": "2.208.0",
-    "@types/aws-lambda": "^8.10.159",
     "dotenv-cli": "7.4.2",
     "typescript": "5.9.2"
   },

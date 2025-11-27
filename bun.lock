@@ -75,6 +75,7 @@
       },
       "devDependencies": {
         "@types/aws-lambda": "^8.10.159",
+        "@types/node": "^24.10.1",
         "aws-cdk": "2.1023.0",
         "aws-cdk-lib": "2.208.0",
         "dotenv-cli": "7.4.2",

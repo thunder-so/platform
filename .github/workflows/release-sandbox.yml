@@ -103,11 +103,8 @@ jobs:
       - name: Install dependencies
         run: cd services && bun install
 
-      - name: Build services
-        run: cd services && bun run build
-
       - name: Deploy all services to sandbox
-        run: cd services && bun run deploy:sandbox
+        run: cd services && bun run cdk deploy --all --app \"npx tsx bin/ping.ts && npx tsx bin/provider.ts && npx tsx bin/runner.ts\" --context environment=sandbox
 
   deploy-services-provider:
     name: Deploy Provider Service to Sandbox
@@ -128,11 +125,8 @@ jobs:
       - name: Install dependencies
         run: cd services && bun install
 
-      - name: Build services
-        run: cd services && bun run build
-
       - name: Deploy provider service to sandbox
-        run: cd services && bun run deploy:sandbox:provider
+        run: cd services && bun run cdk deploy --app \"npx tsx bin/provider.ts\" --context environment=sandbox
 
   deploy-services-runner:
     name: Deploy Runner Service to Sandbox
@@ -153,11 +147,8 @@ jobs:
       - name: Install dependencies
         run: cd services && bun install
 
-      - name: Build services
-        run: cd services && bun run build
-
       - name: Deploy runner service to sandbox
-        run: cd services && bun run deploy:sandbox:runner
+        run: cd services && bun run cdk deploy --app \"npx tsx bin/runner.ts\" --context environment=sandbox
 
   deploy-services-ping:
     name: Deploy Ping Service to Sandbox
@@ -178,11 +169,8 @@ jobs:
       - name: Install dependencies
         run: cd services && bun install
 
-      - name: Build services
-        run: cd services && bun run build
-
       - name: Deploy ping service to sandbox
-        run: cd services && bun run deploy:sandbox:ping
+        run: cd services && bun run cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=sandbox
 
   deploy-supabase-all:
     name: Deploy All Supabase Functions to Sandbox
@@ -200,13 +188,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: oven-sh/setup-bun@v1
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Install bun
+        run: curl -fsSL https://bun.sh/install | bash
 
       - name: Install notification-webhook dependencies
         run: cd supabase/functions/notification-webhook && bun install
-
-      - name: Install Supabase CLI manually
-        run: bun install -g supabase
 
       - name: Deploy all supabase functions to sandbox
         run: |
@@ -230,18 +220,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: oven-sh/setup-bun@v1
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Install bun
+        run: curl -fsSL https://bun.sh/install | bash
 
       - name: Install notification-webhook dependencies
         run: cd supabase/functions/notification-webhook && bun install
 
-      - name: Install Supabase CLI manually
-        run: bun install -g supabase
-
       - name: Deploy notification-webhook to sandbox
-        run: |
-          export PATH="$HOME/.bun/bin:$PATH"
-          supabase functions deploy notification-webhook --project-ref $SUPABASE_PROJECT_ID
+        run: supabase functions deploy notification-webhook --project-ref $SUPABASE_PROJECT_ID
 
   deploy-supabase-github:
     name: Deploy github-webhook to Sandbox
