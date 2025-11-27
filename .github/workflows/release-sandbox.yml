@@ -193,13 +193,12 @@ jobs:
           version: latest
 
       - name: Install Deno
-        run: |
-          curl -fsSL https://deno.land/install.sh | sh
-          export PATH="$HOME/.deno/bin:$PATH"
+        run: curl -fsSL https://deno.land/install.sh | sh
 
       - name: Install notification-webhook dependencies
         run: |
-          source /home/runner/.bash_profile 
+          export PATH="$HOME/.deno/bin:$PATH"
+          source $HOME/.bash_profile 
           cd supabase/functions/notification-webhook && deno install
 
       - name: Deploy all supabase functions to sandbox
@@ -229,13 +228,12 @@ jobs:
           version: latest
 
       - name: Install Deno
-        run: |
-          curl -fsSL https://deno.land/install.sh | sh
-          export PATH="$HOME/.deno/bin:$PATH"
+        run: curl -fsSL https://deno.land/install.sh | sh
 
       - name: Install notification-webhook dependencies
         run: |
-          source /home/runner/.bash_profile 
+          export PATH="$HOME/.deno/bin:$PATH"
+          source $HOME/.bash_profile 
           cd supabase/functions/notification-webhook && deno install
 
       - name: Deploy notification-webhook to sandbox
