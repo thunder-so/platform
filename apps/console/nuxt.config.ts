@@ -37,7 +37,6 @@ export default defineNuxtConfig({
     ],
   },
   modules: [
-    '@nuxtjs/tailwindcss',
     '@nuxt/ui',
     '@nuxtjs/supabase',
     '@polar-sh/nuxt',
@@ -49,10 +48,6 @@ export default defineNuxtConfig({
   alias: {
     '~~/server': fileURLToPath(new URL('./server', import.meta.url))
   },
-  // modulesDir: [
-  //   join(currentDir, '../../node_modules'), 
-  //   join(currentDir, './node_modules')
-  // ],
   supabase: {
     url: process.env.SUPABASE_URL,
     key: process.env.SUPABASE_KEY,
