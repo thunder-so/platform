@@ -253,9 +253,7 @@ const helpMenuItems = ref([
     { 
       label: 'Feedback', 
       icon: 'tabler:messages',
-      click: async () => { 
-        // open feedback modal
-      }
+      to: "#tally-open=VLpMBa&tally-width=400&tally-align-left=1&tally-hide-title=1&tally-overlay=1&tally-emoji-text=👋&tally-emoji-animation=wave&tally-auto-close=2000&tally-form-events-forwarding=1"
     },
   ]
 ]);

@@ -43,7 +43,11 @@
               <p class="text-sm text-muted mb-3">
                 Thunder is currently in beta. Feedback is highly appreciated.
               </p>
-              <UButton color="neutral" variant="outline">Send feedback</UButton>
+              <UButton color="neutral" variant="outline"
+                data-tally-open="VLpMBa" data-tally-width="400" data-tally-align-left="1" data-tally-hide-title="1" data-tally-overlay="1" data-tally-emoji-text="👋" data-tally-emoji-animation="head-shake" data-tally-auto-close="2000" data-tally-form-events-forwarding="1"
+              >
+              Send feedback
+              </UButton>
             </UCard>
           </div>
         </div>
