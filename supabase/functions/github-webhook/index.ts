@@ -3,7 +3,7 @@ import { createClient } from 'npm:@supabase/supabase-js'
 import { Webhooks } from 'npm:@octokit/webhooks'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-const supabaseSecretKey = Deno.env.get('SUPABASE_SECRET_KEY')!
+const supabaseSecretKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const githubWebhookSecret = Deno.env.get('GH_WEBHOOK_SECRET')!
 
 const webhooks = new Webhooks({

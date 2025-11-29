@@ -11,9 +11,9 @@
       <NuxtPage />
       
       <div>
-        <UButton @click="modalRef?.open()">
+        <!-- <UButton @click="modalRef?.open()">
           Open Cookie Preferences
-        </UButton>
+        </UButton> -->
         <CookieBanner @open-modal="modalRef?.open()" />
         <CookieModal ref="modalRef" />
       </div>
@@ -24,7 +24,6 @@
 <script setup lang="ts">
 const route = useRoute();
 const title: any = ref(route.meta.title || 'console.thunder.so');
-// const { memberships, isLoading, refreshMemberships } = useMemberships()
 
 const modalRef = ref()
 
@@ -60,8 +59,4 @@ watch(
     title.value = newTitle;
   }
 )
-
-onMounted(async () => {
-  // refreshMemberships()
-})
 </script>

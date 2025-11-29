@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'npm:@supabase/supabase-js'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-const supabaseSecretKey = Deno.env.get('SUPABASE_SECRET_KEY')!
+const supabaseSecretKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 const supabase = createClient(supabaseUrl, supabaseSecretKey, {
   auth: { persistSession: false }, // Edge functions are stateless

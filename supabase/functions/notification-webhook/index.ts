@@ -10,7 +10,7 @@ import { render } from 'npm:@react-email/render';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseSecretKey = Deno.env.get('SUPABASE_SECRET_KEY')!;
+const supabaseSecretKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const supabase = createClient(supabaseUrl, supabaseSecretKey, {
   auth: { persistSession: false },

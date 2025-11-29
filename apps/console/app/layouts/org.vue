@@ -29,14 +29,23 @@
       
       <div v-else class="grid grid-cols-6 gap-0 min-h-[calc(100vh-4rem)]">
         <div class="aside col-span-1 p-6 border-r border-muted lg:block hidden">
-          <UNavigationMenu 
-            v-if="selectedOrganization"
-            :items="links"
-            orientation="vertical" 
-            :ui="{
-              link: 'p-3 gap-2'
-            }"
-          />
+          <div class="flex flex-col justify-between h-full">
+            <UNavigationMenu 
+              v-if="selectedOrganization"
+              :items="links"
+              orientation="vertical" 
+              :ui="{
+                link: 'p-3 gap-2'
+              }"
+            />
+
+            <UCard variant="soft">
+              <p class="text-sm text-muted mb-3">
+                Thunder is currently in beta. Feedback is highly appreciated.
+              </p>
+              <UButton color="neutral" variant="outline">Send feedback</UButton>
+            </UCard>
+          </div>
         </div>
         <div class="p-6 lg:col-span-5 col-span-6">
           <UContainer>

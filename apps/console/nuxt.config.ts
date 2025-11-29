@@ -43,7 +43,8 @@ export default defineNuxtConfig({
     '@nuxt/icon',
     '@posthog/nuxt',
     '@vueuse/nuxt',
-    'nuxt-simple-cookie-consent'
+    'nuxt-simple-cookie-consent',
+    '@nuxt/image',
   ],
   css: ['~/assets/css/main.css'],
   alias: {
