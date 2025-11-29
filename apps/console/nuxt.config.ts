@@ -42,7 +42,8 @@ export default defineNuxtConfig({
     '@polar-sh/nuxt',
     '@nuxt/icon',
     '@posthog/nuxt',
-    '@vueuse/nuxt'
+    '@vueuse/nuxt',
+    'nuxt-simple-cookie-consent'
   ],
   css: ['~/assets/css/main.css'],
   alias: {
@@ -75,7 +76,8 @@ export default defineNuxtConfig({
   posthogConfig: {
     publicKey: process.env.POSTHOG_API_KEY || '',
     clientConfig: {
-      capture_exceptions: true, // Enables automatic exception capture on the client side (Vue)
+      opt_out_capturing_by_default: true, // Start with capture disabled until consent given
+      capture_exceptions: true, // Always capture Vue exceptions for diagnostics
     },
     serverConfig: {
       enableExceptionAutocapture: true, // Enables automatic exception capture on the server side (Nitro)
@@ -142,5 +144,66 @@ export default defineNuxtConfig({
         'perfect-debounce'
       ]
     }
-  }
+  },
+  cookieConsent: {
+    expiresInDays: 180,
+    consentVersion: '1.0.0',
+    cookieName: 'cookie_consent',
+    gtmConsentMapping: {
+      analytics: 'analytics_storage',
+      ads: 'ad_storage',
+      personalization: 'personalization_storage',
+    },
+    categories: {
+      necessary: {
+        label: 'Necessary',
+        description: 'Used for managing your session and state within console.',
+        required: true
+      },
+      analytics: {
+        label: 'Analytics',
+        description: 'Used to track activity and errors for UX purposes.',
+        required: false,
+      },
+      ads: {
+        label: 'Marketing',
+        description: 'Used for ad personalization.',
+        required: false
+      },
+    },
+    scripts: [
+      {
+        id: 'ga2',
+        src: 'https://www.googletagmanager.com/gtag/js?id=GA_ID',
+        async: true,
+        defer: true,
+        categories: ['analytics', 'ads'],
+      },
+      {
+        id: 'ads',
+        src: 'https://ads.example.com/script.js',
+        categories: ['ads'],
+      },
+      {
+        id: 'ga',
+        src: 'https://www.googletagmanager.com/gtag/js?id=GA_ID',
+        customContent: `
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'GA_ID');
+        `,
+        categories: ['analytics'],
+      },
+      {
+        id: 'facebook',
+        customHTML: `
+            <iframe src="https://www.facebook.com/tr?id=FB_PIXEL_ID&ev=PageView&noscript=1"
+                    height="1" width="1" style="display:none"></iframe>
+          `,
+        categories: ['ads'],
+        src: '',
+      },
+    ],
+  },
 });

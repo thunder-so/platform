@@ -29,7 +29,6 @@
     "@nuxt/kit": "4.2.1",
     "@nuxt/ui": "4.2.0",
     "@nuxtjs/supabase": "2.0.1",
-    "@nuxtjs/tailwindcss": "6.14.0",
     "@octokit/app": "16.1.2",
     "@octokit/auth-app": "8.1.2",
     "@octokit/core": "7.0.6",
@@ -44,9 +43,9 @@
     "drizzle-orm": "0.44.7",
     "lodash-es": "4.17.21",
     "nuxt": "4.2.1",
+    "nuxt-simple-cookie-consent": "1.1.7",
     "pg": "8.16.3",
     "superjson": "2.2.5",
-    "tailwindcss": "4.1.17",
     "trpc-nuxt": "1.2.0",
     "tsx": "4.20.6",
     "vue-router": "4.6.3"
