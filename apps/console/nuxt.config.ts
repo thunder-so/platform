@@ -46,6 +46,10 @@ export default defineNuxtConfig({
     'nuxt-simple-cookie-consent',
     '@nuxt/image',
   ],
+  // modulesDir: [
+  //   join(currentDir, '../../node_modules'), 
+  //   join(currentDir, './node_modules')
+  // ],
   css: ['~/assets/css/main.css'],
   alias: {
     '~~/server': fileURLToPath(new URL('./server', import.meta.url))

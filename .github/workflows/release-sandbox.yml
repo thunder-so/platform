@@ -71,7 +71,7 @@ jobs:
       - uses: oven-sh/setup-bun@v1
 
       - name: Install dependencies
-        run: cd apps/console && bun install
+        run: cd apps/console && bun install --linker=isolated
 
       - name: Build console
         run: cd apps/console && bun run build
@@ -101,7 +101,7 @@ jobs:
       - uses: oven-sh/setup-bun@v1
 
       - name: Install dependencies
-        run: cd services && bun install
+        run: cd services && bun install --linker=isolated
 
       - name: Deploy all services to sandbox
         run: cd services && bun run cdk deploy --app "npx tsx bin/ping.ts && npx tsx bin/provider.ts && npx tsx bin/runner.ts" --context environment=sandbox
@@ -123,7 +123,7 @@ jobs:
       - uses: oven-sh/setup-bun@v1
 
       - name: Install dependencies
-        run: cd services && bun install
+        run: cd services && bun install --linker=isolated
 
       - name: Deploy provider service to sandbox
         run: cd services && bun run cdk deploy --app "npx tsx bin/provider.ts" --context environment=sandbox
@@ -145,7 +145,7 @@ jobs:
       - uses: oven-sh/setup-bun@v1
 
       - name: Install dependencies
-        run: cd services && bun install
+        run: cd services && bun install --linker=isolated
 
       - name: Deploy runner service to sandbox
         run: cd services && bun run cdk deploy --app "npx tsx bin/runner.ts" --context environment=sandbox
@@ -167,7 +167,7 @@ jobs:
       - uses: oven-sh/setup-bun@v1
 
       - name: Install dependencies
-        run: cd services && bun install
+        run: cd services && bun install --linker=isolated
 
       - name: Deploy ping service to sandbox
         run: cd services && bun run cdk deploy --app "npx tsx bin/ping.ts" --context environment=sandbox
