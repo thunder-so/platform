@@ -157,13 +157,14 @@ const columns = [
       ])
     },
     cell: ({ row }) => {
-      const date = new Date(row.getValue('updated_at')).toLocaleString('en-US', {
+      const date = new Date(row.getValue('updated_at')).toLocaleString('en-GB', {
         day: 'numeric',
         month: 'short',
+        year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
         hour12: false
-      })
+      });
       return h('div', { class: 'text-right font-medium' }, date)
     }
   }

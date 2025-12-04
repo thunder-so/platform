@@ -227,13 +227,14 @@ const columns = [
     accessorKey: 'updated_at', 
     header: 'Last Updated',
     cell: ({ row }) => {
-      return new Date(row.getValue('updated_at')).toLocaleString('en-US', {
+      return new Date(row.getValue('updated_at')).toLocaleString('en-GB', {
         day: 'numeric',
         month: 'short',
+        year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
         hour12: false
-      })
+      });
     }
   },
   {
