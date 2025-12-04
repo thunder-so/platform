@@ -178,37 +178,18 @@ export default defineNuxtConfig({
     },
     scripts: [
       {
-        id: 'ga2',
-        src: 'https://www.googletagmanager.com/gtag/js?id=GA_ID',
+        id: 'ga',
+        src: 'https://www.googletagmanager.com/gtag/js?id=G-WY75WH7XZ7',
         async: true,
         defer: true,
-        categories: ['analytics', 'ads'],
-      },
-      {
-        id: 'ads',
-        src: 'https://ads.example.com/script.js',
-        categories: ['ads'],
-      },
-      {
-        id: 'ga',
-        src: 'https://www.googletagmanager.com/gtag/js?id=GA_ID',
         customContent: `
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
-          gtag('config', 'GA_ID');
+          gtag('config', 'G-WY75WH7XZ7');
         `,
-        categories: ['analytics'],
-      },
-      {
-        id: 'facebook',
-        customHTML: `
-            <iframe src="https://www.facebook.com/tr?id=FB_PIXEL_ID&ev=PageView&noscript=1"
-                    height="1" width="1" style="display:none"></iframe>
-          `,
-        categories: ['ads'],
-        src: '',
-      },
+        categories: ['analytics', 'marketing'],
+      }
     ],
   },
 });
