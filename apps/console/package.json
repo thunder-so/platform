@@ -36,7 +36,7 @@
     "@octokit/types": "16.0.0",
     "@polar-sh/nuxt": "0.4.0",
     "@posthog/nuxt": "^1.2.6",
-    "@thunderso/cdk-nuxt": "0.2.0",
+    "@thunderso/cdk-nuxt": "0.2.3",
     "@trpc/client": "11.7.1",
     "@trpc/server": "11.7.1",
     "@vueuse/nuxt": "14.0.0",
