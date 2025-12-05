@@ -54,6 +54,7 @@
     "vue-router": "4.6.3"
   },
   "devDependencies": {
+    "aws-cdk": "2.1031.0",
     "@types/lodash-es": "4.17.12",
     "@types/pg": "8.15.6",
     "dotenv": "17.2.3",
