@@ -115,11 +115,6 @@ export default defineNuxtConfig({
       websocket: false,
       legacyExternals: process.env.NODE_ENV === 'development' ? false : true,
     },
-    rollupConfig: {
-      external: [
-        'vue'
-      ]
-    },
     moduleSideEffects: [
       'vue', 
       'entities', 
