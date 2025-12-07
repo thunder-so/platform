@@ -1,6 +1,6 @@
 import { PostHog } from 'posthog-node';
 
-export const trackServerEvent = (event: string, properties: any = {}) => {
+export const trackServerEvent = async (event: string, properties: any = {}) => {
   try {
     const runtimeConfig = useRuntimeConfig();
     const posthog = new PostHog(
@@ -14,7 +14,8 @@ export const trackServerEvent = (event: string, properties: any = {}) => {
       properties
     });
     
-    void posthog.flush();
+    await posthog.flush();
+    await posthog.shutdown();
   } catch (e) {
     // Silently fail analytics
   }
