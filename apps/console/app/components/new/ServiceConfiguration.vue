@@ -4,7 +4,14 @@
   
     <UAlert v-if="scanError" color="warning" variant="subtle" class="mb-4" :title="scanError" />
 
-    <ClientOnly v-if="service">
+    <div v-if="props.serviceLoading" class="flex items-center justify-center py-8">
+      <div class="flex flex-col items-center gap-4">
+        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+        <div class="text-sm text-muted">Loading configuration...</div>
+      </div>
+    </div>
+
+    <ClientOnly v-else-if="service">
       <div class="mt-4">
         <ServiceConfigStatic v-if="service.stack_type === 'SPA'" ref="serviceForm" :configuration="service.metadata" />
         <ServiceConfigFunction v-else-if="service.stack_type === 'FUNCTION'" ref="serviceForm" :configuration="service.metadata" />
@@ -32,6 +39,14 @@ const props = defineProps({
   service: {
     type: Object as PropType<ServiceInputSchema | null>,
     default: null,
+  },
+  selectedStackType: {
+    type: String,
+    required: true,
+  },
+  serviceLoading: {
+    type: Boolean,
+    default: false,
   },
 });
 

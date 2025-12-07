@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ref, computed, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import type { SPAServiceMetadata, FunctionServiceMetadata, WebServiceMetadata } from '~~/server/validators/common';
 import type { ServiceInputSchema, ApplicationInputSchema } from '~~/server/validators/new';
 import type { Provider, Branch, UserAccessToken } from '~~/server/db/schema';
@@ -98,10 +99,14 @@ const useLocalStorage = <T>(key: string, defaultValue: T) => {
 export const useNewApplicationFlow = () => {
   const { $client } = useNuxtApp();
   const route = useRoute();
+  const router = useRouter();
   const applicationSchema = useLocalStorage<Partial<ApplicationInputSchema>>('newApplicationSchema', {});
   const oAuthError = useState<boolean>('newApplicationOAuthError', () => false);
+  const selectedStackType = ref<ValidStackType>('SPA');
+  const repoInfo = ref<{owner: string, repo: string, installation_id: number} | null>(null);
 
   const isLoading = ref(false);
+  const serviceLoading = ref(false);
   const branches = ref<Branch[]>([]);
   const selectedBranchName = ref<string>();
   const branchesLoading = ref(false);
@@ -110,6 +115,12 @@ export const useNewApplicationFlow = () => {
   const providerLoading = ref(false);
   const loadError = ref<string | null>(null);
   const scanError = ref<string | null>(null);
+  
+  // Cache for scan results
+  const scanCache = ref<{
+    buildSettings?: any;
+    dockerFileStatus?: any;
+  }>({});
 
   const currentStep = computed(() => {
     const path = route.path;
@@ -198,16 +209,42 @@ export const useNewApplicationFlow = () => {
     }
   });
 
+  const fetchScanData = async (owner: string, repo: string, installation_id: number, stackType: ValidStackType) => {
+    const { $posthog } = useNuxtApp();
+    
+    // Fetch buildSettings if not cached
+    if (!scanCache.value.buildSettings) {
+      try {
+        scanCache.value.buildSettings = await $client.github.scanRepository.query({ owner, repo, installation_id });
+      } catch (e: any) {
+        console.error("scan error:", e);
+        $posthog().capture('repo_scan_failed', {
+          stack_type: stackType,
+          error: e.message,
+          repo: `${owner}/${repo}`
+        });
+        scanError.value = e.message || e;
+      }
+    }
+
+    // Fetch dockerFileStatus only for FUNCTION and WEB_SERVICE if not cached
+    if ((stackType === 'FUNCTION' || stackType === 'WEB_SERVICE') && !scanCache.value.dockerFileStatus) {
+      try {
+        scanCache.value.dockerFileStatus = await $client.github.scanForDockerfile.query({ owner, repo, installation_id });
+      } catch (e: any) {
+        console.error("dockerfile scan error:", e);
+        scanError.value = e.message || e;
+      }
+    }
+  };
+
   const createServiceSchema = async (
     stackType: ValidStackType,
     owner: string,
     repo: string,
     installation_id: number
   ): Promise<ServiceInputSchema> => {
-    
-    await fetchBranches(owner, repo, installation_id);
     const name = Math.random().toString(36).substring(2, 9).toLowerCase();
-
     const baseService = {
       name: name,
       display_name: repo,
@@ -219,112 +256,31 @@ export const useNewApplicationFlow = () => {
     };
 
     const { $posthog } = useNuxtApp();
+    let metadata = { ...STACK_DEFAULTS[stackType] };
 
-    if (stackType === 'SPA') {
-      let metadata = { ...STACK_DEFAULTS.SPA };
-      try {
-        const buildSettings = await $client.github.scanRepository.query({ owner, repo, installation_id });
-        if (buildSettings?.success === false) {
-          scanError.value = buildSettings.message;
-        } else if (buildSettings) {
-          metadata.buildProps = { ...metadata.buildProps, ...buildSettings };
-          $posthog().capture('repo_scanned', {
-            success: true,
-            stack_type: 'SPA',
-            repo: `${owner}/${repo}`
-          });
-        }
-      } catch (e: any) {
-        console.error("scan error:", e);
-        $posthog().capture('repo_scan_failed', {
-          stack_type: 'SPA',
-          error: e.message,
-          repo: `${owner}/${repo}`
-        });
-        scanError.value = e.message || e;
-      }
-      return {
-        ...baseService,
-        stack_type: 'SPA',
-        stack_version: stackVersionMap.SPA,
-        metadata
+    // Apply cached buildSettings if available
+    if (scanCache.value.buildSettings?.success === false) {
+      scanError.value = scanCache.value.buildSettings.message;
+    } else if (scanCache.value.buildSettings) {
+      metadata.buildProps = { ...metadata.buildProps, ...scanCache.value.buildSettings };
+    }
+
+    // Apply dockerFile settings for FUNCTION and WEB_SERVICE
+    if (stackType === 'FUNCTION' && scanCache.value.dockerFileStatus?.success) {
+      metadata.functionProps = {
+        ...metadata.functionProps,
+        dockerFile: 'Dockerfile'
       };
+    } else if (stackType === 'WEB_SERVICE' && scanCache.value.dockerFileStatus?.success) {
+      metadata.buildProps.buildSystem = 'Custom Dockerfile';
+    } else if ((stackType === 'FUNCTION' || stackType === 'WEB_SERVICE') && scanCache.value.dockerFileStatus?.message) {
+      scanError.value = scanCache.value.dockerFileStatus.message as string;
     }
 
-    if (stackType === 'FUNCTION') {
-      let metadata = { ...STACK_DEFAULTS.FUNCTION };
-      try {
-        const buildSettings = await $client.github.scanRepository.query({ owner, repo, installation_id });
-        if (buildSettings?.success === false) {
-          scanError.value = buildSettings.message;
-        } else if (buildSettings) {
-          metadata.buildProps = { ...metadata.buildProps, ...buildSettings };
-        }
-          const dockerFileStatus = await $client.github.scanForDockerfile.query({ owner, repo, installation_id });
-          if (dockerFileStatus.success) {
-            // set functionProps.dockerFile when a Dockerfile exists in the repo
-            metadata.functionProps = {
-              ...metadata.functionProps,
-              dockerFile: 'Dockerfile'
-            };
-            $posthog().capture('repo_scanned', {
-              success: true,
-              stack_type: 'FUNCTION',
-              has_dockerfile: true,
-              repo: `${owner}/${repo}`
-            });
-          } else {
-            scanError.value = dockerFileStatus.message as string;
-          }
-      } catch (e: any) {
-        console.error("scan error:", e);
-        $posthog().capture('repo_scan_failed', {
-          stack_type: 'FUNCTION',
-          error: e.message,
-          repo: `${owner}/${repo}`
-        });
-      }
-      return {
-        ...baseService,
-        stack_type: 'FUNCTION',
-        stack_version: stackVersionMap.FUNCTION,
-        metadata
-      };
-    }
-
-    // WEB_SERVICE case
-    let metadata = { ...STACK_DEFAULTS.WEB_SERVICE };
-    try {
-      const buildSettings = await $client.github.scanRepository.query({ owner, repo, installation_id });
-      if (buildSettings?.success === false) {
-        scanError.value = buildSettings.message;
-      } else if (buildSettings) {
-        metadata.buildProps = { ...metadata.buildProps, ...buildSettings };
-      }
-      const dockerFileStatus = await $client.github.scanForDockerfile.query({ owner, repo, installation_id });
-      if (dockerFileStatus.success) {
-        metadata.buildProps.buildSystem = 'Custom Dockerfile';
-        $posthog().capture('repo_scanned', {
-          success: true,
-          stack_type: 'WEB_SERVICE',
-          has_dockerfile: true,
-          repo: `${owner}/${repo}`
-        });
-      } else {
-        scanError.value = dockerFileStatus.message as string;
-      }
-    } catch (e: any) {
-      console.error("scan error:", e);
-      $posthog().capture('repo_scan_failed', {
-        stack_type: 'WEB_SERVICE',
-        error: e.message,
-        repo: `${owner}/${repo}`
-      });
-    }
     return {
       ...baseService,
-      stack_type: 'WEB_SERVICE',
-      stack_version: stackVersionMap.WEB_SERVICE,
+      stack_type: stackType,
+      stack_version: stackVersionMap[stackType],
       metadata
     };
   };
@@ -332,6 +288,8 @@ export const useNewApplicationFlow = () => {
   const setApplicationSchema = async (owner: string, repo: string, installation_id: number, stack_type: string | null) => {
     isLoading.value = true;
     scanError.value = null;
+
+    repoInfo.value = { owner, repo, installation_id };
 
     const { $posthog } = useNuxtApp();
     $posthog().capture('app_create_started', {
@@ -348,16 +306,19 @@ export const useNewApplicationFlow = () => {
           }
           return 'SPA';
         };
-        
-        const validStackType = getValidStackType();
 
-        await fetchProviders(selectedOrganization.value?.id);
+        const validStackType = getValidStackType();
+        selectedStackType.value = validStackType;
+
+        await Promise.all([
+          fetchBranches(owner, repo, installation_id),
+          fetchProviders(selectedOrganization.value?.id)
+        ]);
+        
         const initialProvider = providers.value[0] || undefined;
         if (initialProvider) {
             selectedProviderId.value = initialProvider.id;
         }
-
-        const serviceSchema = await createServiceSchema(validStackType, owner, repo, installation_id);
 
         applicationSchema.value = {
           name: repo.replace(/[-_]/g, '').substring(0, 7).toLowerCase(),
@@ -367,21 +328,23 @@ export const useNewApplicationFlow = () => {
               name: Math.random().toString(36).substring(2, 9).toLowerCase(),
               display_name: 'preview',
               region: initialProvider?.region || 'us-east-1',
-              services: [serviceSchema],
+              services: [],
               provider: initialProvider,
             },
           ],
         };
+
+        await createAndSetServiceSchema(validStackType, owner, repo, installation_id);
         
         $posthog().capture('app_configured', {
           repo_owner: owner,
           repo_name: repo,
-          stack_type: validStackType,
+          stack_type: selectedStackType.value,
           has_scan_error: !!scanError.value
         });
     } catch (e: any) {
         console.error("Failed to configure application:", e);
-        $posthog().capture('app_create_failed', {
+        $posthog().capture('app_configure_failed', {
           repo_owner: owner,
           repo_name: repo,
           error: e.message
@@ -391,6 +354,37 @@ export const useNewApplicationFlow = () => {
         isLoading.value = false;
     }
   };
+
+  const createAndSetServiceSchema = async (stackType: ValidStackType, owner: string, repo: string, installation_id: number) => {
+    serviceLoading.value = true;
+    scanError.value = null;
+    try {
+      await fetchScanData(owner, repo, installation_id, stackType);
+      const serviceSchema = await createServiceSchema(stackType, owner, repo, installation_id);
+      if (applicationSchema.value.environments && applicationSchema.value.environments[0]) {
+        applicationSchema.value.environments[0].services = [serviceSchema];
+      }
+    } catch (e: any) {
+      console.error("Failed to create and set service schema:", e);
+      scanError.value = e.message || 'An unexpected error occurred during service configuration.';
+    } finally {
+      serviceLoading.value = false;
+    }
+  };
+
+  watch(selectedStackType, async (newStackType, oldStackType) => {
+    if (!oldStackType || newStackType === oldStackType) return;
+
+    // Update URL without reloading page
+    const currentQuery = { ...route.query };
+    currentQuery.stack_type = newStackType;
+    router.replace({ query: currentQuery });
+
+    if (repoInfo.value) {
+      const { owner, repo, installation_id } = repoInfo.value;
+      await createAndSetServiceSchema(newStackType, owner, repo, installation_id);
+    }
+  }, { immediate: false });
 
   const clearApplicationSchema = () => {
     applicationSchema.value = {};
@@ -417,6 +411,7 @@ export const useNewApplicationFlow = () => {
     applicationSchema,
     oAuthError,
     isLoading,
+    serviceLoading,
     branches,
     selectedBranchName,
     providers,
@@ -429,5 +424,8 @@ export const useNewApplicationFlow = () => {
     setUat,
     setOAuthError,
     clearApplicationSchema,
+    selectedStackType,
+    repoInfo,
+    createAndSetServiceSchema,
   };
 };

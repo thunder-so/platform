@@ -5,11 +5,25 @@
       </UCard> -->
       <UCard class="mt-6">
         <template #header>
-          <h1>Configure application</h1>
+          <h1>Configure</h1>
         </template>
+
+        <UFormField label="Application Type" description="The type of application you want to deploy." class="grid grid-cols-3 gap-4 mb-6">
+          <USelect 
+            v-model="selectedStackType" 
+            :items="stackTypeOptions" 
+            :icon="stackTypeOptions.find(option => option.value === selectedStackType)?.icon"
+            orientation="horizontal" 
+            size="lg"
+            color="success"
+            class="w-full"
+          />
+        </UFormField>
 
         <div class="space-y-6">
           <UAlert v-if="loadError" color="error" variant="subtle" class="mb-4" :title="loadError" />
+
+          <h2 class="text-md font-semibold mt-6 mb-4 pb-4 border-b border-muted">Application Configuration</h2>
 
           <div v-if="applicationSchema.environments" class="space-y-6">
             <UForm ref="form" :state="applicationSchema" :schema="applicationInputSchema" :validate-on="['blur']" class="space-y-4">
@@ -23,7 +37,7 @@
                   <template #leading>
                     <p class="flex items-center">
                       <Icon name="tabler:brand-github" class="w-5 h-5 text-muted mr-2" />
-                      <span class="text-sm text-muted">{{applicationSchema.environments?.[0]?.services?.[0]?.owner}}/{{applicationSchema.environments?.[0]?.services?.[0]?.repo}}</span>
+                      <span v-if="repoInfo" class="text-sm text-muted">{{ repoInfo.owner }}/{{ repoInfo.repo }}</span>
                     </p>
                   </template>
                 </UInput>
@@ -60,11 +74,20 @@
               </UFormField>
             </UForm>
           </div>
-          <ServiceConfiguration ref="serviceConfig" :scan-error="scanError" :service="service" @update:service="(updatedService) => {
-            if (applicationSchema.environments && applicationSchema.environments[0] && applicationSchema.environments[0].services) {
-              applicationSchema.environments[0].services = [updatedService];
-            }
-          }" />
+          <ServiceConfiguration 
+            ref="serviceConfig" 
+            :key="selectedStackType" 
+            :scan-error="scanError" 
+            :service="service" 
+            :selected-stack-type="selectedStackType"
+            :service-loading="serviceLoading"
+            @update:service="(updatedService) => {
+              if (applicationSchema.environments && applicationSchema.environments[0] && applicationSchema.environments[0].services) {
+                applicationSchema.environments[0].services = [updatedService];
+              }
+            }"
+            @update:stack-type="selectedStackType = $event" 
+          />
         </div>
 
         <template #footer>
@@ -102,16 +125,19 @@ definePageMeta({
 
 const route = useRoute();
 const router = useRouter();
-const { 
+const {
   setApplicationSchema,
   applicationSchema,
   branches,
   selectedBranchName,
   isLoading,
+  serviceLoading,
   providers,
   selectedProviderId,
   loadError,
   scanError,
+  selectedStackType,
+  repoInfo
 } = useNewApplicationFlow();
 
 const appConfig = useAppConfig();
@@ -120,7 +146,6 @@ const awsRegions = ref(appConfig.regions);
 const providerItems = computed(() => providers.value.map(p => ({ value: p.id, label: p.alias })));
 const branchItems = computed(() => branches.value.map(b => ({ value: b.name, label: b.name })));
 const service = computed(() => applicationSchema.value.environments?.[0]?.services?.[0]);
-
 const form = ref();
 const serviceConfig = ref();
 const isNavigating = ref(false);
@@ -135,6 +160,27 @@ const handleContinue = async () => {
   isNavigating.value = true;
   await router.push('/new/deploy');
 };
+
+const stackTypeOptions = ref([
+  { 
+    label: 'Single Page App', 
+    value: 'SPA', 
+    icon: 'tabler:file',
+    description: 'S3 and CloudFront hosting for SPA/SSG' 
+  },
+  { 
+    label: 'Function', 
+    value: 'FUNCTION', 
+    icon: 'tabler:lambda',
+    description: 'Lambda and API Gateway' 
+  },
+  { 
+    label: 'Web Service', 
+    value: 'WEB_SERVICE',
+    icon: 'tabler:server',
+    description: 'Fargate and API Gateway' 
+  },
+]);
 
 onMounted(async () => {
   // If route contains repo info, let the composable initialize applicationSchema and fetch branches/build settings
