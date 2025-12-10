@@ -52,7 +52,7 @@
     "trpc-nuxt": "1.2.0",
     "tsx": "4.20.6",
     "vue-router": "4.6.3",
-    "zod": "^4.1.13"
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "aws-cdk": "2.1031.0",
