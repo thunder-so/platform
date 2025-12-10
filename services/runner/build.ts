@@ -27,13 +27,6 @@ if (!EVENT_TARGET) {
   throw new Error('Environment variable EVENT_TARGET is not set');
 }
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY;
-
-if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
-  throw new Error('Supabase URL, Key, and Service Key not found.');
-}
-
 const builders: Record<string, IStackBuilder> = {
   SPA: spaBuilder,
   FUNCTION: lambdaBuilder,
@@ -167,6 +160,14 @@ export const handler: SQSHandler = async (event) => {
           const build = buildDetails.builds[0];
           console.log('Fetched build details:', JSON.stringify(build, null, 2));
           const startTime = build.startTime;
+          
+          const SUPABASE_URL = process.env.SUPABASE_URL;
+          const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY;
+
+          if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
+            throw new Error('Supabase URL and Key not found.');
+          }
+
           const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY);
 
           if (command === 'delete') {

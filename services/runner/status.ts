@@ -7,12 +7,6 @@ import { CodePipelineClient, StartPipelineExecutionCommand } from "@aws-sdk/clie
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const REGION = process.env.REGION;
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY;
-
-if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
-  throw new Error('Supabase URL, Key, and Service Key not found.');
-}
 
 const STACK_OUTPUT_KEYS = [
   'CodePipelineName', 'CloudFrontDistributionUrl', 'CloudFrontDistributionId',
@@ -263,6 +257,13 @@ async function sendNotification(
 
 export const handler = async (event: CodeBuildStateChangeEvent, context: Context) => {
   console.log('Processing build event:', event);
+
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY;
+
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
+    throw new Error('Supabase URL and Key not found.');
+  }
 
   const buildId = event.detail['build-id'];
   const buildStatus = event.detail['build-status'];

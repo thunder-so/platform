@@ -7,13 +7,6 @@ import { createClient } from '@supabase/supabase-js';
 
 const REGION = process.env.REGION;
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY;
-
-if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
-  throw new Error('Supabase URL and Key not found.');
-}
-
 /**
  * Pipeline Event types
  */
@@ -97,6 +90,13 @@ async function getAwsCredentials(
 
 export const handler = async (event: CodePipelineEvent, context: Context) => {
     console.log('Received message:', JSON.stringify(event));
+
+    const SUPABASE_URL = process.env.SUPABASE_URL;
+    const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY;
+
+    if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
+      throw new Error('Supabase URL and Key not found.');
+    }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY);
 
