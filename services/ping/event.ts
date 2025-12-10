@@ -167,25 +167,30 @@ export const handler = async (event: CodePipelineEvent, context: Context) => {
 
         // check if pipeline failed at BuildAction
         if (buildAction?.latestExecution?.status === 'Failed') {
-          // STS CodeBuildClient
-          const codeBuild = new CodeBuildClient({
-            credentials,
-            region: environment.region
-          });
+          if (buildId) {
+            const codeBuild = new CodeBuildClient({
+              credentials,
+              region: environment.region
+            });
 
-          // get build data
-          const getBuildResponse = await codeBuild.send(new BatchGetBuildsCommand({
-            ids: [buildId]
-          }));
-    
-          const build = getBuildResponse.builds?.[0];
-          console.log("buildData: ", build);
-    
-          buildLogs = {
-            "deep-link": build?.logs?.deepLink,
-            "group-name": build?.logs?.groupName,
-            "stream-name": build?.logs?.streamName
-          };
+            const getBuildResponse = await codeBuild.send(new BatchGetBuildsCommand({
+              ids: [buildId]
+            }));
+      
+            const build = getBuildResponse.builds?.[0];
+            console.log("buildData: ", build);
+      
+            buildLogs = {
+              "deep-link": build?.logs?.deepLink,
+              "group-name": build?.logs?.groupName,
+              "stream-name": build?.logs?.streamName
+            };
+          } else {
+            buildLogs = {
+              errorCode: buildAction?.latestExecution?.errorDetails?.code,
+              errorMessage: buildAction?.latestExecution?.errorDetails?.message
+            };
+          }
         }
 
         // Upsert existing or insert new row

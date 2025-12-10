@@ -124,7 +124,16 @@
 
       <UAlert v-if="error" color="warning" variant="subtle" class="mb-4" :title="error.message" />
 
-      <div class="h-[calc(100vh-10rem)]">
+      <UAlert 
+        v-if="deployData?.pipeline_log?.errorCode" 
+        color="error" 
+        variant="subtle" 
+        class="mb-4" 
+        :title="deployData.pipeline_log.errorCode || 'Build Error'"
+        :description="deployData.pipeline_log.errorMessage"
+      />
+
+      <div v-else class="h-[calc(100vh-10rem)]">
         <AppLogViewer 
           :log-events="allLogEvents" 
           :loading="isLoading"
