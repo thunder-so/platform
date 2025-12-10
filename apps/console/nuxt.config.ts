@@ -183,7 +183,7 @@ export default defineNuxtConfig({
           gtag('js', new Date());
           gtag('config', 'G-WY75WH7XZ7');
         `,
-        categories: ['analytics', 'marketing'],
+        categories: ['analytics', 'ads'],
       }
     ],
   },
