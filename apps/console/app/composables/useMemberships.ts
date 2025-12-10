@@ -21,7 +21,6 @@ export const useMemberships = () => {
   const memberships = useState<OrganizationWithMetadata[]>('memberships', () => [])
   const selectedOrganization = useState<OrganizationWithMetadata | undefined>('selectedOrganization', () => undefined)
   const isLoading = useState('memberships.loading', () => false)
-  // const isInitialized = useState('memberships.initialized', () => false)
 
   const refreshMemberships = async () => {
     if (!user.value?.sub || isLoading.value) return
@@ -66,10 +65,8 @@ export const useMemberships = () => {
   }
 
   const initializeSession = async () => {
-    // if (isInitialized.value || !user.value?.sub) return
     
     await refreshMemberships();
-    // isInitialized.value = true
 
     const orgIdFromRoute = route.params.org_id as string | undefined;
 
@@ -101,6 +98,10 @@ export const useMemberships = () => {
     if (org) {
       selectedOrganization.value = org;
       selectedOrgIdCookie.value = org.id;
+      
+      const { clearApplicationSchema } = useApplications();
+      clearApplicationSchema();
+      
       return true
     } else {
       return false

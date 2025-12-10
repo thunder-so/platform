@@ -2,7 +2,7 @@
   <UCard variant="outline">
     <UForm :state="{ orgName, selectedPlan }" @submit.prevent="createOrganization" class="space-y-4">
       <UFormField label="Workspace name" description="A unique identifier for your workspace." name="orgName" class="grid grid-cols-3 gap-4" required>
-        <UInput v-model="orgName" placeholder="" class="w-128" size="xl" required />
+        <UInput v-model="orgName" placeholder="" class="w-128" size="xl" required autofocus />
       </UFormField>
 
       <hr class="text-gray-700 mt-6" />
@@ -39,7 +39,7 @@ definePageMeta({
 const { $client } = useNuxtApp();
 const router = useRouter();
 const toast = useToast();
-const { refreshMemberships } = useMemberships();
+const { refreshMemberships, setSelectedOrganization } = useMemberships();
 
 const orgName = ref<string>('');
 const { plans, isLoading: plansLoading, fetchPlans } = usePlans();
@@ -86,6 +86,10 @@ const createOrganization = async () => {
     if (isFreePlan) {
       // For free plans, direct redirect to dashboard
       await refreshMemberships();
+      
+      // Explicitly set the new organization as selected
+      setSelectedOrganization(newOrg.id);
+      
       toast.add({ title: 'Workspace created successfully', color: 'success' });
       await router.push(`/org/${newOrg.id}`);
     } else {

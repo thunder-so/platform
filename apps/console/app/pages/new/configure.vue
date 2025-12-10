@@ -20,6 +20,10 @@
           />
         </UFormField>
 
+        <UFormField label="Application Name" description="A unique name for your application." name="display_name" class="grid grid-cols-3 gap-4">
+          <UInput v-model="applicationSchema.display_name" size="lg" class="w-96" required autofocus />
+        </UFormField>
+
         <div class="space-y-6">
           <UAlert v-if="loadError" color="error" variant="subtle" class="mb-4" :title="loadError" />
 
@@ -49,10 +53,6 @@
                   :items="branchItems" 
                   class="w-96" size="lg"
                 />
-              </UFormField>
-
-              <UFormField label="Application Name" description="A unique name for your application." name="display_name" class="grid grid-cols-3 gap-4">
-                <UInput v-model="applicationSchema.display_name" size="lg" class="w-96" />
               </UFormField>
 
               <UFormField label="AWS Account" description="Select the AWS Account where you want to deploy." class="grid grid-cols-3 gap-4">
