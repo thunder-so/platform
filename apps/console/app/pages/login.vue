@@ -19,7 +19,7 @@
               <UButton type="submit" label="Send Magic Link" :loading="loading" class="w-full" />
             </UForm>
             <USeparator label="OR" class="my-4" />
-            <UButton @click="signInWithGithub" label="Continue with Github" size="lg" class="w-full" icon="i-uil-github" variant="outline" />
+            <UButton @click="signInWithGithub" label="Continue with Github" size="lg" class="w-full" icon="i-uil-github" variant="outline" :loading="githubLoading" :disabled="githubLoading" />
           </div>
           <div v-else>
             <p class="text-center">Magic link sent to <strong>{{ state.email }}</strong>. Check your inbox and click the link to login.</p>
@@ -58,6 +58,7 @@ const state = reactive({
     email: ''
 })
 const loading = ref(false)
+const githubLoading = ref(false)
 const sent = ref(false)
 
 // @ts-ignore
@@ -85,6 +86,8 @@ const signInWithMagicLink = async () => {
 }
 
 const signInWithGithub = async() => {
+    githubLoading.value = true
+    await new Promise(resolve => setTimeout(resolve, 500)) // Brief delay to show loading
     const { data, error } = await supabase.auth.signInWithOAuth({ 
         provider: 'github',
         options: {
