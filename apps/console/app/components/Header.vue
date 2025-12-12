@@ -82,7 +82,7 @@
           <div class="py-1">
             <template v-for="(group, index) in newMenuItems" :key="index">
               <div v-for="item in group" :key="item.to">
-                <NuxtLink :to="item.to" class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">
+                <NuxtLink :to="item.to" @click="isNewPopoverOpen = false" class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">
                   <Icon :name="item.icon" class="mr-3 w-4 h-4" />
                   <span>{{ item.label }}</span>
                 </NuxtLink>
@@ -104,7 +104,7 @@
           <div class="py-1">
             <template v-for="(group, index) in helpMenuItems" :key="index">
               <div v-for="item in group" :key="item.label">
-                <NuxtLink v-if="item.to" :to="item.to" target="_blank" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800">
+                <NuxtLink v-if="item.to" :to="item.to" target="_blank" @click="isHelpPopoverOpen = false" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800">
                   <Icon :name="item.icon" class="mr-3 w-4 h-4" />
                   <span>{{ item.label }}</span>
                 </NuxtLink>
@@ -140,7 +140,7 @@
           <div class="py-1">
             <template v-for="(group, index) in userMenuItems" :key="index">
               <div v-for="item in group" :key="item.label">
-                <NuxtLink v-if="item.to" :to="item.to" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800">
+                <NuxtLink v-if="item.to" :to="item.to" @click="isUserPopoverOpen = false" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800">
                   <Icon :name="item.icon" class="mr-3 w-4 h-4" />
                   <span>{{ item.label }}</span>
                 </NuxtLink>

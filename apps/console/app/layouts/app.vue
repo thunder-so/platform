@@ -111,6 +111,7 @@
                 <div class="flex justify-center items-center">
                   <div v-if="service?.resources">
                     <UPopover
+                      v-model:open="isDeployPopoverOpen"
                       mode="click"
                       :content="{
                         align: 'end',
@@ -129,10 +130,10 @@
                         <div class="p-2">
                           <ul class="space-y-1">
                             <li>
-                              <UButton class="w-full" variant="ghost" label="Deploy latest commit" @click="openDeployLatestModal" />
+                              <UButton class="w-full" variant="ghost" label="Deploy latest commit" @click="() => { openDeployLatestModal(); isDeployPopoverOpen = false }" />
                             </li>
                             <li>
-                              <UButton class="w-full" variant="ghost" label="Deploy specific commit" @click="openDeployCommitModal" />
+                              <UButton class="w-full" variant="ghost" label="Deploy specific commit" @click="() => { openDeployCommitModal(); isDeployPopoverOpen = false }" />
                             </li>
                           </ul>
                         </div>
@@ -188,6 +189,7 @@ const serviceUrl = computed(() => {
 });
 const toast = useToast();
 const overlay = useOverlay();
+const isDeployPopoverOpen = ref(false);
 
 // Use the route param for navigation immediately when present (falls back to loaded schema id).
 const appId = computed(() => {
