@@ -88,41 +88,24 @@
                       <span class="text-sm text-muted">{{ provider?.alias }} / {{ environment?.region }}</span>
                     </div>
                   </div>
-                  <div v-if="service?.resources?.CloudFrontDistributionUrl" class="mt-2 text-left">
+                  <div class="mt-2 text-left">
                     <NuxtLink 
-                      :to="`${service.resources.CloudFrontDistributionUrl}`" 
+                      v-if="serviceUrl" 
+                      :to="serviceUrl" 
                       target="_blank" 
                       class="inline-block text-sm text-muted hover:text-white transition-colors"
                     >
                       <span class="flex items-center gap-1">
                         <Icon name="tabler:link" class="w-4 h-4 mt-1 text-muted" />
-                        <span>{{service.resources.CloudFrontDistributionUrl}}</span>
+                        <span>{{serviceUrl}}</span>
                       </span>
                     </NuxtLink>
-                  </div>
-                  <div v-if="service?.resources?.ApiGatewayUrl" class="mt-2 text-left">
-                    <NuxtLink 
-                      :to="`${service.resources.ApiGatewayUrl}`" 
-                      target="_blank" 
-                      class="inline-block text-sm text-muted hover:text-white transition-colors"
-                    >
+                    <span v-else class="inline-block text-sm text-muted">
                       <span class="flex items-center gap-1">
                         <Icon name="tabler:link" class="w-4 h-4 mt-1 text-muted" />
-                        <span>{{service.resources.ApiGatewayUrl}}</span>
+                        <span>-</span>
                       </span>
-                    </NuxtLink>
-                  </div>
-                  <div v-if="service?.resources?.LoadBalancerDNS" class="mt-2 text-left">
-                    <NuxtLink 
-                      :to="`${service.resources.LoadBalancerDNS}`" 
-                      target="_blank" 
-                      class="inline-block text-sm text-muted hover:text-white transition-colors"
-                    >
-                      <span class="flex items-center gap-1">
-                        <Icon name="tabler:link" class="w-4 h-4 mt-1 text-muted" />
-                        <span>{{service.resources.LoadBalancerDNS}}</span>
-                      </span>
-                    </NuxtLink>
+                    </span>
                   </div>
                 </div>
                 <div class="flex justify-center items-center">
@@ -195,9 +178,14 @@ import { AppDeployCommitModal, AppDeployLatestModal } from '#components';
 
 const route = useRoute();
 const { $client } = useNuxtApp();
-const { applicationSchema, setApplicationSchemaById, currentEnvironment: environment, currentService, clearApplicationSchema, hasAccessToApp, isLoading } = useApplications();
+const { applicationSchema, setApplicationSchemaById, currentEnvironment: environment, currentService, clearApplicationSchema, hasAccessToApp, isLoading, refreshApplicationSchema } = useApplications();
+const supabase = useSupabaseClient();
 const provider = computed(() => environment.value?.provider);
 const service = computed(() => currentService.value);
+const serviceUrl = computed(() => {
+  const resources = service.value?.resources;
+  return resources?.CloudFrontDistributionUrl || resources?.ApiGatewayUrl || resources?.LoadBalancerDNS || null;
+});
 const toast = useToast();
 const overlay = useOverlay();
 
@@ -311,7 +299,28 @@ watch(() => route.params.app_id, async (newAppId) => {
   }
 }, { immediate: true });
 
+// Subscribe to service updates to refresh when resources change
+let serviceChannel: any = null;
+watch(currentService, (service) => {
+  if (serviceChannel) supabase.removeChannel(serviceChannel);
+  
+  if (service?.id) {
+    serviceChannel = supabase
+      .channel(`service:${service.id}`)
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'services', 
+        filter: `id=eq.${service.id}` 
+      }, async () => {
+        await refreshApplicationSchema();
+      })
+      .subscribe();
+  }
+}, { immediate: true });
+
 onUnmounted(() => {
+  if (serviceChannel) supabase.removeChannel(serviceChannel);
   clearApplicationSchema();
 });
 </script>
