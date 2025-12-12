@@ -11,7 +11,7 @@ export const useSaveAndRebuild = () => {
     
     isRebuilding.value = true;
     try {
-      const build = await $client.services.triggerBuild.mutate({ 
+      const buildId = await $client.services.triggerBuild.mutate({ 
         service_id: currentService.value.id 
       });
       
@@ -25,11 +25,11 @@ export const useSaveAndRebuild = () => {
           label: 'View Build',
           color: 'primary',
           size: 'lg',
-          to: `/app/${applicationSchema.value?.id}/builds/${build.id}`
+          to: `/app/${applicationSchema.value?.id}/builds/${buildId}`
         }]
       });
       
-      return build;
+      return buildId;
     } catch (e: any) {
       toast.add({ title: 'Error triggering build', description: e.message, color: 'error' });
       throw e;
