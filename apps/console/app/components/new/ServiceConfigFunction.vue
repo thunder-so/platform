@@ -22,7 +22,7 @@
         <USelect v-model="configuration.functionProps.runtime" :items="lambdaRuntimes" class="w-96" size="lg" />
       </UFormField>
       <UFormField v-if="deploymentMode === 'Zip'" label="Code Directory" description="Directory containing built code (e.g. dist/)." name="functionProps.codeDir" class="grid grid-cols-3 gap-4">
-        <UInput v-model="configuration.functionProps.codeDir" placeholder="dist/" class="w-96" size="lg" />
+        <UInput v-model="configuration.functionProps.codeDir" placeholder="dist/" class="w-96" size="lg" required />
       </UFormField>
       <UFormField v-if="deploymentMode === 'Zip'" label="Handler" description="Function handler (e.g. index.handler)." name="functionProps.handler" class="grid grid-cols-3 gap-4">
         <UInput v-model="configuration.functionProps.handler" placeholder="index.handler" class="w-96" size="lg" />
