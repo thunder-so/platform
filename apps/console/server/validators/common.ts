@@ -180,6 +180,7 @@ export const WebServicePropsSchema = z.object({
   cpu: z.number(),
   memorySize: z.number(),
   port: z.number(),
+  architecture: z.enum(['x86', 'arm']).optional(),
 });
 
 export const WebServiceMetadataSchema = z.object({

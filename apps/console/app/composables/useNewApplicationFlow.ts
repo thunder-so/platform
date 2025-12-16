@@ -71,6 +71,7 @@ const STACK_DEFAULTS: {
       memorySize: 512,
       port: 3000,
       dockerFile: 'Dockerfile',
+      architecture: 'x86',
     }
   },
 };
