@@ -93,6 +93,7 @@ export class RunnerService extends Stack {
     // CodeBuild Project using custom Docker image
     const runnerBuild = new Project(this, 'RunnerBuild', {
       projectName: `RunnerBuild-${environment}`,
+      timeout: Duration.minutes(15),
       artifacts: Artifacts.s3({
         bucket: runnerBucket,
         includeBuildId: false,
