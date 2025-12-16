@@ -1,14 +1,17 @@
 import type { IStackBuilder, RunnerRequest } from './types';
+import { sanitizePath } from './utils';
 
 export const ecsBuilder: IStackBuilder = {
   generateBuildSpec(context: any, stackVersion: string): string {
-    // Adjust rootDir for CDK context - WebService needs code directory path
-    const originalRootDir = (context.metadata.rootDir || '.').replace(/^\/+|\/+$/g, '');
+    const buildProps = context.metadata.buildProps;
+    const sourceProps = context.metadata.sourceProps;
+    const rootDir = sanitizePath(context.metadata.rootDir);
+
     const adjustedContext = {
       ...context,
       metadata: {
         ...context.metadata,
-        rootDir: (!originalRootDir || originalRootDir === '.') ? 'code' : `code/${originalRootDir}`
+        contextDirectory: '../code/'
       }
     };
     
@@ -16,29 +19,38 @@ export const ecsBuilder: IStackBuilder = {
       version: 0.2
       phases:
         install:
-          runtime-versions:
-            nodejs: 24
           commands:
+            - echo "Starting build..."
+            - source ~/.bashrc
+            - export PROJECT_PATH="$PWD"
+            - echo "Building application..."
             - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --region ${context.metadata.env.region} --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
-            - git clone --depth 1 --branch v${stackVersion} ${this.getStackRepositoryUrl()} ./cdk-webservice
-            - cd ./cdk-webservice
-            - npm install
-            - git clone --depth 1 --branch ${context.metadata.sourceProps?.branchOrRef} https://x-access-token:$GITHUB_TOKEN@github.com/${context.metadata.sourceProps?.owner}/${context.metadata.sourceProps?.repo}.git ./code
+            - git clone --depth 1 --branch ${sourceProps?.branchOrRef} https://x-access-token:$GITHUB_TOKEN@github.com/${sourceProps?.owner}/${sourceProps?.repo}.git code
         build:
           commands:
+            - echo "Installing CDK dependencies..."
+            - cd "$PROJECT_PATH"
+            - git clone --depth 1 --branch v${stackVersion} -c advice.detachedHead=false ${this.getStackRepositoryUrl()} lib
+            - cd "lib"
+            - bun install
+        post_build:
+          commands:
+            - echo "Deploying infrastructure..."
             - echo '${JSON.stringify(adjustedContext)}' > cdk.context.json
-            - npx cdk deploy --app "npx tsx bin/app.ts" --require-approval never --verbose
+            - npx cdk deploy --app "npx tsx bin/app.ts" --require-approval never
     `;
   },
 
   generateDestroyBuildSpec(context: any, stackVersion: string): string {
-    // Adjust rootDir for CDK context
-    const originalRootDir = (context.metadata.rootDir || '.').replace(/^\/+|\/+$/g, '');
+    const buildProps = context.metadata.buildProps;
+    const sourceProps = context.metadata.sourceProps;
+    const rootDir = sanitizePath(context.metadata.rootDir);
+
     const adjustedContext = {
       ...context,
       metadata: {
         ...context.metadata,
-        rootDir: (!originalRootDir || originalRootDir === '.') ? 'code' : `code/${originalRootDir}`
+        contextDirectory: '../code/'
       }
     };
     
@@ -46,16 +58,23 @@ export const ecsBuilder: IStackBuilder = {
       version: 0.2
       phases:
         install:
-          runtime-versions:
-            nodejs: 24
           commands:
+            - echo "Starting build..."
+            - source ~/.bashrc
+            - export PROJECT_PATH="$PWD"
+            - echo "Building application..."
             - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --region ${context.metadata.env.region} --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
-            - git clone --depth 1 --branch v${stackVersion} ${this.getStackRepositoryUrl()} ./cdk-webservice
-            - cd ./cdk-webservice
-            - npm install
-            - git clone --depth 1 --branch ${context.metadata.sourceProps?.branchOrRef} https://x-access-token:$GITHUB_TOKEN@github.com/${context.metadata.sourceProps?.owner}/${context.metadata.sourceProps?.repo}.git ./code
+            - git clone --depth 1 --branch ${sourceProps?.branchOrRef} https://x-access-token:$GITHUB_TOKEN@github.com/${sourceProps?.owner}/${sourceProps?.repo}.git code
         build:
           commands:
+            - echo "Installing CDK dependencies..."
+            - cd "$PROJECT_PATH"
+            - git clone --depth 1 --branch v${stackVersion} -c advice.detachedHead=false ${this.getStackRepositoryUrl()} lib
+            - cd "lib"
+            - bun install
+        post_build:
+          commands:
+            - echo "Destroying infrastructure..."
             - echo '${JSON.stringify(adjustedContext)}' > cdk.context.json
             - npx cdk destroy --app "npx tsx bin/app.ts" --require-approval never --force --verbose
     `;
