@@ -15,7 +15,12 @@ export const useMemberships = () => {
   const user = useSupabaseUser()
   const supabase = useSupabaseClient()
   const route = useRoute();
-  const selectedOrgIdCookie = useCookie('selected-org-id');
+  const selectedOrgIdCookie = useCookie('selected-org-id', {
+    maxAge: 60 * 60 * 24 * 30, // 30 days
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV !== 'development',
+    path: '/'
+  });
   const { $posthog } = useNuxtApp();
   
   const memberships = useState<OrganizationWithMetadata[]>('memberships', () => [])
