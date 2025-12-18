@@ -180,9 +180,9 @@ const sortState = ref<any[]>([])
 const loadSortState = () => {
   if (process.client) {
     const saved = localStorage.getItem(`table-sort-${orgId}`)
-    return saved ? JSON.parse(saved) : []
+    return saved ? JSON.parse(saved) : [{ id: 'updated_at', desc: true }]
   }
-  return []
+  return [{ id: 'updated_at', desc: true }]
 }
 
 // Save sort state to localStorage
