@@ -185,7 +185,7 @@ const provider = computed(() => environment.value?.provider);
 const service = computed(() => currentService.value);
 const serviceUrl = computed(() => {
   const resources = service.value?.resources;
-  return resources?.CloudFrontDistributionUrl || resources?.ApiGatewayUrl || resources?.LoadBalancerDNS || null;
+  return resources?.CloudFrontDistributionUrl || resources?.ApiGatewayUrl || (resources?.LoadBalancerDNS ? `http://${resources.LoadBalancerDNS}` : null);
 });
 const toast = useToast();
 const overlay = useOverlay();
