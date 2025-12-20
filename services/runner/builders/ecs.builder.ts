@@ -23,6 +23,8 @@ export const ecsBuilder: IStackBuilder = {
             - echo "Starting build..."
             - source ~/.bashrc
             - export PROJECT_PATH="$PWD"
+            - export DOCKER_BUILDKIT=1
+            - export DOCKER_CLI_EXPERIMENTAL=enabled
             - echo "Building application..."
             - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --region ${context.metadata.env.region} --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
             - git clone --depth 1 --branch ${sourceProps?.branchOrRef} https://x-access-token:$GITHUB_TOKEN@github.com/${sourceProps?.owner}/${sourceProps?.repo}.git code
@@ -36,6 +38,7 @@ export const ecsBuilder: IStackBuilder = {
         post_build:
           commands:
             - echo "Deploying infrastructure..."
+            - export NIXPACKS_NODE_VERSION=${buildProps?.runtime_version || '20'}
             - echo '${JSON.stringify(adjustedContext)}' > cdk.context.json
             - npx cdk deploy --app "npx tsx bin/app.ts" --require-approval never
     `;
@@ -62,6 +65,8 @@ export const ecsBuilder: IStackBuilder = {
             - echo "Starting build..."
             - source ~/.bashrc
             - export PROJECT_PATH="$PWD"
+            - export DOCKER_BUILDKIT=1
+            - export DOCKER_CLI_EXPERIMENTAL=enabled
             - echo "Building application..."
             - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --region ${context.metadata.env.region} --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
             - git clone --depth 1 --branch ${sourceProps?.branchOrRef} https://x-access-token:$GITHUB_TOKEN@github.com/${sourceProps?.owner}/${sourceProps?.repo}.git code
@@ -75,6 +80,7 @@ export const ecsBuilder: IStackBuilder = {
         post_build:
           commands:
             - echo "Destroying infrastructure..."
+            - export NIXPACKS_NODE_VERSION=${buildProps?.runtime_version || '20'}
             - echo '${JSON.stringify(adjustedContext)}' > cdk.context.json
             - npx cdk destroy --app "npx tsx bin/app.ts" --require-approval never --force --verbose
     `;

@@ -59,6 +59,7 @@ const STACK_DEFAULTS: {
     rootDir: '/',
     buildProps: {
       buildSystem: 'Nixpacks',
+      runtime_version: '20',
       installcmd: 'npm install',
       buildcmd: 'npm run build',
       startcmd: 'npm start',

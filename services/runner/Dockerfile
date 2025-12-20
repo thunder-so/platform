@@ -13,13 +13,19 @@ RUN apk add --no-cache \
     curl \
     git \
     zip \
+    tar \
     python3 \
     ca-certificates
 
 RUN apk add --no-cache \
     docker-cli \
+    docker-cli-buildx \
     aws-cli \
     fnm
+
+# Enable BuildKit by default
+ENV DOCKER_BUILDKIT=1
+ENV DOCKER_CLI_EXPERIMENTAL=enabled
     
 ENV SHELL=/bin/bash
 RUN echo 'eval "$(fnm env --shell bash)"' >> ~/.bashrc
@@ -37,13 +43,17 @@ RUN source ~/.bashrc && \
 # Install Bun
 RUN curl -fsSL https://bun.sh/install | bash
 
+# Install Nixpacks
+RUN curl -sSL https://nixpacks.com/install.sh | bash
+
 # Verify everything works
 RUN source ~/.bashrc && \
     node --version && \
     npm --version && \
     pnpm --version && \
     yarn --version && \
-    bun --version
+    bun --version && \
+    nixpacks --version
 
 RUN rm -rf /var/cache/apk/*
 

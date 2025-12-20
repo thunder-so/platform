@@ -84,6 +84,7 @@ export const FunctionBuildPropsSchema = z.object({
 
 export const ServiceBuildPropsSchema = z.object({
   buildSystem: z.enum(['Nixpacks', 'Custom Dockerfile']),
+  runtime_version: z.union([z.string(), z.number()]).optional(),
   installcmd: z.string().optional(),
   buildcmd: z.string().optional(),
   startcmd: z.string().optional(),
