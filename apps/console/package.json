@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "nuxt build",
+    "build:prod": "dotenv -e .env.production -- nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
@@ -13,7 +14,7 @@
     "db:generate": "dotenv -e .env -- npx drizzle-kit generate",
     "db:migrate": "dotenv -e .env -- npx drizzle-kit migrate",
     "deploy:sandbox": "dotenv -e .env -- cdk deploy --all --app=\"npx tsx stack/sandbox.ts\" --profile burner",
-    "deploy:prod": "cdk deploy --all --app=\"npx tsx stack/production.ts\""
+    "deploy:prod": "dotenv -e .env.production -- cdk deploy --all --app=\"npx tsx stack/production.ts\" --profile production"
   },
   "dependencies": {
     "@aws-sdk/client-acm": "3.936.0",

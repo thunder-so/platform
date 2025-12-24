@@ -68,7 +68,9 @@ cd services && bun run deploy:sandbox:runner
 cd services && bun run deploy:sandbox:ping
 
 # Supabase functions
-supabase functions deploy notification-webhook --project-ref $SANDBOX_SUPABASE_PROJECT_ID
+npx supabase functions deploy notification-webhook --project-ref $SANDBOX_SUPABASE_PROJECT_ID
+npx supabase functions deploy github-webhook
+npx supabase functions deploy polar-webhook
 ```
 
 ### Production (Automated)

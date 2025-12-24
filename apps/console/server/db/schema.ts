@@ -214,7 +214,7 @@ export const environments = pgTable('environments', {
   created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { withTimezone: true, precision: 6 }).defaultNow(),
   deleted_at: timestamp('deleted_at', { withTimezone: true, precision: 6 }),
-  provider_id: text('provider_id').references(() => providers.id),
+  provider_id: uuid('provider_id').references(() => providers.id),
   application_id: text('application_id').notNull().references(() => applications.id),
 }, (table) => ({
   applicationIdIdx: index('environments_application_id_idx').on(table.application_id),
@@ -373,7 +373,7 @@ export const destroysRelations = relations(destroys, ({ one }) => ({
 }));
 
 export const events = pgTable('events', {
-  pipeline_execution_id: text('pipeline_execution_id').primaryKey().unique(),
+  pipeline_execution_id: text('pipeline_execution_id').primaryKey(),
   pipeline_start: timestamp('pipeline_start', { withTimezone: true, precision: 6 }),
   pipeline_end: timestamp('pipeline_end', { withTimezone: true, precision: 6 }),
   pipeline_state: pipelineStatusEnum('pipeline_state').default('NULL'),

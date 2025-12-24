@@ -15,6 +15,7 @@ export const useMemberships = () => {
   const user = useSupabaseUser()
   const supabase = useSupabaseClient()
   const route = useRoute();
+  const router = useRouter();
   const selectedOrgIdCookie = useCookie('selected-org-id', {
     maxAge: 60 * 60 * 24 * 30, // 30 days
     sameSite: 'lax',
@@ -72,6 +73,11 @@ export const useMemberships = () => {
   const initializeSession = async () => {
     
     await refreshMemberships();
+
+    // Check if no memberships after initialization and redirect
+    if (user.value && memberships.value.length === 0 && route.path !== '/org/new') {
+      await router.push('/org/new');
+    }
 
     const orgIdFromRoute = route.params.org_id as string | undefined;
 

@@ -1,0 +1,311 @@
+-- CREATE TYPE "public"."ACCOUNT_ACCESS" AS ENUM('READ_ONLY', 'READ_WRITE', 'ADMIN', 'OWNER');--> statement-breakpoint
+-- CREATE TYPE "public"."APPLICATION_STATUS" AS ENUM('PENDING', 'CONFIGURED', 'READY');--> statement-breakpoint
+-- CREATE TYPE "public"."BUILD_STATUS" AS ENUM('NULL', 'IN_PROGRESS', 'SUCCEEDED', 'FAILED', 'FAULT', 'TIMED_OUT', 'STOPPED');--> statement-breakpoint
+-- CREATE TYPE "public"."BUILD_SYSTEM" AS ENUM('Nixpacks', 'Buildpacks', 'Custom Dockerfile');--> statement-breakpoint
+-- CREATE TYPE "public"."NOTIFICATION_CHANNEL" AS ENUM('EMAIL', 'SLACK', 'DISCORD', 'IN_APP');--> statement-breakpoint
+-- CREATE TYPE "public"."NOTIFICATION_TYPE" AS ENUM('APP_BUILD_SUCCESS', 'APP_BUILD_FAILURE', 'APP_DEPLOY_SUCCESS', 'APP_DEPLOY_FAILURE');--> statement-breakpoint
+-- CREATE TYPE "public"."PIPELINE_STATUS" AS ENUM('NULL', 'STARTED', 'SUCCEEDED', 'RESUMED', 'FAILED', 'CANCELED', 'SUPERSEDED');--> statement-breakpoint
+-- CREATE TYPE "public"."PRICING_PLAN_INTERVAL" AS ENUM('month', 'year');--> statement-breakpoint
+-- CREATE TYPE "public"."PRICING_TYPE" AS ENUM('one_time', 'recurring');--> statement-breakpoint
+-- CREATE TYPE "public"."STACK_TYPE" AS ENUM('SPA', 'FUNCTION', 'WEB_SERVICE');--> statement-breakpoint
+-- CREATE TYPE "public"."SUBSCRIPTION_STATUS" AS ENUM('trialing', 'active', 'canceled', 'incomplete', 'incomplete_expired', 'past_due', 'unpaid', 'paused');--> statement-breakpoint
+-- CREATE TYPE "public"."VARIABLE_TYPE" AS ENUM('build', 'runtime');--> statement-breakpoint
+-- CREATE TABLE "applications" (
+-- 	"id" varchar(32) PRIMARY KEY NOT NULL,
+-- 	"name" text NOT NULL,
+-- 	"display_name" text NOT NULL,
+-- 	"organization_id" text NOT NULL,
+-- 	"created_at" timestamp (6) with time zone DEFAULT now() NOT NULL,
+-- 	"deleted_at" timestamp (6) with time zone,
+-- 	"metadata" jsonb,
+-- 	"status" "APPLICATION_STATUS" DEFAULT 'PENDING' NOT NULL
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE "builds" (
+-- 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+-- 	"build_id" text,
+-- 	"build_start" timestamp (6) with time zone,
+-- 	"build_end" timestamp (6) with time zone,
+-- 	"build_log" jsonb,
+-- 	"build_status" "BUILD_STATUS" DEFAULT 'NULL',
+-- 	"build_context" jsonb,
+-- 	"created_at" timestamp (6) with time zone DEFAULT now() NOT NULL,
+-- 	"updated_at" timestamp (6) with time zone DEFAULT now(),
+-- 	"deleted_at" timestamp (6) with time zone,
+-- 	"service_id" text NOT NULL,
+-- 	"environment_id" text NOT NULL,
+-- 	CONSTRAINT "builds_build_id_unique" UNIQUE("build_id")
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE "customers" (
+-- 	"user_id" uuid NOT NULL,
+-- 	"organization_id" text NOT NULL,
+-- 	"polar_customer_id" text NOT NULL,
+-- 	CONSTRAINT "customers_user_id_organization_id_pk" PRIMARY KEY("user_id","organization_id")
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE "destroys" (
+-- 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+-- 	"destroy_id" text,
+-- 	"destroy_status" "BUILD_STATUS" DEFAULT 'NULL',
+-- 	"destroy_context" jsonb,
+-- 	"created_at" timestamp (6) with time zone DEFAULT now() NOT NULL,
+-- 	"updated_at" timestamp (6) with time zone DEFAULT now(),
+-- 	"deleted_at" timestamp (6) with time zone,
+-- 	"service_id" text NOT NULL,
+-- 	"environment_id" text NOT NULL,
+-- 	CONSTRAINT "destroys_destroy_id_unique" UNIQUE("destroy_id")
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE "domains" (
+-- 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+-- 	"domain" text NOT NULL,
+-- 	"hosted_zone_id" text,
+-- 	"global_certificate_arn" text,
+-- 	"regional_certificate_arn" text,
+-- 	"verified" boolean DEFAULT false NOT NULL,
+-- 	"verified_at" timestamp (6) with time zone,
+-- 	"verification_method" text,
+-- 	"verification_meta" jsonb,
+-- 	"created_at" timestamp (6) with time zone DEFAULT now() NOT NULL,
+-- 	"updated_at" timestamp (6) with time zone DEFAULT now(),
+-- 	"deleted_at" timestamp (6) with time zone,
+-- 	"service_id" text NOT NULL
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE "environments" (
+-- 	"id" varchar(32) PRIMARY KEY NOT NULL,
+-- 	"name" text NOT NULL,
+-- 	"display_name" text NOT NULL,
+-- 	"metadata" jsonb,
+-- 	"region" text,
+-- 	"created_at" timestamp (6) with time zone DEFAULT now() NOT NULL,
+-- 	"updated_at" timestamp (6) with time zone DEFAULT now(),
+-- 	"deleted_at" timestamp (6) with time zone,
+-- 	"provider_id" text,
+-- 	"application_id" text NOT NULL
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE "events" (
+-- 	"pipeline_execution_id" text PRIMARY KEY NOT NULL,
+-- 	"pipeline_start" timestamp (6) with time zone,
+-- 	"pipeline_end" timestamp (6) with time zone,
+-- 	"pipeline_state" "PIPELINE_STATUS" DEFAULT 'NULL',
+-- 	"pipeline_metadata" jsonb,
+-- 	"pipeline_log" jsonb,
+-- 	"created_at" timestamp (6) with time zone DEFAULT now() NOT NULL,
+-- 	"updated_at" timestamp (6) with time zone DEFAULT now(),
+-- 	"deleted_at" timestamp (6) with time zone,
+-- 	"service_id" text NOT NULL,
+-- 	"environment_id" text NOT NULL,
+-- 	CONSTRAINT "events_pipeline_execution_id_unique" UNIQUE("pipeline_execution_id")
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE "installations" (
+-- 	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "installations_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
+-- 	"installation_id" integer NOT NULL,
+-- 	"created_at" timestamp (6) with time zone DEFAULT now() NOT NULL,
+-- 	"updated_at" timestamp (6) with time zone DEFAULT now(),
+-- 	"deleted_at" timestamp (6) with time zone,
+-- 	"user_id" uuid NOT NULL,
+-- 	"metadata" jsonb NOT NULL,
+-- 	CONSTRAINT "installations_installation_id_unique" UNIQUE("installation_id")
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE "memberships" (
+-- 	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "memberships_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
+-- 	"organization_id" text NOT NULL,
+-- 	"user_id" uuid NOT NULL,
+-- 	"access" "ACCOUNT_ACCESS" DEFAULT 'READ_ONLY' NOT NULL,
+-- 	"pending" boolean DEFAULT false NOT NULL,
+-- 	"created_at" timestamp (6) with time zone DEFAULT now() NOT NULL,
+-- 	"updated_at" timestamp (6) with time zone DEFAULT now(),
+-- 	"deleted_at" timestamp (6) with time zone,
+-- 	CONSTRAINT "memberships_user_id_organization_id_unique" UNIQUE("user_id","organization_id")
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE "notifications" (
+-- 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+-- 	"organization_id" text NOT NULL,
+-- 	"environment_id" text NOT NULL,
+-- 	"type" "NOTIFICATION_TYPE" NOT NULL,
+-- 	"channel" "NOTIFICATION_CHANNEL" DEFAULT 'EMAIL' NOT NULL,
+-- 	"metadata" jsonb NOT NULL,
+-- 	"created_at" timestamp (6) with time zone DEFAULT now() NOT NULL
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE "orders" (
+-- 	"id" text PRIMARY KEY NOT NULL,
+-- 	"user_id" uuid NOT NULL,
+-- 	"organization_id" text NOT NULL,
+-- 	"product_id" text,
+-- 	"created_at" timestamp (6) with time zone DEFAULT now() NOT NULL,
+-- 	"metadata" jsonb
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE "organizations" (
+-- 	"id" varchar(32) PRIMARY KEY NOT NULL,
+-- 	"name" text NOT NULL,
+-- 	"pending" boolean DEFAULT true NOT NULL,
+-- 	"metadata" jsonb,
+-- 	"created_at" timestamp (6) with time zone DEFAULT now() NOT NULL,
+-- 	"updated_at" timestamp (6) with time zone DEFAULT now(),
+-- 	"deleted_at" timestamp (6) with time zone
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE "products" (
+-- 	"id" text PRIMARY KEY NOT NULL,
+-- 	"active" boolean NOT NULL,
+-- 	"name" text NOT NULL,
+-- 	"description" text,
+-- 	"metadata" jsonb,
+-- 	"created_at" timestamp (6) with time zone DEFAULT now() NOT NULL,
+-- 	"updated_at" timestamp (6) with time zone
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE "providers" (
+-- 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+-- 	"alias" text,
+-- 	"role_arn" text,
+-- 	"account_id" text,
+-- 	"region" text,
+-- 	"stack_id" text,
+-- 	"stack_name" text,
+-- 	"access_key_id" text,
+-- 	"secret_id" uuid,
+-- 	"created_at" timestamp (6) with time zone DEFAULT now() NOT NULL,
+-- 	"updated_at" timestamp (6) with time zone,
+-- 	"deleted_at" timestamp (6) with time zone,
+-- 	"organization_id" text NOT NULL
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE "service_secrets" (
+-- 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+-- 	"key" text NOT NULL,
+-- 	"value" text NOT NULL,
+-- 	"resource_arn" text,
+-- 	"type" "VARIABLE_TYPE" NOT NULL,
+-- 	"service_id" text NOT NULL,
+-- 	"created_at" timestamp (6) with time zone DEFAULT now() NOT NULL,
+-- 	"updated_at" timestamp (6) with time zone DEFAULT now(),
+-- 	"deleted_at" timestamp (6) with time zone
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE "service_variables" (
+-- 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+-- 	"key" text NOT NULL,
+-- 	"value" text NOT NULL,
+-- 	"type" "VARIABLE_TYPE" NOT NULL,
+-- 	"service_id" text NOT NULL,
+-- 	"created_at" timestamp (6) with time zone DEFAULT now() NOT NULL,
+-- 	"updated_at" timestamp (6) with time zone DEFAULT now(),
+-- 	"deleted_at" timestamp (6) with time zone
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE "services" (
+-- 	"id" varchar(32) PRIMARY KEY NOT NULL,
+-- 	"name" text NOT NULL,
+-- 	"display_name" text NOT NULL,
+-- 	"stack_type" "STACK_TYPE" DEFAULT 'SPA' NOT NULL,
+-- 	"stack_version" text NOT NULL,
+-- 	"owner" text,
+-- 	"repo" text,
+-- 	"branch" text,
+-- 	"metadata" jsonb,
+-- 	"resources" jsonb,
+-- 	"created_at" timestamp (6) with time zone DEFAULT now() NOT NULL,
+-- 	"updated_at" timestamp (6) with time zone DEFAULT now(),
+-- 	"deleted_at" timestamp (6) with time zone,
+-- 	"environment_id" text NOT NULL,
+-- 	"installation_id" integer
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE "subscriptions" (
+-- 	"id" text PRIMARY KEY NOT NULL,
+-- 	"user_id" uuid NOT NULL,
+-- 	"organization_id" text NOT NULL,
+-- 	"polar_customer_id" text NOT NULL,
+-- 	"status" "SUBSCRIPTION_STATUS" NOT NULL,
+-- 	"product_id" text,
+-- 	"cancel_at_period_end" boolean DEFAULT false NOT NULL,
+-- 	"created" timestamp (6) with time zone DEFAULT now() NOT NULL,
+-- 	"current_period_start" timestamp (6) with time zone DEFAULT now() NOT NULL,
+-- 	"current_period_end" timestamp (6) with time zone DEFAULT now() NOT NULL,
+-- 	"ended_at" timestamp (6) with time zone,
+-- 	"cancel_at" timestamp (6) with time zone,
+-- 	"canceled_at" timestamp (6) with time zone,
+-- 	"metadata" jsonb
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE "user_access_tokens" (
+-- 	"secret_id" uuid PRIMARY KEY NOT NULL,
+-- 	"resource" text,
+-- 	"user_id" uuid NOT NULL,
+-- 	"environment_id" text,
+-- 	"created_at" timestamp (6) with time zone DEFAULT now() NOT NULL,
+-- 	"updated_at" timestamp (6) with time zone DEFAULT now(),
+-- 	"deleted_at" timestamp (6) with time zone
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE "users" (
+-- 	"id" uuid PRIMARY KEY NOT NULL,
+-- 	"updated_at" timestamp (6) with time zone,
+-- 	"email" text,
+-- 	"full_name" text,
+-- 	"avatar_url" text,
+-- 	"website" text,
+-- 	"email_enabled" boolean DEFAULT true NOT NULL
+-- );
+-- --> statement-breakpoint
+-- ALTER TABLE "applications" ADD CONSTRAINT "applications_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "builds" ADD CONSTRAINT "builds_service_id_services_id_fk" FOREIGN KEY ("service_id") REFERENCES "public"."services"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "builds" ADD CONSTRAINT "builds_environment_id_environments_id_fk" FOREIGN KEY ("environment_id") REFERENCES "public"."environments"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "customers" ADD CONSTRAINT "customers_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "customers" ADD CONSTRAINT "customers_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "destroys" ADD CONSTRAINT "destroys_service_id_services_id_fk" FOREIGN KEY ("service_id") REFERENCES "public"."services"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "destroys" ADD CONSTRAINT "destroys_environment_id_environments_id_fk" FOREIGN KEY ("environment_id") REFERENCES "public"."environments"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "domains" ADD CONSTRAINT "domains_service_id_services_id_fk" FOREIGN KEY ("service_id") REFERENCES "public"."services"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "environments" ADD CONSTRAINT "environments_provider_id_providers_id_fk" FOREIGN KEY ("provider_id") REFERENCES "public"."providers"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "environments" ADD CONSTRAINT "environments_application_id_applications_id_fk" FOREIGN KEY ("application_id") REFERENCES "public"."applications"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "events" ADD CONSTRAINT "events_service_id_services_id_fk" FOREIGN KEY ("service_id") REFERENCES "public"."services"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "events" ADD CONSTRAINT "events_environment_id_environments_id_fk" FOREIGN KEY ("environment_id") REFERENCES "public"."environments"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "installations" ADD CONSTRAINT "installations_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "memberships" ADD CONSTRAINT "memberships_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "memberships" ADD CONSTRAINT "memberships_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "notifications" ADD CONSTRAINT "notifications_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "notifications" ADD CONSTRAINT "notifications_environment_id_environments_id_fk" FOREIGN KEY ("environment_id") REFERENCES "public"."environments"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "orders" ADD CONSTRAINT "orders_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "orders" ADD CONSTRAINT "orders_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "orders" ADD CONSTRAINT "orders_product_id_products_id_fk" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "providers" ADD CONSTRAINT "providers_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "service_secrets" ADD CONSTRAINT "service_secrets_service_id_services_id_fk" FOREIGN KEY ("service_id") REFERENCES "public"."services"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "service_variables" ADD CONSTRAINT "service_variables_service_id_services_id_fk" FOREIGN KEY ("service_id") REFERENCES "public"."services"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "services" ADD CONSTRAINT "services_environment_id_environments_id_fk" FOREIGN KEY ("environment_id") REFERENCES "public"."environments"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "services" ADD CONSTRAINT "services_installation_id_installations_installation_id_fk" FOREIGN KEY ("installation_id") REFERENCES "public"."installations"("installation_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_product_id_products_id_fk" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_user_id_organization_id_customers_user_id_organization_id_fk" FOREIGN KEY ("user_id","organization_id") REFERENCES "public"."customers"("user_id","organization_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "user_access_tokens" ADD CONSTRAINT "user_access_tokens_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "user_access_tokens" ADD CONSTRAINT "user_access_tokens_environment_id_environments_id_fk" FOREIGN KEY ("environment_id") REFERENCES "public"."environments"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- CREATE INDEX "applications_organization_id_idx" ON "applications" USING btree ("organization_id");--> statement-breakpoint
+-- CREATE INDEX "builds_build_id_idx" ON "builds" USING btree ("build_id");--> statement-breakpoint
+-- CREATE INDEX "customers_organization_id_idx" ON "customers" USING btree ("organization_id");--> statement-breakpoint
+-- CREATE INDEX "customers_polar_customer_id_idx" ON "customers" USING btree ("polar_customer_id");--> statement-breakpoint
+-- CREATE INDEX "environments_application_id_idx" ON "environments" USING btree ("application_id");--> statement-breakpoint
+-- CREATE INDEX "environments_provider_id_idx" ON "environments" USING btree ("provider_id");--> statement-breakpoint
+-- CREATE INDEX "installations_user_id_idx" ON "installations" USING btree ("user_id");--> statement-breakpoint
+-- CREATE INDEX "memberships_user_id_idx" ON "memberships" USING btree ("user_id");--> statement-breakpoint
+-- CREATE INDEX "memberships_organization_id_idx" ON "memberships" USING btree ("organization_id");--> statement-breakpoint
+-- CREATE INDEX "notifications_organization_id_idx" ON "notifications" USING btree ("organization_id");--> statement-breakpoint
+-- CREATE INDEX "notifications_environment_id_idx" ON "notifications" USING btree ("environment_id");--> statement-breakpoint
+-- CREATE INDEX "notifications_type_idx" ON "notifications" USING btree ("type");--> statement-breakpoint
+-- CREATE INDEX "orders_organization_id_idx" ON "orders" USING btree ("organization_id");--> statement-breakpoint
+-- CREATE INDEX "providers_organization_id_idx" ON "providers" USING btree ("organization_id");--> statement-breakpoint
+-- CREATE INDEX "services_environment_id_idx" ON "services" USING btree ("environment_id");--> statement-breakpoint
+-- CREATE INDEX "services_installation_id_idx" ON "services" USING btree ("installation_id");--> statement-breakpoint
+-- CREATE INDEX "subscriptions_user_id_idx" ON "subscriptions" USING btree ("user_id");--> statement-breakpoint
+-- CREATE INDEX "subscriptions_organization_id_idx" ON "subscriptions" USING btree ("organization_id");--> statement-breakpoint
+-- CREATE INDEX "subscriptions_polar_customer_id_idx" ON "subscriptions" USING btree ("polar_customer_id");--> statement-breakpoint
+-- CREATE INDEX "user_access_tokens_user_id_idx" ON "user_access_tokens" USING btree ("user_id");--> statement-breakpoint
+-- CREATE INDEX "user_access_tokens_environment_id_idx" ON "user_access_tokens" USING btree ("environment_id");

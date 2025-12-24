@@ -10,9 +10,9 @@
     "deploy:sandbox:provider": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/provider.ts\" --context environment=sandbox --profile burner --region us-east-1",
     "deploy:sandbox:runner": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/runner.ts\" --context environment=sandbox --profile burner --region us-east-1",
     "deploy:sandbox:ping": "dotenv -e .env -- cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=sandbox --profile burner --region us-east-1",
-    "deploy:prod:provider": "cdk deploy --app \"npx tsx bin/provider.ts\" --context environment=production",
-    "deploy:prod:runner": "cdk deploy --app \"npx tsx bin/runner.ts\" --context environment=production",
-    "deploy:prod:ping": "cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=production"
+    "deploy:prod:provider": "dotenv -e .env.prod -- cdk deploy --app \"npx tsx bin/provider.ts\" --context environment=production --profile production",
+    "deploy:prod:runner": "dotenv -e .env.prod -- cdk deploy --app \"npx tsx bin/runner.ts\" --context environment=production --profile production",
+    "deploy:prod:ping": "dotenv -e .env.prod -- cdk deploy --app \"npx tsx bin/ping.ts\" --context environment=production --profile production"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.159",
