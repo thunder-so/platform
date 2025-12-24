@@ -38,10 +38,13 @@ const setupAndRedirect = async () => {
   // Get redirect path from cookie and clear it
   const redirectPath = redirectInfo.pluck();
   
-  navigateTo({ 
-    path: redirectPath || `/org/${selectedOrganization.value?.id}`, 
-    replace: true 
-  });
+  // Only redirect to org if we have a selected organization
+  if (selectedOrganization.value?.id) {
+    navigateTo({ 
+      path: redirectPath || `/org/${selectedOrganization.value.id}`, 
+      replace: true 
+    });
+  }
 }
 
 onMounted(async () => {
