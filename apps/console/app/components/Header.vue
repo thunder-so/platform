@@ -7,6 +7,7 @@
       </NuxtLink>
       
       <UPopover
+        v-if="organizationItems?.[0]?.length"
         v-model:open="isOrgPopoverOpen"
         mode="click"
         :content="{ align: 'start', side: 'bottom' }"
@@ -70,6 +71,7 @@
       </UModal> -->
       
       <UPopover
+        v-if="selectedOrganization"
         v-model:open="isNewPopoverOpen"
         mode="click"
         :content="{ align: 'end', side: 'bottom' }"
@@ -207,14 +209,19 @@ const isPaidOrg = (org: any) => {
   return isPaidSub || org.orders?.length > 0 || false;
 }
 
-const organizationItems = computed(() => [
-  memberships.value.map(org => ({
-    ...org,
-    label: org.name,
-    isPaid: isPaidOrg(org),
-    click: () => selectOrganization(org)
-  }))
-])
+const organizationItems = computed(() => {
+  if (!memberships.value || memberships.value.length === 0) {
+    return [[]]
+  }
+  return [
+    memberships.value.map(org => ({
+      ...org,
+      label: org.name,
+      isPaid: isPaidOrg(org),
+      click: () => selectOrganization(org)
+    }))
+  ]
+})
 
 const isNewPopoverOpen = ref(false);
 const newMenuItems = ref([
