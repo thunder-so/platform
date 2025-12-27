@@ -19,31 +19,30 @@
         
         <div class="min-h-42">
           <div class="text-2xl my-2">
-            <div v-if="plan?.metadata.prices[0]?.amount_type === 'free'">
+            <div v-if="isFree(plan)">
               <ul class="feature-list">
-                <li>1 team member</li>
                 <li>1 AWS account</li>
                 <li>Unlimited apps</li>
               </ul>
-              <span>0 USD</span>
+              <span>{{ priceDisplay(plan).label }}</span>
               <span class="block text-sm text-muted">Free for life</span>
             </div>
-            <div v-else-if="plan?.metadata.prices[0]?.amount_type === 'seat_based'">
+            <div v-else-if="isSeatBased(plan)">
               <ul class="feature-list">
                 <li>Unlimited AWS accounts</li>
                 <li>Unlimited apps</li>
                 <li>Priority support</li>
               </ul>
-              <span>{{ plan?.metadata.prices[0]?.price_per_seat / 100 }} <span class="uppercase">{{ plan?.metadata.prices[0]?.price_currency }}</span></span>
-              <span class="block text-sm text-muted">per seat per {{ plan.metadata.prices[0]?.recurring_interval }}</span>
+              <span>{{ priceDisplay(plan).label }}</span>
+              <span class="block text-sm text-muted">per seat per {{ getPrimaryPrice(plan?.metadata)?.recurring_interval }}</span>
             </div>
-            <div v-else-if="plan?.metadata.prices[0]?.type === 'one_time'">
+            <div v-else-if="isOneTime(plan)">
               <ul class="feature-list">
                 <li>Unlimited team members</li>
                 <li>Unlimited AWS accounts</li>
                 <li>Priority support for life</li>
               </ul>
-              <span>{{ plan?.metadata.prices[0]?.price_amount / 100 }} <span class="uppercase">{{ plan?.metadata.prices[0]?.price_currency }}</span></span>
+              <span>{{ priceDisplay(plan).label }}</span>
               <span class="block text-sm text-muted">one-time payment</span>
               <p>
                 <span class="text-xs text-muted italic">Available only during beta</span>
@@ -86,6 +85,9 @@
 <script setup lang="ts">
 import type { Product } from '~~/server/db/schema';
 import { computed } from 'vue';
+import { usePolar } from '~/composables/usePolar';
+
+const { isFree, isSeatBased, isOneTime, priceDisplay, getPrimaryPrice } = usePolar();
 
 const props = defineProps({
   plans: {
@@ -111,7 +113,7 @@ const isLifetimePlan = computed(() => {
   const current = props.plans.find(p => p.id === props.currentPlan);
   if (!current) return false;
 
-  return current.metadata?.prices?.[0]?.type === 'one_time';
+  return isOneTime(current);
 });
 
 const emit = defineEmits(['update:selectedPlan']);

@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { protectedProcedure, router } from '../init'
 import { db } from '../../db/db'
-import { organizations, memberships, subscriptions, customers, products, applications, type Customer, type Product, type Subscription } from '../../db/schema'
+import { organizations, memberships, subscriptions, customers, products, applications, orders, type Customer, type Product, type Subscription } from '../../db/schema'
 import { Polar } from '@polar-sh/sdk'
 import { TRPCError } from '@trpc/server'
 import { eq, and, isNull } from 'drizzle-orm'
@@ -95,10 +95,12 @@ export const organizationsRouter = router({
         newOrg = result.newOrg
         const { customer, product } = result
 
-        const isFree = product.metadata.prices?.[0]?.amount_type === 'free' || false
+        const primary = product.metadata.prices[0];
+        const isFree = !!primary && (primary as any).amount_type === 'free';
+        const isOneTime = !!primary && (primary as any).type === 'one_time';
 
-        if (isFree) {
-          // Create subscription directly for free plans
+        if (isFree && !isOneTime) {
+          // Create subscription directly for recurring free plans
           await polar.subscriptions.create({
             customerId: customer.polar_customer_id,
             productId: planId,
@@ -107,24 +109,24 @@ export const organizationsRouter = router({
               organization_id: newOrg.id,
             },
           })
-          
+
           trackServerEvent('polar_subscription_auto_created', {
             customer_id: customer.polar_customer_id,
             product_id: planId,
             org_id: newOrg.id,
             plan_type: 'free'
           });
-          
+
           // Set pending to false for free plans
           await db.update(organizations).set({ pending: false }).where(eq(organizations.id, newOrg.id))
-          
+
           trackServerEvent('org_auto_activated', {
             org_id: newOrg.id,
-            activation_method: 'free_plan'
+            activation_method: 'free_plan_subscription'
           });
+          
         } else {
-          // Create checkout for paid plans
-          const isSeatBased = product.metadata.prices?.[0]?.amount_type === 'seat_based'
+          // Create checkout for paid or one-time paid plans
           const checkoutData: any = {
             products: [planId],
             successUrl: `${siteUrl}${polarCheckoutSuccessUrl}`,
@@ -134,12 +136,13 @@ export const organizationsRouter = router({
               organization_id: newOrg.id,
             },
           }
-          
+
           // Only add seats for seat-based plans
+          const isSeatBased = !!primary && (primary as any).amount_type === 'seat_based'
           if (isSeatBased) {
             checkoutData.seats = 3
           }
-          
+
           const checkout = await polar.checkouts.create(checkoutData)
           checkoutUrl = checkout.url
         }
@@ -293,7 +296,6 @@ export const organizationsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { organizationId } = input
       const { 
-        public: { siteUrl }, 
         private: { polarAccessToken, polarServer } 
       } = useRuntimeConfig()
 

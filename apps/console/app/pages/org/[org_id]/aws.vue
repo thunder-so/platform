@@ -67,6 +67,7 @@ import type { Provider } from '~~/server/db/schema';
 import { useClipboard } from '@vueuse/core';
 import { OrgProviderCreateStackModal, OrgProviderCreateCredentialsModal } from '#components';
 import { computed } from 'vue';
+import { usePolar } from '~/composables/usePolar';
 
 definePageMeta({
   layout: 'org'
@@ -89,8 +90,9 @@ const maxProviders = computed(() => {
   return currentPlan.value?.metadata?.metadata?.max_providers ?? 1;
 });
 const limitReached = computed(() => providers.value.length >= maxProviders.value);
-const isFree = computed(() => currentPlan.value?.metadata?.prices?.[0]?.amount_type === 'free');
-const isLifetime = computed(() => currentPlan.value?.metadata?.type === 'one_time');
+const { isFree: isFreeFn, isOneTime } = usePolar();
+const isFree = computed(() => isFreeFn(currentPlan.value));
+const isLifetime = computed(() => isOneTime(currentPlan.value));
 
 const UBadge = resolveComponent('UBadge')
 const UDropdownMenu = resolveComponent('UDropdownMenu')

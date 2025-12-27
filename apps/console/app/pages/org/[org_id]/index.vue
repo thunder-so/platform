@@ -2,14 +2,6 @@
   <div>
     <div class="flex justify-between items-center mb-4">
       <h3 class="text-lg font-medium">Projects</h3>
-      <UButton 
-        color="neutral" 
-        variant="outline" 
-        size="lg" 
-        icon="tabler:plus"
-        label="Import repository" 
-        to="/new" 
-      />
     </div>
 
     <div v-if="loading">
@@ -37,11 +29,11 @@
     <div v-else>
       <UEmpty
         icon="tabler:apps"
-        title="No projects yet"
-        description="There are no projects in this workspace. Import a Github repository to get started."
+        title="Empty workspace"
+        description="There are no projects in this workspace."
       >
         <template #actions>
-          <UButton to="/new" color="primary" variant="solid" label="Import repository" />
+          <UButton to="/new" color="primary" variant="solid" icon="tabler:plus" label="Project" />
         </template>
       </UEmpty>
     </div>

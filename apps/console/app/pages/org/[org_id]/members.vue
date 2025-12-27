@@ -59,7 +59,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, h } from 'vue';
 import { useMemberships } from '~/composables/useMemberships';
-import { TRPCClientError } from '@trpc/client';
+import { usePolar } from '~/composables/usePolar';
 
 definePageMeta({
   layout: 'org',
@@ -84,12 +84,9 @@ const limitReached = computed(() => {
   }
   return seatUsage.value.used >= seatUsage.value.total;
 });
-const isFree = computed(() => {
-  const metadata = currentPlan.value?.metadata as any;
-  const price = metadata?.prices?.[0] || metadata?.price;
-  return price?.amount_type === 'free';
-});
-const isLifetime = computed(() => (currentPlan.value?.metadata as any)?.type === 'one_time');
+const { isFree: isFreeFn, isOneTime } = usePolar();
+const isFree = computed(() => isFreeFn(currentPlan.value));
+const isLifetime = computed(() => isOneTime(currentPlan.value));
 const isTrialing = computed(() => selectedOrganization.value?.subscriptions?.some(sub => sub.status === 'trialing'));
 
 const members = ref<any[]>([]);

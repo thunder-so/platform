@@ -441,48 +441,49 @@ export type NewDomain = typeof domains.$inferInsert;
 /*
  * Types for Polar.sh integration
  */
-interface BasePrice {
+interface PriceBase {
   id: string;
+  type: "recurring" | "one_time";
+  source?: string;
   created_at: string;
   product_id: string;
+  amount_type: "fixed" | "free" | "seat_based";
   is_archived: boolean;
-  modified_at: string;
+  modified_at: string | null;
+  recurring_interval: "month" | "year" | null;
 }
 
-interface RecurringBasePrice extends BasePrice {
-  type: "recurring";
-  recurring_interval: "month" | "year";
-}
-
-interface OneTimeBasePrice extends BasePrice {
-  type: "one_time";
-  recurring_interval: null;
-}
-
-interface FixedPrice extends RecurringBasePrice {
+interface FixedPrice extends PriceBase {
   amount_type: "fixed";
+  // price amounts are represented as integer (cents) in examples
   price_amount: number;
   price_currency: string;
 }
 
-interface FreePrice extends RecurringBasePrice {
+interface FreePrice extends PriceBase {
   amount_type: "free";
+  // free prices do not have price_amount/currency
 }
 
-interface SeatBasedPrice extends RecurringBasePrice {
-  amount_type: "seat_based";
-  price_currency: string;
+interface SeatTier {
+  min_seats: number;
+  max_seats: number | null;
   price_per_seat: number;
-  seat_tiers: {
-    tiers: readonly {
-      min_seats: number;
-      max_seats: number | null;
-      price_per_seat: number;
-    }[];
+}
+
+interface SeatBasedPrice extends PriceBase {
+  amount_type: "seat_based";
+  price_currency?: string;
+  price_per_seat?: number;
+  seat_tiers?: {
+    tiers: SeatTier[];
   };
 }
 
-interface OneTimePrice extends OneTimeBasePrice {
+interface OneTimePrice extends PriceBase {
+  type: "one_time";
+  recurring_interval: null;
+  // one-time fixed price
   amount_type: "fixed";
   price_amount: number;
   price_currency: string;
@@ -493,51 +494,34 @@ export type Price = FixedPrice | FreePrice | SeatBasedPrice | OneTimePrice;
 interface BaseProductMetadata {
   id: string;
   name: string;
-  medias: readonly any[];
-  benefits: readonly any[];
+  medias: any[];
+  benefits: any[];
+  prices: Price[];
+  metadata: Record<string, any>;
   created_at: string;
-  description: string;
+  description?: string;
   is_archived: boolean;
-  modified_at: string;
+  modified_at: string | null;
+  is_recurring: boolean;
   trial_interval: string | null;
   organization_id: string;
+  recurring_interval: "month" | "year" | null;
   trial_interval_count: number | null;
-  attached_custom_fields: readonly any[];
+  attached_custom_fields: any[];
+  recurring_interval_count: number | null;
 }
 
 interface RecurringProductMetadata extends BaseProductMetadata {
   is_recurring: true;
   recurring_interval: "month" | "year";
-  recurring_interval_count: number;
 }
 
 interface OneTimeProductMetadata extends BaseProductMetadata {
   is_recurring: false;
   recurring_interval: null;
-  recurring_interval_count: null;
 }
 
-interface PaidProductMetadata extends RecurringProductMetadata {
-  prices: readonly FixedPrice[];
-  metadata: Record<string, string>;
-}
-
-interface FreeProductMetadata extends RecurringProductMetadata {
-  prices: readonly FreePrice[];
-  metadata: Record<string, any>;
-}
-
-interface SeatBasedProductMetadata extends RecurringProductMetadata {
-  prices: readonly SeatBasedPrice[];
-  metadata: Record<string, any>;
-}
-
-interface LifetimeProductMetadata extends OneTimeProductMetadata {
-  prices: readonly OneTimePrice[];
-  metadata: Record<string, any>;
-}
-
-export type ProductMetadata = PaidProductMetadata | FreeProductMetadata | SeatBasedProductMetadata | LifetimeProductMetadata;
+export type ProductMetadata = RecurringProductMetadata | OneTimeProductMetadata | BaseProductMetadata;
 
 export type DBProduct = typeof products.$inferSelect;
 export type Product = Omit<DBProduct, 'metadata'> & { metadata: ProductMetadata };

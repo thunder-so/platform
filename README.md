@@ -70,7 +70,7 @@ cd services && bun run deploy:sandbox:ping
 # Supabase functions
 npx supabase functions deploy notification-webhook --project-ref $SANDBOX_SUPABASE_PROJECT_ID
 npx supabase functions deploy github-webhook
-npx supabase functions deploy polar-webhook
+npx supabase functions deploy polar-webhook --no-verify-jwt
 ```
 
 ### Production (Automated)

@@ -55,7 +55,7 @@ const nuxtApp: NuxtProps = {
     ],
   },
 
-  allowCookies: ['sb-*', 'selected-org-id', 'cookie_consent', 'cookie_consent_*', 'ph_*'],
+  allowCookies: ['sb-*', 'selected-org-id', 'cookie_consent', 'cookie_consent_*'],
   allowQueryParams: ['batch', 'input'],
   allowHeaders: ['authorization', 'content-type'],
 

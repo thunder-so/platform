@@ -35,7 +35,7 @@
     "@octokit/auth-app": "8.1.2",
     "@octokit/core": "7.0.6",
     "@octokit/types": "16.0.0",
-    "@polar-sh/nuxt": "0.4.0",
+    "@polar-sh/sdk": "^0.42.1",
     "@posthog/nuxt": "^1.2.6",
     "@thunderso/cdk-nuxt": "0.2.3",
     "@trpc/client": "11.7.1",

@@ -34,7 +34,7 @@
                   <span class="text-sm">{{ item.name }}</span>
                 </div>
                 <UBadge v-if="item.pending" size="md" color="secondary" variant="outline">Invited</UBadge>
-                <UBadge v-else-if="item.isPaid" size="md" color="info" variant="outline">Pro</UBadge>
+                <UBadge v-else-if="item.isPro" size="md" color="info" variant="outline">Pro</UBadge>
                 <UBadge v-else size="md" color="neutral" variant="outline">Free</UBadge>
               </div>
             </div>
@@ -174,6 +174,7 @@
 
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { usePolar } from '~/composables/usePolar';
 
 // const { commandOpen, commandSearch, commandGroups, appsLoading, onPaletteSelect } = useCommandPalette()
 
@@ -188,6 +189,8 @@ const props = withDefaults(defineProps<Props>(), {
 const user = useSupabaseUser();
 const supabase = useSupabaseClient();
 const { memberships, selectedOrganization, currentPlan } = useMemberships()
+const { isFree, getPrimaryPrice } = usePolar();
+
 const isMobileMenuOpen = ref(false);
 
 function selectOrganization(org: any) {
@@ -197,16 +200,21 @@ function selectOrganization(org: any) {
 
 const isOrgPopoverOpen = ref(false)
 
-const isPaidOrg = (org: any) => {
+const isProOrg = (org: any) => {
   const activeSub = org.subscriptions
     ?.filter((sub: any) => sub.status !== 'canceled')
     ?.sort((a: any, b: any) => new Date(b.created || 0).getTime() - new Date(a.created || 0).getTime())
     ?.[0];
   
-  const isPaidSub = activeSub?.metadata?.price?.amount_type && 
-    activeSub.metadata.price.amount_type !== 'free';
-  
-  return isPaidSub || org.orders?.length > 0 || false;
+  const isProSub = !!activeSub && getPrimaryPrice(activeSub?.metadata)?.amount_type !== 'free';
+
+  const recentOrder = org.orders
+    ?.sort((a: any, b: any) => new Date(b.created_at || b.created || 0).getTime() - new Date(a.created_at || a.created || 0).getTime())
+    ?.[0];
+
+  const isProOrder = !!recentOrder && getPrimaryPrice(recentOrder?.metadata)?.amount_type !== 'free';
+
+  return isProSub || isProOrder || false;
 }
 
 const organizationItems = computed(() => {
@@ -217,7 +225,7 @@ const organizationItems = computed(() => {
     memberships.value.map(org => ({
       ...org,
       label: org.name,
-      isPaid: isPaidOrg(org),
+      isPro: isProOrg(org),
       click: () => selectOrganization(org)
     }))
   ]

@@ -92,10 +92,6 @@ definePageMeta({
   layout: 'org'
 })
 
-const githubApp = useRuntimeConfig().public.githubApp
-const siteUrl = useRuntimeConfig().public.siteUrl
-const base = useRequestURL().origin
-
 const displayName = computed(() => user.value?.user_metadata?.full_name || 'N/A')
 const isFormValid = computed(() => state.newDisplayName && state.newDisplayName.length >= 3)
 const hasChanges = computed(() => state.newDisplayName !== displayName.value)

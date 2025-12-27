@@ -1,5 +1,5 @@
 import type { Organization, Membership, Subscription, Order, ProductMetadata, Price } from '~~/server/db/schema';
-import { usePlans } from '~/composables/usePlans';
+import { usePolar } from '~/composables/usePolar';
 import { computed } from 'vue';
 
 type OrganizationWithMetadata = {
@@ -119,10 +119,10 @@ export const useMemberships = () => {
     }
   }
 
-  const { plans } = usePlans();
+  const { products } = usePolar();
   const currentPlan = computed(() => {
     const org = selectedOrganization.value;
-    if (!org) return plans.value.find(p => p.id === 'free');
+    if (!org) return products.value.find(p => p.id === 'free');
     
     const activeSub = org.subscriptions
       ?.filter(sub => sub.status !== 'canceled')
@@ -153,7 +153,7 @@ export const useMemberships = () => {
       }
     }
     
-    return plans.value.find(p => p.id === 'free');
+    return products.value.find(p => p.id === 'free');
   });
 
   const hasAccessToOrg = (orgId: string): 'member' | 'invitee' | 'no-access' => {

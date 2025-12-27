@@ -13,7 +13,7 @@
         <template #header>
           <div class="flex justify-between items-center">
             <h3>Billing information</h3>
-            <UButton v-if="subscription" @click="manageSubscription" color="neutral" variant="outline">
+            <UButton v-if="subscription" @click="manageSubscription" color="neutral" variant="outline" :loading="isManagingSubscription">
               Manage Subscription
             </UButton>
           </div>
@@ -62,7 +62,7 @@
               </div>
 
               <div v-if="order" class="flex flex-col text-left">
-                <h4>Purchased</h4>
+                <h4>{{ getPrimaryPrice(order.metadata as any)?.amount_type === 'free' ? 'Signed up' : 'Purchased' }}</h4>
                 <p class="text-sm text-muted">{{ formatDate(order.created_at) }}</p>
               </div>
             </div>
@@ -92,8 +92,8 @@
           <p>Plans and pricing</p>
         </template>
       
-        <BillingPricingTable v-if="plans.length > 0"
-          :plans="plans"
+        <BillingPricingTable v-if="products.length > 0"
+          :plans="products"
           :selectedPlan="selectedPlan"
           :currentPlan="subscription?.metadata?.product?.id || order?.metadata?.product?.id"
           @update:selectedPlan="selectedPlan = $event"
@@ -120,7 +120,7 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import BillingPricingTable from '~/components/org/BillingPricingTable.vue';
 import PlanDowngradeModal from '~/components/org/PlanDowngradeModal.vue';
-import { usePlans } from '~/composables/usePlans';
+import { usePolar } from '~/composables/usePolar';
 import type { Subscription, Order, Price, ProductMetadata, Product } from '~~/server/db/schema';
 
 type SubscriptionWithMetadata = Subscription & {
@@ -137,11 +137,9 @@ type OrderWithMetadata = Order & {
   };
 };
 
-const route = useRoute()
-const supabase = useSupabaseClient()
 const { selectedOrganization } = useMemberships()
 const { $client } = useNuxtApp()
-const { plans, isLoading: plansLoading, fetchPlans } = usePlans();
+const { products, isLoading: productsLoading, fetchProducts, isSeatBased, isOneTime, isFree, getSeatPrice, getPrimaryPrice } = usePolar();
 const toast = useToast();
 const overlay = useOverlay();
 
@@ -161,18 +159,13 @@ const order = computed((): OrderWithMetadata | null => {
 const isLoading = ref(false)
 const error = ref<{ message: string } | null>(null);
 const selectedPlan = ref<string | undefined>(undefined);
-const isPageLoading = computed(() => isLoading.value || plansLoading.value);
+const isPageLoading = computed(() => isLoading.value || productsLoading.value);
 const isCreatingCheckout = ref(false);
+const isManagingSubscription = ref(false);
 const pendingDowngradePlan = ref<Product | null>(null);
 
-const isSeatBasedPlan = computed(() => {
-  if (!subscription.value?.metadata) return false;
-  return subscription.value.metadata.price?.amount_type === 'seat_based';
-});
-
-const isLifetimePlan = computed(() => {
-  return !!order.value && order.value.metadata?.product?.prices?.[0]?.type === 'one_time';
-});
+const isSeatBasedPlan = computed(() => isSeatBased(subscription.value?.metadata));
+const isLifetimePlan = computed(() => !!order.value && isOneTime(order.value.metadata?.product));
 
 const isPlanChangeValid = computed(() => {
   const currentPlanId = subscription.value?.metadata?.product?.id || order.value?.metadata?.product?.id;
@@ -184,13 +177,13 @@ const seatUsage = ref({ used: 0, total: 0 });
 const isDowngrade = computed(() => {
   if (!selectedPlan.value || !subscription.value?.metadata?.product) return false;
   
-  const currentPlan = plans.value.find(p => p.id === subscription.value?.metadata?.product?.id);
-  const targetPlan = plans.value.find(p => p.id === selectedPlan.value);
+  const currentPlan = products.value.find(p => p.id === subscription.value?.metadata?.product?.id);
+  const targetPlan = products.value.find(p => p.id === selectedPlan.value);
   
   if (!currentPlan || !targetPlan) return false;
   
-  const currentIsPaid = currentPlan.metadata?.prices?.[0]?.amount_type !== 'free';
-  const targetIsFree = targetPlan.metadata?.prices?.[0]?.amount_type === 'free';
+  const currentIsPaid = !isFree(currentPlan);
+  const targetIsFree = isFree(targetPlan);
   
   return currentIsPaid && targetIsFree;
 });
@@ -214,7 +207,7 @@ const fetchSeatUsage = async () => {
 const subscribeToPlan = async () => {
   if (!selectedPlan.value) return;
   
-  const selected = plans.value.find(p => p.id === selectedPlan.value);
+  const selected = products.value.find(p => p.id === selectedPlan.value);
   if (!selected) return;
 
   const currentPlanId = subscription.value?.metadata?.product?.id || order.value?.metadata?.product?.id;
@@ -233,11 +226,11 @@ const subscribeToPlan = async () => {
     return;
   }
 
-  const isFree = selected.metadata?.prices?.[0]?.amount_type === 'free';
+  const selectedIsFree = isFree(selected);
 
   isCreatingCheckout.value = true;
   try {
-    if (isFree) {
+    if (selectedIsFree) {
       await $client.organizations.switchToFreePlan.mutate({
         organizationId: orgId,
         productId: selected.id,
@@ -264,7 +257,7 @@ const subscribeToPlan = async () => {
         plan_change: true,
       };
 
-      if (selected.metadata?.prices?.[0]?.amount_type === 'seat_based') {
+      if (isSeatBased(selected)) {
         mutationPayload.seats = Math.max(seatUsage.value.used, 1);
       }
 
@@ -313,12 +306,13 @@ const showDowngradeModal = async () => {
 };
 
 onMounted(async () => {
-  await fetchPlans()
+  await fetchProducts()
   await fetchSeatUsage()
   selectedPlan.value = subscription.value?.metadata?.product?.id || order.value?.metadata?.product?.id
 })
 
 const manageSubscription = async () => {
+  isManagingSubscription.value = true;
   try {
     const { $posthog } = useNuxtApp();
     $posthog().capture('billing_portal_accessed', {
@@ -331,6 +325,8 @@ const manageSubscription = async () => {
   } catch (e) {
     console.error('Failed to get subscription management URL:', e)
     error.value = { message: 'Failed to get subscription management URL. See console for details.' };
+  } finally {
+    isManagingSubscription.value = false;
   }
 }
 

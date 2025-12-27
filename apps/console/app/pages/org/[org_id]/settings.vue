@@ -88,10 +88,13 @@ const error = ref<{ message: string } | null>(null);
 const hasApplications = ref(false);
 const confirmDelete = ref(false);
 const deleting = ref(false);
+import { usePolar } from '~/composables/usePolar';
+const { isFree: isFreeFn } = usePolar();
+
 const hasActiveSubscription = computed(() => {
   return selectedOrganization.value?.subscriptions?.some(
     sub => (sub.status === 'active' || sub.status === 'trialing') && 
-           (sub.metadata as any)?.price?.amount_type !== 'free'
+           !isFreeFn(sub.metadata)
   ) || false;
 });
 const isFormValid = computed(() => {
