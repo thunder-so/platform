@@ -32,26 +32,35 @@ export default class GithubLibrary {
      * @returns 
      */
     async getInstallationMetadata(installation_id: number): Promise<GetInstallationMetadata['data']> {
-      const app = new App({ 
-        appId: this.appId as string, 
-        privateKey: this.privateKey as string
-      });
+      try {
+        const app = new App({ 
+          appId: this.appId as string, 
+          privateKey: this.privateKey as string
+        });
 
-      const octokit = await app.getInstallationOctokit(installation_id);
+        const octokit = await app.getInstallationOctokit(installation_id);
 
-      const metadata: OctokitResponse<GetInstallationMetadata["data"], number> = await octokit.request(`GET /app/installations/${installation_id}`, {
-        installation_id,
-        headers: {
-          'X-GitHub-Api-Version': '2022-11-28'
-        }
-      });
+        const metadata: OctokitResponse<GetInstallationMetadata["data"], number> = await octokit.request(`GET /app/installations/${installation_id}`, {
+          installation_id,
+          headers: {
+            'X-GitHub-Api-Version': '2022-11-28'
+          }
+        });
 
-      trackServerEvent('github_installation_validated', {
-        installation_id,
-        account_type: (metadata.data.account && 'type' in metadata.data.account) ? metadata.data.account.type : 'unknown'
-      });
+        trackServerEvent('github_installation_validated', {
+          installation_id,
+          account_type: (metadata.data.account && 'type' in metadata.data.account) ? metadata.data.account.type : 'unknown'
+        });
 
-      return metadata?.data;
+        return metadata?.data;
+      } catch (error) {
+        trackServerEvent('github_api_failure', {
+          operation: 'getInstallationMetadata',
+          installation_id,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+        throw error;
+      }
     }
 
     /**

@@ -70,14 +70,17 @@
             <div class="grid grid-cols-3 gap-2 w-full">
               <div v-if="subscription" class="flex flex-col text-left">
                 <h4>Billing cycle</h4>
-                <p class="text-sm text-muted">{{ formatDate(subscription.current_period_start) }} - {{ formatDate(subscription.current_period_end) }}</p>
+                <p v-if="isTrialing" class="text-sm text-muted">Trial ends {{ formatDate(subscription.current_period_end) }}</p>
+                <p v-else class="text-sm text-muted">{{ formatDate(subscription.current_period_start) }} - {{ formatDate(subscription.current_period_end) }}</p>
               </div>
 
               <div v-if="isSeatBasedPlan" class="flex flex-col text-left">
+                <h4>Team members</h4>
                 <div>
-                  <h4>Seats</h4>
-                  <p class="text-sm text-muted mb-2">{{ seatUsage.used }} / {{ seatUsage.total }}</p>
-                  <!-- <UButton @click="purchaseMoreSeats" variant="outline">Purchase More Seats</UButton>   -->
+                  <p class="text-sm text-muted mb-2">{{ seatUsage.used }} used / {{ seatUsage.total }} total</p>  
+                </div>
+                <div>
+                  <UButton @click="purchaseMoreSeats" variant="outline" icon="tabler:plus" size="xs">Seats</UButton>
                 </div>
               </div>
             </div>
@@ -119,27 +122,15 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
 import BillingPricingTable from '~/components/org/BillingPricingTable.vue';
+import SeatPurchaseModal from '~/components/org/SeatPurchaseModal.vue';
+import SeatTrialModal from '~/components/org/SeatTrialModal.vue';
 import PlanDowngradeModal from '~/components/org/PlanDowngradeModal.vue';
 import { usePolar } from '~/composables/usePolar';
-import type { Subscription, Order, Price, ProductMetadata, Product } from '~~/server/db/schema';
-
-type SubscriptionWithMetadata = Subscription & {
-  metadata?: {
-    price?: Price;
-    product?: ProductMetadata;
-  };
-};
-
-type OrderWithMetadata = Order & {
-  metadata?: {
-    price?: Price;
-    product?: ProductMetadata;
-  };
-};
+import type { SubscriptionWithMetadata, OrderWithMetadata, Product } from '~~/server/db/schema';
 
 const { selectedOrganization } = useMemberships()
 const { $client } = useNuxtApp()
-const { products, isLoading: productsLoading, fetchProducts, isSeatBased, isOneTime, isFree, getSeatPrice, getPrimaryPrice } = usePolar();
+const { products, isLoading: productsLoading, fetchProducts, isSeatBased, isOneTime, isFree, getSeatPrice, getPrimaryPrice, seatUsage, fetchSeatUsage, isTrialing: isTrialingFn } = usePolar();
 const toast = useToast();
 const overlay = useOverlay();
 
@@ -164,15 +155,14 @@ const isCreatingCheckout = ref(false);
 const isManagingSubscription = ref(false);
 const pendingDowngradePlan = ref<Product | null>(null);
 
-const isSeatBasedPlan = computed(() => isSeatBased(subscription.value?.metadata));
+const isSeatBasedPlan = computed(() => isSeatBased(subscription.value?.metadata?.product) || seatUsage.value.isSeatBased);
 const isLifetimePlan = computed(() => !!order.value && isOneTime(order.value.metadata?.product));
+const isTrialing = computed(() => subscription ? isTrialingFn(subscription.value) : false );
 
 const isPlanChangeValid = computed(() => {
   const currentPlanId = subscription.value?.metadata?.product?.id || order.value?.metadata?.product?.id;
   return selectedPlan.value && selectedPlan.value !== currentPlanId;
 });
-
-const seatUsage = ref({ used: 0, total: 0 });
 
 const isDowngrade = computed(() => {
   if (!selectedPlan.value || !subscription.value?.metadata?.product) return false;
@@ -191,17 +181,6 @@ const isDowngrade = computed(() => {
 // Helper functions
 const formatDate = (date: string | Date) => {
   return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-};
-
-const fetchSeatUsage = async () => {
-  if (!subscription.value || !isSeatBasedPlan.value) return;
-  
-  try {
-    const usage = await $client.team.getSeatUsage.query({ organizationId: orgId });
-    seatUsage.value = usage;
-  } catch (e) {
-    console.error('Error fetching seat usage:', e);
-  }
 };
 
 const subscribeToPlan = async () => {
@@ -232,7 +211,7 @@ const subscribeToPlan = async () => {
   try {
     if (selectedIsFree) {
       await $client.organizations.switchToFreePlan.mutate({
-        organizationId: orgId,
+        organizationId: selectedOrganization.value?.id as string,
         productId: selected.id,
       });
       
@@ -252,7 +231,7 @@ const subscribeToPlan = async () => {
       await refreshCookie('supabase-auth-token');
     } else {
       const mutationPayload: { organizationId: string; productId: string; seats?: number; plan_change: boolean; } = {
-        organizationId: orgId as string,
+        organizationId: selectedOrganization.value?.id as string,
         productId: selected.id,
         plan_change: true,
       };
@@ -307,7 +286,9 @@ const showDowngradeModal = async () => {
 
 onMounted(async () => {
   await fetchProducts()
-  await fetchSeatUsage()
+  if (selectedOrganization.value?.id) {
+    await fetchSeatUsage(selectedOrganization.value.id)
+  }
   selectedPlan.value = subscription.value?.metadata?.product?.id || order.value?.metadata?.product?.id
 })
 
@@ -316,10 +297,10 @@ const manageSubscription = async () => {
   try {
     const { $posthog } = useNuxtApp();
     $posthog().capture('billing_portal_accessed', {
-      org_id: orgId,
+      org_id: selectedOrganization.value?.id,
       current_plan: subscription.value?.metadata?.product?.id
     });
-    const { url } = await $client.organizations.createPortalSession.mutate({ organizationId: orgId })
+    const { url } = await $client.organizations.createPortalSession.mutate({ organizationId: selectedOrganization.value?.id as string })
     window.location.href = url
 
   } catch (e) {
@@ -331,27 +312,36 @@ const manageSubscription = async () => {
 }
 
 const purchaseMoreSeats = async () => {
-  const { $posthog } = useNuxtApp();
+  if (!subscription.value?.metadata?.product) return;
+
+  if (isTrialing) {
+    const modal = overlay.create(SeatTrialModal);
+    await modal.open().result;
+    return;
+  }
+
+  const price = getSeatPrice(subscription.value.metadata.product);
+  const p = getPrimaryPrice(subscription.value.metadata.product);
+  const currency = (p as any)?.price_currency ?? 'usd';
+  const billingPeriod = (p as any)?.recurring_interval ?? 'month';
+
+  const modal = overlay.create(SeatPurchaseModal, {
+    props: {
+      organizationId: selectedOrganization.value?.id as string,
+      currentSeats: seatUsage.value.total,
+      pricePerSeat: price,
+      currency: currency,
+      billingPeriod: billingPeriod
+    }
+  });
+
   try {
-    const result = await $client.team.purchaseSeats.mutate({ 
-      organizationId: orgId, 
-      additionalSeats: 1 
-    });
-    if (result.checkoutUrl) {
-      $posthog().capture('seat_purchase_initiated', {
-        org_id: orgId,
-        additional_seats: 1,
-        current_seats: seatUsage.value.total
-      });
-      window.location.href = result.checkoutUrl;
+    const result = await modal.open().result;
+    if (result && selectedOrganization.value?.id) {
+      await fetchSeatUsage(selectedOrganization.value.id);
     }
   } catch (e) {
-    console.error('Failed to purchase seats:', e);
-    $posthog().capture('seat_purchase_failed', {
-      org_id: orgId,
-      error: (e as Error).message
-    });
-    error.value = { message: 'Failed to purchase additional seats.' };
+    // Modal cancelled
   }
 }
 </script>

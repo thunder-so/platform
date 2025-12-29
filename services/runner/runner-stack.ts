@@ -101,9 +101,10 @@ export class RunnerService extends Stack {
         path: 'artifacts/',
       }),
       environment: {
+        // buildImage: LinuxBuildImage.STANDARD_7_0,
         // buildImage: LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_3_0,
         buildImage: LinuxBuildImage.fromEcrRepository(runnerCustomRuntime.repository, runnerCustomRuntime.imageTag),
-        computeType: ComputeType.SMALL,
+        computeType: ComputeType.MEDIUM,
         privileged: false,
       },
       role: runnerRole,

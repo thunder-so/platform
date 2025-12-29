@@ -533,6 +533,20 @@ export type NewCustomer = typeof customers.$inferInsert;
 export type Order = typeof orders.$inferSelect;
 export type NewOrder = typeof orders.$inferInsert;
 
+export type SubscriptionWithMetadata = Subscription & {
+  metadata?: {
+    price?: Price;
+    product?: ProductMetadata;
+  };
+};
+
+export type OrderWithMetadata = Order & {
+  metadata?: {
+    price?: Price;
+    product?: ProductMetadata;
+  };
+};
+
 /*
  * Organization Memberships Schema
  */

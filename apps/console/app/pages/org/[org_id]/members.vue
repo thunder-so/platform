@@ -29,10 +29,10 @@
       icon="tabler:users"
       :color="limitReached ? 'warning' : 'info'"
       variant="soft"
-      :title="`${seatUsage.used}/${seatUsage.total} seats used`"
+      :title="`${seatUsage.used} seats used / ${seatUsage.total} seats total`"
       :description="isTrialing ? 'Seat purchases available after trial period.' : (limitReached ? 'All seats are in use. Purchase more seats to invite members.' : 'You can invite more team members.')"
       class="mb-4"
-      :actions="isTrialing ? [] : [{ label: 'Buy more seats', color: 'primary', onClick: buyMoreSeats }]"
+      :actions="isTrialing ? [] : [{ label: 'Buy more seats', color: 'primary', to: `/org/${orgId}/billing` }]"
     />
     <div v-if="loading">
       <div class="flex flex-col gap-4 mt-7">
@@ -77,17 +77,11 @@ const UAvatar = resolveComponent('UAvatar');
 const UBadge = resolveComponent('UBadge');
 const orgId = selectedOrganization?.value?.id as string;
 
-const seatUsage = ref({ used: 0, total: 1, isSeatBased: false });
-const limitReached = computed(() => {
-  if (seatUsage.value.isSeatBased) {
-    return seatUsage.value.used >= seatUsage.value.total;
-  }
-  return seatUsage.value.used >= seatUsage.value.total;
-});
-const { isFree: isFreeFn, isOneTime } = usePolar();
+const { isFree: isFreeFn, isOneTime, seatUsage, fetchSeatUsage, limitReached, isTrialing: isTrialingFn } = usePolar();
+
 const isFree = computed(() => isFreeFn(currentPlan.value));
 const isLifetime = computed(() => isOneTime(currentPlan.value));
-const isTrialing = computed(() => selectedOrganization.value?.subscriptions?.some(sub => sub.status === 'trialing'));
+const isTrialing = computed(() => isTrialingFn(currentPlan.value));
 
 const members = ref<any[]>([]);
 const loading = ref(true);
@@ -187,17 +181,10 @@ function getDropdownActions(member: any) {
   }
 }
 
-const fetchSeatUsage = async () => {
-  try {
-    const usage = await $client.team.getSeatUsage.query({ organizationId: orgId });
-    seatUsage.value = usage;
-  } catch (e) {
-    console.error('Error fetching seat usage:', e);
-  }
-};
-
 onMounted(async () => {
-  await fetchSeatUsage();
+  if (selectedOrganization.value?.id) {
+    await fetchSeatUsage(selectedOrganization.value.id);
+  }
   fetchMembers();
 });
 
@@ -208,7 +195,7 @@ const openInviteModal = async () => {
   const result = await modal.open().result;
   if (result) {
     await fetchMembers();
-    await fetchSeatUsage();
+    await fetchSeatUsage(orgId);
   }
 };
 
@@ -232,21 +219,6 @@ const openInviteDeleteModal = async (invite: any) => {
   const result = await modal.open().result;
   if (result) {
     await fetchMembers();
-  }
-};
-
-const buyMoreSeats = async () => {
-  try {
-    const result = await $client.team.purchaseSeats.mutate({
-      organizationId: orgId,
-      additionalSeats: 3
-    });
-    if (result.success) {
-      await fetchSeatUsage();
-      toast.add({ title: 'Seats updated successfully', color: 'success' });
-    }
-  } catch (error) {
-    toast.add({ title: 'Failed to purchase seats', color: 'error' });
   }
 };
 </script>

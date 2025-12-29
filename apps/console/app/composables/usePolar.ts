@@ -1,4 +1,4 @@
-import type { Product, ProductMetadata, Price } from '~~/server/db/schema';
+import type { Product, ProductMetadata, Price, Subscription } from '~~/server/db/schema';
 
 export const usePolar = () => {
   const supabase = useSupabaseClient();
@@ -28,6 +28,22 @@ export const usePolar = () => {
     }
   };
 
+  const seatUsage = useState('seat-usage', () => ({ used: 0, total: 1, isSeatBased: false }));
+
+  const fetchSeatUsage = async (orgId: string) => {
+    // Reset to avoid showing stale data from another org
+    seatUsage.value = { used: 0, total: 1, isSeatBased: false };
+    const { $client } = useNuxtApp();
+    try {
+      const usage = await $client.team.getSeatUsage.query({ organizationId: orgId });
+      seatUsage.value = usage;
+    } catch (e) {
+      console.error('Error fetching seat usage:', e);
+    }
+  };
+
+  const limitReached = computed(() => seatUsage.value.used >= seatUsage.value.total);
+
   // Polar pricing helpers
   const getPrimaryPrice = (meta?: ProductMetadata, preferType: 'recurring' | 'one_time' | 'any' = 'any'): Price | undefined => {
     // Support multiple metadata shapes: ProductMetadata.prices, .price, order metadata.product_price,
@@ -46,26 +62,33 @@ export const usePolar = () => {
     return prices.find((p: Price) => p.type === 'one_time') ?? prices[0];
   };
 
+  const resolveMeta = (plan?: Product | ProductMetadata | any) => {
+    if (!plan) return undefined;
+    const pAny = plan as any;
+    if (pAny.metadata && typeof pAny.metadata === 'object' && pAny.metadata !== null && Object.keys(pAny.metadata).length > 0) return pAny.metadata;
+    return pAny;
+  };
+
   const isFree = (plan: Product | ProductMetadata | undefined) => {
-    const meta = (plan as Product)?.metadata ?? (plan as ProductMetadata) ?? undefined;
+    const meta = resolveMeta(plan);
     const p = getPrimaryPrice(meta);
     return !!p && (p as any).amount_type === 'free';
   };
 
   const isSeatBased = (plan: Product | ProductMetadata | undefined) => {
-    const meta = (plan as Product)?.metadata ?? (plan as ProductMetadata) ?? undefined;
+    const meta = resolveMeta(plan);
     const p = getPrimaryPrice(meta);
     return !!p && (p as any).amount_type === 'seat_based';
   };
 
   const isOneTime = (plan: Product | ProductMetadata | undefined) => {
-    const meta = (plan as Product)?.metadata ?? (plan as ProductMetadata) ?? undefined;
+    const meta = resolveMeta(plan);
     const p = getPrimaryPrice(meta);
     return !!p && (p as any).type === 'one_time';
   };
 
   const getSeatPrice = (plan: Product | ProductMetadata | undefined) => {
-    const meta = (plan as Product)?.metadata ?? (plan as ProductMetadata) ?? undefined;
+    const meta = resolveMeta(plan);
     const p = getPrimaryPrice(meta);
     if (!p) return 0;
     if ((p as any).amount_type !== 'seat_based') return 0;
@@ -73,7 +96,7 @@ export const usePolar = () => {
   };
 
   const priceDisplay = (plan: Product | ProductMetadata | undefined) => {
-    const meta = (plan as Product)?.metadata ?? (plan as ProductMetadata) ?? undefined;
+    const meta = resolveMeta(plan);
     const p = getPrimaryPrice(meta);
     if (!p) return { label: '—', amount: undefined, currency: undefined };
     const amtType = (p as any).amount_type;
@@ -91,15 +114,23 @@ export const usePolar = () => {
     };
   };
 
+  const isTrialing = (subscription?: Subscription | null) => {
+    return subscription?.status === 'trialing';
+  };
+
   return {
     products: readonly(products),
     isLoading: readonly(isLoading),
     fetchProducts,
+    seatUsage: readonly(seatUsage),
+    fetchSeatUsage,
+    limitReached,
     isSeatBased,
     getSeatPrice,
     getPrimaryPrice,
     isFree,
     isOneTime,
     priceDisplay,
+    isTrialing,
   };
 };
