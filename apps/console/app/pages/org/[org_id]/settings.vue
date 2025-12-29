@@ -70,8 +70,7 @@
 import { ref, reactive, onMounted, inject, watch } from 'vue';
 import { z } from 'zod';
 import { OrgOrganizationDeleteModal } from '#components'
-
-const { memberships, selectedOrganization, setSelectedOrganization, initializeSession, refreshMemberships, resetOrgIdCookie } = useMemberships()
+import { usePolar } from '~/composables/usePolar';
 
 definePageMeta({
   layout: 'org'
@@ -88,13 +87,24 @@ const error = ref<{ message: string } | null>(null);
 const hasApplications = ref(false);
 const confirmDelete = ref(false);
 const deleting = ref(false);
-import { usePolar } from '~/composables/usePolar';
-const { isFree: isFreeFn } = usePolar();
+
+const { memberships, selectedOrganization, setSelectedOrganization, initializeSession, refreshMemberships, resetOrgIdCookie } = useMemberships()
+const { products, isFree: isFreeFn } = usePolar();
+
+const subscription = computed((): SubscriptionWithMetadata | null => {
+  const org = selectedOrganization.value;
+  return org?.subscriptions?.find(sub => sub.status === 'active' || sub.status === 'trialing') as SubscriptionWithMetadata || null;
+});
+const order = computed((): OrderWithMetadata | null => {
+  const org = selectedOrganization.value;
+  return org?.orders?.[0] as OrderWithMetadata || null;
+});
+const currentPlan = products.value.find(p => p.id === subscription.value?.metadata?.product?.id);
 
 const hasActiveSubscription = computed(() => {
   return selectedOrganization.value?.subscriptions?.some(
     sub => (sub.status === 'active' || sub.status === 'trialing') && 
-           !isFreeFn(sub.metadata)
+           !isFreeFn(currentPlan)
   ) || false;
 });
 const isFormValid = computed(() => {
