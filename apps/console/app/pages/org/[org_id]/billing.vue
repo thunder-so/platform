@@ -67,7 +67,7 @@
               </div>
             </div>
 
-            <div class="grid grid-cols-3 gap-2 w-full">
+            <div class="grid grid-cols-3 gap-2 w-full" v-if="!isFree">
               <div v-if="subscription" class="flex flex-col text-left">
                 <h4>Billing cycle</h4>
                 <p v-if="isTrialing" class="text-sm text-muted">Trial ends {{ formatDate(subscription.current_period_end) }}</p>
@@ -130,7 +130,7 @@ import type { SubscriptionWithMetadata, OrderWithMetadata, Product } from '~~/se
 
 const { selectedOrganization } = useMemberships()
 const { $client } = useNuxtApp()
-const { products, isLoading: productsLoading, fetchProducts, isSeatBased, isOneTime, isFree, getSeatPrice, getPrimaryPrice, seatUsage, fetchSeatUsage, isTrialing: isTrialingFn } = usePolar();
+const { products, isLoading: productsLoading, fetchProducts, isSeatBased, isOneTime, isFree: isFreeFn, getSeatPrice, getPrimaryPrice, seatUsage, fetchSeatUsage, isTrialing: isTrialingFn } = usePolar();
 const toast = useToast();
 const overlay = useOverlay();
 
@@ -147,6 +147,8 @@ const order = computed((): OrderWithMetadata | null => {
   const org = selectedOrganization.value;
   return org?.orders?.[0] as OrderWithMetadata || null;
 });
+const currentPlan = products.value.find(p => p.id === subscription.value?.metadata?.product?.id);
+
 const isLoading = ref(false)
 const error = ref<{ message: string } | null>(null);
 const selectedPlan = ref<string | undefined>(undefined);
@@ -158,6 +160,7 @@ const pendingDowngradePlan = ref<Product | null>(null);
 const isSeatBasedPlan = computed(() => isSeatBased(subscription.value?.metadata?.product) || seatUsage.value.isSeatBased);
 const isLifetimePlan = computed(() => !!order.value && isOneTime(order.value.metadata?.product));
 const isTrialing = computed(() => subscription ? isTrialingFn(subscription.value) : false );
+const isFree = computed(() => isFreeFn(currentPlan));
 
 const isPlanChangeValid = computed(() => {
   const currentPlanId = subscription.value?.metadata?.product?.id || order.value?.metadata?.product?.id;
@@ -166,14 +169,13 @@ const isPlanChangeValid = computed(() => {
 
 const isDowngrade = computed(() => {
   if (!selectedPlan.value || !subscription.value?.metadata?.product) return false;
-  
-  const currentPlan = products.value.find(p => p.id === subscription.value?.metadata?.product?.id);
+
   const targetPlan = products.value.find(p => p.id === selectedPlan.value);
   
   if (!currentPlan || !targetPlan) return false;
   
-  const currentIsPaid = !isFree(currentPlan);
-  const targetIsFree = isFree(targetPlan);
+  const currentIsPaid = !isFree;
+  const targetIsFree = isFreeFn(targetPlan);
   
   return currentIsPaid && targetIsFree;
 });
@@ -205,7 +207,7 @@ const subscribeToPlan = async () => {
     return;
   }
 
-  const selectedIsFree = isFree(selected);
+  const selectedIsFree = isFreeFn(selected);
 
   isCreatingCheckout.value = true;
   try {

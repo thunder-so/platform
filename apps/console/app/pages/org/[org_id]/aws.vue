@@ -7,15 +7,15 @@
           color="neutral"
           variant="outline"
           size="lg"
-          :trailing-icon="limitReached ? 'tabler:lock' : 'tabler:chevron-down'"
+          :trailing-icon="isFree ? 'tabler:lock' : 'tabler:chevron-down'"
           label="Add New"
-          :disabled="limitReached"
+          :disabled="isFree"
         />
       </UDropdownMenu>
     </div>
 
     <UAlert
-      v-if="limitReached && isFree"
+      v-if="isFree && limitReached"
       icon="tabler:info-circle"
       color="info"
       variant="soft"
@@ -64,7 +64,6 @@
 <script setup lang="ts">
 import type { TableColumn, DropdownMenuItem } from '@nuxt/ui';
 import type { Provider } from '~~/server/db/schema';
-import { useClipboard } from '@vueuse/core';
 import { OrgProviderCreateStackModal, OrgProviderCreateCredentialsModal } from '#components';
 import { computed } from 'vue';
 import { usePolar } from '~/composables/usePolar';
@@ -75,24 +74,17 @@ definePageMeta({
 
 const supabase = useSupabaseClient()
 const { selectedOrganization, currentPlan } = useMemberships()
+const { isFree: isFreeFn } = usePolar();
 const { $client } = useNuxtApp()
 const toast = useToast()
-const { copy } = useClipboard()
 const overlay = useOverlay()
 
 const providers = ref<Provider[]>([])
 const loading = ref(true)
 const error = ref<{ message: string } | null>(null);
 const orgId = selectedOrganization.value?.id as string;
-
-const maxProviders = computed(() => {
-  // Defensive: fallback to 1 if not present
-  return currentPlan.value?.metadata?.metadata?.max_providers ?? 1;
-});
-const limitReached = computed(() => providers.value.length >= maxProviders.value);
-const { isFree: isFreeFn, isOneTime } = usePolar();
+const limitReached = computed(() => providers.value.length >= 1);
 const isFree = computed(() => isFreeFn(currentPlan.value));
-const isLifetime = computed(() => isOneTime(currentPlan.value));
 
 const UBadge = resolveComponent('UBadge')
 const UDropdownMenu = resolveComponent('UDropdownMenu')
@@ -110,13 +102,17 @@ const addNewAccountStack = () => {
   });
   providerCreateStackModal.open({ organizationId: orgId })
 };
-const addNewAccountCredentials = () => {
+
+const addNewAccountCredentials = async () => {
   const { $posthog } = useNuxtApp();
   $posthog().capture('aws_connection_started', {
     method: 'access_key',
     org_id: orgId
   });
-  providerCreateCredentialsModal.open({ organizationId: orgId })
+  const result = await providerCreateCredentialsModal.open({ organizationId: orgId }).result;
+  if (result) {
+    fetchProviders();
+  }
 };
 
 const addNewItems: DropdownMenuItem[] = [
