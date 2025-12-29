@@ -43,7 +43,7 @@
         <div class="grid grid-cols-3 gap-2 w-full mb-4">
           <div class="flex flex-col text-left">
             <h4>Created</h4>
-            <p class="text-sm text-muted">{{ formatDate(deployData.pipeline_start) }}</p>
+            <p class="text-sm text-muted">{{ deployData.pipeline_start ? formatDate(deployData.pipeline_start) : formatDate(deployData.created_at) }}</p>
           </div>
 
           <div class="flex flex-col text-left">

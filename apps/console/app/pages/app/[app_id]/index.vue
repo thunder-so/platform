@@ -417,9 +417,22 @@ const currentTime = ref(Date.now());
 
 const getDuration = (activity: ActivityItem) => {
   if (!activity.timestamp_start) return 'Duration: -';
-  const start = new Date(activity.timestamp_start as string | Date);
-  const end = activity.timestamp_end ? new Date(activity.timestamp_end as string | Date) : currentTime.value;
-  const diff = Math.floor((end - start.getTime()) / 1000);
+  
+  const start = new Date(activity.timestamp_start as string | Date).getTime();
+  let end: number;
+
+  if (activity.timestamp_end) {
+    end = new Date(activity.timestamp_end as string | Date).getTime();
+  } else {
+    const normalizedStatus = (activity.status || '').toString().toUpperCase();
+    if (['STARTED', 'IN_PROGRESS', 'RESUMED'].includes(normalizedStatus)) {
+      end = currentTime.value;
+    } else {
+      return 'Duration: -';
+    }
+  }
+
+  const diff = Math.floor((end - start) / 1000);
   const mins = Math.floor(diff / 60);
   const secs = diff % 60;
   return `Duration: ${mins}m ${secs}s`;
@@ -435,15 +448,6 @@ onMounted(() => {
     clearInterval(timeInterval);
   });
 });
-
-const formatTimeAgo = (ts?: string | Date | null) => {
-  if (!ts) return '-';
-  try {
-    return useTimeAgo(new Date(ts as string | Date)).value;
-  } catch (e) {
-    return '-';
-  }
-};
 
 type BaseActivity = {
   id: string;
@@ -466,7 +470,7 @@ const error = ref<{ message: string } | null>(null);
 const transformBuildToActivityItem = (build: Build): BuildActivity => ({
   id: build.id,
   type: 'build',
-  timestamp_start: build.build_start || build.created_at,
+  timestamp_start: build.build_start ? build.build_start : build.created_at,
   timestamp_end: build.build_end,
   status: (build.build_status as string) || null,
   message: `Build ${String(build.build_status || '').toLowerCase()} for service ${service.value?.display_name || 'N/A'}`,
@@ -477,7 +481,7 @@ const transformBuildToActivityItem = (build: Build): BuildActivity => ({
 const transformEventToActivityItem = (event: Event): EventActivity => ({
   id: event.pipeline_execution_id,
   type: 'event',
-  timestamp_start: event.pipeline_start || event.created_at,
+  timestamp_start: event.pipeline_start ? event.pipeline_start : event.created_at,
   timestamp_end: event.pipeline_end,
   status: (event.pipeline_state as string) || null,
   message: `Pipeline ${String(event.pipeline_state || '').toLowerCase()} for service ${service.value?.display_name || 'N/A'}`,

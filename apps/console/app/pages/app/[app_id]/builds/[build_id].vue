@@ -38,7 +38,7 @@
         <div class="grid grid-cols-3 gap-2 w-full">
           <div class="flex flex-col text-left">
             <h4>Created</h4>
-            <p class="text-sm text-muted">{{ formatDate(buildData.build_start) }}</p>
+            <p class="text-sm text-muted">{{ buildData.build_start ? formatDate(buildData.build_start) : formatDate(buildData.created_at) }}</p>
           </div>
 
           <div class="flex flex-col text-left">
