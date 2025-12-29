@@ -72,6 +72,7 @@
             variant="subtle"
             icon="tabler:brand-github"
             size="lg"
+            :loading="importing"
             @click="handleImportRepositories"
             label="Import repositories"
             class="mt-4 w-full"
@@ -100,6 +101,7 @@ const installations = inject<any>('installations');
 
 const allRepositories = ref<any[]>([]);
 const pendingRepositories = ref(false);
+const importing = ref(false);
 const searchQuery = ref('');
 const selectedInstallation = ref<string | 'all'>('all'); // Ensure type compatibility
 const selectedRepoId = ref<number | null>(null);
@@ -179,11 +181,16 @@ watch(installations, (newInstallations) => {
 
 const handleImportRepositories = async () => {
   try {
+    importing.value = true;
     await openInstallationPopup();
     // Refresh installations and repositories after successful installation
     await fetchAllRepositories();
-  } catch (error) {
-    console.error('Installation failed:', error);
+  } catch (error: any) {
+    if (error.message !== 'Installation cancelled') {
+      console.error('Installation failed:', error);
+    }
+  } finally {
+    importing.value = false;
   }
 };
 
