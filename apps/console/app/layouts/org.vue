@@ -43,11 +43,11 @@
               <p class="text-sm text-muted mb-3">
                 Thunder is currently in beta. Feedback is highly appreciated.
               </p>
-              <UButton color="neutral" variant="outline"
-                data-tally-open="VLpMBa" data-tally-width="400" data-tally-align-left="1" data-tally-hide-title="1" data-tally-overlay="1" data-tally-emoji-text="👋" data-tally-emoji-animation="head-shake" data-tally-auto-close="2000" data-tally-form-events-forwarding="1"
-              >
-              Send feedback
-              </UButton>
+              <NuxtLink to="https://form.typeform.com/to/CSDLo4VO" target="_blank" rel="noopener noreferrer">
+                <UButton color="neutral" variant="outline" trailing-icon="tabler:external-link">
+                  Send feedback
+                </UButton>
+              </NuxtLink>
             </UCard>
           </div>
         </div>

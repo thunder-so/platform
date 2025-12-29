@@ -106,14 +106,10 @@
           <div class="py-1">
             <template v-for="(group, index) in helpMenuItems" :key="index">
               <div v-for="item in group" :key="item.label">
-                <NuxtLink v-if="item.to" :to="item.to" target="_blank" @click="isHelpPopoverOpen = false" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800">
+                <NuxtLink :to="item.to" target="_blank" @click="isHelpPopoverOpen = false" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800">
                   <Icon :name="item.icon" class="mr-3 w-4 h-4" />
                   <span>{{ item.label }}</span>
                 </NuxtLink>
-                <div v-else-if="item.click" @click="() => { item.click(); isHelpPopoverOpen = false }" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800 cursor-pointer">
-                  <Icon :name="item.icon" class="mr-3 w-4 h-4" />
-                  <span>{{ item.label }}</span>
-                </div>
               </div>
               <hr v-if="index < helpMenuItems.length - 1" class="border-gray-200 dark:border-gray-700" />
             </template>
@@ -266,9 +262,9 @@ const helpMenuItems = ref([
       to: 'https://discord.gg/nZwr6c5c6v' 
     },
     { 
-      label: 'Feedback', 
+      label: 'Send feedback', 
       icon: 'tabler:messages',
-      to: "#tally-open=VLpMBa&tally-width=400&tally-align-left=1&tally-hide-title=1&tally-overlay=1&tally-emoji-text=👋&tally-emoji-animation=wave&tally-auto-close=2000&tally-form-events-forwarding=1"
+      to: "https://form.typeform.com/to/CSDLo4VO"
     },
   ]
 ]);
