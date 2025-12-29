@@ -56,7 +56,7 @@
     </UCard>
 
     <div class="mt-4 h-full">
-      <div class="flex items-center gap-2 mb-4">
+      <div v-if="!error" class="flex items-center gap-2 mb-4">
         <div class="ml-auto flex items-center gap-2">
           <UButton
             size="sm"
@@ -82,7 +82,16 @@
 
       <UAlert v-if="error" color="warning" variant="subtle" class="mb-4" :title="error.message" />
 
-      <div class="h-[calc(100vh-10rem)]">
+      <UAlert 
+        v-if="buildData?.build_log?.errorCode" 
+        color="error" 
+        variant="subtle" 
+        class="mb-4" 
+        :title="buildData.build_log.errorCode || 'Build Error'"
+        :description="buildData.build_log.errorMessage"
+      />
+
+      <div v-else class="h-[calc(100vh-10rem)]">
         <AppLogViewer 
           :log-events="allLogEvents" 
           :loading="isLoading"

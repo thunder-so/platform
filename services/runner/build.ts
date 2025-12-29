@@ -1,4 +1,3 @@
-import path from 'path';
 import type { SQSHandler } from 'aws-lambda';
 import { CodeBuild, StartBuildCommand, BatchGetBuildsCommand, ArtifactsType, EnvironmentVariableType } from '@aws-sdk/client-codebuild';
 import { STSClient, AssumeRoleCommand } from '@aws-sdk/client-sts';
@@ -145,8 +144,44 @@ export const handler: SQSHandler = async (event) => {
       };
 
       console.log('Starting CodeBuild project with params:', JSON.stringify(params, null, 2));
-      const response = await codebuild.startBuild(params);
-      console.log('CodeBuild project started successfully:', response);
+      
+      const SUPABASE_URL = process.env.SUPABASE_URL;
+      const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY;
+
+      if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
+        throw new Error('Supabase URL and Key not found.');
+      }
+
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY);
+
+      let response;
+      try {
+        response = await codebuild.startBuild(params);
+        console.log('CodeBuild project started successfully:', response);
+      } catch (buildStartError) {
+        console.error('CodeBuild startBuild failed:', buildStartError);
+        
+        const errorMsg = buildStartError instanceof Error ? buildStartError.message : String(buildStartError);
+        const buildLog = {
+          errorCode: 'BUILD_START_FAILED',
+          errorMessage: errorMsg,
+        };
+
+        console.log('Updating Supabase for build command with failure');
+        const { error: updateError } = await supabase
+          .from('builds')
+          .update({
+            build_status: 'FAILED',
+            build_log: buildLog,
+            build_context: cdkContext,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', eventId);
+        if (updateError) throw updateError;
+        console.log('Supabase update for build failure successful');
+        
+        throw buildStartError;
+      }
 
       const buildArn = response.build?.arn;
       const buildId = response.build?.id as string;
@@ -160,15 +195,6 @@ export const handler: SQSHandler = async (event) => {
           const build = buildDetails.builds[0];
           console.log('Fetched build details:', JSON.stringify(build, null, 2));
           const startTime = build.startTime;
-          
-          const SUPABASE_URL = process.env.SUPABASE_URL;
-          const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY;
-
-          if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
-            throw new Error('Supabase URL and Key not found.');
-          }
-
-          const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY);
 
           if (command === 'delete') {
             console.log('Updating Supabase for delete command');

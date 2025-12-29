@@ -98,7 +98,7 @@
     </UCard>
 
     <div class="mt-4 h-full">
-      <div class="flex items-center gap-2 mb-4">
+      <div v-if="!error" class="flex items-center gap-2 mb-4">
         <div class="ml-auto flex items-center gap-2">
           <UButton
             size="sm"
