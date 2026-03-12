@@ -7,7 +7,7 @@ export const buildStatusEnum = pgEnum('BUILD_STATUS', ['NULL', 'IN_PROGRESS', 'S
 export const pipelineStatusEnum = pgEnum('PIPELINE_STATUS', ['NULL', 'STARTED', 'SUCCEEDED', 'RESUMED', 'FAILED', 'CANCELED', 'SUPERSEDED']);
 export const accountAccessEnum = pgEnum('ACCOUNT_ACCESS', ['READ_ONLY', 'READ_WRITE', 'ADMIN', 'OWNER']);
 export const applicationStatusEnum = pgEnum('APPLICATION_STATUS', ['PENDING', 'CONFIGURED', 'READY']);
-export const stackTypeEnum = pgEnum('STACK_TYPE', ['SPA', 'FUNCTION', 'WEB_SERVICE']);
+export const stackTypeEnum = pgEnum('STACK_TYPE', ['STATIC', 'LAMBDA', 'FARGATE']);
 export const pricingTypeEnum = pgEnum('PRICING_TYPE', ['one_time', 'recurring']);
 export const pricingPlanIntervalEnum = pgEnum('PRICING_PLAN_INTERVAL', ['month', 'year']);
 export const subscriptionStatusEnum = pgEnum('SUBSCRIPTION_STATUS', ['trialing', 'active', 'canceled', 'incomplete', 'incomplete_expired', 'past_due', 'unpaid', 'paused']);
@@ -253,7 +253,7 @@ export const services = pgTable('services', {
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
   name: text('name').notNull(),
   display_name: text('display_name').notNull(),
-  stack_type: stackTypeEnum('stack_type').default('SPA').notNull(),
+  stack_type: stackTypeEnum('stack_type').default('STATIC').notNull(),
   stack_version: text('stack_version').notNull(),
   owner: text('owner'),
   repo: text('repo'),

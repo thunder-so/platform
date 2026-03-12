@@ -37,7 +37,6 @@
     "@octokit/types": "16.0.0",
     "@polar-sh/sdk": "^0.42.1",
     "@posthog/nuxt": "^1.2.6",
-    "@thunder-so/thunder": "github:thunder-so/thunder#v1.0.4",
     "@trpc/client": "11.7.1",
     "@trpc/server": "11.7.1",
     "@vueuse/nuxt": "14.0.0",

@@ -3,8 +3,175 @@ import { CodeBuild, StartBuildCommand, BatchGetBuildsCommand, ArtifactsType, Env
 import { STSClient, AssumeRoleCommand } from '@aws-sdk/client-sts';
 import { createClient } from '@supabase/supabase-js';
 import { SSMProvider } from '@aws-lambda-powertools/parameters/ssm';
-import { spaBuilder, lambdaBuilder, ecsBuilder } from './builders';
-import type { IStackBuilder, RunnerRequest } from './builders/types';
+import type { StaticProps, LambdaProps, FargateProps } from '@thunder-so/thunder';
+
+type StackType = 'STATIC' | 'LAMBDA' | 'FARGATE';
+
+// Base runner request structure
+interface RunnerRequestBase {
+  metadata: {
+    application: string;
+    environment: string;
+    service: string;
+    stackVersion?: string;
+    accessTokenSecretArn?: string;
+    eventTarget?: string;
+    env?: {
+      account: string;
+      region: string;
+    };
+    [key: string]: any;
+  };
+}
+
+// Stack-specific runner requests using Thunder library types
+type StaticRunnerRequest = RunnerRequestBase & { 
+  metadata: RunnerRequestBase['metadata'] & Omit<StaticProps, 'env'> 
+};
+
+type LambdaRunnerRequest = RunnerRequestBase & { 
+  metadata: RunnerRequestBase['metadata'] & Omit<LambdaProps, 'env'> 
+};
+
+type FargateRunnerRequest = RunnerRequestBase & { 
+  metadata: RunnerRequestBase['metadata'] & Omit<FargateProps, 'env'> 
+};
+
+type RunnerRequest = StaticRunnerRequest | LambdaRunnerRequest | FargateRunnerRequest;
+
+// Sanitize paths to ensure valid unix directory paths, trim leading/trailing slashes
+const sanitizePath = (path: string | undefined): string => {
+  if (!path) return '';
+  return path.replace(/[^a-zA-Z0-9._\-@#$%^&*+=~ /]|\/+/g, m => m.includes('/') ? '/' : '').replace(/^\/+|\/+$/g, '');
+};
+
+const THUNDER_REPO_URL = 'https://github.com/thunder-so/thunder.git';
+
+function generateBuildSpec(
+  stackType: StackType,
+  command: 'build' | 'delete',
+  context: any,
+  stackVersion: string
+): string {
+  const buildProps = context.metadata.buildProps;
+  const sourceProps = context.metadata.sourceProps;
+  const rootDir = sanitizePath(context.metadata.rootDir);
+  const isLambdaContainer = stackType === 'LAMBDA' && !!context.metadata.functionProps?.dockerFile;
+  const needsUserBuild = stackType === 'STATIC' || (stackType === 'LAMBDA' && !isLambdaContainer);
+  const needsCustomRuntime = stackType === 'STATIC' || (stackType === 'LAMBDA' && !isLambdaContainer);
+  const needsDockerEnv = stackType === 'FARGATE';
+  const binFile = stackType.toLowerCase(); // static.ts, lambda.ts, fargate.ts
+
+  // Adjust context based on stack type
+  const adjustedBuildProps = needsCustomRuntime
+    ? {
+        ...context.metadata.buildProps,
+        customRuntime: 'runtime/Dockerfile'
+      }
+    : context.metadata.buildProps;
+
+  const adjustedContext = {
+    ...context,
+    metadata: {
+      ...context.metadata,
+      contextDirectory: command === 'delete' ? '../' : '../code/',
+      buildProps: adjustedBuildProps
+    }
+  };
+
+  // Build install commands
+  let installCommands = '';
+  
+  if (command === 'build') {
+    installCommands = `- echo "Starting build..."
+            - source ~/.bashrc
+            - export PROJECT_PATH="$PWD"`;
+    
+    if (needsDockerEnv) {
+      installCommands += `
+            - export DOCKER_BUILDKIT=1
+            - export DOCKER_CLI_EXPERIMENTAL=enabled`;
+    }
+    
+    installCommands += `
+            - echo "Building application..."
+            - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --region ${context.metadata.env.region} --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
+            - git clone --depth 1 --branch ${sourceProps?.branchOrRef} https://x-access-token:$GITHUB_TOKEN@github.com/${sourceProps?.owner}/${sourceProps?.repo}.git code`;
+
+    if (needsUserBuild) {
+      installCommands += `
+            - cd "code/${rootDir}"
+            - fnm use ${buildProps?.runtime_version || '24'}
+            - echo "Installing dependencies..."
+            - ${buildProps?.installcmd || 'npm install'}
+            - echo "Install phase complete"
+            - echo "Building application..."
+            - ${buildProps?.buildcmd || 'npm run build'}
+            - echo "Build phase complete"`;
+    }
+  } else {
+    // Delete command
+    installCommands = `- echo "Starting destroy..."
+            - source ~/.bashrc
+            - export PROJECT_PATH="$PWD"`;
+    
+    if (needsDockerEnv) {
+      installCommands += `
+            - export DOCKER_BUILDKIT=1
+            - export DOCKER_CLI_EXPERIMENTAL=enabled`;
+    }
+    
+    installCommands += `
+            - echo "Cloning repository for destroy..."
+            - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --region ${context.metadata.env.region} --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
+            - git clone --depth 1 --branch ${sourceProps?.branchOrRef} https://x-access-token:$GITHUB_TOKEN@github.com/${sourceProps?.owner}/${sourceProps?.repo}.git code`;
+
+    if (needsUserBuild) {
+      installCommands += `
+            - cd "code/${rootDir}"
+            - fnm use ${buildProps?.runtime_version || '24'}
+            - echo "Installing dependencies..."
+            - ${buildProps?.installcmd || 'npm install'}
+            - echo "Install phase complete"
+            - echo "Building application..."
+            - ${buildProps?.buildcmd || 'npm run build'}
+            - echo "Build phase complete"`;
+    }
+  }
+
+  const cdkCommand = command === 'delete'
+    ? 'npx cdk destroy --app "npx tsx bin/' + binFile + '.ts" --require-approval never --force --verbose'
+    : 'npx cdk deploy --app "npx tsx bin/' + binFile + '.ts" --require-approval never';
+
+  let postBuildCommands = `- echo "${command === 'delete' ? 'Destroying' : 'Deploying'} infrastructure..."`;
+  
+  if (needsDockerEnv) {
+    postBuildCommands += `
+            - export NIXPACKS_NODE_VERSION=${buildProps?.runtime_version || '20'}`;
+  }
+  
+  postBuildCommands += `
+            - echo '${JSON.stringify(adjustedContext)}' > cdk.context.json
+            - ${cdkCommand}`;
+
+  return `
+      version: 0.2
+      phases:
+        install:
+          commands:
+            ${installCommands}
+        build:
+          commands:
+            - echo "Installing CDK dependencies..."
+            - cd "$PROJECT_PATH"
+            - git clone --depth 1 --branch v${stackVersion} -c advice.detachedHead=false ${THUNDER_REPO_URL} lib
+            - cd "lib"
+            - bun install
+        post_build:
+          commands:
+            ${postBuildCommands}
+    `;
+}
 
 /**
  * Gather the environment
@@ -25,12 +192,6 @@ if (!RUNNER_BUILD) {
 if (!EVENT_TARGET) {
   throw new Error('Environment variable EVENT_TARGET is not set');
 }
-
-const builders: Record<string, IStackBuilder> = {
-  SPA: spaBuilder,
-  FUNCTION: lambdaBuilder,
-  WEB_SERVICE: ecsBuilder,
-};
 
 export const handler: SQSHandler = async (event) => {
   console.log('Received SQS event:', JSON.stringify(event, null, 2));
@@ -69,9 +230,8 @@ export const handler: SQSHandler = async (event) => {
         throw new Error('Missing required message attributes');
       }
 
-      const builder = builders[stackType];
-      if (!builder) {
-        throw new Error(`No builder found for stack type: ${stackType}`);
+      if (!['STATIC', 'LAMBDA', 'FARGATE'].includes(stackType)) {
+        throw new Error(`Invalid stack type: ${stackType}. Must be STATIC, LAMBDA, or FARGATE`);
       }
       console.log('Stack type:', stackType);
 
@@ -122,9 +282,12 @@ export const handler: SQSHandler = async (event) => {
       }
       console.log('CDK Context:', JSON.stringify(cdkContext, null, 2));
 
-      const buildSpec = command === 'delete'
-        ? builder.generateDestroyBuildSpec(cdkContext, stackVersion)
-        : builder.generateBuildSpec(cdkContext, stackVersion);
+      const buildSpec = generateBuildSpec(
+        stackType as StackType,
+        command === 'delete' ? 'delete' : 'build',
+        cdkContext,
+        stackVersion
+      );
 
       const params = {
         projectName: process.env.RUNNER_BUILD,

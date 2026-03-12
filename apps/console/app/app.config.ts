@@ -27,6 +27,7 @@ export default defineAppConfig({
     { name: "af-south-1", label: "Africa (Cape Town)" },
     { name: "sa-east-1", label: "South America (São Paulo)" }
   ],
+  
   // Runtimes supported by AWS CodeBuild
   runtimes: [
     {
@@ -45,6 +46,7 @@ export default defineAppConfig({
       value: "20"
     }
   ],
+
   // Runtimes supported by AWS Lambda for functions
   lambdaRuntimes: [
     {
@@ -56,11 +58,12 @@ export default defineAppConfig({
       value: 'nodejs20.x',
     },
   ],
-  stacks: [
-    { type: "SPA", source: "@thunderso/cdk-spa", version: "0.23.12" },
-    { type: "FUNCTION", source: "@thunderso/cdk-functions", version: "0.7.16" },
-    { type: "WEB_SERVICE", source: "@thunderso/cdk-webservice", version: "0.3.4" },
-  ],
+
+  // @thunder-so/thunder library
+  stackTypes: ['STATIC', 'LAMBDA', 'FARGATE'],
+  stackVersion: "1.0.4",
+
+  // Fargate options
   fargate: {
     cpuOptions: [
       { label: '0.25 vCPU', value: 256 },

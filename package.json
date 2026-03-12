@@ -18,7 +18,8 @@
   "devDependencies": {
     "@changesets/cli": "^2.29.7",
     "turbo": "^2.6.1",
-    "supabase": "^2.62.5"
+    "supabase": "^2.62.5",
+    "@thunder-so/thunder": "github:thunder-so/thunder#v1.0.4"
   },
   "workspaces": [
     "apps/*",
