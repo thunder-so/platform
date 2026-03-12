@@ -36,7 +36,6 @@ These secrets must be configured in both the `production` and `sandbox` environm
 | `RUNNER_REGION` | `us-east-1` | AWS region where the Runner service is deployed. |
 | `RUNNER_SERVICE` | `https://sqs...` | The SQS queue URL for the Runner service. |
 | `SITE_URL` | `https://thunder.so` | The public base URL for the console application. |
-| `SUPABASE_ACCESS_TOKEN` | `sbp_...` | Supabase access token with project permissions. |
 | `SUPABASE_KEY` | `ey...` | Your Supabase project's public `anon` key. |
 | `SUPABASE_PROJECT_ID` | `your-project-ref` | The reference ID of your Supabase project. |
 | `SUPABASE_SECRET_KEY` | `ey...` | Your Supabase project's `service_role` secret key. |

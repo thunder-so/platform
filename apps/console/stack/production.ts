@@ -1,5 +1,4 @@
-import { Runtime, Architecture } from 'aws-cdk-lib/aws-lambda';
-import { Cdk, NuxtStack, type NuxtProps } from "@thunderso/cdk-nuxt";
+import { Cdk, Nuxt, type NuxtProps } from "@thunder-so/thunder";
 
 const nuxtApp: NuxtProps = {
   env: {
@@ -14,8 +13,8 @@ const nuxtApp: NuxtProps = {
 
   serverProps: {
     dockerFile: 'Dockerfile',
-    runtime: Runtime.NODEJS_22_X,
-    architecture: Architecture.ARM_64,
+    runtime: Cdk.aws_lambda.Runtime.NODEJS_22_X,
+    architecture: Cdk.aws_lambda.Architecture.ARM_64,
     memorySize: 1792,
     timeout: 10,
     tracing: false,
@@ -65,7 +64,7 @@ const nuxtApp: NuxtProps = {
   regionalCertificateArn: 'arn:aws:acm:us-east-1:665186350589:certificate/d7c10cb1-d3fb-4547-b6ba-1717f20a25cf', // must match your stack's region
 };
 
-new NuxtStack(
+new Nuxt(
     new Cdk.App(),
     `${nuxtApp.application}-${nuxtApp.service}-${nuxtApp.environment}-stack`,
     nuxtApp
