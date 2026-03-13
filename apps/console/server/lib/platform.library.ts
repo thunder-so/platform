@@ -1,4 +1,5 @@
-import { SQSClient, SendMessageCommand, MessageAttributeValue } from '@aws-sdk/client-sqs';
+import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
+import type { MessageAttributeValue } from '@aws-sdk/client-sqs';
 import { SSMClient, PutParameterCommand } from '@aws-sdk/client-ssm';
 import { CloudWatchLogsClient, GetLogEventsCommand } from '@aws-sdk/client-cloudwatch-logs';
 import { STSClient, AssumeRoleCommand } from '@aws-sdk/client-sts';
@@ -6,7 +7,7 @@ import { TRPCError } from '@trpc/server';
 import { builds, destroys, services, type Build, type Application, type Environment, type Provider, type ServiceVariable } from '../db/schema';
 import { db } from '../db/db';
 import { eq } from 'drizzle-orm';
-import { ServiceSchema } from '../validators/app';
+import type { ServiceSchema } from '../validators/app';
 import { trackServerEvent } from '../utils/analytics';
 
 // Types for better type safety
@@ -317,7 +318,7 @@ export class PlatformLibrary {
       });
     }
 
-    const accessTokenSecretArn = userAccessTokens[0].resource;
+    const accessTokenSecretArn = userAccessTokens[0]?.resource;
     if (!accessTokenSecretArn) {
       throw new TRPCError({
         code: 'PRECONDITION_FAILED',
@@ -342,7 +343,7 @@ export class PlatformLibrary {
         destroy_context: context,
       }).returning({ id: destroys.id });
 
-      eventId = newDestroy.id;
+      eventId = newDestroy?.id;
 
       if (!newDestroy) {
         throw new TRPCError({ 
@@ -367,7 +368,7 @@ export class PlatformLibrary {
         build_context: context,
       }).returning();
 
-      eventId = newBuild.id;
+      eventId = newBuild?.id;
 
       if (!newBuild) {
         throw new TRPCError({
@@ -397,7 +398,7 @@ export class PlatformLibrary {
     const messageAttributes: Record<string, MessageAttributeValue> = {
       stackType: { DataType: 'String', StringValue: serviceData.stack_type },
       stackVersion: { DataType: 'String', StringValue: serviceData.stack_version },
-      eventId: { DataType: 'String', StringValue: eventId },
+      eventId: { DataType: 'String', StringValue: eventId || '' },
       accessTokenSecretArn: { DataType: 'String', StringValue: accessTokenSecretArn },
       provider: { DataType: 'String', StringValue: JSON.stringify(provider) },
       ...command ? { command: { DataType: 'String', StringValue: command } } : {},
@@ -407,10 +408,10 @@ export class PlatformLibrary {
     await this.sendSqsMessage(
       runnerServiceQueueUrl,
       JSON.stringify(context),
-      eventId,
+      eventId || '',
       messageAttributes
     );
 
-    return eventId;
+    return eventId || '';
   }
 }

@@ -22,6 +22,7 @@ export const usePolar = () => {
           ...p,
           created_at: new Date(p.created_at),
           updated_at: p.updated_at ? new Date(p.updated_at) : null,
+          metadata: JSON.parse(JSON.stringify(p.metadata)), // Deep clone to remove readonly
         }))
         .sort((a, b) => {
           const aOrder = parseInt((a.metadata as any)?.metadata?.order || '999');

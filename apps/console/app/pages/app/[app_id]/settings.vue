@@ -328,7 +328,7 @@ const saveAppChanges = async () => {
 async function deleteApplicationModal() {
   const applicationDeleteModal = overlay.create(AppApplicationDeleteModal, {
     props: {
-      application: applicationSchema.value,
+      application: applicationSchema.value as any,
       serviceId: service.value?.id as string
     }
   });

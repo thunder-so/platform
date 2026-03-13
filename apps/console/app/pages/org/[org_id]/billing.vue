@@ -96,7 +96,7 @@
         </template>
       
         <BillingPricingTable v-if="products.length > 0"
-          :plans="products"
+          :plans="products as any"
           :selectedPlan="selectedPlan"
           :currentPlan="subscription?.metadata?.product?.id || order?.metadata?.product?.id"
           @update:selectedPlan="selectedPlan = $event"
@@ -147,7 +147,7 @@ const order = computed((): OrderWithMetadata | null => {
   const org = selectedOrganization.value;
   return org?.orders?.[0] as OrderWithMetadata || null;
 });
-const currentPlan = products.value.find(p => p.id === subscription.value?.metadata?.product?.id);
+const currentPlan = products.value.find(p => p.id === subscription.value?.metadata?.product?.id) as Product;
 
 const isLoading = ref(false)
 const error = ref<{ message: string } | null>(null);
@@ -157,10 +157,10 @@ const isCreatingCheckout = ref(false);
 const isManagingSubscription = ref(false);
 const pendingDowngradePlan = ref<Product | null>(null);
 
-const isSeatBasedPlan = computed(() => isSeatBased(subscription.value?.metadata?.product) || seatUsage.value.isSeatBased);
-const isLifetimePlan = computed(() => !!order.value && isOneTime(order.value.metadata?.product));
+const isSeatBasedPlan = computed(() => isSeatBased(subscription.value?.metadata?.product as any) || seatUsage.value.isSeatBased);
+const isLifetimePlan = computed(() => !!order.value && isOneTime(order.value.metadata?.product as any));
 const isTrialing = computed(() => subscription ? isTrialingFn(subscription.value) : false );
-const isFree = computed(() => isFreeFn(currentPlan));
+const isFree = computed(() => isFreeFn(currentPlan as any));
 
 const isPlanChangeValid = computed(() => {
   const currentPlanId = subscription.value?.metadata?.product?.id || order.value?.metadata?.product?.id;
@@ -170,7 +170,7 @@ const isPlanChangeValid = computed(() => {
 const isDowngrade = computed(() => {
   if (!selectedPlan.value || !subscription.value?.metadata?.product) return false;
 
-  const targetPlan = products.value.find(p => p.id === selectedPlan.value);
+  const targetPlan = products.value.find(p => p.id === selectedPlan.value) as Product;
   
   if (!currentPlan || !targetPlan) return false;
   
@@ -188,7 +188,7 @@ const formatDate = (date: string | Date) => {
 const subscribeToPlan = async () => {
   if (!selectedPlan.value) return;
   
-  const selected = products.value.find(p => p.id === selectedPlan.value);
+  const selected = products.value.find(p => p.id === selectedPlan.value) as Product;
   if (!selected) return;
 
   const currentPlanId = subscription.value?.metadata?.product?.id || order.value?.metadata?.product?.id;
@@ -207,7 +207,7 @@ const subscribeToPlan = async () => {
     return;
   }
 
-  const selectedIsFree = isFreeFn(selected);
+  const selectedIsFree = isFreeFn(selected as any);
 
   isCreatingCheckout.value = true;
   try {
@@ -238,7 +238,7 @@ const subscribeToPlan = async () => {
         plan_change: true,
       };
 
-      if (isSeatBased(selected)) {
+      if (isSeatBased(selected as any)) {
         mutationPayload.seats = Math.max(seatUsage.value.used, 1);
       }
 
@@ -322,8 +322,8 @@ const purchaseMoreSeats = async () => {
     return;
   }
 
-  const price = getSeatPrice(subscription.value.metadata.product);
-  const p = getPrimaryPrice(subscription.value.metadata.product);
+  const price = getSeatPrice(subscription.value.metadata.product as any);
+  const p = getPrimaryPrice(subscription.value.metadata.product as any);
   const currency = (p as any)?.price_currency ?? 'usd';
   const billingPeriod = (p as any)?.recurring_interval ?? 'month';
 

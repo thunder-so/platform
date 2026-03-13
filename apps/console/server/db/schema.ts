@@ -523,8 +523,13 @@ interface OneTimeProductMetadata extends BaseProductMetadata {
 
 export type ProductMetadata = RecurringProductMetadata | OneTimeProductMetadata | BaseProductMetadata;
 
+// Utility type to make nested properties writable
+type Writable<T> = T extends ReadonlyArray<infer U> ? U[] : T extends object ? { -readonly [K in keyof T]: Writable<T[K]> } : T;
+
+export type WritableProductMetadata = Writable<ProductMetadata>;
+
 export type DBProduct = typeof products.$inferSelect;
-export type Product = Omit<DBProduct, 'metadata'> & { metadata: ProductMetadata };
+export type Product = Omit<DBProduct, 'metadata'> & { metadata: ProductMetadata | WritableProductMetadata };
 export type NewProduct = typeof products.$inferInsert;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type NewSubscription = typeof subscriptions.$inferInsert;

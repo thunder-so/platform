@@ -206,8 +206,8 @@ const { data, pending, error: logsError, execute } = useAsyncData(`deploy-logs-$
 watch(deploy, (newDeploy) => {
   if (newDeploy) {
     deployData.value = newDeploy;
-    if (newDeploy.pipeline_log?.['deep-link']) {
-      deepLink.value = newDeploy.pipeline_log['deep-link'];
+    if ((newDeploy.pipeline_log as any)?.['deep-link']) {
+      deepLink.value = (newDeploy.pipeline_log as any)['deep-link'];
     }
     nextTick(() => {
       if (newDeploy.pipeline_log && newDeploy.environments?.providers) {
@@ -334,8 +334,8 @@ const duration = computed(() => {
   if (!deployData.value?.pipeline_start) return null;
   
   const start = new Date(deployData.value.pipeline_start);
-  const end = deployData.value.pipeline_end ? new Date(deployData.value.pipeline_end) : currentTime.value;
-  const diff = end - start.getTime();
+  const end = deployData.value.pipeline_end ? new Date(deployData.value.pipeline_end) : new Date();
+  const diff = end.getTime() - start.getTime();
   
   const minutes = Math.floor(diff / 60000);
   const seconds = Math.floor((diff % 60000) / 1000);

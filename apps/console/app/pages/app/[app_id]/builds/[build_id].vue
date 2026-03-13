@@ -278,8 +278,8 @@ const duration = computed(() => {
   if (!buildData.value?.build_start) return null;
   
   const start = new Date(buildData.value.build_start);
-  const end = buildData.value.build_end ? new Date(buildData.value.build_end) : currentTime.value;
-  const diff = end - start.getTime();
+  const end = buildData.value.build_end ? new Date(buildData.value.build_end) : new Date();
+  const diff = end.getTime() - start.getTime();
   
   const minutes = Math.floor(diff / 60000);
   const seconds = Math.floor((diff % 60000) / 1000);

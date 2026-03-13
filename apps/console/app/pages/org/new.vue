@@ -14,7 +14,7 @@
         </div>
       </div>
       
-      <PricingTable v-else :plans="products" :selectedPlan="selectedPlan" @update:selectedPlan="selectedPlan = $event" />
+      <PricingTable v-else :plans="products as any" :selectedPlan="selectedPlan" @update:selectedPlan="selectedPlan = $event" />
 
       <UAlert v-if="error" color="error" variant="soft" :title="error.message" />
     </UForm>
@@ -48,7 +48,7 @@ const loading = ref(false);
 const error = ref<{ message: string } | null>(null);
 
 fetchProducts().then(() => {
-  const freePlan = products.value.find(p => isFree(p));
+  const freePlan = products.value.find(p => isFree(p as any));
   selectedPlan.value = freePlan?.id;
 });
 
@@ -62,7 +62,7 @@ const createOrganization = async () => {
   error.value = null;
 
   const selected = products.value.find(p => p.id === selectedPlan.value);
-  const isFreePlan = isFree(selected);
+  const isFreePlan = isFree(selected as any);
 
   const { $posthog } = useNuxtApp();
   $posthog().capture('org_create_started', {

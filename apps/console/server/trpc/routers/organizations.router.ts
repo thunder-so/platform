@@ -74,6 +74,9 @@ export const organizationsRouter = router({
               organization_id: org.id,
               polar_customer_id: newCustomer.id,
             }).returning()
+            if (!newCustomerRecord) {
+              throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create customer record.' });
+            }
             customer = newCustomerRecord
           }
 

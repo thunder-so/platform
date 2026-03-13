@@ -128,7 +128,7 @@ const columns = [
   { 
     accessorKey: 'metadata.target_type', 
     header: 'Type',
-    cell: ({ row }) => {
+    cell: ({ row }: any) => {
       if (row.original.metadata.target_type === 'Organization') {
         return h(UBadge, { color: 'primary', variant: 'subtle' }, () => 'ORGANIZATION')
       } else if (row.original.metadata.target_type === 'User') {
@@ -139,7 +139,7 @@ const columns = [
   { 
     accessorKey: 'created_at', 
     header: 'Installed on',
-    cell: ({ row }) => {
+    cell: ({ row }: any) => {
       return new Date(row.getValue('created_at')).toLocaleString('en-US', {
         day: 'numeric',
         month: 'short',
@@ -151,7 +151,7 @@ const columns = [
   },
   {
     id: 'action',
-    cell: ({ row }) => h('div', { class: 'text-right' }, [
+    cell: ({ row }: any) => h('div', { class: 'text-right' }, [
       h(resolveComponent('UDropdownMenu'), { items: getDropdownActions(row.original) }, () =>
         h(resolveComponent('UButton'), {
           icon: 'tabler:dots-vertical',

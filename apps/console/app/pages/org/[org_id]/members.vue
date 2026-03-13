@@ -79,9 +79,9 @@ const orgId = selectedOrganization?.value?.id as string;
 
 const { isFree: isFreeFn, isOneTime, seatUsage, fetchSeatUsage, limitReached, isTrialing: isTrialingFn } = usePolar();
 
-const isFree = computed(() => isFreeFn(currentPlan.value));
-const isLifetime = computed(() => isOneTime(currentPlan.value));
-const isTrialing = computed(() => isTrialingFn(currentPlan.value));
+const isFree = computed(() => isFreeFn(currentPlan.value as any));
+const isLifetime = computed(() => isOneTime(currentPlan.value as any));
+const isTrialing = computed(() => isTrialingFn(currentPlan.value as any));
 
 const members = ref<any[]>([]);
 const loading = ref(true);
@@ -91,7 +91,7 @@ const columns = [
   {
     accessorKey: 'user.avatar_url',
     header: 'Member',
-    cell: ({ row }) => {
+    cell: ({ row }: any) => {
       return h('div', { class: 'flex items-center gap-3' }, [
         h(UAvatar, {
           src: row.original.user.avatar_url,
@@ -115,7 +115,7 @@ const columns = [
   },
   {
     id: 'action',
-    cell: ({ row }) => h('div', { class: 'text-right' }, [
+    cell: ({ row }: any) => h('div', { class: 'text-right' }, [
       h(resolveComponent('UDropdownMenu'), { items: getDropdownActions(row.original) }, () =>
         h(resolveComponent('UButton'), {
           icon: 'tabler:dots-vertical',

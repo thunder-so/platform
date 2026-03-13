@@ -342,7 +342,7 @@ export async function lookupHostedZoneAndCerts(provider: ProviderSchema | Manual
 export async function verifyDomainDns(domain: string, expectedCname?: string, expectedTxt?: string) {
     try {
         if (expectedCname) {
-            const cnames = await dns.resolveCname(domain).catch(() => []);
+            const cnames = await dns.resolveCname(domain).catch(() => [] as string[]);
             if (cnames && cnames.includes(expectedCname)) return { verified: true, method: 'CNAME', records: cnames };
         }
 

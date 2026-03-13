@@ -61,7 +61,7 @@ const columns = [
   { 
     accessorKey: 'id', 
     header: '',
-    cell: ({ row }) => {
+    cell: ({ row }: any) => {
       return ''
     }
   },
@@ -73,7 +73,7 @@ const columns = [
         td: 'width: 50%'
       }
     },
-    header: ({ column }) => {
+    header: ({ column }: any) => {
       const isSorted = column.getIsSorted()
 
       return h(UButton, {
@@ -89,7 +89,7 @@ const columns = [
         onClick: () => column.toggleSorting(column.getIsSorted() === 'asc')
       })
     },
-    cell: ({ row }) => h(resolveComponent('NuxtLink'), { 
+    cell: ({ row }: any) => h(resolveComponent('NuxtLink'), { 
       to: `/app/${row.getValue('id')}`, 
       class: 'font-medium text-highlighted hover:underline' 
     }, () => row.getValue('display_name'))
@@ -97,7 +97,7 @@ const columns = [
   { 
     accessorKey: 'stack_type', 
     header: 'Type',
-    cell: ({ row }) => {
+    cell: ({ row }: any) => {
       if (row.getValue('stack_type') === 'STATIC') {
         return h(UBadge, { color: 'success', variant: 'subtle' }, () => 'STATIC')
       } else if (row.getValue('stack_type') === 'LAMBDA') {
@@ -110,7 +110,7 @@ const columns = [
   { 
     accessorKey: 'region', 
     // header: 'Region',
-    header: ({ column }) => {
+    header: ({ column }: any) => {
       const isSorted = column.getIsSorted()
 
       return h(UButton, {
@@ -130,7 +130,7 @@ const columns = [
   { 
     accessorKey: 'updated_at', 
     // header: () => h('div', { class: 'text-right' }, 'Updated'),
-    header: ({ column }) => {
+    header: ({ column }: any) => {
       const isSorted = column.getIsSorted()
 
       return h('div', { class: 'text-right' }, [
@@ -148,7 +148,7 @@ const columns = [
         })
       ])
     },
-    cell: ({ row }) => {
+    cell: ({ row }: any) => {
       const date = new Date(row.getValue('updated_at')).toLocaleString('en-GB', {
         day: 'numeric',
         month: 'short',
@@ -178,7 +178,7 @@ const loadSortState = () => {
 }
 
 // Save sort state to localStorage
-const saveSortState = (state) => {
+const saveSortState = (state: any) => {
   if (process.client) {
     localStorage.setItem(`table-sort-${orgId}`, JSON.stringify(state))
   }

@@ -253,8 +253,8 @@ const manageLinks = computed<NavigationMenuItem[]>(() => {
 async function openDeployCommitModal() {
   const deployCommitModal = overlay.create(AppDeployCommitModal, {
     props: {
-      service: service.value,
-      environment: environment.value
+      service: service.value as any,
+      environment: environment.value as any
     }
   });
 
@@ -267,8 +267,8 @@ async function openDeployCommitModal() {
 async function openDeployLatestModal() {
   const deployLatestModal = overlay.create(AppDeployLatestModal, {
     props: {
-      service: service.value,
-      environment: environment.value
+      service: service.value as any,
+      environment: environment.value as any
     }
   });
 
@@ -276,11 +276,11 @@ async function openDeployLatestModal() {
   // DeployLatestModal triggers the pipeline itself and shows feedback; no further action required here.
 }
 
-async function deployCommit(sha?: string) {  
+async function deployCommit(sha?: string) {    
   try {
     await $client.services.triggerPipeline.mutate({
-      providerId: provider.value.id,
-      serviceId: service.value.id,
+      providerId: provider.value!.id,
+      serviceId: service.value!.id,
       sha: sha,
     });
     const message = sha ? `Deployment started for commit ${sha.substring(0,7)}` : 'Deployment started for latest commit';

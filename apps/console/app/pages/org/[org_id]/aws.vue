@@ -84,15 +84,15 @@ const loading = ref(true)
 const error = ref<{ message: string } | null>(null);
 const orgId = selectedOrganization.value?.id as string;
 const limitReached = computed(() => providers.value.length >= 1);
-const isFree = computed(() => isFreeFn(currentPlan.value));
+const isFree = computed(() => isFreeFn(currentPlan.value as any));
 
 const UBadge = resolveComponent('UBadge')
 const UDropdownMenu = resolveComponent('UDropdownMenu')
 const UButton = resolveComponent('UButton')
 const providerCreateStackModal = overlay.create(OrgProviderCreateStackModal);
 const providerCreateCredentialsModal = overlay.create(OrgProviderCreateCredentialsModal);
-const providerEditModal = resolveComponent('OrgProviderUpdateModal')
-const providerDeleteModal = resolveComponent('OrgProviderDeleteModal')
+const providerEditModal = resolveComponent('OrgProviderUpdateModal') as Component
+const providerDeleteModal = resolveComponent('OrgProviderDeleteModal') as Component
 
 const addNewAccountStack = () => {
   const { $posthog } = useNuxtApp();
@@ -203,16 +203,16 @@ const columns = [
   { 
     accessorKey: 'alias', 
     header: 'Alias',
-    cell: ({ row }) => {
+    cell: ({ row }: { row: { original: Provider } }) => {
       return h('div', undefined, [
-        h('p', { class: 'font-medium text-highlighted' }, row.original.alias),
+        h('p', { class: 'font-medium text-highlighted' }, row.original.alias || 'Unnamed'),
       ])
     }
   },
   {
     accessorKey: 'access_key_id',
     header: 'Type',
-    cell: ({ row }) => {
+    cell: ({ row }: { row: { original: Provider } }) => {
       if (row.original.stack_name) {
         return h(UBadge, { color: 'success', variant: 'subtle' }, () => 'CLOUDFORMATION')
       } else if (row.original.access_key_id) {
@@ -224,7 +224,7 @@ const columns = [
   { 
     accessorKey: 'updated_at', 
     header: 'Last Updated',
-    cell: ({ row }) => {
+    cell: ({ row }: { row: { getValue: (key: string) => any } }) => {
       return new Date(row.getValue('updated_at')).toLocaleString('en-GB', {
         day: 'numeric',
         month: 'short',
@@ -237,7 +237,7 @@ const columns = [
   },
   {
     id: 'action',
-    cell: ({ row }) => h('div', { class: 'text-right' }, [
+    cell: ({ row }: { row: { original: Provider } }) => h('div', { class: 'text-right' }, [
       h(UDropdownMenu, { items: getDropdownActions(row.original) }, () =>
         h(UButton, {
           icon: 'tabler:dots-vertical',
@@ -260,7 +260,12 @@ const fetchProviders = async () => {
       .order('updated_at', { ascending: false })
 
     if (fetchError) throw fetchError
-    providers.value = data
+    providers.value = data.map(provider => ({
+      ...provider,
+      created_at: new Date(provider.created_at),
+      updated_at: provider.updated_at ? new Date(provider.updated_at) : null,
+      deleted_at: provider.deleted_at ? new Date(provider.deleted_at) : null,
+    }))
   } catch (e: any) {
     const { $posthog } = useNuxtApp();
     $posthog().capture('aws_providers_fetch_failed', {

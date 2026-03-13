@@ -13,7 +13,7 @@
         <p class="text-red-500">{{ error.message }}</p>
       </div>
       
-      <UForm ref="form" :schema="envVarSchema" :state="formState.variables" class="space-y-4"  :validate-on="['blur']">
+      <UForm ref="form" :schema="envVarSchema" :state="formState.variables as any" class="space-y-4"  :validate-on="['blur']">
         <div v-for="(variable, index) in formState.variables" :key="variable.id || `new-${index}`" class="grid grid-cols-9 gap-x-2 mt-2 items-start">
           <UFormField :name="`${index}.key`" class="col-span-4">
             <UInput 
@@ -102,8 +102,14 @@ const fetchVariables = async () => {
       .is('deleted_at', null);
 
     if (fetchError) throw fetchError;
-    formState.value.variables = data || [];
-    originalState.value.variables = JSON.parse(JSON.stringify(data || []));
+    const processedData = (data || []).map(variable => ({
+      ...variable,
+      created_at: new Date(variable.created_at),
+      updated_at: variable.updated_at ? new Date(variable.updated_at) : null,
+      deleted_at: variable.deleted_at ? new Date(variable.deleted_at) : null,
+    }));
+    formState.value.variables = processedData;
+    originalState.value.variables = JSON.parse(JSON.stringify(processedData));
     isDirty.value = false;
   } catch (e: any) {
     error.value = e;
@@ -178,7 +184,7 @@ const saveVariablesData = async () => {
       ...data,
       service_id: service.value!.id,
       type: variableType,
-    };
+    } as { key: string; value: string; service_id: string; type: 'build' | 'runtime' };
 
     if (id) {
       return $client.services.updateServiceVariable.mutate({ ...mutationInput, id });

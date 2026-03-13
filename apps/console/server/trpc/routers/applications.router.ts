@@ -42,7 +42,13 @@ export const applicationsRouter = router({
         }
 
         const env = inputEnvironments[0];
+        if (!env) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'No environment provided.' });
+        }
         const service = env.services[0];
+        if (!service) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'No service provided.' });
+        }
 
         if (!env.provider) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Environment is missing provider details.' });
@@ -55,6 +61,10 @@ export const applicationsRouter = router({
           provider_id: env.provider.id,
           region: env.region,
         }).returning();
+
+        if (!newEnvironment) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create environment entry.' });
+        }
 
         const vaultSecretId = env.user_access_token?.secret_id;
         if (!vaultSecretId) {
@@ -98,6 +108,10 @@ export const applicationsRouter = router({
           branch: service.branch,
           metadata: service.metadata,
         }).returning();
+
+        if (!newService) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create service entry.' });
+        }
 
         if (service.service_variables && service.service_variables.length > 0) {
           await tx.insert(serviceVariables).values(
