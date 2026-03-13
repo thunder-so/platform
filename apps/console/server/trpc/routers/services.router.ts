@@ -13,9 +13,9 @@ import {
 import {
   serviceVariableSchema,
   domainSchema,
-  SPAServiceMetadataSchema,
-  FunctionServiceMetadataSchema,
-  WebServiceMetadataSchema,
+  StaticServiceMetadataSchema,
+  LambdaServiceMetadataSchema,
+  FargateServiceMetadataSchema,
   type ProviderSchema,
 } from '../../validators/common';
 import { PlatformLibrary } from '../../lib/platform.library';
@@ -160,10 +160,10 @@ export const servicesRouter = router({
       const resourceIdPrefix = `${environment.application.name.substring(0, 7)}-${service.name.substring(0, 7)}-${environment.name.substring(0, 7)}`;
       
       let logGroupName: string;
-      if (service.stack_type === 'WEB_SERVICE') {
+      if (service.stack_type === 'FARGATE') {
         logGroupName = `/webservice/${resourceIdPrefix}-logs`;
       } else {
-        // Default to Function log group for FUNCTION stack_type and fallback
+        // Default to Lambda log group for LAMBDA stack_type and fallback
         logGroupName = `/aws/lambda/${resourceIdPrefix}-container-function`;
       }
 
@@ -252,7 +252,7 @@ export const servicesRouter = router({
     .input(
       z.object({
         service_id: z.string(),
-        stack_type: z.enum(['SPA', 'FUNCTION', 'WEB_SERVICE']),
+        stack_type: z.enum(['STATIC', 'LAMBDA', 'FARGATE']),
         metadata: z.any(),
       })
     )
@@ -261,14 +261,14 @@ export const servicesRouter = router({
 
       let validationSchema;
       switch (stack_type) {
-        case 'SPA':
-          validationSchema = SPAServiceMetadataSchema;
+        case 'STATIC':
+          validationSchema = StaticServiceMetadataSchema;
           break;
-        case 'FUNCTION':
-          validationSchema = FunctionServiceMetadataSchema;
+        case 'LAMBDA':
+          validationSchema = LambdaServiceMetadataSchema;
           break;
-        case 'WEB_SERVICE':
-          validationSchema = WebServiceMetadataSchema;
+        case 'FARGATE':
+          validationSchema = FargateServiceMetadataSchema;
           break;
       }
 

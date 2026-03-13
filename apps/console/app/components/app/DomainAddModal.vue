@@ -20,11 +20,11 @@
             <UInput v-model="formState.hosted_zone_id" class="w-full" />
           </UFormField>
 
-          <UFormField v-if="service?.stack_type === 'SPA' || service?.stack_type === 'WEB_SERVICE'" label="Global Certificate ARN" description="The ARN of the global certificate issued for your domain in us-east-1. Required for CloudFront." name="global_certificate_arn">
+          <UFormField v-if="service?.stack_type === 'STATIC' || service?.stack_type === 'FARGATE'" label="Global Certificate ARN" description="The ARN of the global certificate issued for your domain in us-east-1. Required for CloudFront." name="global_certificate_arn">
             <UInput v-model="formState.global_certificate_arn" class="w-full" />
           </UFormField>
 
-          <UFormField v-if="service?.stack_type === 'FUNCTION' || service?.stack_type === 'WEB_SERVICE'" label="Regional Certificate ARN"  description="The ARN of the regional certificate issued for your domain in the same region as this environment. Required for API Gateway/ALB." name="regional_certificate_arn">
+          <UFormField v-if="service?.stack_type === 'LAMBDA' || service?.stack_type === 'FARGATE'" label="Regional Certificate ARN"  description="The ARN of the regional certificate issued for your domain in the same region as this environment. Required for API Gateway/ALB." name="regional_certificate_arn">
             <UInput v-model="formState.regional_certificate_arn" class="w-full" />
           </UFormField>
         </div>
@@ -69,10 +69,10 @@ const validationSchema = computed(() => {
   let regionalCert: any = z.string().optional().nullable();
   const st = props.service?.stack_type;
   if (mode.value === 'route53') {
-    if (st === 'SPA' || st === 'WEB_SERVICE') {
+    if (st === 'STATIC' || st === 'FARGATE') {
       globalCert = z.string().min(1, 'Global certificate ARN is required for this stack type');
     }
-    if (st === 'FUNCTION' || st === 'WEB_SERVICE') {
+    if (st === 'LAMBDA' || st === 'FARGATE') {
       regionalCert = z.string().min(1, 'Regional certificate ARN is required for this stack type');
     }
   }

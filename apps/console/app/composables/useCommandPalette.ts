@@ -85,9 +85,9 @@ export const useCommandPalette = () => {
               navigateTo(`/app/${app.id}`)
             },
             icon:
-              service.stack_type === 'SPA'
+              service.stack_type === 'STATIC'
                 ? 'tabler:file'
-                : service.stack_type === 'FUNCTION'
+                : service.stack_type === 'LAMBDA'
                 ? 'tabler:lambda'
                 : 'tabler:server'
           }))

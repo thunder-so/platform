@@ -9,7 +9,7 @@
     </template>
   </UCard>
   
-  <UCard v-else-if="service.stack_type === 'SPA'">
+  <UCard v-else-if="service.stack_type === 'STATIC'">
     <template #header>
       <h2>Custom HTTP Headers</h2>
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -17,7 +17,7 @@
       </p>
     </template>
 
-    <UForm v-if="state" :schema="SPAServiceMetadataSchema" :state="state" class="space-y-4" ref="form" :validate-on="['blur']">
+    <UForm v-if="state" :schema="StaticServiceMetadataSchema" :state="state" class="space-y-4" ref="form" :validate-on="['blur']">
       <div v-for="(header, index) in state.headers" :key="index" class="grid grid-cols-12 gap-x-2 items-start">
         <UFormField :name="`headers.${index}.path`" class="col-span-3">
           <UInput v-model="header.path" placeholder="Path Pattern (e.g., /*)" class="w-full" />
@@ -54,7 +54,7 @@
 import { ref, watch } from 'vue';
 import { isEqual } from 'lodash-es';
 import type { Form } from '#ui/types';
-import { type SPAServiceMetadata, SPAServiceMetadataSchema } from '~~/server/validators/common';
+import { type StaticServiceMetadata, StaticServiceMetadataSchema } from '~~/server/validators/common';
 import { useNavigationGuard } from '~/composables/useNavigationGuard';
 
 definePageMeta({
@@ -66,14 +66,14 @@ const { $client } = useNuxtApp();
 const toast = useToast();
 const { isSaving, saveOnly, saveAndRebuild } = useSaveAndRebuild();
 
-const form = ref<Form<SPAServiceMetadata> | null>(null);
-const state = ref<SPAServiceMetadata | null>(null);
+const form = ref<Form<StaticServiceMetadata> | null>(null);
+const state = ref<StaticServiceMetadata | null>(null);
 const isDirty = ref(false);
 
 useNavigationGuard(isDirty);
 
 watch(service, (newVal) => {
-  if (newVal && newVal.stack_type === 'SPA') {
+  if (newVal && newVal.stack_type === 'STATIC') {
     // Ensure headers is an array
     const metadata = { ...newVal.metadata, headers: newVal.metadata?.headers || [] };
     state.value = JSON.parse(JSON.stringify(metadata));
@@ -107,7 +107,7 @@ const saveHeaders = async () => {
   await form.value.validate();
   await $client.services.updateServiceMetadata.mutate({
     service_id: service.value.id,
-    stack_type: 'SPA',
+    stack_type: 'STATIC',
     metadata: state.value
   });
   isDirty.value = false;

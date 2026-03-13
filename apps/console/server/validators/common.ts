@@ -64,7 +64,7 @@ export const serviceSecretSchema = z.object({
   service_id: z.string(),
 });
 
-export const SPABuildPropsSchema = z.object({
+export const StaticBuildPropsSchema = z.object({
   runtime: z.string().min(1, 'Runtime is required.'),
   runtime_version: z.union([z.string(), z.number()]).optional(),
   installcmd: z.string().min(1, 'Install command is required.'),
@@ -73,7 +73,7 @@ export const SPABuildPropsSchema = z.object({
   exclude: z.array(z.string()).optional(),
 });
 
-export const FunctionBuildPropsSchema = z.object({
+export const LambdaBuildPropsSchema = z.object({
   runtime: z.string().min(1, 'Runtime is required.'),
   runtime_version: z.union([z.string(), z.number()]).optional(),
   installcmd: z.string().optional(),
@@ -82,7 +82,7 @@ export const FunctionBuildPropsSchema = z.object({
   exclude: z.array(z.string()).optional(),
 });
 
-export const ServiceBuildPropsSchema = z.object({
+export const FargateBuildPropsSchema = z.object({
   buildSystem: z.enum(['Nixpacks', 'Custom Dockerfile']),
   runtime_version: z.union([z.string(), z.number()]).optional(),
   installcmd: z.string().optional(),
@@ -124,11 +124,11 @@ export const HeadersSchema = z.array(
   })
 );
 
-export const SPAServiceMetadataSchema = z.object({
+export const StaticServiceMetadataSchema = z.object({
   debug: z.boolean(),
   rootDir: z.string(),
   outputDir: z.string(),
-  buildProps: SPABuildPropsSchema,
+  buildProps: StaticBuildPropsSchema,
   redirects: RedirectsSchema,
   rewrites: RewritesSchema,
   headers: HeadersSchema,
@@ -139,9 +139,9 @@ export const SPAServiceMetadataSchema = z.object({
   denyQueryParams: z.array(z.string()),
 });
 
-export type SPAServiceMetadata = z.infer<typeof SPAServiceMetadataSchema>;
+export type StaticServiceMetadata = z.infer<typeof StaticServiceMetadataSchema>;
 
-export const FunctionPropsSchema = z.object({
+export const LambdaFunctionPropsSchema = z.object({
   dockerFile: z.string().optional(),
   runtime: z.string().optional(),
   architecture: z.enum(['x86', 'arm']).optional(),
@@ -166,16 +166,16 @@ export const FunctionPropsSchema = z.object({
   }
 });
 
-export const FunctionServiceMetadataSchema = z.object({
+export const LambdaServiceMetadataSchema = z.object({
   debug: z.boolean(),
   rootDir: z.string(),
-  buildProps: FunctionBuildPropsSchema,
-  functionProps: FunctionPropsSchema,
+  buildProps: LambdaBuildPropsSchema,
+  functionProps: LambdaFunctionPropsSchema,
 });
 
-export type FunctionServiceMetadata = z.infer<typeof FunctionServiceMetadataSchema>;
+export type LambdaServiceMetadata = z.infer<typeof LambdaServiceMetadataSchema>;
 
-export const WebServicePropsSchema = z.object({
+export const FargateServicePropsSchema = z.object({
   dockerFile: z.string(),
   desiredCount: z.number(),
   cpu: z.number(),
@@ -184,14 +184,14 @@ export const WebServicePropsSchema = z.object({
   architecture: z.enum(['x86', 'arm']).optional(),
 });
 
-export const WebServiceMetadataSchema = z.object({
+export const FargateServiceMetadataSchema = z.object({
   debug: z.boolean(),
   rootDir: z.string(),
-  buildProps: ServiceBuildPropsSchema,
-  serviceProps: WebServicePropsSchema,
+  buildProps: FargateBuildPropsSchema,
+  serviceProps: FargateServicePropsSchema,
 });
 
-export type WebServiceMetadata = z.infer<typeof WebServiceMetadataSchema>;
+export type FargateServiceMetadata = z.infer<typeof FargateServiceMetadataSchema>;
 
 export const domainSchema = z.object({
   id: z.string(),

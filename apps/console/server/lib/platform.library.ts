@@ -259,13 +259,13 @@ export class PlatformLibrary {
       );
 
       switch (service.stack_type) {
-        case 'SPA':
+        case 'STATIC':
           context.metadata.buildProps = { ...context.metadata.buildProps, environment: buildVars };
           break;
-        case 'FUNCTION':
+        case 'LAMBDA':
           context.metadata.functionProps = { variables: runtimeVars };
           break;
-        case 'WEB_SERVICE':
+        case 'FARGATE':
           context.metadata.serviceProps = { variables: runtimeVars };
           break;
       }

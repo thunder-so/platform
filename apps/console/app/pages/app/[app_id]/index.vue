@@ -383,9 +383,7 @@ const getStatusIconClass = (status?: string | null) => {
 };
 
 const latestStackVersion = computed(() => {
-  if (!service.value?.stack_type) return null;
-  const stack = appConfig.stacks.find(s => s.type === service.value?.stack_type);
-  return stack?.version || null;
+  return appConfig.stackVersion;
 });
 
 const showStackUpgrade = computed(() => {

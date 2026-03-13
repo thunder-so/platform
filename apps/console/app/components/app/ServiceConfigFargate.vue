@@ -1,6 +1,6 @@
 <template>
   <ClientOnly>
-    <UForm ref="form" v-if="configuration" :state="configuration" :schema="WebServiceMetadataSchema" :validate-on="['input']" class="space-y-6">
+    <UForm ref="form" v-if="configuration" :state="configuration" :schema="FargateServiceMetadataSchema" :validate-on="['input']" class="space-y-6">
       <UFormField label="Root Directory" description="The root directory of your project. For monorepos, enter the path to the project." name="rootDir" class="grid grid-cols-3 gap-4">
         <UInput v-model="configuration.rootDir" placeholder="./" class="w-96" size="lg" />
       </UFormField>
@@ -39,10 +39,10 @@
 import { ref, computed, watch } from 'vue';
 import type { PropType } from 'vue';
 import { z } from 'zod';
-import { WebServiceMetadataSchema } from '~~/server/validators/common';
+import { FargateServiceMetadataSchema } from '~~/server/validators/common';
 import appConfig from '~/app.config';
 
-type Configuration = z.infer<typeof WebServiceMetadataSchema>;
+type Configuration = z.infer<typeof FargateServiceMetadataSchema>;
 
 const props = defineProps({
   configuration: {

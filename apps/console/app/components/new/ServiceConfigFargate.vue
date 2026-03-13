@@ -39,10 +39,10 @@
 import { ref, computed, watch } from 'vue';
 import type { PropType } from 'vue';
 import { z } from 'zod';
-import { WebServiceMetadataSchema } from '~~/server/validators/common';
+import { FargateServiceMetadataSchema } from '~~/server/validators/common';
 import appConfig from '~/app.config';
 
-type Configuration = z.infer<typeof WebServiceMetadataSchema>;
+type Configuration = z.infer<typeof FargateServiceMetadataSchema>;
 
 const props = defineProps({
   configuration: {
@@ -57,7 +57,7 @@ const memoryOptions = computed(() => {
 });
 
 const serviceSchema = z.object({
-  metadata: WebServiceMetadataSchema
+  metadata: FargateServiceMetadataSchema
 });
 
 watch(() => props.configuration.serviceProps.cpu, (newCpu) => {

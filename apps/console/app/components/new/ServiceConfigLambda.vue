@@ -40,17 +40,17 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { z } from 'zod';
-import { FunctionServiceMetadataSchema } from '~~/server/validators/common';
+import { LambdaServiceMetadataSchema } from '~~/server/validators/common';
 import appConfig from '~/app.config';
 
-type Configuration = z.infer<typeof FunctionServiceMetadataSchema>;
+type Configuration = z.infer<typeof LambdaServiceMetadataSchema>;
 
 const props = defineProps<{ configuration: Configuration }>();
 const configuration = props.configuration;
 
 // The form schema only needs to include the parts of the service state we want to validate.
 const serviceSchema = z.object({
-  metadata: FunctionServiceMetadataSchema,
+  metadata: LambdaServiceMetadataSchema,
 });
 
 const form = ref();

@@ -21,7 +21,7 @@ const router = useRouter();
 const route = useRoute();
 
 const onRepoSelected = ({ repo, installationId, type }: { repo: any; installationId: number; type?: string }) => {
-  const stack_type = (route.query.stack_type as string) || type || 'SPA';
+  const stack_type = (route.query.stack_type as string) || type || 'STATIC';
   const params = new URLSearchParams({
     owner: repo.owner?.login || repo.owner,
     repo: repo.name,

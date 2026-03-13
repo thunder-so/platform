@@ -163,20 +163,20 @@ const handleContinue = async () => {
 
 const stackTypeOptions = ref([
   { 
-    label: 'Single Page App', 
-    value: 'SPA', 
+    label: 'Static Site', 
+    value: 'STATIC', 
     icon: 'tabler:file',
     description: 'S3 and CloudFront hosting for SPA/SSG' 
   },
   { 
-    label: 'Function', 
-    value: 'FUNCTION', 
+    label: 'Lambda Function', 
+    value: 'LAMBDA', 
     icon: 'tabler:lambda',
     description: 'Lambda and API Gateway' 
   },
   { 
-    label: 'Web Service', 
-    value: 'WEB_SERVICE',
+    label: 'Fargate Service', 
+    value: 'FARGATE',
     icon: 'tabler:server',
     description: 'Fargate and API Gateway' 
   },

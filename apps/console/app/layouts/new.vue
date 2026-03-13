@@ -91,11 +91,11 @@ provide('installations', installations);
 const pageTitle = computed(() => {
   const stackType = route.query.stack_type;
   switch (stackType) {
-    case 'SPA':
+    case 'STATIC':
       return 'Create new Static Site';
-    case 'FUNCTION':
+    case 'LAMBDA':
       return 'Create new Lambda Function';
-    case 'WEB_SERVICE':
+    case 'FARGATE':
       return 'Create new Web Service';
     default:
       return 'Create new Application';

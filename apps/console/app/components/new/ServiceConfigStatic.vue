@@ -30,9 +30,9 @@
 import type { PropType } from 'vue';
 import { z } from 'zod';
 import { ref, computed } from 'vue';
-import { SPAServiceMetadataSchema } from '~~/server/validators/common';
+import { StaticServiceMetadataSchema } from '~~/server/validators/common';
 
-type Configuration = z.infer<typeof SPAServiceMetadataSchema>;
+type Configuration = z.infer<typeof StaticServiceMetadataSchema>;
 
 const props = defineProps({
   configuration: {
@@ -45,7 +45,7 @@ const appConfig = useAppConfig();
 const runtimes = ref(appConfig.runtimes);
 
 const serviceSchema = z.object({
-  metadata: SPAServiceMetadataSchema,
+  metadata: StaticServiceMetadataSchema,
 });
 
 const form = ref();

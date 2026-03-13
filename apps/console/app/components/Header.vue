@@ -232,17 +232,17 @@ const newMenuItems = ref([
   [
     { 
       label: 'New Static Site', 
-      to: '/new?stack_type=SPA',
+      to: '/new?stack_type=STATIC',
       icon: 'tabler:file'
     },
     { 
       label: 'New Lambda Function', 
-      to: '/new?stack_type=FUNCTION',
+      to: '/new?stack_type=LAMBDA',
       icon: 'tabler:lambda'
     },
     { 
       label: 'New Web Service', 
-      to: '/new?stack_type=WEB_SERVICE',
+      to: '/new?stack_type=FARGATE',
       icon: 'tabler:server'
     },
   ],

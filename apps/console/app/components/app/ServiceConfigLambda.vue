@@ -1,6 +1,6 @@
 <template>
   <ClientOnly>
-    <UForm ref="form" v-if="configuration" :state="configuration" :schema="FunctionServiceMetadataSchema" :validate-on="['input']" class="space-y-6">
+    <UForm ref="form" v-if="configuration" :state="configuration" :schema="LambdaServiceMetadataSchema" :validate-on="['input']" class="space-y-6">
       <UFormField label="Root Directory" description="The root directory of your project. For monorepos, enter the path to the project." name="rootDir" class="grid grid-cols-3 gap-4">
         <UInput v-model="configuration.rootDir" placeholder="./" class="w-96" size="lg" />
       </UFormField>
@@ -41,10 +41,10 @@
 import type { PropType } from 'vue';
 import { ref, computed, watch } from 'vue';
 import { z } from 'zod';
-import { FunctionServiceMetadataSchema } from '~~/server/validators/common';
+import { LambdaServiceMetadataSchema } from '~~/server/validators/common';
 import appConfig from '~/app.config';
 
-type Configuration = z.infer<typeof FunctionServiceMetadataSchema>;
+type Configuration = z.infer<typeof LambdaServiceMetadataSchema>;
 
 const props = defineProps<{ configuration: Configuration }>();
 const configuration = props.configuration;

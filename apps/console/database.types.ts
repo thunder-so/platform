@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -301,7 +301,7 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "environments_provider_id_fkey"
+            foreignKeyName: "environments_provider_id_providers_id_fk"
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "providers"
@@ -1019,7 +1019,7 @@ export type Database = {
         | "SUPERSEDED"
       PRICING_PLAN_INTERVAL: "month" | "year"
       PRICING_TYPE: "one_time" | "recurring"
-      STACK_TYPE: "SPA" | "FUNCTION" | "WEB_SERVICE"
+      STACK_TYPE: "STATIC" | "LAMBDA" | "FARGATE"
       SUBSCRIPTION_STATUS:
         | "trialing"
         | "active"
@@ -1187,7 +1187,7 @@ export const Constants = {
       ],
       PRICING_PLAN_INTERVAL: ["month", "year"],
       PRICING_TYPE: ["one_time", "recurring"],
-      STACK_TYPE: ["SPA", "FUNCTION", "WEB_SERVICE"],
+      STACK_TYPE: ["STATIC", "LAMBDA", "FARGATE"],
       SUBSCRIPTION_STATUS: [
         "trialing",
         "active",

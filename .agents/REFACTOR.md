@@ -13,7 +13,7 @@ Thunder is migrating from three deprecated CDK libraries to a unified `@thunder-
 
 ## Current Status: IN PROGRESS ✅
 
-**Last Updated**: 2025-01-XX
+**Last Updated**: 2025-01-20
 
 ### ✅ Phase 1: Infrastructure (COMPLETED)
 
@@ -52,127 +52,120 @@ Thunder is migrating from three deprecated CDK libraries to a unified `@thunder-
 
 ---
 
-### 🔄 Phase 2: Console Refactoring (IN PROGRESS)
+### ✅ Phase 2: Console Refactoring (COMPLETED)
 
-Comprehensive file-by-file refactoring plan to rename all stack type references.
+Comprehensive file-by-file refactoring to rename all stack type references.
 
-#### 2.1 Server-Side Validators
+#### 2.1 Server-Side Validators ✅
 
 ##### File: `server/validators/common.ts`
-**Changes Required**:
-- [ ] Rename `SPABuildPropsSchema` → `StaticBuildPropsSchema`
-- [ ] Rename `FunctionBuildPropsSchema` → `LambdaBuildPropsSchema`
-- [ ] Rename `ServiceBuildPropsSchema` → `FargateBuildPropsSchema`
-- [ ] Rename `SPAServiceMetadataSchema` → `StaticServiceMetadataSchema`
-- [ ] Rename `SPAServiceMetadata` type → `StaticServiceMetadata`
-- [ ] Rename `FunctionServiceMetadataSchema` → `LambdaServiceMetadataSchema`
-- [ ] Rename `FunctionServiceMetadata` type → `LambdaServiceMetadata`
-- [ ] Rename `WebServiceMetadataSchema` → `FargateServiceMetadataSchema`
-- [ ] Rename `WebServiceMetadata` type → `FargateServiceMetadata`
-- [ ] Rename `WebServicePropsSchema` → `FargateServicePropsSchema`
-- [ ] Update all internal references to renamed schemas
+**Changes Completed**:
+- [x] Renamed `SPABuildPropsSchema` → `StaticBuildPropsSchema`
+- [x] Renamed `FunctionBuildPropsSchema` → `LambdaBuildPropsSchema`
+- [x] Renamed `ServiceBuildPropsSchema` → `FargateBuildPropsSchema`
+- [x] Renamed `SPAServiceMetadataSchema` → `StaticServiceMetadataSchema`
+- [x] Renamed `SPAServiceMetadata` type → `StaticServiceMetadata`
+- [x] Renamed `FunctionServiceMetadataSchema` → `LambdaServiceMetadataSchema`
+- [x] Renamed `FunctionServiceMetadata` type → `LambdaServiceMetadata`
+- [x] Renamed `WebServiceMetadataSchema` → `FargateServiceMetadataSchema`
+- [x] Renamed `WebServiceMetadata` type → `FargateServiceMetadata`
+- [x] Renamed `WebServicePropsSchema` → `FargateServicePropsSchema`
+- [x] Renamed `FunctionPropsSchema` → `LambdaFunctionPropsSchema`
+- [x] Updated all internal references to renamed schemas
 
 ##### File: `server/validators/new.ts`
-**Changes Required**:
-- [ ] Update imports: `SPAServiceMetadataSchema` → `StaticServiceMetadataSchema`
-- [ ] Update imports: `FunctionServiceMetadataSchema` → `LambdaServiceMetadataSchema`
-- [ ] Update imports: `WebServiceMetadataSchema` → `FargateServiceMetadataSchema`
-- [ ] Update discriminated union: `z.literal('SPA')` → `z.literal('STATIC')`
-- [ ] Update discriminated union: `z.literal('FUNCTION')` → `z.literal('LAMBDA')`
-- [ ] Update discriminated union: `z.literal('WEB_SERVICE')` → `z.literal('FARGATE')`
+**Changes Completed**:
+- [x] Updated imports: `SPAServiceMetadataSchema` → `StaticServiceMetadataSchema`
+- [x] Updated imports: `FunctionServiceMetadataSchema` → `LambdaServiceMetadataSchema`
+- [x] Updated imports: `WebServiceMetadataSchema` → `FargateServiceMetadataSchema`
+- [x] Updated discriminated union: `z.literal('SPA')` → `z.literal('STATIC')`
+- [x] Updated discriminated union: `z.literal('FUNCTION')` → `z.literal('LAMBDA')`
+- [x] Updated discriminated union: `z.literal('WEB_SERVICE')` → `z.literal('FARGATE')`
 
 ##### File: `server/validators/app.ts`
-**Changes Required**:
-- [ ] Update imports: `SPAServiceMetadataSchema` → `StaticServiceMetadataSchema`
-- [ ] Update imports: `FunctionServiceMetadataSchema` → `LambdaServiceMetadataSchema`
-- [ ] Update imports: `WebServiceMetadataSchema` → `FargateServiceMetadataSchema`
-- [ ] Update enum: `z.enum(['SPA', 'FUNCTION', 'WEB_SERVICE'])` → `z.enum(['STATIC', 'LAMBDA', 'FARGATE'])`
-- [ ] Update discriminated union literals (3 places)
+**Changes Completed**:
+- [x] Updated imports: `SPAServiceMetadataSchema` → `StaticServiceMetadataSchema`
+- [x] Updated imports: `FunctionServiceMetadataSchema` → `LambdaServiceMetadataSchema`
+- [x] Updated imports: `WebServiceMetadataSchema` → `FargateServiceMetadataSchema`
+- [x] Updated enum: `z.enum(['SPA', 'FUNCTION', 'WEB_SERVICE'])` → `z.enum(['STATIC', 'LAMBDA', 'FARGATE'])`
+- [x] Updated discriminated union literals (3 places)
 
-#### 2.2 Server-Side Routers
+#### 2.2 Server-Side Routers ✅
 
 ##### File: `server/trpc/routers/services.router.ts`
-**Changes Required**:
-- [ ] Update imports: `SPAServiceMetadataSchema` → `StaticServiceMetadataSchema`
-- [ ] Update imports: `FunctionServiceMetadataSchema` → `LambdaServiceMetadataSchema`
-- [ ] Update imports: `WebServiceMetadataSchema` → `FargateServiceMetadataSchema`
-- [ ] Update log group logic: `service.stack_type === 'WEB_SERVICE'` → `service.stack_type === 'FARGATE'`
-- [ ] Update enum: `z.enum(['SPA', 'FUNCTION', 'WEB_SERVICE'])` → `z.enum(['STATIC', 'LAMBDA', 'FARGATE'])`
-- [ ] Update switch statement cases: `'SPA'` → `'STATIC'`, `'FUNCTION'` → `'LAMBDA'`, `'WEB_SERVICE'` → `'FARGATE'`
+**Changes Completed**:
+- [x] Updated imports: `SPAServiceMetadataSchema` → `StaticServiceMetadataSchema`
+- [x] Updated imports: `FunctionServiceMetadataSchema` → `LambdaServiceMetadataSchema`
+- [x] Updated imports: `WebServiceMetadataSchema` → `FargateServiceMetadataSchema`
+- [x] Updated log group logic: `service.stack_type === 'WEB_SERVICE'` → `service.stack_type === 'FARGATE'`
+- [x] Updated enum: `z.enum(['SPA', 'FUNCTION', 'WEB_SERVICE'])` → `z.enum(['STATIC', 'LAMBDA', 'FARGATE'])`
+- [x] Updated switch statement cases: `'SPA'` → `'STATIC'`, `'FUNCTION'` → `'LAMBDA'`, `'WEB_SERVICE'` → `'FARGATE'`
 
-#### 2.3 Frontend Components
+#### 2.3 Frontend Components ✅
 
 ##### Component File Renames
-**Actions Required**:
-- [ ] Rename `app/components/app/ServiceConfigFunction.vue` → `ServiceConfigLambda.vue`
-- [ ] Rename `app/components/app/ServiceConfigWeb.vue` → `ServiceConfigFargate.vue`
-- [ ] Rename `app/components/new/ServiceConfigFunction.vue` → `ServiceConfigLambda.vue`
-- [ ] Rename `app/components/new/ServiceConfigWeb.vue` → `ServiceConfigFargate.vue`
-- [ ] Keep `ServiceConfigStatic.vue` files as-is (already correct)
+**Actions Completed**:
+- [x] Renamed `app/components/app/ServiceConfigFunction.vue` → `ServiceConfigLambda.vue`
+- [x] Renamed `app/components/app/ServiceConfigWeb.vue` → `ServiceConfigFargate.vue`
+- [x] Renamed `app/components/new/ServiceConfigFunction.vue` → `ServiceConfigLambda.vue`
+- [x] Renamed `app/components/new/ServiceConfigWeb.vue` → `ServiceConfigFargate.vue`
+- [x] `ServiceConfigStatic.vue` files updated with renamed schemas
 
 ##### File: `app/components/app/ServiceConfiguration.vue`
-**Changes Required**:
-- [ ] Update template: `service.stack_type === 'SPA'` → `service.stack_type === 'STATIC'`
-- [ ] Update template: `service.stack_type === 'FUNCTION'` → `service.stack_type === 'LAMBDA'`
-- [ ] Update template: `service.stack_type === 'WEB_SERVICE'` → `service.stack_type === 'FARGATE'`
-- [ ] Update imports: `ServiceConfigFunction` → `ServiceConfigLambda`
-- [ ] Update imports: `ServiceConfigWeb` → `ServiceConfigFargate`
-- [ ] Update variable type logic: `stack_type === 'SPA'` → `stack_type === 'STATIC'`
+**Changes Completed**:
+- [x] Updated template: `service.stack_type === 'SPA'` → `service.stack_type === 'STATIC'`
+- [x] Updated template: `service.stack_type === 'FUNCTION'` → `service.stack_type === 'LAMBDA'`
+- [x] Updated template: `service.stack_type === 'WEB_SERVICE'` → `service.stack_type === 'FARGATE'`
+- [x] Updated imports: `ServiceConfigFunction` → `ServiceConfigLambda`
+- [x] Updated imports: `ServiceConfigWeb` → `ServiceConfigFargate`
+- [x] Updated variable type logic: `stack_type === 'SPA'` → `stack_type === 'STATIC'`
 
 ##### File: `app/components/new/ServiceConfiguration.vue`
-**Changes Required**:
-- [ ] Update template: `service.stack_type === 'SPA'` → `service.stack_type === 'STATIC'`
-- [ ] Update template: `service.stack_type === 'FUNCTION'` → `service.stack_type === 'LAMBDA'`
-- [ ] Update template: `service.stack_type === 'WEB_SERVICE'` → `service.stack_type === 'FARGATE'`
-- [ ] Update imports: `ServiceConfigFunction` → `ServiceConfigLambda`
-- [ ] Update imports: `ServiceConfigWeb` → `ServiceConfigFargate`
-- [ ] Update variable type logic: `stack_type === 'SPA'` → `stack_type === 'STATIC'`
+**Changes Completed**:
+- [x] Updated template: `service.stack_type === 'SPA'` → `service.stack_type === 'STATIC'`
+- [x] Updated template: `service.stack_type === 'FUNCTION'` → `service.stack_type === 'LAMBDA'`
+- [x] Updated template: `service.stack_type === 'WEB_SERVICE'` → `service.stack_type === 'FARGATE'`
+- [x] Updated imports: `ServiceConfigFunction` → `ServiceConfigLambda`
+- [x] Updated imports: `ServiceConfigWeb` → `ServiceConfigFargate`
+- [x] Updated variable type logic: `stack_type === 'SPA'` → `stack_type === 'STATIC'`
 
 ##### Individual Config Components
-**Files to Review** (after renaming):
-- [ ] `app/components/app/ServiceConfigLambda.vue` - Check for internal references
-- [ ] `app/components/new/ServiceConfigLambda.vue` - Check for internal references
-- [ ] `app/components/app/ServiceConfigFargate.vue` - Check for internal references
-- [ ] `app/components/new/ServiceConfigFargate.vue` - Check for internal references
+**Files Updated**:
+- [x] `app/components/app/ServiceConfigStatic.vue` - Updated to use `StaticServiceMetadataSchema`
+- [x] `app/components/new/ServiceConfigStatic.vue` - Updated to use `StaticServiceMetadataSchema`
+- [x] `app/components/app/ServiceConfigLambda.vue` - Renamed from ServiceConfigFunction.vue
+- [x] `app/components/new/ServiceConfigLambda.vue` - Renamed from ServiceConfigFunction.vue
+- [x] `app/components/app/ServiceConfigFargate.vue` - Renamed from ServiceConfigWeb.vue
+- [x] `app/components/new/ServiceConfigFargate.vue` - Renamed from ServiceConfigWeb.vue
+- [x] `app/components/app/DomainAddModal.vue` - Updated stack type conditionals
+- [x] `app/components/Header.vue` - Updated new menu items with new stack type query params
 
-#### 2.4 Pages
+#### 2.4 Pages ✅
 
-**Directories to Search**:
-- [ ] `app/pages/new/configure.vue`
-- [ ] `app/pages/new/deploy.vue`
-- [ ] `app/pages/new/index.vue`
-- [ ] `app/pages/app/[app_id]/**/*.vue`
+**Files Updated**:
+- [x] `app/pages/org/[org_id]/index.vue` - Updated table cell renderer for stack types
+- [x] `app/pages/new/configure.vue` - Updated stackTypeOptions values
+- [x] `app/pages/new/index.vue` - Updated default stack type to 'STATIC'
+- [x] `app/pages/app/[app_id]/variables.vue` - Updated variableType logic
+- [x] `app/pages/app/[app_id]/headers.vue` - Updated to use StaticServiceMetadata and STATIC
+- [x] `app/pages/app/[app_id]/redirects.vue` - Updated to use StaticServiceMetadata and STATIC
 
-**Search Patterns**:
-- `'SPA'` / `"SPA"` → `'STATIC'` / `"STATIC"`
-- `'FUNCTION'` / `"FUNCTION"` → `'LAMBDA'` / `"LAMBDA"`
-- `'WEB_SERVICE'` / `"WEB_SERVICE"` → `'FARGATE'` / `"FARGATE"`
+#### 2.5 Composables ✅
 
-#### 2.5 Composables
+**Files Updated**:
+- [x] `app/composables/useNewApplicationFlow.ts` - Updated all stack type references, STACK_DEFAULTS, and type names
+- [x] `app/composables/useCommandPalette.ts` - Updated icon logic for stack types
 
-**Directory**: `app/composables/`
+#### 2.6 Server Libraries ✅
 
-**Files to Check**:
-- [ ] `useApplications.ts`
-- [ ] `useNewApplicationFlow.ts`
-- [ ] `useSaveAndRebuild.ts`
-- [ ] All other composables
+**Files Updated**:
+- [x] `server/lib/platform.library.ts` - Updated switch statement cases for stack types
 
-**Search Patterns**: Same as pages
+#### 2.7 Layouts ✅
 
-#### 2.6 Server Libraries
-
-**Files to Check**:
-- [ ] `server/lib/platform.library.ts`
-- [ ] `server/lib/provider.library.ts`
-- [ ] `server/lib/github.library.ts`
-
-**Action**: Search for stack type references and update
-
-#### 2.7 Utilities
-
-**Files to Check**:
-- [ ] `server/utils/analytics.ts` - Update event tracking with stack types
+**Files Updated**:
+- [x] `app/layouts/new.vue` - Updated pageTitle switch statement
+- [x] `app/layouts/app.vue` - Updated badges and conditional logic for stack types
 
 ---
 
@@ -296,16 +289,17 @@ export const stackTypeEnum = pgEnum('STACK_TYPE', ['STATIC', 'LAMBDA', 'FARGATE'
 - [x] Console config updated
 - [x] Builders directory deleted
 
-### Phase 2: Console Refactoring 🔄
-- [ ] Server validators updated
-- [ ] Server routers updated
-- [ ] Component files renamed
-- [ ] Component imports updated
-- [ ] Component logic updated
-- [ ] Pages updated
-- [ ] Composables updated
-- [ ] Server libraries updated
-- [ ] Final search & replace
+### Phase 2: Console Refactoring ✅
+- [x] Server validators updated
+- [x] Server routers updated
+- [x] Component files renamed
+- [x] Component imports updated
+- [x] Component logic updated
+- [x] Pages updated
+- [x] Composables updated
+- [x] Server libraries updated
+- [x] Layouts updated
+- [x] Final verification complete
 
 ### Phase 3: Testing 📋
 - [ ] Build validation
@@ -352,21 +346,37 @@ grep -r "WebService" --include="*.ts" --include="*.vue" app/ server/
 - ~~`platform/services/runner/builders/`~~ - DELETED
 
 ### 🔄 In Progress
+### ✅ Completed
 **Server-Side**:
-- `platform/apps/console/server/validators/common.ts`
-- `platform/apps/console/server/validators/new.ts`
-- `platform/apps/console/server/validators/app.ts`
-- `platform/apps/console/server/trpc/routers/services.router.ts`
-- `platform/apps/console/server/lib/*.ts`
-- `platform/apps/console/server/utils/analytics.ts`
+- `platform/apps/console/server/validators/common.ts` ✅
+- `platform/apps/console/server/validators/new.ts` ✅
+- `platform/apps/console/server/validators/app.ts` ✅
+- `platform/apps/console/server/trpc/routers/services.router.ts` ✅
+- `platform/apps/console/server/lib/platform.library.ts` ✅
 
 **Frontend**:
-- `platform/apps/console/app/components/app/ServiceConfiguration.vue`
-- `platform/apps/console/app/components/new/ServiceConfiguration.vue`
-- `platform/apps/console/app/components/app/ServiceConfig*.vue` (3 files)
-- `platform/apps/console/app/components/new/ServiceConfig*.vue` (3 files)
-- `platform/apps/console/app/pages/**/*.vue`
-- `platform/apps/console/app/composables/*.ts`
+- `platform/apps/console/app/components/app/ServiceConfiguration.vue` ✅
+- `platform/apps/console/app/components/new/ServiceConfiguration.vue` ✅
+- `platform/apps/console/app/components/app/ServiceConfigStatic.vue` ✅
+- `platform/apps/console/app/components/app/ServiceConfigLambda.vue` ✅ (renamed)
+- `platform/apps/console/app/components/app/ServiceConfigFargate.vue` ✅ (renamed)
+- `platform/apps/console/app/components/new/ServiceConfigStatic.vue` ✅
+- `platform/apps/console/app/components/new/ServiceConfigLambda.vue` ✅ (renamed)
+- `platform/apps/console/app/components/new/ServiceConfigFargate.vue` ✅ (renamed)
+- `platform/apps/console/app/components/app/DomainAddModal.vue` ✅
+- `platform/apps/console/app/components/Header.vue` ✅
+- `platform/apps/console/app/pages/org/[org_id]/index.vue` ✅
+- `platform/apps/console/app/pages/new/index.vue` ✅
+- `platform/apps/console/app/pages/new/configure.vue` ✅
+- `platform/apps/console/app/pages/app/[app_id]/variables.vue` ✅
+- `platform/apps/console/app/pages/app/[app_id]/headers.vue` ✅
+- `platform/apps/console/app/pages/app/[app_id]/redirects.vue` ✅
+- `platform/apps/console/app/composables/useNewApplicationFlow.ts` ✅
+- `platform/apps/console/app/composables/useCommandPalette.ts` ✅
+- `platform/apps/console/app/layouts/new.vue` ✅
+- `platform/apps/console/app/layouts/app.vue` ✅
+
+**Note**: Remaining references in `database.types.ts` and `migrations-sandbox/schema.ts` are auto-generated files and will be updated when regenerated.
 
 ---
 
@@ -398,7 +408,7 @@ grep -r "WebService" --include="*.ts" --include="*.vue" app/ server/
 - [x] Runner service refactored
 - [x] Types consolidated
 - [x] Console config updated
-- [ ] All console references updated
+- [x] All console references updated
 - [ ] All tests passing
 - [ ] Documentation complete
 

@@ -162,7 +162,7 @@ const saveVariablesData = async () => {
   
   if (!service.value) return;
   
-  const variableType = service.value.stack_type === 'SPA' ? 'build' : 'runtime';
+  const variableType = service.value.stack_type === 'STATIC' ? 'build' : 'runtime';
   
   await Promise.all(formState.value.variables.map(variable => {
     const { id, ...data } = variable;

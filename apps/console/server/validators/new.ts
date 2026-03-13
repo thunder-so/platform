@@ -3,9 +3,9 @@ import {
   NAME_REGEX,
   NAME_ERROR_MESSAGE,
   providerSchema,
-  SPAServiceMetadataSchema,
-  FunctionServiceMetadataSchema,
-  WebServiceMetadataSchema,
+  StaticServiceMetadataSchema,
+  LambdaServiceMetadataSchema,
+  FargateServiceMetadataSchema,
   userAccessTokenSchema,
   serviceVariableSchema
 } from './common';
@@ -26,16 +26,16 @@ const serviceInputBaseSchema = z.object({
 
 export const serviceInputSchema = z.discriminatedUnion('stack_type', [
   serviceInputBaseSchema.extend({
-    stack_type: z.literal('SPA'),
-    metadata: SPAServiceMetadataSchema,
+    stack_type: z.literal('STATIC'),
+    metadata: StaticServiceMetadataSchema,
   }),
   serviceInputBaseSchema.extend({
-    stack_type: z.literal('FUNCTION'),
-    metadata: FunctionServiceMetadataSchema,
+    stack_type: z.literal('LAMBDA'),
+    metadata: LambdaServiceMetadataSchema,
   }),
   serviceInputBaseSchema.extend({
-    stack_type: z.literal('WEB_SERVICE'),
-    metadata: WebServiceMetadataSchema,
+    stack_type: z.literal('FARGATE'),
+    metadata: FargateServiceMetadataSchema,
   }),
 ]);
 

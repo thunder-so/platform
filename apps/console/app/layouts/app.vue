@@ -56,9 +56,9 @@
                 <div>
                   <div class="flex items-center gap-4 mb-4">
                     <h1 class="text-xl tracking-tight text-zinc-100">{{ applicationSchema?.display_name }}</h1>
-                    <UBadge v-if="service?.stack_type === 'SPA'" color="success" variant="subtle">STATIC</UBadge>
-                    <UBadge v-if="service?.stack_type === 'FUNCTION'" color="secondary" variant="subtle">LAMBDA</UBadge>
-                    <UBadge v-if="service?.stack_type === 'WEB_SERVICE'" color="info" variant="subtle">WEB SERVICE</UBadge>
+                    <UBadge v-if="service?.stack_type === 'STATIC'" color="success" variant="subtle">STATIC</UBadge>
+                    <UBadge v-if="service?.stack_type === 'LAMBDA'" color="secondary" variant="subtle">LAMBDA</UBadge>
+                    <UBadge v-if="service?.stack_type === 'FARGATE'" color="info" variant="subtle">FARGATE</UBadge>
                   </div>
                   <div class="flex items-center gap-6">
                     <div class="flex items-center gap-2">
@@ -210,8 +210,8 @@ const primaryLinks = computed<NavigationMenuItem[]>(() => {
     },
   ];
 
-    // Only add Runtime Logs for FUNCTION and WEB_SERVICE stack types
-  if (serviceType.value === 'FUNCTION' || serviceType.value === 'WEB_SERVICE') {
+    // Only add Runtime Logs for LAMBDA and FARGATE stack types
+  if (serviceType.value === 'LAMBDA' || serviceType.value === 'FARGATE') {
     links.push({
       label: 'Logs',
       to: `/app/${appId.value}/logs`,
@@ -233,8 +233,8 @@ const manageLinks = computed<NavigationMenuItem[]>(() => {
     }
   ];
   
-  // Only add Headers and Redirects for SPA stack type
-  if (serviceType.value === 'SPA') {
+  // Only add Headers and Redirects for STATIC stack type
+  if (serviceType.value === 'STATIC') {
     links.push(
       {
         label: 'Headers',

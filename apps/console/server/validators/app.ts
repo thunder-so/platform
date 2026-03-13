@@ -5,9 +5,9 @@ import {
   serviceVariableSchema,
   serviceSecretSchema,
   domainSchema,
-  SPAServiceMetadataSchema,
-  FunctionServiceMetadataSchema,
-  WebServiceMetadataSchema,
+  StaticServiceMetadataSchema,
+  LambdaServiceMetadataSchema,
+  FargateServiceMetadataSchema,
   providerSchema,
 } from './common';
 
@@ -16,7 +16,7 @@ const baseServiceSchema = z.object({
   id: z.string(),
   name: z.string().regex(NAME_REGEX, NAME_ERROR_MESSAGE),
   display_name: z.string().min(1, 'Display name is required'),
-  stack_type: z.enum(['SPA', 'FUNCTION', 'WEB_SERVICE']),
+  stack_type: z.enum(['STATIC', 'LAMBDA', 'FARGATE']),
   stack_version: z.string(),
   owner: z.string().nullable(),
   repo: z.string().nullable(),
@@ -34,16 +34,16 @@ const serviceWithRelationsSchema = baseServiceSchema.extend({
 
 export const serviceSchema = z.discriminatedUnion('stack_type', [
   serviceWithRelationsSchema.extend({
-    stack_type: z.literal('SPA'),
-    metadata: SPAServiceMetadataSchema
+    stack_type: z.literal('STATIC'),
+    metadata: StaticServiceMetadataSchema
   }),
   serviceWithRelationsSchema.extend({
-    stack_type: z.literal('FUNCTION'),
-    metadata: FunctionServiceMetadataSchema
+    stack_type: z.literal('LAMBDA'),
+    metadata: LambdaServiceMetadataSchema
   }),
   serviceWithRelationsSchema.extend({
-    stack_type: z.literal('WEB_SERVICE'),
-    metadata: WebServiceMetadataSchema
+    stack_type: z.literal('FARGATE'),
+    metadata: FargateServiceMetadataSchema
   }),
 ]);
 

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { ref, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import type { SPAServiceMetadata, FunctionServiceMetadata, WebServiceMetadata } from '~~/server/validators/common';
+import type { StaticServiceMetadata, LambdaServiceMetadata, FargateServiceMetadata } from '~~/server/validators/common';
 import type { ServiceInputSchema, ApplicationInputSchema } from '~~/server/validators/new';
 import type { Provider, Branch, UserAccessToken } from '~~/server/db/schema';
 import appConfig from '~/app.config';
@@ -10,11 +10,11 @@ const lambdaRuntimes = (appConfig as any).lambdaRuntimes as Array<{ label: strin
 const lambdaRuntimeDefault = lambdaRuntimes[0]?.value;
 
 const STACK_DEFAULTS: {
-  SPA: SPAServiceMetadata,
-  FUNCTION: FunctionServiceMetadata,
-  WEB_SERVICE: WebServiceMetadata,
+  STATIC: StaticServiceMetadata,
+  LAMBDA: LambdaServiceMetadata,
+  FARGATE: FargateServiceMetadata,
 } = {
-  SPA: {
+  STATIC: {
     debug: false,
     rootDir: '/',
     outputDir: 'public/',
@@ -33,7 +33,7 @@ const STACK_DEFAULTS: {
       buildcmd: 'npm run build',
     },
   },
-  FUNCTION: {
+  LAMBDA: {
     debug: false,
     rootDir: '/',
     buildProps: {
@@ -54,7 +54,7 @@ const STACK_DEFAULTS: {
       handler: 'index.handler',
     },
   },
-  WEB_SERVICE: {
+  FARGATE: {
     debug: false,
     rootDir: '/',
     buildProps: {
@@ -79,8 +79,8 @@ const STACK_DEFAULTS: {
 
 type ValidStackType = keyof typeof STACK_DEFAULTS;
 
-const stackVersionMap = appConfig.stacks.reduce((acc, stack) => {
-  acc[stack.type as ValidStackType] = stack.version;
+const stackVersionMap = appConfig.stackTypes.reduce((acc, stackType) => {
+  acc[stackType as ValidStackType] = appConfig.stackVersion;
   return acc;
 }, {} as Record<ValidStackType, string>);
 
@@ -104,7 +104,7 @@ export const useNewApplicationFlow = () => {
   const router = useRouter();
   const applicationSchema = useLocalStorage<Partial<ApplicationInputSchema>>('newApplicationSchema', {});
   const oAuthError = useState<boolean>('newApplicationOAuthError', () => false);
-  const selectedStackType = ref<ValidStackType>('SPA');
+  const selectedStackType = ref<ValidStackType>('STATIC');
   const repoInfo = ref<{owner: string, repo: string, installation_id: number} | null>(null);
 
   const isLoading = ref(false);
@@ -229,8 +229,8 @@ export const useNewApplicationFlow = () => {
       }
     }
 
-    // Fetch dockerFileStatus only for FUNCTION and WEB_SERVICE if not cached
-    if ((stackType === 'FUNCTION' || stackType === 'WEB_SERVICE') && !scanCache.value.dockerFileStatus) {
+    // Fetch dockerFileStatus only for LAMBDA and FARGATE if not cached
+    if ((stackType === 'LAMBDA' || stackType === 'FARGATE') && !scanCache.value.dockerFileStatus) {
       try {
         scanCache.value.dockerFileStatus = await $client.github.scanForDockerfile.query({ owner, repo, installation_id });
       } catch (e: any) {
@@ -267,22 +267,22 @@ export const useNewApplicationFlow = () => {
       metadata.buildProps = { ...metadata.buildProps, ...scanCache.value.buildSettings };
     }
 
-    // Apply dockerFile settings for FUNCTION and WEB_SERVICE
-    if (stackType === 'FUNCTION' && scanCache.value.dockerFileStatus?.success) {
+    // Apply dockerFile settings for LAMBDA and FARGATE
+    if (stackType === 'LAMBDA' && scanCache.value.dockerFileStatus?.success) {
       metadata.functionProps = {
         ...metadata.functionProps,
         dockerFile: 'Dockerfile'
       };
-    } else if (stackType === 'WEB_SERVICE' && scanCache.value.dockerFileStatus?.success) {
+    } else if (stackType === 'FARGATE' && scanCache.value.dockerFileStatus?.success) {
       metadata.buildProps.buildSystem = 'Custom Dockerfile';
-    } else if ((stackType === 'FUNCTION' || stackType === 'WEB_SERVICE') && scanCache.value.dockerFileStatus?.message) {
+    } else if ((stackType === 'LAMBDA' || stackType === 'FARGATE') && scanCache.value.dockerFileStatus?.message) {
       scanError.value = scanCache.value.dockerFileStatus.message as string;
     }
 
     return {
       ...baseService,
       stack_type: stackType,
-      stack_version: stackVersionMap[stackType],
+      stack_version: appConfig.stackVersion,
       metadata
     };
   };
@@ -297,16 +297,16 @@ export const useNewApplicationFlow = () => {
     $posthog().capture('app_create_started', {
       repo_owner: owner,
       repo_name: repo,
-      stack_type: stack_type || 'SPA',
+      stack_type: stack_type || 'STATIC',
       installation_id
     });
 
     try {
         const getValidStackType = (): ValidStackType => {
-          if (stack_type === 'SPA' || stack_type === 'FUNCTION' || stack_type === 'WEB_SERVICE') {
+          if (stack_type === 'STATIC' || stack_type === 'LAMBDA' || stack_type === 'FARGATE') {
             return stack_type;
           }
-          return 'SPA';
+          return 'STATIC';
         };
 
         const validStackType = getValidStackType();
