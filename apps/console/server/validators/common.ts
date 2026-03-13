@@ -66,7 +66,7 @@ export const serviceSecretSchema = z.object({
 
 export const StaticBuildPropsSchema = z.object({
   runtime: z.string().min(1, 'Runtime is required.'),
-  runtime_version: z.union([z.string(), z.number()]).optional(),
+  runtime_version: z.string().optional(),
   installcmd: z.string().min(1, 'Install command is required.'),
   buildcmd: z.string().min(1, 'Build command is required.'),
   include: z.array(z.string()).optional(),
@@ -75,7 +75,7 @@ export const StaticBuildPropsSchema = z.object({
 
 export const LambdaBuildPropsSchema = z.object({
   runtime: z.string().min(1, 'Runtime is required.'),
-  runtime_version: z.union([z.string(), z.number()]).optional(),
+  runtime_version: z.string().optional(),
   installcmd: z.string().optional(),
   buildcmd: z.string().optional(),
   include: z.array(z.string()).optional(),
@@ -84,7 +84,7 @@ export const LambdaBuildPropsSchema = z.object({
 
 export const FargateBuildPropsSchema = z.object({
   buildSystem: z.enum(['Nixpacks', 'Custom Dockerfile']),
-  runtime_version: z.union([z.string(), z.number()]).optional(),
+  runtime_version: z.string().optional(),
   installcmd: z.string().optional(),
   buildcmd: z.string().optional(),
   startcmd: z.string().optional(),

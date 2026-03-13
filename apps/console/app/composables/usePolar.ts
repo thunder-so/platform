@@ -16,11 +16,18 @@ export const usePolar = () => {
 
       if (error) throw error;
 
-      products.value = (data as Product[]).sort((a, b) => {
-        const aOrder = parseInt((a.metadata as any)?.metadata?.order || '999');
-        const bOrder = parseInt((b.metadata as any)?.metadata?.order || '999');
-        return aOrder - bOrder;
-      });
+      const rawProducts = data as any[];
+      products.value = rawProducts
+        .map(p => ({
+          ...p,
+          created_at: new Date(p.created_at),
+          updated_at: p.updated_at ? new Date(p.updated_at) : null,
+        }))
+        .sort((a, b) => {
+          const aOrder = parseInt((a.metadata as any)?.metadata?.order || '999');
+          const bOrder = parseInt((b.metadata as any)?.metadata?.order || '999');
+          return aOrder - bOrder;
+        }) as Product[];
     } catch (e) {
       console.error('Error fetching plans:', e);
     } finally {

@@ -165,6 +165,12 @@ export const useNewApplicationFlow = () => {
   const supabase = useSupabaseClient();
   const { selectedOrganization } = useMemberships();
 
+  type SupabaseProvider = Omit<Provider, 'created_at' | 'updated_at' | 'deleted_at'> & {
+    created_at: string;
+    updated_at: string | null;
+    deleted_at: string | null;
+  };
+
   const fetchProviders = async (organizationId?: string) => {
     if (!organizationId) return;
     providerLoading.value = true;
@@ -182,7 +188,14 @@ export const useNewApplicationFlow = () => {
         return;
       }
 
-      providers.value = supabaseProviders || [];
+      const parsedProviders = (supabaseProviders as SupabaseProvider[] | null) || [];
+      providers.value = parsedProviders.map(p => ({
+        ...p,
+        created_at: new Date(p.created_at),
+        updated_at: p.updated_at ? new Date(p.updated_at) : null,
+        deleted_at: p.deleted_at ? new Date(p.deleted_at) : null,
+      }));
+
       if (providers.value.length > 0) {
         selectedProviderId.value = providers.value[0]?.id as string;
       }
@@ -258,33 +271,72 @@ export const useNewApplicationFlow = () => {
     };
 
     const { $posthog } = useNuxtApp();
-    let metadata = { ...STACK_DEFAULTS[stackType] };
 
-    // Apply cached buildSettings if available
-    if (scanCache.value.buildSettings?.success === false) {
-      scanError.value = scanCache.value.buildSettings.message;
-    } else if (scanCache.value.buildSettings) {
-      metadata.buildProps = { ...metadata.buildProps, ...scanCache.value.buildSettings };
-    }
-
-    // Apply dockerFile settings for LAMBDA and FARGATE
-    if (stackType === 'LAMBDA' && scanCache.value.dockerFileStatus?.success) {
-      metadata.functionProps = {
-        ...metadata.functionProps,
-        dockerFile: 'Dockerfile'
-      };
-    } else if (stackType === 'FARGATE' && scanCache.value.dockerFileStatus?.success) {
-      metadata.buildProps.buildSystem = 'Custom Dockerfile';
-    } else if ((stackType === 'LAMBDA' || stackType === 'FARGATE') && scanCache.value.dockerFileStatus?.message) {
-      scanError.value = scanCache.value.dockerFileStatus.message as string;
-    }
-
-    return {
-      ...baseService,
-      stack_type: stackType,
-      stack_version: appConfig.stackVersion,
-      metadata
+    const applyBuildSettings = <T extends { buildProps: any }>(metadata: T) => {
+      if (scanCache.value.buildSettings?.success === false) {
+        scanError.value = scanCache.value.buildSettings.message;
+      } else if (scanCache.value.buildSettings) {
+        metadata.buildProps = { ...metadata.buildProps, ...scanCache.value.buildSettings };
+      }
+      return metadata;
     };
+
+    const getStaticService = () => {
+      const metadata = applyBuildSettings({ ...STACK_DEFAULTS.STATIC });
+      return {
+        ...baseService,
+        stack_type: 'STATIC' as const,
+        stack_version: appConfig.stackVersion,
+        metadata,
+      };
+    };
+
+    const getLambdaService = () => {
+      const metadata = applyBuildSettings({ ...STACK_DEFAULTS.LAMBDA });
+
+      if (scanCache.value.dockerFileStatus?.success) {
+        metadata.functionProps = {
+          ...metadata.functionProps,
+          dockerFile: 'Dockerfile',
+        };
+      } else if (scanCache.value.dockerFileStatus?.message) {
+        scanError.value = scanCache.value.dockerFileStatus.message as string;
+      }
+
+      return {
+        ...baseService,
+        stack_type: 'LAMBDA' as const,
+        stack_version: appConfig.stackVersion,
+        metadata,
+      };
+    };
+
+    const getFargateService = () => {
+      const metadata = applyBuildSettings({ ...STACK_DEFAULTS.FARGATE });
+
+      if (scanCache.value.dockerFileStatus?.success) {
+        metadata.buildProps.buildSystem = 'Custom Dockerfile';
+      } else if (scanCache.value.dockerFileStatus?.message) {
+        scanError.value = scanCache.value.dockerFileStatus.message as string;
+      }
+
+      return {
+        ...baseService,
+        stack_type: 'FARGATE' as const,
+        stack_version: appConfig.stackVersion,
+        metadata,
+      };
+    };
+
+    switch (stackType) {
+      case 'LAMBDA':
+        return getLambdaService();
+      case 'FARGATE':
+        return getFargateService();
+      case 'STATIC':
+      default:
+        return getStaticService();
+    }
   };
 
   const setApplicationSchema = async (owner: string, repo: string, installation_id: number, stack_type: string | null) => {

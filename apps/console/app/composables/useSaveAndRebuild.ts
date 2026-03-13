@@ -55,7 +55,7 @@ export const useSaveAndRebuild = () => {
           color: 'primary',
           size: 'lg',
           loading: isRebuilding.value,
-          onClick: () => triggerBuild()
+          onClick: async () => { void triggerBuild(); }
         }]
       });
     } catch (e: any) {

@@ -96,7 +96,7 @@ const pageTitle = computed(() => {
     case 'LAMBDA':
       return 'Create new Lambda Function';
     case 'FARGATE':
-      return 'Create new Web Service';
+      return 'Create new Fargate Service';
     default:
       return 'Create new Application';
   }

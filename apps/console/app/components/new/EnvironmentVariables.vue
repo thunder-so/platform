@@ -31,13 +31,9 @@ import { ref, computed } from 'vue';
 import { z } from 'zod';
 import { envVarSchema } from '~~/server/validators/common';
 
-const props = defineProps({
-  modelValue: {
-    type: Array as () => { key: string; value: string }[],
-    required: true,
-  },
-});
+type EnvVar = { key: string; value: string };
 
+const props = defineProps<{ modelValue: EnvVar[] }>();
 const emit = defineEmits(['update:modelValue']);
 
 const form = ref();
@@ -50,13 +46,15 @@ defineExpose({ hasErrors });
 
 const updateKey = (index: number, newKey: string) => {
   const updated = [...props.modelValue];
-  updated[index] = { ...updated[index], key: newKey };
+  const current = updated[index] as EnvVar;
+  updated[index] = { ...current, key: newKey };
   emit('update:modelValue', updated);
 };
 
 const updateValue = (index: number, newValue: string) => {
   const updated = [...props.modelValue];
-  updated[index] = { ...updated[index], value: newValue };
+  const current = updated[index] as EnvVar;
+  updated[index] = { ...current, value: newValue };
   emit('update:modelValue', updated);
 };
 

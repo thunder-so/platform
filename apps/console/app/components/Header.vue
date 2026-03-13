@@ -241,7 +241,7 @@ const newMenuItems = ref([
       icon: 'tabler:lambda'
     },
     { 
-      label: 'New Web Service', 
+      label: 'New Fargate Service', 
       to: '/new?stack_type=FARGATE',
       icon: 'tabler:server'
     },
