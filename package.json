@@ -9,14 +9,9 @@
     "test": "turbo run test",
     "deploy": "turbo run deploy",
     "build:console": "turbo run build --filter=thunder-console",
-    "build:services": "turbo run build --filter=thunder-services",
-    "changeset": "changeset",
-    "changeset:add": "changeset add",
-    "changeset:version": "changeset version",
-    "changeset:status": "changeset status --verbose"
+    "build:services": "turbo run build --filter=thunder-services"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.29.7",
     "turbo": "^2.6.1",
     "supabase": "^2.62.5",
     "@thunder-so/thunder": "github:thunder-so/thunder#v1.0.4"

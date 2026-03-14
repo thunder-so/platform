@@ -12,8 +12,8 @@ on:
           - console
           - services-all
           - services-provider
-          - services-runner
           - services-ping
+          - services-runner
           - supabase-all
           - supabase-notification
           - supabase-github
