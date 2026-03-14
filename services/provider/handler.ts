@@ -47,6 +47,7 @@ function Create(resource: CustomResource<ResourceProperties>, logger: Logger): P
           stack_name: StackName,
           organization_id: OrganizationId,
           created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
         .select();
 

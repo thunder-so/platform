@@ -1,18 +1,28 @@
 <template>
   <div>
     <ClientOnly>
-    <div v-if="error" class="text-center p-4">
-      <UAlert color="error" variant="soft" :title="error.message" />
-      <p>
-        <UButton to="/login" class="mt-4">Go to Login</UButton>
-      </p>
-    </div>
-    <div v-else class="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-      <div class="flex flex-col items-center gap-4">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <div class="text-sm text-muted">Logging you in...</div>
+      <div v-if="error" class="flex items-center justify-center min-h-[400px]">
+        <UCard class="max-w-md">
+          <template #header>
+            <div class="flex items-center gap-2">
+              <Icon name="tabler:shield-x" class="text-error" size="20" />
+              <h3>Access Denied</h3>
+            </div>
+          </template>
+          
+          <div class="space-y-4">
+            <p class="text-muted">{{ error.message }}</p>
+
+            <UButton to="/login" class="mt-4">Go back to Login</UButton>
+          </div>
+        </UCard>
       </div>
-    </div>
+      <div v-else class="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+        <div class="flex flex-col items-center gap-4">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div class="text-sm text-muted">Logging you in...</div>
+        </div>
+      </div>
     </ClientOnly>
   </div>
 </template>
@@ -53,8 +63,15 @@ onMounted(async () => {
     const queryParams = route.query;
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
 
-    // Check for error in hash
-    const errorCode = hashParams.get('error_code');
+    // Check for error in hash or query
+    const errorCode = hashParams.get('error_code') || queryParams.error_code;
+    const errorType = hashParams.get('error') || queryParams.error;
+    const errorDescription = hashParams.get('error_description') || queryParams.error_description;
+
+    if (errorType === 'access_denied') {
+      throw new Error(errorDescription as string || 'Access to your GitHub account was denied. This is required to login.');
+    }
+
     if (errorCode) {
       throw new Error('Your login link has expired or is invalid.');
     }
@@ -82,7 +99,7 @@ onMounted(async () => {
 
   } catch (err: any) {
     console.error('Authentication error:', err);
-    error.value = err?.message || 'An error occurred during authentication.';
+    error.value = { message: err?.message || 'An error occurred during authentication.' };
   }
 });
 </script>

@@ -224,8 +224,9 @@ const columns = [
   { 
     accessorKey: 'updated_at', 
     header: 'Last Updated',
-    cell: ({ row }: { row: { getValue: (key: string) => any } }) => {
-      return new Date(row.getValue('updated_at')).toLocaleString('en-GB', {
+    cell: ({ row }: { row: { original: Provider } }) => {
+      const date = row.original.updated_at || row.original.created_at;
+      return new Date(date).toLocaleString('en-GB', {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
