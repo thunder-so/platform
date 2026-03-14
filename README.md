@@ -1,6 +1,10 @@
-# Thunder
+# Thunder Platform
 
-The open source platform-as-a-service for AWS. An alternative to AWS Amplify, Heroku, Render, and Vercel that's serverless and costs $0 to run on your infrastructure.
+The open source platform-as-a-service (PaaS) built on AWS. 
+
+Thunder Platform is an alternative to AWS Amplify, Heroku, Render, and Vercel that's serverless and costs $0 to run on your infrastructure.
+
+This is paired with the [Thunder library](https://github.com/thunder-so/thunder/) which is a set of comprehensive CDK stacks to deploy any web application on AWS using the CLI.
 
 ## Architecture
 
@@ -8,49 +12,31 @@ This is a **Turborepo monorepo** with the following structure:
 
 ### Workspaces
 
-- **`apps/console`** — Nuxt full-stack UI application
-- **`services`** — AWS CDK infrastructure (Provider, Runner, Ping services)
-- **`supabase/functions`** — Serverless functions using Deno
-- **`packages/types`** — Shared TypeScript types for CDK stacks:
-  - [CDK-SPA](https://github.com/thunder-so/cdk-spa) — S3 + CloudFront hosting
-  - [CDK-Functions](https://github.com/thunder-so/cdk-functions) — Lambda + API Gateway
-  - [CDK-WebService](https://github.com/thunder-so/cdk-webservice) — ECS Fargate + API Gateway
+- **`apps/console`** — Nuxt 4 full-stack UI application
+- **`services`** — AWS CDK infrastructure backend
+  - Provider — Installs AWS accounts 
+  - Ping — Receives events from AWS CodePipeline
+  - Runner — Deploys CDK stacks on connected AWS accounts
+- **`supabase/functions`** — Supabase Serverless functions (using Deno)
+  - github-webhook — Handles Github account/org installations
+  - notification-webhook — Handles transactional emails using [Resend API](https://resend.com)
+  - polar-webhook — Sync customers, products, subscriptions and orders using [Polar.sh](https://polar.sh)
 
-## Services Overview
-
-- **Provider** — Lambda endpoint for connecting AWS accounts to Thunder
-- **Runner** — AWS CodeBuild configuration system for CDK stack deployments
-- **Ping** — Event listener for AWS account pipeline execution events
 
 ## Getting Started
 
 ### Prerequisites
 
-- Supabase account and database
-- AWS account
-- GitHub account with a GitHub App configured
+- An AWS account
+- A Supabase account and database
+- A GitHub account and a GitHub App
+- Polar.sh account for payments
+- Resend account for transactional emails
 
 ### Quick Links
 
-- **📖 [Release Guide](./docs/RELEASE_GUIDE.md)** — How to create releases, deploy to production/sandbox, and manage changesets
 - **⚙️ [Configuration Guide](./docs/CONFIGURATION.md)** — Setup GitHub secrets, AWS credentials, and Supabase tokens
-
-## Development Commands
-
-```bash
-# Install dependencies
-bun install
-
-# Development
-bun run dev          # Start all workspaces in dev mode
-bun run build        # Build all workspaces
-bun run test         # Run tests
-bun run lint         # Lint all workspaces
-
-# Release management
-bun changeset add    # Create a changeset for a new release
-bun changeset status # View pending changesets
-```
+- **⚙️ [Post Deployment Guide](./docs/POSTDEPLOY.md)** — Settings up IAM permissions for the platform 
 
 ## Deployment
 
@@ -64,26 +50,16 @@ cd apps/console && bun run deploy:sandbox
 
 # Services
 cd services && bun run deploy:sandbox:provider
-cd services && bun run deploy:sandbox:runner
 cd services && bun run deploy:sandbox:ping
+cd services && bun run deploy:sandbox:runner
 
 # Supabase functions
 npx supabase functions deploy notification-webhook --project-ref $SANDBOX_SUPABASE_PROJECT_ID
-npx supabase functions deploy github-webhook
+npx supabase functions deploy github-webhook --no-verify-jwt
 npx supabase functions deploy polar-webhook --no-verify-jwt
 ```
 
-### Production (Automated)
-
-Production releases are **automatic** when changesets are pushed to `master`:
-
-1. Create a changeset: `bun changeset add`
-2. Commit and push: `git commit -m "feat: description" && git push origin master`
-3. GitHub Actions automatically: versions packages → deploys services → deploys functions → deploys console
-
-For full details, see the **[Release Guide](./docs/RELEASE_GUIDE.md)**.
-
-## Cross-Account Deployments
+### Cross-Account Deployments
 
 To deploy Runner in a separate AWS account:
 

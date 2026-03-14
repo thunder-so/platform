@@ -14,7 +14,7 @@ const nuxtApp: NuxtProps = {
   serverProps: {
     dockerFile: 'Dockerfile',
     runtime: Cdk.aws_lambda.Runtime.NODEJS_22_X,
-    architecture: Cdk.aws_lambda.Architecture.ARM_64,
+    architecture: Cdk.aws_lambda.Architecture.X86_64,
     memorySize: 1792,
     timeout: 10,
     tracing: false,

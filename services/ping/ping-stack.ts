@@ -1,10 +1,12 @@
-import { Stack, StackProps, Duration, Arn, ArnFormat, CfnOutput } from 'aws-cdk-lib';
+import { Stack, StackProps, Duration, Arn, ArnFormat, CfnOutput, RemovalPolicy } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { EventBus, Rule } from 'aws-cdk-lib/aws-events';
+import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { LambdaFunction } from 'aws-cdk-lib/aws-events-targets';
 import { Role, CompositePrincipal, ServicePrincipal, ManagedPolicy, PolicyStatement, Effect, AnyPrincipal } from 'aws-cdk-lib/aws-iam';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import * as path from 'path';
 
 export class PingStack extends Stack {
@@ -15,6 +17,12 @@ export class PingStack extends Stack {
     // Resource: AWS::Events::EventBus (Ping)
     const eventBus = new EventBus(this, 'Ping', {
       eventBusName: `PingEvents-${environment}`,
+    });
+
+    // Store EventBus ARN in SSM Parameter for cross-stack reference
+    new StringParameter(this, 'PingEventBusArnParameter', {
+      parameterName: `/thunder/${environment}/PingEventBusArn`,
+      stringValue: eventBus.eventBusArn,
     });
 
     // Resource: AWS::Events::EventBusPolicy (PingEventsPolicy)
@@ -104,6 +112,13 @@ export class PingStack extends Stack {
         }, this)],
     }));
 
+    // Resource: AWS::Logs::LogGroup (PingFunctionLogGroup)
+    new LogGroup(this, 'PingFunctionLogGroup', {
+      logGroupName: `/aws/lambda/${functionName}`,
+      retention: RetentionDays.ONE_WEEK,
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
     // Resource: AWS::Serverless::Function (PingFunction)
     const pingFunction = new NodejsFunction(this, 'PingFunction', {
       functionName: functionName,
@@ -117,6 +132,8 @@ export class PingStack extends Stack {
       environment: {
         NODE_OPTIONS: '--enable-source-maps false',
         REGION: this.region,
+        SUPABASE_URL: process.env.SUPABASE_URL || '',
+        SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY || '',
       }
     });
 

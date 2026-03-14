@@ -6,7 +6,8 @@ import { Role, ServicePrincipal, ManagedPolicy, PolicyStatement, CompositePrinci
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { Project, BuildSpec, Source, Artifacts, LinuxBuildImage, LinuxArmBuildImage, ComputeType } from 'aws-cdk-lib/aws-codebuild';
-import { Rule } from 'aws-cdk-lib/aws-events';
+import { EventBus, Rule } from 'aws-cdk-lib/aws-events';
+import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { LambdaFunction } from 'aws-cdk-lib/aws-events-targets';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as path from 'path';
@@ -16,6 +17,10 @@ export class RunnerService extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
     const environment = this.node.tryGetContext('environment') || 'sandbox';
+
+    // Import Ping Event Bus ARN from SSM
+    const pingEventBusArn = StringParameter.valueForStringParameter(this, `/thunder/${environment}/PingEventBusArn`);
+    const pingEventBus = EventBus.fromEventBusArn(this, 'ImportedPingEventBus', pingEventBusArn);
 
     // S3 Bucket for artifacts
     const runnerBucket = new Bucket(this, 'RunnerBucket', {
@@ -135,6 +140,9 @@ export class RunnerService extends Stack {
         REGION: Aws.REGION,
         RUNNER_BUCKET: runnerBucket.bucketName,
         RUNNER_BUILD: runnerBuild.projectName,
+        SUPABASE_URL: process.env.SUPABASE_URL || '',
+        SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY || '',
+        EVENT_TARGET: pingEventBusArn,
       },
     });
     runnerFunction.addEventSource(new SqsEventSource(runnerQueue, { 
@@ -142,6 +150,9 @@ export class RunnerService extends Stack {
       enabled: true,
       reportBatchItemFailures: true,
     }));
+
+    // Grant permission to PutEvents on the Ping Event Bus
+    pingEventBus.grantPutEventsTo(runnerRole);
 
     // Lambda: status
     const runnerStatusFunction = new NodejsFunction(this, 'RunnerStatusFunction', {
@@ -156,6 +167,8 @@ export class RunnerService extends Stack {
       environment: {
         NODE_OPTIONS: '--enable-source-maps false',
         REGION: Aws.REGION,
+        SUPABASE_URL: process.env.SUPABASE_URL || '',
+        SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY || '',
       },
     });
 
