@@ -14,7 +14,7 @@
   "devDependencies": {
     "turbo": "^2.6.1",
     "supabase": "^2.62.5",
-    "@thunder-so/thunder": "github:thunder-so/thunder#v1.0.4"
+    "@thunder-so/thunder": "github:thunder-so/thunder#v1.1.0"
   },
   "workspaces": [
     "apps/*",
