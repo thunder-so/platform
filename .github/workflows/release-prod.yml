@@ -104,7 +104,7 @@ jobs:
         run: cd services && bun install --linker=isolated
 
       - name: Deploy all services to production
-        run: cd services && bun run cdk deploy --app "npx tsx bin/ping.ts && npx tsx bin/provider.ts && npx tsx bin/runner.ts" --context environment=production
+        run: cd services && bun run cdk deploy --app "npx tsx bin/ping.ts && npx tsx bin/provider.ts && npx tsx bin/runner.ts" --context environment=production --require-approval never
 
   deploy-services-provider:
     name: Deploy Provider Service to Production
@@ -126,7 +126,7 @@ jobs:
         run: cd services && bun install --linker=isolated
 
       - name: Deploy provider service to production
-        run: cd services && bun run cdk deploy --app "npx tsx bin/provider.ts" --context environment=production
+        run: cd services && bun run cdk deploy --app "npx tsx bin/provider.ts" --context environment=production --require-approval never
 
   deploy-services-runner:
     name: Deploy Runner Service to Production
@@ -148,7 +148,7 @@ jobs:
         run: cd services && bun install --linker=isolated
 
       - name: Deploy runner service to production
-        run: cd services && bun run cdk deploy --app "npx tsx bin/runner.ts" --context environment=production
+        run: cd services && bun run cdk deploy --app "npx tsx bin/runner.ts" --context environment=production --require-approval never
 
   deploy-services-ping:
     name: Deploy Ping Service to Production
@@ -170,7 +170,7 @@ jobs:
         run: cd services && bun install --linker=isolated
 
       - name: Deploy ping service to production
-        run: cd services && bun run cdk deploy --app "npx tsx bin/ping.ts" --context environment=production
+        run: cd services && bun run cdk deploy --app "npx tsx bin/ping.ts" --context environment=production --require-approval never
 
   deploy-supabase-all:
     name: Deploy All Supabase Functions to Production

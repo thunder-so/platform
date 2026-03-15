@@ -1,5 +1,5 @@
 {
-  "name": "@thunderso/platform",
+  "name": "@thunder-so/platform",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -22,5 +22,5 @@
     "services/*",
     "supabase"
   ],
-  "packageManager": "bun@1.3.3"
+  "packageManager": "bun@1.3.10"
 }
