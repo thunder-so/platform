@@ -1,6 +1,6 @@
 <template>
   <div>
-    <UCard class="mt-4">
+    <UCard>
       <template #header>
         <h2>Environment Variables</h2>
       </template>

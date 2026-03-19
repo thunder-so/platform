@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="flex justify-between items-center mb-4">
-      <h3 class="text-lg font-medium">AWS Accounts</h3>
+      <div></div>
       <UDropdownMenu :items="addNewItems">
         <UButton
           color="neutral"

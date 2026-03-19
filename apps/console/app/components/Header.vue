@@ -7,7 +7,7 @@
       </NuxtLink>
       
       <UPopover
-        v-if="organizationItems?.[0]?.length"
+        v-if="!props.hideOrgSelector && organizationItems?.[0]?.length"
         v-model:open="isOrgPopoverOpen"
         mode="click"
         :content="{ align: 'start', side: 'bottom' }"
@@ -76,21 +76,22 @@
         mode="click"
         :content="{ align: 'end', side: 'bottom' }"
       >
-        <UButton size="lg" icon="tabler:plus" color="neutral" variant="outline">
+        <UButton size="md" icon="tabler:plus" color="neutral" variant="outline">
           Project
         </UButton>
         
         <template #content>
-          <div class="py-1">
-            <template v-for="(group, index) in newMenuItems" :key="index">
-              <div v-for="item in group" :key="item.to">
-                <NuxtLink :to="item.to" @click="isNewPopoverOpen = false" class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">
-                  <Icon :name="item.icon" class="mr-3 w-4 h-4" />
-                  <span>{{ item.label }}</span>
-                </NuxtLink>
-              </div>
-              <hr v-if="index < newMenuItems.length - 1" class="border-gray-200 dark:border-gray-700" />
-            </template>
+          <div class="p-2 min-w-[200px]">
+            <NuxtLink 
+              v-for="item in newMenuItems" 
+              :key="item.to"
+              :to="item.to" 
+              @click="isNewPopoverOpen = false"
+              class="flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-muted rounded-md"
+            >
+              <Icon :name="item.icon" class="w-4 h-4" />
+              {{ item.label }}
+            </NuxtLink>
           </div>
         </template>
       </UPopover>
@@ -100,19 +101,21 @@
         mode="click"
         :content="{ align: 'end', side: 'bottom' }"
       >
-        <UButton size="lg" icon="tabler:question-mark" color="neutral" variant="outline" />
+        <UButton size="md" icon="tabler:question-mark" color="neutral" variant="outline" />
         
         <template #content>
-          <div class="py-1">
-            <template v-for="(group, index) in helpMenuItems" :key="index">
-              <div v-for="item in group" :key="item.label">
-                <NuxtLink :to="item.to" target="_blank" @click="isHelpPopoverOpen = false" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800">
-                  <Icon :name="item.icon" class="mr-3 w-4 h-4" />
-                  <span>{{ item.label }}</span>
-                </NuxtLink>
-              </div>
-              <hr v-if="index < helpMenuItems.length - 1" class="border-gray-200 dark:border-gray-700" />
-            </template>
+          <div class="p-2 min-w-[200px]">
+            <NuxtLink 
+              v-for="item in helpMenuItems" 
+              :key="item.label"
+              :to="item.to" 
+              target="_blank"
+              @click="isHelpPopoverOpen = false"
+              class="flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-muted rounded-md"
+            >
+              <Icon :name="item.icon" class="w-4 h-4" />
+              {{ item.label }}
+            </NuxtLink>
           </div>
         </template>
       </UPopover>
@@ -122,32 +125,29 @@
         mode="click"
         :content="{ align: 'end', side: 'bottom' }"
       >
-        <UButton size="lg" color="neutral" variant="ghost">
-          <UAvatar :src="user?.user_metadata?.avatar_url" :alt="user?.user_metadata?.full_name" size="xs" class="h-5 w-5" />
+        <UButton size="md" color="neutral" variant="ghost">
+          <UAvatar :src="user?.user_metadata?.avatar_url" :alt="user?.user_metadata?.full_name" size="xs" />
         </UButton>
 
         <template #content>
-          <div class="flex items-center px-4 py-3 space-x-3">
-            <UAvatar :src="user?.user_metadata?.avatar_url" :alt="user?.user_metadata?.full_name" size="sm" />
-            <div class="flex flex-col">
-              <span class="text-sm">{{ user?.user_metadata?.full_name }}</span>
-              <span class="text-xs text-gray-400">{{ user?.email }}</span>
-            </div>
-          </div>
-          <hr class="border-gray-200 dark:border-gray-700" />
-          <div class="py-1">
-            <template v-for="(group, index) in userMenuItems" :key="index">
-              <div v-for="item in group" :key="item.label">
-                <NuxtLink v-if="item.to" :to="item.to" @click="isUserPopoverOpen = false" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800">
-                  <Icon :name="item.icon" class="mr-3 w-4 h-4" />
-                  <span>{{ item.label }}</span>
-                </NuxtLink>
-                <div v-else-if="item.click" @click="() => { item.click(); isUserPopoverOpen = false }" class="flex items-center px-4 py-2 text-sm dark:text-gray-200 dark:hover:bg-gray-800 cursor-pointer">
-                  <Icon :name="item.icon" class="mr-3 w-4 h-4" />
-                  <span>{{ item.label }}</span>
-                </div>
+          <div class="p-2 min-w-[200px]">
+            <div class="flex items-center gap-2 px-2 py-2 border-b border-default mb-2">
+              <UAvatar :src="user?.user_metadata?.avatar_url" :alt="user?.user_metadata?.full_name" size="sm" />
+              <div class="flex flex-col min-w-0">
+                <span class="text-sm font-medium truncate">{{ user?.user_metadata?.full_name }}</span>
+                <span class="text-xs text-muted truncate">{{ user?.email }}</span>
               </div>
-              <hr v-if="index < userMenuItems.length - 1" class="border-gray-200 dark:border-gray-700" />
+            </div>
+            
+            <template v-for="item in userMenuItems" :key="item.label">
+              <NuxtLink v-if="item.to" :to="item.to" @click="isUserPopoverOpen = false" class="flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-muted rounded-md">
+                <Icon :name="item.icon" class="w-4 h-4" />
+                {{ item.label }}
+              </NuxtLink>
+              <div v-else-if="item.click" @click="() => { item.click(); isUserPopoverOpen = false }" class="flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-muted rounded-md cursor-pointer text-error">
+                <Icon :name="item.icon" class="w-4 h-4" />
+                {{ item.label }}
+              </div>
             </template>
           </div>
         </template>
@@ -176,10 +176,12 @@ import { usePolar } from '~/composables/usePolar';
 
 interface Props {
   mobileMenuItems?: NavigationMenuItem[]
+  hideOrgSelector?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  mobileMenuItems: () => []
+  mobileMenuItems: () => [],
+  hideOrgSelector: false
 })
 
 const user = useSupabaseUser();
@@ -228,63 +230,33 @@ const organizationItems = computed(() => {
 })
 
 const isNewPopoverOpen = ref(false);
-const newMenuItems = ref([
-  [
-    { 
-      label: 'New Static Site', 
-      to: '/new?stack_type=STATIC',
-      icon: 'tabler:file'
-    },
-    { 
-      label: 'New Lambda Function', 
-      to: '/new?stack_type=LAMBDA',
-      icon: 'tabler:lambda'
-    },
-    { 
-      label: 'New Fargate Service', 
-      to: '/new?stack_type=FARGATE',
-      icon: 'tabler:server'
-    },
-  ],
-]);
+const newMenuItems = [
+  { label: 'New Static Site', to: '/new?stack_type=STATIC', icon: 'tabler:file' },
+  { label: 'New Lambda Function', to: '/new?stack_type=LAMBDA', icon: 'tabler:lambda' },
+  { label: 'New Fargate Service', to: '/new?stack_type=FARGATE', icon: 'tabler:server' },
+];
 
 const isHelpPopoverOpen = ref(false);
-const helpMenuItems = ref([
-  [
-    { 
-      label: 'Docs', 
-      icon: 'tabler:book',
-      to: 'https://www.thunder.so/docs/'
-    },
-    { 
-      label: 'Discord community',
-      icon: 'tabler:brand-discord',
-      to: 'https://discord.gg/nZwr6c5c6v' 
-    },
-    { 
-      label: 'Send feedback', 
-      icon: 'tabler:messages',
-      to: "https://form.typeform.com/to/CSDLo4VO"
-    },
-  ]
-]);
+const helpMenuItems = [
+  { label: 'Docs', icon: 'tabler:book', to: 'https://www.thunder.so/docs/' },
+  { label: 'Discord community', icon: 'tabler:brand-discord', to: 'https://discord.gg/nZwr6c5c6v' },
+  { label: 'Send feedback', icon: 'tabler:messages', to: "https://form.typeform.com/to/CSDLo4VO" },
+];
 
 const isUserPopoverOpen = ref(false);
-const userMenuItems = ref([
-  [
-    { 
-      label: 'Account Settings', 
-      icon: 'tabler:user-hexagon',
-      to: '/profile' 
-    },
-    { 
-      label: 'Logout', 
-      icon: 'tabler:logout',
-      click: async () => { 
-        await supabase.auth.signOut(); 
-        await navigateTo('/login'); 
-      } 
-    }
-  ]
-]);
+const userMenuItems = [
+  { 
+    label: 'Account Settings', 
+    icon: 'tabler:user-hexagon',
+    to: '/profile' 
+  },
+  { 
+    label: 'Logout', 
+    icon: 'tabler:logout',
+    click: async () => { 
+      await supabase.auth.signOut(); 
+      await navigateTo('/login'); 
+    } 
+  }
+];
 </script>

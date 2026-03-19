@@ -1,9 +1,5 @@
 <template>
   <div>
-    <div class="flex justify-between items-center mb-4">
-      <h3 class="text-lg font-medium">Projects</h3>
-    </div>
-
     <div v-if="loading">
       <div class="flex flex-col gap-4 mt-7">
         <div v-for="i in 3" :key="i" class="space-y-4">

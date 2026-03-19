@@ -98,7 +98,7 @@
           <div v-else-if="activity.type === 'event'" class="grid grid-cols-4 gap-2">
             <div class="flex items-center text-left text-md">
               <NuxtLink :to="`/app/${applicationSchema?.id}/deploys/${activity.id}`">
-                {{ activity.id.substring(0, 7) }}
+                {{ activity.id.substring(0, 8) }}
               </NuxtLink>
             </div>
 

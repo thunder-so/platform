@@ -1,7 +1,7 @@
 
 <template>
   <div>
-    <UCard class="mt-4">
+    <UCard>
       <template #header>
         <div class="flex items-center justify-between">
           <h2>Custom Domains</h2>

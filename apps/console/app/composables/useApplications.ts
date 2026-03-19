@@ -111,7 +111,14 @@ export const useApplications = () => {
 
   const hasAccessToApp = (appId: string): boolean => {
     const { memberships } = useMemberships()
-    if (!appId || !applicationSchema.value) return false
+    if (!appId) return true
+    
+    // While loading or before we have a schema, assume access to avoid FUOC.
+    // The layout's isLoading spinner will handle the transition.
+    if (!applicationSchema.value) {
+      return !isError.value
+    }
+    
     return memberships.value.some(m => m.id === applicationSchema.value?.organization_id)
   }
 

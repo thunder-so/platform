@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="flex justify-between items-center mb-4">
-      <h3 class="text-lg font-medium">Members</h3>
+      <div></div>
       <UButton 
         color="neutral" 
         variant="outline" 

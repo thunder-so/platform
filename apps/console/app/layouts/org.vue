@@ -1,63 +1,142 @@
 <template>
   <div>
-    <Header :mobile-menu-items="links" />
     <ClientOnly>
-    <UMain>
-      <div v-if="isLoading" class="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+      <!-- Loading State -->
+      <div v-if="isLoading" class="fixed inset-0 flex items-center justify-center bg-background">
         <div class="flex flex-col items-center gap-4">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           <div class="text-sm text-muted">Loading...</div>
         </div>
       </div>
-      
+
+      <!-- Access Denied -->
       <AccessDenied 
         v-else-if="accessStatus === 'no-access'" 
         message="You do not have access to this organization."
       >
         <UButton to="/" variant="outline">Go to Dashboard</UButton>
       </AccessDenied>
-      
-      <div v-else-if="accessStatus === 'invitee' && pendingInvite" class="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+
+      <!-- Invite Screen -->
+      <div v-else-if="accessStatus === 'invitee' && pendingInvite" class="fixed inset-0 flex items-center justify-center bg-background">
         <UCard class="max-w-md">
           <template #header>
             <h2>You're invited to join {{ pendingInvite.name }}</h2>
           </template>
           <p class="text-muted text-sm mb-4">Accept the invitation to join this workspace and start collaborating.</p>
-          <UButton @click="acceptInvite" :loading="loading" block>Accept Invitation</UButton>
+          <UButton @click="acceptInvite" :loading="acceptingInvite" block>Accept Invitation</UButton>
         </UCard>
       </div>
-      
-      <div v-else class="grid grid-cols-6 gap-0 min-h-[calc(100vh-4rem)]">
-        <div class="aside col-span-1 p-6 border-r border-muted lg:block hidden">
-          <div class="flex flex-col justify-between h-full">
-            <UNavigationMenu 
+
+      <!-- Main Dashboard Layout -->
+      <UDashboardGroup v-else>
+        <!-- Two-Column Sidebar -->
+        <div class="hidden lg:flex flex-row h-screen">
+          <LayoutOrganizationSidebar />
+
+          <!-- Right Column: Navigation-->
+          <UDashboardSidebar
+            id="org-sidebar"
+            class="w-82 border-r border-default"
+            :ui="{ 
+              header: 'border-b border-default',
+              body: 'pt-4'
+            }"
+          >
+            <template #header="{ collapsed }">
+              <div v-if="!collapsed" class="flex items-center gap-2 px-1">
+                <span class="flex-1 text-md font-bold text-foreground truncate">
+                  {{ selectedOrganization?.name }}
+                </span>
+              </div>
+            </template>
+
+            <template #default="{ collapsed }">
+              <UNavigationMenu
+                v-if="selectedOrganization && !collapsed"
+                :items="links"
+                orientation="vertical"
+                class="flex-1"
+                :ui="{
+                  link: 'p-3'
+                }"
+              />
+            </template>
+
+            <template #footer="{ collapsed }">
+              <div v-if="!collapsed" class="w-full">
+                <UCard variant="soft" class="mb-4">
+                  <p class="text-sm text-muted mb-2">
+                    Thunder is currently in beta.
+                  </p>
+                  <NuxtLink to="https://form.typeform.com/to/CSDLo4VO" target="_blank" rel="noopener noreferrer">
+                    <UButton color="neutral" variant="soft" size="md" trailing-icon="tabler:external-link" block>
+                      Send feedback
+                    </UButton>
+                  </NuxtLink>
+                </UCard>
+              </div>
+            </template>
+          </UDashboardSidebar>
+        </div>
+
+        <!-- Mobile Sidebar -->
+        <UDashboardSidebar
+          id="org-sidebar-mobile"
+          mode="slideover"
+          class="lg:hidden"
+        >
+          <template #header>
+            <div class="flex items-center gap-2">
+              <UAvatar :alt="selectedOrganization?.name" size="sm" />
+              <span class="font-semibold">{{ selectedOrganization?.name }}</span>
+            </div>
+          </template>
+
+          <template #default>
+            <LayoutMobileOrgSwitcher show-active-badge />
+
+            <USeparator class="my-4" />
+
+            <UNavigationMenu
               v-if="selectedOrganization"
               :items="links"
-              orientation="vertical" 
-              :ui="{
-                link: 'p-3 gap-2'
-              }"
+              orientation="vertical"
             />
+          </template>
 
-            <UCard variant="soft">
-              <p class="text-sm text-muted mb-3">
-                Thunder is currently in beta. Feedback is highly appreciated.
-              </p>
-              <NuxtLink to="https://form.typeform.com/to/CSDLo4VO" target="_blank" rel="noopener noreferrer">
-                <UButton color="neutral" variant="outline" trailing-icon="tabler:external-link">
-                  Send feedback
-                </UButton>
-              </NuxtLink>
-            </UCard>
-          </div>
-        </div>
-        <div class="p-6 lg:col-span-5 col-span-6">
-          <UContainer>
-            <slot />
-          </UContainer>
-        </div>
-      </div>
-    </UMain>
+          <template #footer>
+            <div class="flex items-center gap-2">
+              <UAvatar :src="user?.user_metadata?.avatar_url" :alt="user?.user_metadata?.full_name" size="sm" />
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">{{ user?.user_metadata?.full_name }}</p>
+                <p class="text-xs text-muted truncate">{{ user?.email }}</p>
+              </div>
+            </div>
+          </template>
+        </UDashboardSidebar>
+
+        <!-- Main Panel -->
+        <UDashboardPanel id="org-panel" class="flex-1">
+          <template #header>
+            <UDashboardNavbar :title="pageTitle">
+              <template #leading>
+                <UDashboardSidebarCollapse class="lg:hidden" />
+              </template>
+
+              <template #right>
+                <LayoutNavbarActions />
+              </template>
+            </UDashboardNavbar>
+          </template>
+
+          <template #body>
+            <UContainer>
+              <slot />
+            </UContainer>
+          </template>
+        </UDashboardPanel>
+      </UDashboardGroup>
     </ClientOnly>
   </div>
 </template>
@@ -66,11 +145,22 @@
 import type { NavigationMenuItem } from '@nuxt/ui'
 
 const route = useRoute();
-const router = useRouter();
 const { setSelectedOrganization, selectedOrganization, hasAccessToOrg, getPendingInvite, refreshMemberships, isLoading } = useMemberships();
 const { $client } = useNuxtApp();
-const toast = useToast()
+const toast = useToast();
+const user = useSupabaseUser();
 
+// Page title based on current route
+const pageTitle = computed(() => {
+  const path = route.path;
+  if (path.includes('/aws')) return 'AWS Accounts';
+  if (path.includes('/members')) return 'Members';
+  if (path.includes('/billing')) return 'Billing';
+  if (path.includes('/settings')) return 'Settings';
+  return 'Projects';
+});
+
+// Navigation links
 const links = computed<NavigationMenuItem[]>(() => {
   const orgId = selectedOrganization.value?.id;
   if (!orgId) return [];
@@ -103,23 +193,25 @@ const links = computed<NavigationMenuItem[]>(() => {
   ];
 });
 
+// Access control
 const accessStatus = computed(() => {
   const orgId = route.params.org_id as string
   return orgId ? hasAccessToOrg(orgId) : 'member'
-})
+});
 
 const pendingInvite = computed(() => {
   const orgId = route.params.org_id as string
   return orgId ? getPendingInvite(orgId) : null
-})
+});
 
-const loading = ref(false)
+const acceptingInvite = ref(false);
 
+// Accept invitation
 const acceptInvite = async () => {
   const orgId = route.params.org_id as string
   if (!orgId) return
   
-  loading.value = true
+  acceptingInvite.value = true
   try {
     await $client.team.acceptInvite.mutate({ organizationId: orgId })
     await refreshMemberships()
@@ -132,10 +224,11 @@ const acceptInvite = async () => {
       color: 'error'
     })
   } finally {
-    loading.value = false
+    acceptingInvite.value = false
   }
-}
+};
 
+// Watch for org changes
 watch(() => route.params.org_id, async (newOrgId, oldOrgId) => {
   if (newOrgId && newOrgId !== oldOrgId) {
     const success = setSelectedOrganization(newOrgId as string);

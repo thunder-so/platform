@@ -6,7 +6,7 @@
       </template>
       <UForm :schema="schema" :state="state" @submit.prevent="updateOrganization" class="space-y-4 max-w-sm">
         <UFormField label="Display Name" name="newDisplayName">
-          <UInput v-model="state.newDisplayName" />
+          <UInput v-model="state.newDisplayName" size="xl" />
         </UFormField>
       </UForm>
 
