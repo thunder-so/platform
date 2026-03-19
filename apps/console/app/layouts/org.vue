@@ -44,10 +44,15 @@
             }"
           >
             <template #header="{ collapsed }">
-              <div v-if="!collapsed" class="flex items-center gap-2 px-1">
-                <span class="flex-1 text-md font-bold text-foreground truncate">
+              <div v-if="!collapsed" class="flex justify-between w-full px-1">
+                <span class="text-md font-bold text-foreground truncate">
                   {{ selectedOrganization?.name }}
                 </span>
+                <div>
+                  <UBadge v-if="selectedOrganization?.pending" size="md" color="secondary" variant="outline">Invited</UBadge>
+                  <UBadge v-else-if="isPro" size="md" color="info" variant="outline">Pro</UBadge>
+                  <UBadge v-else size="md" color="neutral" variant="outline">Free</UBadge>
+                </div>
               </div>
             </template>
 
@@ -85,11 +90,15 @@
           id="org-sidebar-mobile"
           mode="slideover"
           class="lg:hidden"
+          :ui="{ header: 'border-b border-default' }"
         >
           <template #header>
             <div class="flex items-center gap-2">
               <UAvatar :alt="selectedOrganization?.name" size="sm" />
-              <span class="font-semibold">{{ selectedOrganization?.name }}</span>
+              <span class="flex-1 font-semibold truncate">{{ selectedOrganization?.name }}</span>
+              <UBadge v-if="selectedOrganization?.pending" size="md" color="secondary" variant="outline">Invited</UBadge>
+              <UBadge v-else-if="isPro" size="md" color="info" variant="outline">Pro</UBadge>
+              <UBadge v-else size="md" color="neutral" variant="outline">Free</UBadge>
             </div>
           </template>
 
@@ -143,12 +152,34 @@
 
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { any } from 'zod/v4-mini';
 
 const route = useRoute();
-const { setSelectedOrganization, selectedOrganization, hasAccessToOrg, getPendingInvite, refreshMemberships, isLoading } = useMemberships();
+const { setSelectedOrganization, selectedOrganization, hasAccessToOrg, getPendingInvite, refreshMemberships, isLoading, currentPlan } = useMemberships();
+const { isFree, getPrimaryPrice } = usePolar();
 const { $client } = useNuxtApp();
 const toast = useToast();
 const user = useSupabaseUser();
+
+const isPro = computed(() => {
+  const org = selectedOrganization.value;
+  if (!org) return false;
+
+  const activeSub = org.subscriptions
+    ?.filter((sub: any) => sub.status !== 'canceled')
+    ?.sort((a: any, b: any) => new Date(b.created || 0).getTime() - new Date(a.created || 0).getTime())
+    ?.[0];
+  
+  const isProSub = !!activeSub && getPrimaryPrice(activeSub?.metadata as any)?.amount_type !== 'free';
+
+  const recentOrder = org.orders
+    ?.sort((a: any, b: any) => new Date(b.created_at || b.created || 0).getTime() - new Date(a.created_at || a.created || 0).getTime())
+    ?.[0];
+
+  const isProOrder = !!recentOrder && getPrimaryPrice(recentOrder?.metadata as any)?.amount_type !== 'free';
+
+  return isProSub || isProOrder || false;
+});
 
 // Page title based on current route
 const pageTitle = computed(() => {

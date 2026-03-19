@@ -89,7 +89,7 @@ const UDropdownMenu = resolveComponent('UDropdownMenu')
 const UButton = resolveComponent('UButton')
 
 definePageMeta({
-  layout: 'org'
+  layout: 'blank'
 })
 
 const displayName = computed(() => user.value?.user_metadata?.full_name || 'N/A')
