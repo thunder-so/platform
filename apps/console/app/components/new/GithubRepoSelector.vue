@@ -98,6 +98,7 @@ if (process.client) {
 }
 
 const installations = inject<any>('installations');
+const fetchInstallations = inject<any>('fetchInstallations');
 
 const allRepositories = ref<any[]>([]);
 const pendingRepositories = ref(false);
@@ -125,7 +126,10 @@ const selectedAvatar = computed(() => {
 });
 
 const fetchAllRepositories = async () => {
-  if (!installations.value || installations.value.length === 0) return;
+  if (!installations.value || installations.value.length === 0) {
+    allRepositories.value = [];
+    return;
+  }
   try {
     pendingRepositories.value = true;
     const installationIds = installations.value.map((inst: any) => inst.installation_id);
@@ -174,16 +178,20 @@ const selectRepository = (repo: any, installationId: number) => {
 };
 
 watch(installations, (newInstallations) => {
-  if (newInstallations && newInstallations.length > 0) {
-    fetchAllRepositories();
-  }
-}, { immediate: true });
+  fetchAllRepositories();
+}, { immediate: true, deep: true });
 
 const handleImportRepositories = async () => {
   try {
     importing.value = true;
     await openInstallationPopup();
-    // Refresh installations and repositories after successful installation
+    
+    // Refresh installations list first 
+    if (fetchInstallations) {
+      await fetchInstallations();
+    }
+    
+    // Refresh repositories list
     await fetchAllRepositories();
   } catch (error: any) {
     if (error.message !== 'Installation cancelled') {

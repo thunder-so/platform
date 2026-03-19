@@ -86,8 +86,6 @@ const loading = ref(true);
 const error = ref<{ message: string } | null>(null);
 const installing = ref(false);
 
-provide('installations', installations);
-
 const pageTitle = computed(() => {
   const stackType = route.query.stack_type;
   switch (stackType) {
@@ -174,6 +172,9 @@ async function handleInstallApp() {
     installing.value = false;
   }
 }
+
+provide('installations', installations);
+provide('fetchInstallations', fetchInstallations);
 
 onMounted(async () => {
   await fetchProviders();
