@@ -85,9 +85,13 @@ const stackVersionMap = appConfig.stackTypes.reduce((acc, stackType) => {
 }, {} as Record<ValidStackType, string>);
 
 const useLocalStorage = <T>(key: string, defaultValue: T) => {
-  const storedValue = process.client ? localStorage.getItem(key) : null;
-  const initialValue = storedValue ? JSON.parse(storedValue) : defaultValue;
-  const state = ref<T>(initialValue);
+  const state = useState<T>(`localStorage_${key}`, () => {
+    if (process.client) {
+      const storedValue = localStorage.getItem(key);
+      return storedValue ? JSON.parse(storedValue) : defaultValue;
+    }
+    return defaultValue;
+  });
   
   watch(state, (newValue) => {
     if (process.client) {
@@ -104,25 +108,25 @@ export const useNewApplicationFlow = () => {
   const router = useRouter();
   const applicationSchema = useLocalStorage<Partial<ApplicationInputSchema>>('newApplicationSchema', {});
   const oAuthError = useState<boolean>('newApplicationOAuthError', () => false);
-  const selectedStackType = ref<ValidStackType>('STATIC');
-  const repoInfo = ref<{owner: string, repo: string, installation_id: number} | null>(null);
+  const selectedStackType = useState<ValidStackType>('selectedStackType', () => 'STATIC');
+  const repoInfo = useState<{owner: string, repo: string, installation_id: number} | null>('repoInfo', () => null);
 
-  const isLoading = ref(false);
-  const serviceLoading = ref(false);
-  const branches = ref<Branch[]>([]);
-  const selectedBranchName = ref<string>();
-  const branchesLoading = ref(false);
-  const providers = ref<Provider[]>([]);
-  const selectedProviderId = ref<string | null>(null);
-  const providerLoading = ref(false);
-  const loadError = ref<string | null>(null);
-  const scanError = ref<string | null>(null);
+  const isLoading = useState('isLoading', () => false);
+  const serviceLoading = useState('serviceLoading', () => false);
+  const branches = useState<Branch[]>('branches', () => []);
+  const selectedBranchName = useState<string | undefined>('selectedBranchName', () => undefined);
+  const branchesLoading = useState('branchesLoading', () => false);
+  const providers = useState<Provider[]>('providers', () => []);
+  const selectedProviderId = useState<string | null>('selectedProviderId', () => null);
+  const providerLoading = useState('providerLoading', () => false);
+  const loadError = useState<string | null>('loadError', () => null);
+  const scanError = useState<string | null>('scanError', () => null);
   
   // Cache for scan results
-  const scanCache = ref<{
+  const scanCache = useState<{
     buildSettings?: any;
     dockerFileStatus?: any;
-  }>({});
+  }>('scanCache', () => ({}));
 
   const currentStep = computed(() => {
     const path = route.path;

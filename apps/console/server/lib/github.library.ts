@@ -208,6 +208,57 @@ export default class GithubLibrary {
       return commitsResponse.data;
     }
 
+    /**
+     * Get the directory tree for a repository branch
+     * @param owner string
+     * @param repo string
+     * @param branch string
+     * @param installation_id number
+     * @returns Array of tree items (directories only)
+     */
+    async getRepoTree(
+      owner: string,
+      repo: string,
+      branch: string,
+      installation_id: number
+    ): Promise<any[]> {
+      const app = new App({
+        appId: this.appId as string,
+        privateKey: this.privateKey as string
+      });
+
+      const octokit = await app.getInstallationOctokit(installation_id);
+
+      // Get the tree recursively
+      const treeResponse = await octokit.request('GET /repos/{owner}/{repo}/git/trees/{tree_sha}?recursive=1', {
+        owner,
+        repo,
+        tree_sha: branch,
+        headers: {
+          'X-GitHub-Api-Version': '2022-11-28'
+        }
+      });
+
+      // Filter for directories and map to a simpler structure
+      const directories = treeResponse.data.tree
+        .filter((item: any) => item.type === 'tree')
+        .map((item: any) => ({
+          path: item.path,
+          label: item.path.split('/').pop(),
+          type: item.type
+        }));
+
+      trackServerEvent('github_tree_fetched', {
+        owner,
+        repo,
+        branch,
+        installation_id,
+        directory_count: directories.length
+      });
+
+      return directories;
+    }
+
     async getFileContent(
       owner: string,
       repo: string,

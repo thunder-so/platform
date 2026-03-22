@@ -1,7 +1,5 @@
 <template>
-  <div>
-    <h2 class="text-md font-semibold mt-6 mb-4 pb-4 border-b border-muted">Service Configuration</h2>
-  
+  <div>  
     <UAlert v-if="scanError" color="warning" variant="subtle" class="mb-4" :title="scanError" />
 
     <div v-if="props.serviceLoading" class="flex items-center justify-center py-8">

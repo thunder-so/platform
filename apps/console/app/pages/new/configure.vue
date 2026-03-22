@@ -24,10 +24,8 @@
           <UInput v-model="applicationSchema.display_name" size="lg" class="w-96" required autofocus />
         </UFormField>
 
-        <div class="space-y-6">
+        <div class="space-y-6 mt-6">
           <UAlert v-if="loadError" color="error" variant="subtle" class="mb-4" :title="loadError" />
-
-          <h2 class="text-md font-semibold mt-6 mb-4 pb-4 border-b border-muted">Application Configuration</h2>
 
           <div v-if="applicationSchema.environments" class="space-y-6">
             <UForm ref="form" :state="applicationSchema" :schema="applicationInputSchema" :validate-on="['blur']" class="space-y-4">
@@ -55,7 +53,7 @@
                 />
               </UFormField>
 
-              <UFormField label="AWS Account" description="Select the AWS Account where you want to deploy." class="grid grid-cols-3 gap-4">
+              <!-- <UFormField label="AWS Account" description="Select the AWS Account where you want to deploy." class="grid grid-cols-3 gap-4">
                 <USelect 
                   v-model="selectedProviderIdComputed" 
                   :items="providerItems" 
@@ -72,9 +70,10 @@
                   class="w-96" size="lg"
                   :disabled="!applicationSchema.environments?.[0]"
                 />
-              </UFormField>
+              </UFormField> -->
             </UForm>
           </div>
+
           <ServiceConfiguration 
             ref="serviceConfig" 
             :key="selectedStackType" 
