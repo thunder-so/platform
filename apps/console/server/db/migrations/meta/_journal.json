@@ -15,6 +15,13 @@
       "when": 1766606732105,
       "tag": "0001_RLS",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774209653170,
+      "tag": "0002_slow_skreet",
+      "breakpoints": true
     }
   ]
 }

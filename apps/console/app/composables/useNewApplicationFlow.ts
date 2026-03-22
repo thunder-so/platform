@@ -9,14 +9,13 @@ import appConfig from '~/app.config';
 const lambdaRuntimes = (appConfig as any).lambdaRuntimes as Array<{ label: string; value: string }>;
 const lambdaRuntimeDefault = lambdaRuntimes[0]?.value;
 
-const STACK_DEFAULTS: {
+export const STACK_DEFAULTS: {
   STATIC: StaticServiceMetadata,
   LAMBDA: LambdaServiceMetadata,
   FARGATE: FargateServiceMetadata,
 } = {
   STATIC: {
     debug: false,
-    rootDir: '/',
     outputDir: 'public/',
     errorPagePath: '',
     redirects: [],
@@ -35,7 +34,6 @@ const STACK_DEFAULTS: {
   },
   LAMBDA: {
     debug: false,
-    rootDir: '/',
     buildProps: {
       runtime: 'nodejs',
       runtime_version: '22',
@@ -56,7 +54,6 @@ const STACK_DEFAULTS: {
   },
   FARGATE: {
     debug: false,
-    rootDir: '/',
     buildProps: {
       buildSystem: 'Nixpacks',
       runtime_version: '20',
@@ -121,12 +118,7 @@ export const useNewApplicationFlow = () => {
   const providerLoading = useState('providerLoading', () => false);
   const loadError = useState<string | null>('loadError', () => null);
   const scanError = useState<string | null>('scanError', () => null);
-  
-  // Cache for scan results
-  const scanCache = useState<{
-    buildSettings?: any;
-    dockerFileStatus?: any;
-  }>('scanCache', () => ({}));
+  const selectedRootDir = useState<string>('selectedRootDir', () => '/');
 
   const currentStep = computed(() => {
     const path = route.path;
@@ -228,40 +220,13 @@ export const useNewApplicationFlow = () => {
     }
   });
 
-  const fetchScanData = async (owner: string, repo: string, installation_id: number, stackType: ValidStackType) => {
-    const { $posthog } = useNuxtApp();
-    
-    // Fetch buildSettings if not cached
-    if (!scanCache.value.buildSettings) {
-      try {
-        scanCache.value.buildSettings = await $client.github.scanRepository.query({ owner, repo, installation_id });
-      } catch (e: any) {
-        console.error("scan error:", e);
-        $posthog().capture('repo_scan_failed', {
-          stack_type: stackType,
-          error: e.message,
-          repo: `${owner}/${repo}`
-        });
-        scanError.value = e.message || e;
-      }
-    }
-
-    // Fetch dockerFileStatus only for LAMBDA and FARGATE if not cached
-    if ((stackType === 'LAMBDA' || stackType === 'FARGATE') && !scanCache.value.dockerFileStatus) {
-      try {
-        scanCache.value.dockerFileStatus = await $client.github.scanForDockerfile.query({ owner, repo, installation_id });
-      } catch (e: any) {
-        console.error("dockerfile scan error:", e);
-        scanError.value = e.message || e;
-      }
-    }
-  };
-
   const createServiceSchema = async (
     stackType: ValidStackType,
     owner: string,
     repo: string,
-    installation_id: number
+    installation_id: number,
+    scanData: any,
+    rootDir: string
   ): Promise<ServiceInputSchema> => {
     const name = Math.random().toString(36).substring(2, 9).toLowerCase();
     const baseService = {
@@ -271,16 +236,15 @@ export const useNewApplicationFlow = () => {
       owner,
       repo,
       branch: selectedBranchName.value || 'main',
+      rootDir: rootDir,
       service_variables: [],
     };
 
-    const { $posthog } = useNuxtApp();
-
     const applyBuildSettings = <T extends { buildProps: any }>(metadata: T) => {
-      if (scanCache.value.buildSettings?.success === false) {
-        scanError.value = scanCache.value.buildSettings.message;
-      } else if (scanCache.value.buildSettings) {
-        metadata.buildProps = { ...metadata.buildProps, ...scanCache.value.buildSettings };
+      if (scanData?.buildSettings) {
+        metadata.buildProps = { ...metadata.buildProps, ...scanData.buildSettings };
+      } else {
+        scanError.value = 'A package.json was not found in the selected directory.';
       }
       return metadata;
     };
@@ -298,13 +262,11 @@ export const useNewApplicationFlow = () => {
     const getLambdaService = () => {
       const metadata = applyBuildSettings({ ...STACK_DEFAULTS.LAMBDA });
 
-      if (scanCache.value.dockerFileStatus?.success) {
+      if (scanData?.hasDockerfile) {
         metadata.functionProps = {
           ...metadata.functionProps,
           dockerFile: 'Dockerfile',
         };
-      } else if (scanCache.value.dockerFileStatus?.message) {
-        scanError.value = scanCache.value.dockerFileStatus.message as string;
       }
 
       return {
@@ -318,10 +280,8 @@ export const useNewApplicationFlow = () => {
     const getFargateService = () => {
       const metadata = applyBuildSettings({ ...STACK_DEFAULTS.FARGATE });
 
-      if (scanCache.value.dockerFileStatus?.success) {
+      if (scanData?.hasDockerfile) {
         metadata.buildProps.buildSystem = 'Custom Dockerfile';
-      } else if (scanCache.value.dockerFileStatus?.message) {
-        scanError.value = scanCache.value.dockerFileStatus.message as string;
       }
 
       return {
@@ -346,9 +306,7 @@ export const useNewApplicationFlow = () => {
   const setApplicationSchema = async (owner: string, repo: string, installation_id: number, stack_type: string | null) => {
     isLoading.value = true;
     scanError.value = null;
-
-    repoInfo.value = { owner, repo, installation_id };
-
+    
     const { $posthog } = useNuxtApp();
     $posthog().capture('app_create_started', {
       repo_owner: owner,
@@ -367,6 +325,8 @@ export const useNewApplicationFlow = () => {
 
         const validStackType = getValidStackType();
         selectedStackType.value = validStackType;
+        selectedRootDir.value = '/';
+        repoInfo.value = { owner, repo, installation_id };
 
         await Promise.all([
           fetchBranches(owner, repo, installation_id),
@@ -391,14 +351,11 @@ export const useNewApplicationFlow = () => {
             },
           ],
         };
-
-        await createAndSetServiceSchema(validStackType, owner, repo, installation_id);
         
         $posthog().capture('app_configured', {
           repo_owner: owner,
           repo_name: repo,
           stack_type: selectedStackType.value,
-          has_scan_error: !!scanError.value
         });
     } catch (e: any) {
         console.error("Failed to configure application:", e);
@@ -412,37 +369,6 @@ export const useNewApplicationFlow = () => {
         isLoading.value = false;
     }
   };
-
-  const createAndSetServiceSchema = async (stackType: ValidStackType, owner: string, repo: string, installation_id: number) => {
-    serviceLoading.value = true;
-    scanError.value = null;
-    try {
-      await fetchScanData(owner, repo, installation_id, stackType);
-      const serviceSchema = await createServiceSchema(stackType, owner, repo, installation_id);
-      if (applicationSchema.value.environments && applicationSchema.value.environments[0]) {
-        applicationSchema.value.environments[0].services = [serviceSchema];
-      }
-    } catch (e: any) {
-      console.error("Failed to create and set service schema:", e);
-      scanError.value = e.message || 'An unexpected error occurred during service configuration.';
-    } finally {
-      serviceLoading.value = false;
-    }
-  };
-
-  watch(selectedStackType, async (newStackType, oldStackType) => {
-    if (!oldStackType || newStackType === oldStackType) return;
-
-    // Update URL without reloading page
-    const currentQuery = { ...route.query };
-    currentQuery.stack_type = newStackType;
-    router.replace({ query: currentQuery });
-
-    if (repoInfo.value) {
-      const { owner, repo, installation_id } = repoInfo.value;
-      await createAndSetServiceSchema(newStackType, owner, repo, installation_id);
-    }
-  }, { immediate: false });
 
   const clearApplicationSchema = () => {
     applicationSchema.value = {};
@@ -483,7 +409,8 @@ export const useNewApplicationFlow = () => {
     setOAuthError,
     clearApplicationSchema,
     selectedStackType,
+    selectedRootDir,
     repoInfo,
-    createAndSetServiceSchema,
+    createServiceSchema,
   };
 };

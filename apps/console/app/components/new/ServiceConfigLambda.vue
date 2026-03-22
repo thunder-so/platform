@@ -1,9 +1,13 @@
 <template>
   <ClientOnly>
   <UForm ref="form" v-if="configuration" :state="{ metadata: configuration }" :schema="serviceSchema" :validate-on="['input']" class="space-y-6">
-      <UFormField label="Root Directory" description="The root directory of your project. For monorepos, enter the path to the project." name="rootDir" class="grid grid-cols-3 gap-4">
-        <RootDirInput v-model="configuration.rootDir" />
-      </UFormField>
+      <UAlert 
+        v-if="!hasDockerfile && deploymentMode === 'Zip'" 
+        color="warning" 
+        variant="subtle" 
+        title="Dockerfile not found. Using Zip mode" 
+      />
+
       <UFormField label="Deployment Mode" description="Choose how to deploy the function: container (provide a Dockerfile path) or zip (provide runtime, code output dir and handler)." name="deploymentMode" class="grid grid-cols-3 gap-4">
         <USelect v-model="deploymentMode" :items="['Container','Zip']" class="w-96" size="lg" />
       </UFormField>
@@ -45,7 +49,10 @@ import appConfig from '~/app.config';
 
 type Configuration = z.infer<typeof LambdaServiceMetadataSchema>;
 
-const props = defineProps<{ configuration: Configuration }>();
+const props = defineProps<{ 
+  configuration: Configuration,
+  hasDockerfile?: boolean
+}>();
 const configuration = props.configuration;
 
 // The form schema only needs to include the parts of the service state we want to validate.

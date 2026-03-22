@@ -1,9 +1,6 @@
 <template>
   <ClientOnly>
     <UForm ref="form" v-if="configuration" :state="configuration" :schema="FargateServiceMetadataSchema" :validate-on="['input']" class="space-y-6">
-      <UFormField label="Root Directory" description="The root directory of your project. For monorepos, enter the path to the project." name="rootDir" class="grid grid-cols-3 gap-4">
-        <UInput v-model="configuration.rootDir" placeholder="./" class="w-96" size="lg" />
-      </UFormField>
       <UFormField label="Build System" description="Select a custom Dockerfile or use a build system to autogenerate." name="buildProps.buildSystem" class="grid grid-cols-3 gap-4">
         <USelect v-model="configuration.buildProps.buildSystem" :items="['Nixpacks', 'Custom Dockerfile']" class="w-96" size="lg" />
       </UFormField>

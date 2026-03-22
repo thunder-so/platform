@@ -53,6 +53,14 @@
                 />
               </UFormField>
 
+              <UFormField label="Root Directory" description="The root directory of your project. For monorepos, enter the path to the project." class="grid grid-cols-3 gap-4">
+                <div class="space-y-2">
+                  <RootDirInput v-model="selectedRootDir" />
+                </div>
+              </UFormField>
+
+              <UAlert v-if="scanError" color="warning" variant="subtle" :title="scanError" />
+
               <!-- <UFormField label="AWS Account" description="Select the AWS Account where you want to deploy." class="grid grid-cols-3 gap-4">
                 <USelect 
                   v-model="selectedProviderIdComputed" 
@@ -76,17 +84,15 @@
 
           <ServiceConfiguration 
             ref="serviceConfig" 
-            :key="selectedStackType" 
-            :scan-error="scanError || undefined" 
-            :service="service" 
+            :repo-info="repoInfo"
             :selected-stack-type="selectedStackType"
-            :service-loading="serviceLoading"
+            :selected-root-dir="selectedRootDir"
+            :application-schema="applicationSchema"
             @update:service="(updatedService) => {
-              if (applicationSchema.environments && applicationSchema.environments[0] && applicationSchema.environments[0].services) {
+              if (applicationSchema.environments && applicationSchema.environments[0]) {
                 applicationSchema.environments[0].services = [updatedService];
               }
             }"
-            @update:stack-type="selectedStackType = $event" 
           />
         </div>
 
@@ -137,6 +143,7 @@ const {
   loadError,
   scanError,
   selectedStackType,
+  selectedRootDir,
   repoInfo
 } = useNewApplicationFlow();
 

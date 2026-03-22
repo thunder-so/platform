@@ -76,103 +76,93 @@ export const githubRouter = router({
         return tree;
       }),
 
-    scanRepository: protectedProcedure
+    scanProject: protectedProcedure
       .input(z.object({
         owner: z.string(),
         repo: z.string(),
         installation_id: z.number(),
+        rootDir: z.string().default('/'),
       }))
       .query(async ({ input }) => {
-        const { owner, repo, installation_id } = input;
+        const { owner, repo, installation_id, rootDir } = input;
         const github = new GithubLibrary();
+        const prefix = rootDir === '/' ? '' : rootDir.replace(/\/$/, '') + '/';
 
-        const packageJsonContent = await github.getFileContent(owner, repo, installation_id, 'package.json');
-
-        if (!packageJsonContent) {
-          return { success: false, message: 'A package.json file was not found at the root of your repository.' };
-        }
-
-        const packageJson = JSON.parse(packageJsonContent);
-
-        let runtime_version = '24';
-        if (packageJson.engines && packageJson.engines.node) {
-            const versionMatch = packageJson.engines.node.match(/\d+/);
-            if (versionMatch) {
-                runtime_version = versionMatch[0];
-            }
-        }
-
-        let installcmd = 'npm install';
-        const [hasBunLock, hasPnpmLock, hasYarnLock] = await Promise.all([
-          github.checkFileExists(owner, repo, installation_id, 'bun.lock'),
-          github.checkFileExists(owner, repo, installation_id, 'pnpm-lock.yaml'),
-          github.checkFileExists(owner, repo, installation_id, 'yarn.lock'),
+        const [packageJsonContent, hasDockerfile] = await Promise.all([
+          github.getFileContent(owner, repo, installation_id, `${prefix}package.json`),
+          github.checkFileExists(owner, repo, installation_id, `${prefix}Dockerfile`),
         ]);
 
-        if (hasBunLock) {
-          installcmd = 'bun install';
-        } else if (hasPnpmLock) {
-          installcmd = 'pnpm install';
-        } else if (hasYarnLock) {
-          installcmd = 'yarn install';
-        }
+        let buildSettings = null;
+        if (packageJsonContent) {
+          const packageJson = JSON.parse(packageJsonContent);
 
-        let buildcmd = '';
-        if (packageJson.scripts) {
-          let buildScript = '';
-          if (packageJson.scripts.build) {
-            buildScript = 'build';
-          } else if (packageJson.scripts.generate) {
-            buildScript = 'generate';
+          let runtime_version = '24';
+          if (packageJson.engines && packageJson.engines.node) {
+              const versionMatch = packageJson.engines.node.match(/\d+/);
+              if (versionMatch) {
+                  runtime_version = versionMatch[0];
+              }
           }
-          
-          if (buildScript) {
-            if (hasBunLock) {
-              buildcmd = `bun run ${buildScript}`;
-            } else if (hasPnpmLock) {
-              buildcmd = `pnpm ${buildScript}`;
-            } else if (hasYarnLock) {
-              buildcmd = `yarn ${buildScript}`;
-            } else {
-              buildcmd = `npm run ${buildScript}`;
+
+          let installcmd = 'npm install';
+          const [hasBunLock, hasPnpmLock, hasYarnLock] = await Promise.all([
+            github.checkFileExists(owner, repo, installation_id, `${prefix}bun.lock`),
+            github.checkFileExists(owner, repo, installation_id, `${prefix}pnpm-lock.yaml`),
+            github.checkFileExists(owner, repo, installation_id, `${prefix}yarn.lock`),
+          ]);
+
+          if (hasBunLock) {
+            installcmd = 'bun install';
+          } else if (hasPnpmLock) {
+            installcmd = 'pnpm install';
+          } else if (hasYarnLock) {
+            installcmd = 'yarn install';
+          }
+
+          let buildcmd = '';
+          if (packageJson.scripts) {
+            let buildScript = '';
+            if (packageJson.scripts.build) {
+              buildScript = 'build';
+            } else if (packageJson.scripts.generate) {
+              buildScript = 'generate';
+            }
+            
+            if (buildScript) {
+              if (hasBunLock) {
+                buildcmd = `bun run ${buildScript}`;
+              } else if (hasPnpmLock) {
+                buildcmd = `pnpm ${buildScript}`;
+              } else if (hasYarnLock) {
+                buildcmd = `yarn ${buildScript}`;
+              } else {
+                buildcmd = `npm run ${buildScript}`;
+              }
             }
           }
-        }
 
-        let startcmd = 'npm start';
-        if (hasBunLock) {
-          startcmd = 'bun start';
-        } else if (hasPnpmLock) {
-          startcmd = 'pnpm start';
-        } else if (hasYarnLock) {
-          startcmd = 'yarn start';
+          let startcmd = 'npm start';
+          if (hasBunLock) {
+            startcmd = 'bun start';
+          } else if (hasPnpmLock) {
+            startcmd = 'pnpm start';
+          } else if (hasYarnLock) {
+            startcmd = 'yarn start';
+          }
+
+          buildSettings = {
+            runtime_version,
+            installcmd,
+            buildcmd,
+            startcmd,
+          };
         }
 
         return {
-          runtime_version,
-          installcmd,
-          buildcmd,
-          startcmd,
+          buildSettings,
+          hasDockerfile,
         };
-      }),
-
-    scanForDockerfile: protectedProcedure
-      .input(z.object({
-        owner: z.string(),
-        repo: z.string(),
-        installation_id: z.number(),
-      }))
-      .query(async ({ input }) => {
-        const { owner, repo, installation_id } = input;
-        const github = new GithubLibrary();
-
-        const hasDockerfile = await github.checkFileExists(owner, repo, installation_id, 'Dockerfile');
-
-        if (!hasDockerfile) {
-          return { success: false, message: 'A Dockerfile was not found at the root of your repository.' };
-        }
-
-        return { success: true };
       }),
 
     handleOAuthFlow: protectedProcedure

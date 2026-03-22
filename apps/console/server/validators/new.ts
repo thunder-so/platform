@@ -21,6 +21,7 @@ const serviceInputBaseSchema = z.object({
   repo: z.string().nullable(),
   branch: z.string().nullable(),
   installation_id: z.number().nullable(),
+  rootDir: z.string().default('/'),
   service_variables: z.array(serviceVariableSchema).optional(),
 });
 

@@ -126,7 +126,6 @@ export const HeadersSchema = z.array(
 
 export const StaticServiceMetadataSchema = z.object({
   debug: z.boolean(),
-  rootDir: z.string(),
   outputDir: z.string(),
   buildProps: StaticBuildPropsSchema,
   redirects: RedirectsSchema,
@@ -168,7 +167,6 @@ export const LambdaFunctionPropsSchema = z.object({
 
 export const LambdaServiceMetadataSchema = z.object({
   debug: z.boolean(),
-  rootDir: z.string(),
   buildProps: LambdaBuildPropsSchema,
   functionProps: LambdaFunctionPropsSchema,
 });
@@ -186,7 +184,6 @@ export const FargateServicePropsSchema = z.object({
 
 export const FargateServiceMetadataSchema = z.object({
   debug: z.boolean(),
-  rootDir: z.string(),
   buildProps: FargateBuildPropsSchema,
   serviceProps: FargateServicePropsSchema,
 });

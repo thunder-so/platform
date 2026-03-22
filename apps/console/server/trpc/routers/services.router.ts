@@ -240,6 +240,7 @@ export const servicesRouter = router({
         service_id: z.string(),
         display_name: z.string().optional(),
         branch: z.string().optional(),
+        rootDir: z.string().optional(),
         // any other fields on the core 'services' table
       })
     )

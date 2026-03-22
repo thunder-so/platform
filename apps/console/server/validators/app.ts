@@ -21,6 +21,7 @@ const baseServiceSchema = z.object({
   owner: z.string().nullable(),
   repo: z.string().nullable(),
   branch: z.string().nullable(),
+  rootDir: z.string().default('/'),
   resources: z.record(z.any()).nullable(),
   environment_id: z.string(),
   installation_id: z.number().nullable(),

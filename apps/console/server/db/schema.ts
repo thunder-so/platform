@@ -258,6 +258,7 @@ export const services = pgTable('services', {
   owner: text('owner'),
   repo: text('repo'),
   branch: text('branch'),
+  rootDir: text('root_dir').default('/'),
   metadata: jsonb('metadata'),
   resources: jsonb('resources'),
   created_at: timestamp('created_at', { withTimezone: true, precision: 6 }).defaultNow().notNull(),

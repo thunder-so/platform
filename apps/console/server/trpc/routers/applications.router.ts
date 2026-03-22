@@ -106,6 +106,7 @@ export const applicationsRouter = router({
           owner: service.owner,
           repo: service.repo,
           branch: service.branch,
+          rootDir: service.rootDir ?? '/',
           metadata: service.metadata,
         }).returning();
 
