@@ -41,6 +41,7 @@ export const useCommandPalette = () => {
               owner,
               repo,
               branch,
+              rootDir:root_dir,
               metadata,
               resources,
               environment_id,

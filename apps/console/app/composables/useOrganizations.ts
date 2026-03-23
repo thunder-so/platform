@@ -18,6 +18,7 @@ export type ApplicationDisplaySchema = {
       owner: string;
       repo: string;
       branch: string;
+      rootDir: string;
       metadata: any;
       resources: any;
       environment_id: string;
@@ -62,6 +63,7 @@ export const useOrganizations = () => {
               owner,
               repo,
               branch,
+              rootDir:root_dir,
               metadata,
               resources,
               environment_id,
