@@ -146,10 +146,6 @@ function generateBuildSpec(
 
   let postBuildCommands = `- echo "${command === 'delete' ? 'Destroying' : 'Deploying'} infrastructure..."`;
   
-  if (needsDockerEnv) {
-    postBuildCommands += `
-            - export NIXPACKS_NODE_VERSION=${buildProps?.runtime_version || '20'}`;
-  }
   
   postBuildCommands += `
             - echo '${JSON.stringify(adjustedContext)}' > cdk.context.json
