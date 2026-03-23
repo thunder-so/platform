@@ -124,7 +124,7 @@ function generateBuildSpec(
     
     installCommands += `
             - echo "Cloning repository for destroy..."
-            - curl -fsSL https://raw.githubusercontent.com/go-to-k/delstack/main/install.sh | sh
+            - DELSTACK_VERSION=$(curl -s https://api.github.com/repos/go-to-k/delstack/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\\1/') && curl -fsSL "https://github.com/go-to-k/delstack/releases/download/v\${DELSTACK_VERSION}/delstack_\${DELSTACK_VERSION}_Linux_x86_64.tar.gz" | tar -xz delstack
             - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --region ${context.metadata.env.region} --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
             - git clone --depth 1 --branch ${sourceProps?.branchOrRef} https://x-access-token:$GITHUB_TOKEN@github.com/${sourceProps?.owner}/${sourceProps?.repo}.git code`;
 
@@ -144,7 +144,7 @@ function generateBuildSpec(
   const stackName = `${context.metadata.application.substring(0, 7)}-${context.metadata.service.substring(0, 7)}-${context.metadata.environment.substring(0, 7)}`.substring(0, 23).toLowerCase();
 
   const cdkCommand = command === 'delete'
-    ? `delstack -s ${stackName} -f`
+    ? `./delstack -s ${stackName} -f -y -r ${context.metadata.env.region}`
     : 'npx cdk deploy --app "npx tsx bin/' + binFile + '.ts" --require-approval never';
 
   let postBuildCommands = `- echo "${command === 'delete' ? 'Destroying' : 'Deploying'} infrastructure..."`;
