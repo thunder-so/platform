@@ -10,7 +10,7 @@
     </div>
     <div v-else class="flex-1 flex flex-col overflow-hidden gap-4">
       <UInput v-model="searchQuery" icon="i-lucide-search" placeholder="Search directories..." class="w-full" size="lg" />
-      <div class="flex-1 overflow-y-auto min-h-0 border rounded-lg bg-neutral-50 dark:bg-neutral-900 p-2">
+      <div class="flex-1 overflow-y-auto min-h-0 border border-(--ui-border) rounded-lg bg-(--ui-bg) p-2">
         <UTree 
           v-model="selectedKey"
           :items="filteredTreeItems" 

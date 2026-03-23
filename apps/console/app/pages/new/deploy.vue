@@ -3,7 +3,7 @@
     <!-- <UCard>
       <ClientOnly><pre>{{ applicationSchema }}</pre></ClientOnly>
     </UCard> -->
-    <UCard>
+    <!-- <UCard>
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-3">
           <Icon name="tabler:brand-github" class="w-6 h-6 text-gray-700" />
@@ -31,7 +31,34 @@
           </div>
         </div>
       </div>
+    </UCard> -->
+    <UCard>
+      <template #header>
+        <h1>AWS Account and Region</h1>
+      </template>
+
+      <div class="space-y-6">
+        <UFormField label="AWS Account" description="Select the AWS Account where you want to deploy." class="grid grid-cols-3 gap-4">
+          <USelect 
+            v-model="selectedProviderIdComputed" 
+            :items="providerItems" 
+            class="w-96" size="lg"
+          />
+        </UFormField>
+
+        <UFormField label="Region" description="The AWS region where you want to deploy." class="grid grid-cols-3 gap-4">
+          <USelect 
+            v-model="regionComputed" 
+            :items="awsRegions" 
+            value-key="name" 
+            option-attribute="label" 
+            class="w-96" size="lg"
+            :disabled="!applicationSchema.environments?.[0]"
+          />
+        </UFormField>
+      </div>
     </UCard>
+
     <UCard class="mt-6 mb-6">
       <template #header>
         <h1>Authorize and Deploy</h1>
@@ -51,7 +78,7 @@
 
         <div v-if="!hasUat" class="space-y-4">
           <p class="text-sm text-muted-foreground">Authorization with GitHub involves granting permissions to Thunder to issue an access token on your behalf.</p> 
-          <p class="text-sm text-muted-foreground">The access token will be used by AWS CodePipeline to watch for changes in your Github repository via webhook. Find out more at our <NuxtLink class="no-underline hover:underline" to="https://www.thunder.so/docs/aws">documentation</NuxtLink>.</p>
+          <p class="text-sm text-muted-foreground">The access token will be used by AWS CodePipeline to watch for changes in your Github repository via webhook. Find out more at our <NuxtLink class="text-white hover:underline" to="https://www.thunder.so/docs/aws">documentation</NuxtLink>.</p>
           <UButton 
             size="lg"
             icon="tabler:brand-github"
@@ -73,16 +100,19 @@
       
       <template #footer>
         <ClientOnly>
-          <div class="flex justify-start">
-            <UButton
-              size="lg"
-              icon="tabler:brand-aws"
-              :disabled="!hasUat || isDeploying"
-              :loading="isDeploying"
-              @click="installApplication"
-            >
-              {{ isDeploying ? 'Deploying...' : 'Deploy Application' }}
-            </UButton>
+          <div class="flex flex-col gap-3">
+            <UAlert v-if="deployError" color="error" variant="soft" title="Deployment failed" :description="deployError" icon="tabler:alert-circle" />
+            <div class="flex justify-start">
+              <UButton
+                size="lg"
+                icon="tabler:brand-aws"
+                :disabled="!hasUat || isDeploying"
+                :loading="isDeploying"
+                @click="installApplication"
+              >
+                {{ isDeploying ? 'Deploying...' : 'Deploy Application' }}
+              </UButton>
+            </div>
           </div>
         </ClientOnly>
       </template>
@@ -97,7 +127,23 @@ definePageMeta({
   layout: 'new'
 });
 
-const { applicationSchema, oAuthError, setOAuthError, clearApplicationSchema, setUat } = useNewApplicationFlow();
+const { applicationSchema, oAuthError, setOAuthError, clearApplicationSchema, setUat, providers, selectedProviderId } = useNewApplicationFlow();
+const appConfig = useAppConfig();
+const awsRegions = ref(appConfig.regions);
+
+const providerItems = computed(() => providers.value.map(p => ({ value: p.id, label: p.alias || p.id })));
+const selectedProviderIdComputed = computed({
+  get: () => selectedProviderId.value || undefined,
+  set: (value) => { selectedProviderId.value = value || null; }
+});
+const regionComputed = computed({
+  get: () => applicationSchema.value.environments?.[0]?.region,
+  set: (value) => {
+    if (applicationSchema.value.environments?.[0] && value) {
+      applicationSchema.value.environments[0].region = value;
+    }
+  }
+});;
 const { selectedOrganization } = useMemberships()
 const { $client } = useNuxtApp();
 const router = useRouter();
@@ -110,6 +156,7 @@ if (!applicationSchema.value.name) {
 
 const isDeploying = ref(false);
 const authorizing = ref(false);
+const deployError = ref<string | null>(null);
 
 const hasUat = computed(() => {
   return !!applicationSchema.value.environments?.[0]?.user_access_token;
@@ -174,13 +221,13 @@ const installApplication = async () => {
       router.push(`/app/${result.newApplicationId}`);
     }
   } catch (error) {
+    deployError.value = (error as Error).message || 'Failed to deploy application. Please try again.';
     $posthog().capture('app_creation_failed', {
       app_name: applicationSchema.value.display_name,
       error: (error as Error).message,
       org_id: selectedOrganization.value?.id
     });
     console.error('Failed to install application:', error);
-    // Here you could show a toast or other error notification
   } finally {
     isDeploying.value = false;
   }

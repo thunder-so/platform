@@ -4,7 +4,7 @@
       <UFormField label="Output Directory" description="The directory where compiled files are stored after running build scripts. E.g. `dist` or `build`." name="outputDir" class="grid grid-cols-3 gap-4">
         <UInput v-model="configuration.outputDir" placeholder="public/" class="w-96" size="lg" />
       </UFormField>
-      <UFormField label="Runtime" description="Select the version on Node.js you would like to use." name="buildProps.runtime_version" class="grid grid-cols-3 gap-4">
+      <UFormField label="Build Runtime" description="Select the version on Node.js you would like to use." name="buildProps.runtime_version" class="grid grid-cols-3 gap-4">
         <USelect
           v-model="configuration.buildProps.runtime_version"
           :items="runtimes"

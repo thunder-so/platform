@@ -60,25 +60,6 @@
               </UFormField>
 
               <UAlert v-if="scanError" color="warning" variant="subtle" :title="scanError" />
-
-              <!-- <UFormField label="AWS Account" description="Select the AWS Account where you want to deploy." class="grid grid-cols-3 gap-4">
-                <USelect 
-                  v-model="selectedProviderIdComputed" 
-                  :items="providerItems" 
-                  class="w-96" size="lg"
-                />
-              </UFormField>
-
-              <UFormField label="Region" description="The AWS region where you want to deploy." class="grid grid-cols-3 gap-4">
-                <USelect 
-                  v-model="regionComputed" 
-                  :items="awsRegions" 
-                  value-key="name" 
-                  option-attribute="label" 
-                  class="w-96" size="lg"
-                  :disabled="!applicationSchema.environments?.[0]"
-                />
-              </UFormField> -->
             </UForm>
           </div>
 
@@ -138,8 +119,6 @@ const {
   selectedBranchName,
   isLoading,
   serviceLoading,
-  providers,
-  selectedProviderId,
   loadError,
   scanError,
   selectedStackType,
@@ -148,22 +127,8 @@ const {
 } = useNewApplicationFlow();
 
 const appConfig = useAppConfig();
-const awsRegions = ref(appConfig.regions);
 
-const providerItems = computed(() => providers.value.map(p => ({ value: p.id, label: p.alias || undefined })));
 const branchItems = computed(() => branches.value.map(b => ({ value: b.name, label: b.name })));
-const selectedProviderIdComputed = computed({
-  get: () => selectedProviderId.value || undefined,
-  set: (value) => selectedProviderId.value = value || null
-});
-const regionComputed = computed({
-  get: () => applicationSchema.value.environments?.[0]?.region,
-  set: (value) => {
-    if (applicationSchema.value.environments?.[0] && value) {
-      applicationSchema.value.environments[0].region = value!;
-    }
-  }
-});
 const isNavigating = ref(false);
 const service = computed(() => applicationSchema.value.environments?.[0]?.services?.[0]);
 const form = ref();
