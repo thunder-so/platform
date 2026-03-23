@@ -79,37 +79,47 @@ async function updateBuildState(
   supabase: SupabaseClient,
   buildArn: string,
   buildStatus: BuildStatus,
+  command: 'build' | 'delete',
   buildLogs: any,
   buildEndTime?: string
 ): Promise<void> {
+  const table = command === 'build' ? 'builds' : 'destroys';
   const updateData: any = {
-    build_status: buildStatus,
-    build_log: buildLogs,
     updated_at: new Date().toISOString(),
   };
 
   if (buildEndTime) {
-    updateData.build_end = buildEndTime;
+    if (table === 'builds') {
+      updateData.build_end = buildEndTime;
+    }
+    updateData.updated_at = buildEndTime;
   }
 
-  // Try to update existing record
-  const { data, error } = await supabase
-    .from('builds')
+  if (table === 'builds') {
+    updateData.build_status = buildStatus;
+    updateData.build_log = buildLogs;
+  } else {
+    updateData.destroy_status = buildStatus;
+  }
+
+  const { error } = await supabase
+    .from(table)
     .update(updateData)
-    .eq('build_id', buildArn)
-    .select();
+    .eq(table === 'builds' ? 'build_id' : 'destroy_id', buildArn);
 
   if (error) {
-    throw new Error(`Failed to update build state: ${error.message}`);
+    throw new Error(`Failed to update ${table} state: ${error.message}`);
   }
 }
 
 async function fetchBuildContext(
   supabase: SupabaseClient,
-  buildArn: string
+  buildArn: string,
+  command: 'build' | 'delete'
 ): Promise<BuildContext | null> {
+  const table = command === 'build' ? 'builds' : 'destroys';
   const { data, error } = await supabase
-    .from('builds')
+    .from(table)
     .select(`
       *,
       service:services(*, 
@@ -119,11 +129,11 @@ async function fetchBuildContext(
         )
       )
     `)
-    .eq('build_id', buildArn)
+    .eq(table === 'builds' ? 'build_id' : 'destroy_id', buildArn)
     .maybeSingle();
 
   if (error) {
-    throw new Error(`Failed to fetch build context: ${error.message}`);
+    throw new Error(`Failed to fetch build context from ${table}: ${error.message}`);
   }
 
   return data as BuildContext;
@@ -282,21 +292,27 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
     }
 
     const buildArn = build.arn;
+    const buildArn = build.arn;
     if (!buildArn) {
       throw new Error(`Build ARN not found for ${buildId}`);
     }
+
+    // Extract command from CodeBuild environment variables
+    const commandVar = build.environment?.environmentVariables?.find(v => v.name === 'COMMAND');
+    const command = commandVar?.value === 'delete' ? 'delete' : 'build';
 
     // Update build state idempotently
     await updateBuildState(
       supabase,
       buildArn,
       buildStatus,
+      command,
       buildLogs,
       build.endTime?.toISOString()
     );
 
-    // Fetch build context
-    const buildContext = await fetchBuildContext(supabase, buildArn);
+    // Fetch build context from the correct table
+    const buildContext = await fetchBuildContext(supabase, buildArn, command);
     
     // If build context not found, skip processing (build not in database yet)
     if (!buildContext) {
@@ -311,33 +327,37 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
     // Handle failed builds
     if (FAILED_STATUSES.includes(buildStatus as any)) {
       console.log(`Build failed with status: ${buildStatus}`);
-      await sendNotification(supabase, 'APP_BUILD_FAILURE', buildContext, buildArn, buildStatus);
-      return { statusCode: 200, body: JSON.stringify({ message: 'Build failure processed' }) };
+      if (command === 'build') {
+        await sendNotification(supabase, 'APP_BUILD_FAILURE', buildContext, buildArn, buildStatus);
+      }
+      return { statusCode: 200, body: JSON.stringify({ message: 'Failure processed' }) };
     }
 
     // Handle successful builds
     if (buildStatus === 'SUCCEEDED') {
       console.log('Processing successful build');
       
-      const stackPrefix = `${application.name}-${service.name}-${environment.name}`;
-      const credentials = await getAwsCredentials(provider, application.organization_id);
-      
-      // Get stack outputs and update service
-      const outputs = await getStackOutputs(credentials, environment.region, `${stackPrefix}-stack`);
-      
-      await supabase
-        .from('services')
-        .update({
-          resources: outputs,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', service.id);
+      if (command === 'build') {
+        const stackPrefix = `${application.name}-${service.name}-${environment.name}`;
+        const credentials = await getAwsCredentials(provider, application.organization_id);
+        
+        // Get stack outputs and update service
+        const outputs = await getStackOutputs(credentials, environment.region, `${stackPrefix}-stack`);
+        
+        await supabase
+          .from('services')
+          .update({
+            resources: outputs,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', service.id);
 
-      // Trigger pipeline
-      // await triggerPipeline(credentials, environment.region, `${stackPrefix}-pipeline`);
-      
-      // Send success notification
-      await sendNotification(supabase, 'APP_BUILD_SUCCESS', buildContext, buildArn, undefined, outputs);
+        // Send success notification
+        await sendNotification(supabase, 'APP_BUILD_SUCCESS', buildContext, buildArn, undefined, outputs);
+      } else {
+        // Successful destruction
+        console.log('Processing successful destruction');
+      }
     }
 
     return {

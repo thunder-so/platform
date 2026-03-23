@@ -22,6 +22,7 @@ interface BuildContext {
       repo: string;
       branchOrRef: string;
     };
+    rootDir: string;
     application: string;
     service: string;
     environment: string;
@@ -242,6 +243,7 @@ export class PlatformLibrary {
           repo: service.repo as string,
           branchOrRef: service.branch as string,
         },
+        rootDir: service.rootDir as string,
         accessTokenSecretArn: accessTokenSecretArn,
       },
     };

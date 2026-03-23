@@ -13,6 +13,7 @@ interface RunnerRequestBase {
     application: string;
     environment: string;
     service: string;
+    rootDir: string;
     stackVersion?: string;
     accessTokenSecretArn?: string;
     eventTarget?: string;
@@ -74,7 +75,7 @@ function generateBuildSpec(
     ...context,
     metadata: {
       ...context.metadata,
-      contextDirectory: command === 'delete' ? '../' : '../code/',
+      contextDirectory: '../code/',
       buildProps: adjustedBuildProps
     }
   };
@@ -298,6 +299,7 @@ export const handler: SQSHandler = async (event) => {
         },
         buildspecOverride: buildSpec,
         environmentVariablesOverride: [
+          { name: 'COMMAND', value: command, type: EnvironmentVariableType.PLAINTEXT },
           { name: 'AWS_ACCOUNT', value: provider.account_id, type: EnvironmentVariableType.PLAINTEXT },
           { name: 'AWS_REGION', value: provider.region, type: EnvironmentVariableType.PLAINTEXT },
           { name: 'AWS_ACCESS_KEY_ID', value: credentials?.AccessKeyId, type: EnvironmentVariableType.PLAINTEXT },
