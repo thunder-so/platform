@@ -144,7 +144,7 @@ function generateBuildSpec(
   const stackName = `${context.metadata.application.substring(0, 7)}-${context.metadata.service.substring(0, 7)}-${context.metadata.environment.substring(0, 7)}`.substring(0, 23).toLowerCase();
 
   const cdkCommand = command === 'delete'
-    ? `./delstack -s ${stackName} -f -y -r ${context.metadata.env.region}`
+    ? `$PROJECT_PATH/delstack -s ${stackName} -f -y -r ${context.metadata.env.region}`
     : 'npx cdk deploy --app "npx tsx bin/' + binFile + '.ts" --require-approval never';
 
   let postBuildCommands = `- echo "${command === 'delete' ? 'Destroying' : 'Deploying'} infrastructure..."`;
