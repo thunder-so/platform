@@ -6,7 +6,7 @@
         <UButton icon="custom:thunderso" size="sm" color="neutral" variant="ghost" class="p-3" />
       </NuxtLink>
       
-      <UPopover
+      <!-- <UPopover
         v-if="!props.hideOrgSelector && organizationItems?.[0]?.length"
         v-model:open="isOrgPopoverOpen"
         mode="click"
@@ -45,7 +45,7 @@
             </NuxtLink>
           </div>
         </template>
-      </UPopover>
+      </UPopover> -->
     </template>
 
     <template #right>
