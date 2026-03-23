@@ -292,7 +292,6 @@ export const handler = async (event: CodeBuildStateChangeEvent, context: Context
     }
 
     const buildArn = build.arn;
-    const buildArn = build.arn;
     if (!buildArn) {
       throw new Error(`Build ARN not found for ${buildId}`);
     }
