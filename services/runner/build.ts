@@ -80,6 +80,21 @@ function generateBuildSpec(
     }
   };
 
+  if (command === 'delete') {
+    const stackName = `${context.metadata.application.substring(0, 7)}-${context.metadata.service.substring(0, 7)}-${context.metadata.environment.substring(0, 7)}`.substring(0, 23).toLowerCase() + '-stack';
+    return `
+      version: 0.2
+      phases:
+        install:
+          commands:
+            - export PROJECT_PATH="$PWD"
+            - DELSTACK_VERSION=$(curl -s https://api.github.com/repos/go-to-k/delstack/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\\1/') && curl -fsSL "https://github.com/go-to-k/delstack/releases/download/v\${DELSTACK_VERSION}/delstack_\${DELSTACK_VERSION}_Linux_x86_64.tar.gz" | tar -xz delstack
+        build:
+          commands:
+            - $PROJECT_PATH/delstack -s ${stackName} -f -y -r ${context.metadata.env.region}
+    `;
+  }
+
   // Build install commands
   let installCommands = '';
   
@@ -111,44 +126,12 @@ function generateBuildSpec(
             - echo "Build phase complete"`;
     }
   } else {
-    // Delete command
-    installCommands = `- echo "Starting destroy..."
-            - source ~/.bashrc
-            - export PROJECT_PATH="$PWD"`;
-    
-    if (needsDockerEnv) {
-      installCommands += `
-            - export DOCKER_BUILDKIT=1
-            - export DOCKER_CLI_EXPERIMENTAL=enabled`;
-    }
-    
-    installCommands += `
-            - echo "Cloning repository for destroy..."
-            - DELSTACK_VERSION=$(curl -s https://api.github.com/repos/go-to-k/delstack/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\\1/') && curl -fsSL "https://github.com/go-to-k/delstack/releases/download/v\${DELSTACK_VERSION}/delstack_\${DELSTACK_VERSION}_Linux_x86_64.tar.gz" | tar -xz delstack
-            - export GITHUB_TOKEN=$(aws secretsmanager get-secret-value --region ${context.metadata.env.region} --secret-id "${context.metadata.accessTokenSecretArn}" --query SecretString --output text)
-            - git clone --depth 1 --branch ${sourceProps?.branchOrRef} https://x-access-token:$GITHUB_TOKEN@github.com/${sourceProps?.owner}/${sourceProps?.repo}.git code`;
-
-    if (needsUserBuild) {
-      installCommands += `
-            - cd "code/${rootDir}"
-            - fnm use ${buildProps?.runtime_version || '24'}
-            - echo "Installing dependencies..."
-            - ${buildProps?.installcmd || 'npm install'}
-            - echo "Install phase complete"
-            - echo "Building application..."
-            - ${buildProps?.buildcmd || 'npm run build'}
-            - echo "Build phase complete"`;
-    }
+    installCommands = '';
   }
 
-  const stackName = `${context.metadata.application.substring(0, 7)}-${context.metadata.service.substring(0, 7)}-${context.metadata.environment.substring(0, 7)}`.substring(0, 23).toLowerCase();
+  const cdkCommand = 'npx cdk deploy --app "npx tsx bin/' + binFile + '.ts" --require-approval never';
 
-  const cdkCommand = command === 'delete'
-    ? `$PROJECT_PATH/delstack -s ${stackName} -f -y -r ${context.metadata.env.region}`
-    : 'npx cdk deploy --app "npx tsx bin/' + binFile + '.ts" --require-approval never';
-
-  let postBuildCommands = `- echo "${command === 'delete' ? 'Destroying' : 'Deploying'} infrastructure..."`;
-  
+  let postBuildCommands = `- echo "Deploying infrastructure..."`;
   
   postBuildCommands += `
             - echo '${JSON.stringify(adjustedContext)}' > cdk.context.json
