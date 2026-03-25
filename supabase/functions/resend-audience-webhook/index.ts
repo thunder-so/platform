@@ -17,9 +17,24 @@ Deno.serve(async (req) => {
       .eq('email', email)
       .single();
 
-    const fullName = user?.full_name || '';
-    const [firstName, ...lastNameParts] = fullName.split(' ');
-    const lastName = lastNameParts.join(' ');
+    const fullName = user?.full_name?.trim() || '';
+
+    let firstName: string;
+    let lastName: string = '';
+
+    if (fullName) {
+      // Normal case: split full_name
+      const parts = fullName.split(/\s+/);        // handles multiple spaces
+      firstName = parts[0];
+      lastName = parts.slice(1).join(' ');
+    } else {
+      // No full_name → use email handle as first_name
+      firstName = email.split('@')[0] || '';
+      lastName = '';
+    }
+
+    // Optional: Capitalize first letter of first_name (recommended for nicer display)
+    firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
 
     await fetch('https://api.resend.com/contacts', {
       method: 'POST',
@@ -29,8 +44,8 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         email,
-        first_name: firstName || '',
-        last_name: lastName || '',
+        first_name: firstName,
+        last_name: lastName,
       }),
     });
 
