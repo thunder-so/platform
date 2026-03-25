@@ -57,6 +57,7 @@ cd services && bun run deploy:sandbox:runner
 npx supabase functions deploy notification-webhook --project-ref $SANDBOX_SUPABASE_PROJECT_ID
 npx supabase functions deploy github-webhook --no-verify-jwt
 npx supabase functions deploy polar-webhook --no-verify-jwt
+npx supabase functions deploy resend-audience-webhook --no-verify-jwt
 ```
 
 ### Cross-Account Deployments

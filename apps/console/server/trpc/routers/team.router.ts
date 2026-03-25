@@ -185,6 +185,11 @@ export const teamRouter = router({
         throw new Error(`Error sending invitation: ${webhookError.message}`);
       }
 
+      // Sync to Resend audience
+      await supabaseAdmin.functions.invoke('resend-audience-webhook', {
+        body: { email: input.email }
+      });
+
       return { success: true, message: 'Invitation sent.' };
     }),
 

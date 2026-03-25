@@ -6,6 +6,7 @@ import { Polar } from '@polar-sh/sdk'
 import { TRPCError } from '@trpc/server'
 import { eq, and, isNull } from 'drizzle-orm'
 import { trackServerEvent } from '../../utils/analytics'
+import { createClient } from '@supabase/supabase-js'
 
 export const organizationsRouter = router({
   create: protectedProcedure
@@ -161,6 +162,16 @@ export const organizationsRouter = router({
           message: `Payment system error: ${errorMessage}`,
         })
       }
+
+      // Sync to Resend audience
+      const supabaseAdmin = createClient(
+        process.env.SUPABASE_URL!,
+        process.env.SUPABASE_SECRET_KEY!
+      );
+      
+      await supabaseAdmin.functions.invoke('resend-audience-webhook', {
+        body: { email: user.email }
+      });
 
       // 4. Return the new organization and checkout URL
       return {
