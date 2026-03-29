@@ -110,20 +110,20 @@
             <div class="flex flex-col col-span-2 text-left">
               <div class="leading-none">
                 <NuxtLink 
-                  :to="`https://github.com/${service?.owner}/${service?.repo}/tree/${service?.branch}`" 
+                  :to="`https://github.com/${service?.pipeline_metadata?.sourceProps?.owner}/${service?.pipeline_metadata?.sourceProps?.repo}/tree/${service?.pipeline_metadata?.sourceProps?.branchOrRef}`" 
                   target="_blank" 
                   class="inline-flex text-muted hover:text-white transition-colors"
                 >
                   <span class="flex items-center gap-1">
                     <Icon name="tabler:git-branch" class="w-4 h-4" />
-                    <span class="text-sm">{{service?.branch}}</span>
+                    <span class="text-sm">{{service?.pipeline_metadata?.sourceProps?.branchOrRef}}</span>
                   </span>
                 </NuxtLink>
               </div>
               <div class="leading-none">
                 <div class="flex flex-row gap-2">
                   <NuxtLink 
-                    :to="`https://github.com/${service?.owner}/${service?.repo}/commit/${activity.sourceDetails?.revisionId}`" 
+                    :to="`https://github.com/${service?.pipeline_metadata?.sourceProps?.owner}/${service?.pipeline_metadata?.sourceProps?.repo}/commit/${activity.sourceDetails?.revisionId}`" 
                     target="_blank" 
                     class="inline-flex text-muted hover:text-white transition-colors"
                   >

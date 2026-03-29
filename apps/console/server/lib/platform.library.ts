@@ -227,10 +227,25 @@ export class PlatformLibrary {
     service: Service,
     provider: Provider,
     accessTokenSecretArn: string,
-  ): BuildContext {    
+  ): BuildContext {
+    const pipelineMetadata = (service.pipeline_metadata as any) || {};
+    const cloudfrontMetadata = (service.cloudfront_metadata as any) || {};
+    
     const context: BuildContext = {
       metadata: {
         ...service.metadata,
+        ...(pipelineMetadata.sourceProps && { sourceProps: pipelineMetadata.sourceProps }),
+        ...(pipelineMetadata.buildProps && { buildProps: pipelineMetadata.buildProps }),
+        ...(service.stack_type === 'STATIC' && cloudfrontMetadata && {
+          headers: cloudfrontMetadata.headers,
+          rewrites: cloudfrontMetadata.rewrites,
+          redirects: cloudfrontMetadata.redirects,
+          allowCookies: cloudfrontMetadata.allowCookies,
+          allowHeaders: cloudfrontMetadata.allowHeaders,
+          errorPagePath: cloudfrontMetadata.errorPagePath,
+          denyQueryParams: cloudfrontMetadata.denyQueryParams,
+          allowQueryParams: cloudfrontMetadata.allowQueryParams,
+        }),
         env: {
           region: environment.region as string,
           account: provider.account_id as string,
@@ -238,11 +253,6 @@ export class PlatformLibrary {
         application: application.name,
         service: service.name,
         environment: environment.name,
-        sourceProps: {
-          owner: service.owner as string,
-          repo: service.repo as string,
-          branchOrRef: service.branch as string,
-        },
         rootDir: service.rootDir as string,
         accessTokenSecretArn: accessTokenSecretArn,
       },
@@ -263,13 +273,15 @@ export class PlatformLibrary {
 
       switch (service.stack_type) {
         case 'STATIC':
-          context.metadata.buildProps = { ...context.metadata.buildProps, environment: buildVars };
+          if (context.metadata.buildProps) {
+            context.metadata.buildProps = { ...context.metadata.buildProps, environment: buildVars };
+          }
           break;
         case 'LAMBDA':
-          context.metadata.functionProps = { variables: runtimeVars };
+          context.metadata.functionProps = { ...context.metadata.functionProps, variables: runtimeVars };
           break;
         case 'FARGATE':
-          context.metadata.serviceProps = { variables: runtimeVars };
+          context.metadata.serviceProps = { ...context.metadata.serviceProps, variables: runtimeVars };
           break;
       }
     }

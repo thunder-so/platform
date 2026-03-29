@@ -67,13 +67,13 @@
       </template>
       <UForm :state="{}" class="space-y-6">
         <UFormField label="Repository" description="Github account and repository." name="repo" class="grid grid-cols-3 gap-4">
-          <UInput :model-value="`${service.owner}/${service.repo}`" class="w-96" size="lg" disabled />
+          <UInput :model-value="`${service.pipeline_metadata?.sourceProps?.owner}/${service.pipeline_metadata?.sourceProps?.repo}`" class="w-96" size="lg" disabled />
         </UFormField>
         <UFormField label="Branch" description="Repository branch used for this deployment." name="branch" class="grid grid-cols-3 gap-4">
           <USelect v-model="selectedBranch" :items="branchItems" class="w-96" size="lg" />
         </UFormField>
         <UFormField label="Root Directory" description="The root directory of your project. For monorepos, enter the path to the project." name="rootDir" class="grid grid-cols-3 gap-4">
-          <RootDirInput v-model="selectedRootDir" :owner="service.owner ?? undefined" :repo="service.repo ?? undefined" :branch="service.branch ?? undefined" :installation-id="service.installation_id ?? undefined" />
+          <RootDirInput v-model="selectedRootDir" :owner="service.pipeline_metadata?.sourceProps?.owner ?? undefined" :repo="service.pipeline_metadata?.sourceProps?.repo ?? undefined" :branch="service.pipeline_metadata?.sourceProps?.branchOrRef ?? undefined" :installation-id="service.installation_id ?? undefined" />
         </UFormField>
       </UForm>
       <template #footer>
@@ -188,11 +188,11 @@ const isDirty = computed(() => isChanged.value || isAppChanged.value || isBranch
 useNavigationGuard(isDirty);
 
 const fetchBranches = async () => {
-  if (service.value?.owner && service.value?.repo && service.value?.installation_id) {
+  if (service.value?.pipeline_metadata?.sourceProps?.owner && service.value?.pipeline_metadata?.sourceProps?.repo && service.value?.installation_id) {
     try {
       const branchData = await $client.github.getBranches.query({
-        owner: service.value.owner,
-        repo: service.value.repo,
+        owner: service.value.pipeline_metadata.sourceProps.owner,
+        repo: service.value.pipeline_metadata.sourceProps.repo,
         installation_id: service.value.installation_id,
       });
       branches.value = branchData;
@@ -206,8 +206,8 @@ const fetchBranches = async () => {
 watch(service, async (newService) => {
   if (newService) {
     localServiceConfig.value = JSON.parse(JSON.stringify(newService));
-    if (newService.branch) {
-      selectedBranch.value = newService.branch;
+    if (newService.pipeline_metadata?.sourceProps?.branchOrRef) {
+      selectedBranch.value = newService.pipeline_metadata.sourceProps.branchOrRef;
     }
     selectedRootDir.value = newService.rootDir ?? '/';
     await fetchBranches();
@@ -231,14 +231,14 @@ watch(localServiceConfig, (newConfig) => {
 }, { deep: true });
 
 watch(selectedBranch, (newBranch) => {
-  if (service.value?.branch) {
-    isBranchChanged.value = newBranch !== service.value.branch || selectedRootDir.value !== (service.value.rootDir ?? '/');
+  if (service.value?.pipeline_metadata?.sourceProps?.branchOrRef) {
+    isBranchChanged.value = newBranch !== service.value.pipeline_metadata.sourceProps.branchOrRef || selectedRootDir.value !== (service.value.rootDir ?? '/');
   }
 });
 
 watch(selectedRootDir, (newRootDir) => {
   if (service.value) {
-    isBranchChanged.value = selectedBranch.value !== service.value.branch || newRootDir !== (service.value.rootDir ?? '/');
+    isBranchChanged.value = selectedBranch.value !== service.value.pipeline_metadata?.sourceProps?.branchOrRef || newRootDir !== (service.value.rootDir ?? '/');
   }
 });
 
@@ -273,7 +273,7 @@ const saveBranchOnly = async () => {
       if (!service.value?.id || !selectedBranch.value) return;
       await $client.services.updateService.mutate({
         service_id: service.value.id,
-        branch: selectedBranch.value,
+        branchOrRef: selectedBranch.value,
         rootDir: selectedRootDir.value,
       });
       $posthog().capture('branch_changed', {
@@ -296,7 +296,7 @@ const saveBranchAndRebuild = async () => {
       if (!service.value?.id || !selectedBranch.value) return;
       await $client.services.updateService.mutate({
         service_id: service.value.id,
-        branch: selectedBranch.value,
+        branchOrRef: selectedBranch.value,
         rootDir: selectedRootDir.value,
       });
       $posthog().capture('branch_changed', {

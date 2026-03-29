@@ -147,23 +147,23 @@
                       <div class="flex items-center gap-6">
                         <div class="flex items-center gap-2">
                           <NuxtLink 
-                            :to="`https://github.com/${service?.owner}/${service?.repo}`" 
+                            :to="`https://github.com/${service?.pipeline_metadata?.sourceProps?.owner}/${service?.pipeline_metadata?.sourceProps?.repo}`" 
                             target="_blank" 
                             class="text-muted hover:text-white transition-colors"
                           >
                             <span class="flex items-center justify-center gap-1">
                               <Icon name="tabler:brand-github" class="w-4 h-4 mt-1" />
-                              <span class="text-sm">{{service?.owner}} / {{service?.repo}}</span>
+                              <span class="text-sm">{{service?.pipeline_metadata?.sourceProps?.owner}} / {{service?.pipeline_metadata?.sourceProps?.repo}}</span>
                             </span>
                           </NuxtLink>
                           <NuxtLink 
-                            :to="`https://github.com/${service?.owner}/${service?.repo}/tree/${service?.branch}`" 
+                            :to="`https://github.com/${service?.pipeline_metadata?.sourceProps?.owner}/${service?.pipeline_metadata?.sourceProps?.repo}/tree/${service?.pipeline_metadata?.sourceProps?.branchOrRef}`" 
                             target="_blank" 
                             class="text-muted hover:text-white transition-colors"
                           >
                             <span class="flex items-center justify-center gap-1">
                               <Icon name="tabler:git-branch" class="w-4 h-4 mt-1" />
-                              <span class="text-sm">{{service?.branch}}</span>
+                              <span class="text-sm">{{service?.pipeline_metadata?.sourceProps?.branchOrRef}}</span>
                             </span>
                           </NuxtLink>
                         </div>

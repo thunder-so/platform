@@ -15,11 +15,10 @@ export type ApplicationDisplaySchema = {
       display_name: string;
       stack_type: string;
       stack_version: string;
-      owner: string;
-      repo: string;
-      branch: string;
       rootDir: string;
       metadata: any;
+      pipeline_metadata: any;
+      cloudfront_metadata: any;
       resources: any;
       environment_id: string;
       installation_id: number;
@@ -60,11 +59,10 @@ export const useOrganizations = () => {
               display_name,
               stack_type,
               stack_version,
-              owner,
-              repo,
-              branch,
               rootDir:root_dir,
               metadata,
+              pipeline_metadata,
+              cloudfront_metadata,
               resources,
               environment_id,
               installation_id,

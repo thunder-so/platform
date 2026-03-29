@@ -9,9 +9,9 @@
 
     <ClientOnly v-else-if="service">
       <div class="mt-4">
-        <ServiceConfigStatic v-if="service.stack_type === 'STATIC'" ref="serviceForm" :configuration="service.metadata" />
-        <ServiceConfigLambda v-else-if="service.stack_type === 'LAMBDA'" ref="serviceForm" :configuration="service.metadata" :has-dockerfile="scanData?.hasDockerfile" />
-        <ServiceConfigFargate v-else-if="service.stack_type === 'FARGATE'" ref="serviceForm" :configuration="service.metadata" :has-dockerfile="scanData?.hasDockerfile" />
+        <ServiceConfigStatic v-if="service.stack_type === 'STATIC'" ref="serviceForm" :service="service" />
+        <ServiceConfigLambda v-else-if="service.stack_type === 'LAMBDA'" ref="serviceForm" :service="service" :has-dockerfile="scanData?.hasDockerfile" />
+        <ServiceConfigFargate v-else-if="service.stack_type === 'FARGATE'" ref="serviceForm" :service="service" :has-dockerfile="scanData?.hasDockerfile" />
       </div>
       <EnvironmentVariables v-model="environmentVariablesModel" ref="envVarsForm" />
     </ClientOnly>

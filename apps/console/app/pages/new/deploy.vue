@@ -10,11 +10,11 @@
           <div>
             <h3 class="text-md font-medium">{{ applicationSchema.display_name }}</h3>
             <a 
-              :href="`https://github.com/${applicationSchema.environments?.[0]?.services?.[0]?.owner}/${applicationSchema.environments?.[0]?.services?.[0]?.repo}`"
+              :href="`https://github.com/${applicationSchema.environments?.[0]?.services?.[0]?.pipeline_metadata?.sourceProps?.owner}/${applicationSchema.environments?.[0]?.services?.[0]?.pipeline_metadata?.sourceProps?.repo}`"
               target="_blank"
               class="text-sm text-gray-600 hover:underline"
             >
-              {{ applicationSchema.environments?.[0]?.services?.[0]?.owner }}/{{ applicationSchema.environments?.[0]?.services?.[0]?.repo }}
+              {{ applicationSchema.environments?.[0]?.services?.[0]?.pipeline_metadata?.sourceProps?.owner }}/{{ applicationSchema.environments?.[0]?.services?.[0]?.pipeline_metadata?.sourceProps?.repo }}
             </a>
           </div>
         </div>
@@ -172,7 +172,7 @@ const handleAuthorize = async () => {
     setUat(userAccessToken);
     $posthog().capture('github_user_token_generated', {
       app_name: applicationSchema.value.display_name,
-      repo: `${applicationSchema.value.environments?.[0]?.services?.[0]?.owner}/${applicationSchema.value.environments?.[0]?.services?.[0]?.repo}`
+      repo: `${applicationSchema.value.environments?.[0]?.services?.[0]?.pipeline_metadata?.sourceProps?.owner}/${applicationSchema.value.environments?.[0]?.services?.[0]?.pipeline_metadata?.sourceProps?.repo}`
     });
     toast.add({
       title: 'GitHub authorization successful',
@@ -214,7 +214,7 @@ const installApplication = async () => {
         app_id: result.newApplicationId,
         app_name: applicationSchema.value.display_name,
         stack_type: applicationSchema.value.environments?.[0]?.services?.[0]?.stack_type,
-        repo: `${applicationSchema.value.environments?.[0]?.services?.[0]?.owner}/${applicationSchema.value.environments?.[0]?.services?.[0]?.repo}`,
+        repo: `${applicationSchema.value.environments?.[0]?.services?.[0]?.pipeline_metadata?.sourceProps?.owner}/${applicationSchema.value.environments?.[0]?.services?.[0]?.pipeline_metadata?.sourceProps?.repo}`,
         org_id: selectedOrganization.value?.id
       });
       clearApplicationSchema();

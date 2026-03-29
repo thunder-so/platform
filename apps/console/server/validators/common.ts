@@ -124,10 +124,28 @@ export const HeadersSchema = z.array(
   })
 );
 
-export const StaticServiceMetadataSchema = z.object({
-  debug: z.boolean(),
-  outputDir: z.string(),
-  buildProps: StaticBuildPropsSchema,
+export const SourcePropsSchema = z.object({
+  owner: z.string(),
+  repo: z.string(),
+  branchOrRef: z.string(),
+});
+
+export const StaticPipelineMetadataSchema = z.object({
+  sourceProps: SourcePropsSchema.optional(),
+  buildProps: StaticBuildPropsSchema.optional(),
+}).optional();
+
+export const LambdaPipelineMetadataSchema = z.object({
+  sourceProps: SourcePropsSchema.optional(),
+  buildProps: LambdaBuildPropsSchema.optional(),
+}).optional();
+
+export const FargatePipelineMetadataSchema = z.object({
+  sourceProps: SourcePropsSchema.optional(),
+  buildProps: FargateBuildPropsSchema.optional(),
+}).optional();
+
+export const CloudFrontMetadataSchema = z.object({
   redirects: RedirectsSchema,
   rewrites: RewritesSchema,
   headers: HeadersSchema,
@@ -136,9 +154,16 @@ export const StaticServiceMetadataSchema = z.object({
   allowCookies: z.array(z.string()),
   allowQueryParams: z.array(z.string()),
   denyQueryParams: z.array(z.string()),
+}).optional();
+
+export const StaticServiceMetadataSchema = z.object({
+  debug: z.boolean(),
+  outputDir: z.string(),
 });
 
 export type StaticServiceMetadata = z.infer<typeof StaticServiceMetadataSchema>;
+export type CloudFrontMetadata = z.infer<typeof CloudFrontMetadataSchema>;
+export type PipelineMetadata = z.infer<typeof StaticPipelineMetadataSchema> | z.infer<typeof LambdaPipelineMetadataSchema> | z.infer<typeof FargatePipelineMetadataSchema>;
 
 export const LambdaFunctionPropsSchema = z.object({
   dockerFile: z.string().optional(),
@@ -167,7 +192,6 @@ export const LambdaFunctionPropsSchema = z.object({
 
 export const LambdaServiceMetadataSchema = z.object({
   debug: z.boolean(),
-  buildProps: LambdaBuildPropsSchema,
   functionProps: LambdaFunctionPropsSchema,
 });
 
@@ -184,7 +208,6 @@ export const FargateServicePropsSchema = z.object({
 
 export const FargateServiceMetadataSchema = z.object({
   debug: z.boolean(),
-  buildProps: FargateBuildPropsSchema,
   serviceProps: FargateServicePropsSchema,
 });
 

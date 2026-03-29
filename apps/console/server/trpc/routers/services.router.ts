@@ -239,13 +239,32 @@ export const servicesRouter = router({
       z.object({
         service_id: z.string(),
         display_name: z.string().optional(),
-        branch: z.string().optional(),
         rootDir: z.string().optional(),
-        // any other fields on the core 'services' table
+        branchOrRef: z.string().optional(),
       })
     )
     .mutation(async ({ input }) => {
-      const { service_id, ...data } = input;
+      const { service_id, branchOrRef, ...data } = input;
+      
+      if (branchOrRef) {
+        const service = await db.query.services.findFirst({ where: eq(services.id, service_id) });
+        if (!service) throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found.' });
+        
+        const pipelineMetadata = (service.pipeline_metadata as any) || {};
+        const updatedPipelineMetadata = {
+          ...pipelineMetadata,
+          sourceProps: {
+            ...(pipelineMetadata.sourceProps || {}),
+            branchOrRef,
+          },
+        };
+        
+        return await db.update(services)
+          .set({ ...data, pipeline_metadata: updatedPipelineMetadata })
+          .where(eq(services.id, service_id))
+          .returning();
+      }
+      
       return await db.update(services).set(data).where(eq(services.id, service_id)).returning();
     }),
 
@@ -285,9 +304,51 @@ export const servicesRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found.' });
       }
 
-      // Trigger the build with the service ID
-      // const platformLib = new PlatformLibrary();
-      // await platformLib.triggerBuild(updatedService.id);
+      return updatedService;
+    }),
+
+  updateServicePipelineMetadata: protectedProcedure
+    .input(
+      z.object({
+        service_id: z.string(),
+        pipeline_metadata: z.any(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { service_id, pipeline_metadata } = input;
+
+      const [updatedService] = await db
+        .update(services)
+        .set({ pipeline_metadata, updated_at: new Date() })
+        .where(eq(services.id, service_id))
+        .returning();
+
+      if (!updatedService) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found.' });
+      }
+
+      return updatedService;
+    }),
+
+  updateServiceCloudfrontMetadata: protectedProcedure
+    .input(
+      z.object({
+        service_id: z.string(),
+        cloudfront_metadata: z.any(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { service_id, cloudfront_metadata } = input;
+
+      const [updatedService] = await db
+        .update(services)
+        .set({ cloudfront_metadata, updated_at: new Date() })
+        .where(eq(services.id, service_id))
+        .returning();
+
+      if (!updatedService) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found.' });
+      }
 
       return updatedService;
     }),

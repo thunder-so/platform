@@ -48,11 +48,10 @@ export const useApplications = () => {
               display_name,
               stack_type,
               stack_version,
-              owner,
-              repo,
-              branch,
               rootDir:root_dir,
               metadata,
+              pipeline_metadata,
+              cloudfront_metadata,
               resources,
               environment_id,
               installation_id

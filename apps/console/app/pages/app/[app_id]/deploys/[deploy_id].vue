@@ -70,7 +70,7 @@
                   >
                     <span class="flex items-center gap-1">
                       <Icon name="tabler:git-branch" class="w-4 h-4" />
-                      <span class="text-sm">{{service?.branch}}</span>
+                      <span class="text-sm">{{service?.pipeline_metadata?.sourceProps?.branchOrRef}}</span>
                     </span>
                   </NuxtLink>
                 </div>

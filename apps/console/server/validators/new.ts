@@ -6,6 +6,10 @@ import {
   StaticServiceMetadataSchema,
   LambdaServiceMetadataSchema,
   FargateServiceMetadataSchema,
+  StaticPipelineMetadataSchema,
+  LambdaPipelineMetadataSchema,
+  FargatePipelineMetadataSchema,
+  CloudFrontMetadataSchema,
   userAccessTokenSchema,
   serviceVariableSchema
 } from './common';
@@ -17,9 +21,6 @@ const serviceInputBaseSchema = z.object({
   name: z.string().regex(NAME_REGEX, NAME_ERROR_MESSAGE),
   display_name: z.string().min(1, 'Display name is required'),
   stack_version: z.string(),
-  owner: z.string().nullable(),
-  repo: z.string().nullable(),
-  branch: z.string().nullable(),
   installation_id: z.number().nullable(),
   rootDir: z.string().default('/'),
   service_variables: z.array(serviceVariableSchema).optional(),
@@ -29,14 +30,20 @@ export const serviceInputSchema = z.discriminatedUnion('stack_type', [
   serviceInputBaseSchema.extend({
     stack_type: z.literal('STATIC'),
     metadata: StaticServiceMetadataSchema,
+    pipeline_metadata: StaticPipelineMetadataSchema,
+    cloudfront_metadata: CloudFrontMetadataSchema,
   }),
   serviceInputBaseSchema.extend({
     stack_type: z.literal('LAMBDA'),
     metadata: LambdaServiceMetadataSchema,
+    pipeline_metadata: LambdaPipelineMetadataSchema,
+    cloudfront_metadata: z.undefined().optional(),
   }),
   serviceInputBaseSchema.extend({
     stack_type: z.literal('FARGATE'),
     metadata: FargateServiceMetadataSchema,
+    pipeline_metadata: FargatePipelineMetadataSchema,
+    cloudfront_metadata: z.undefined().optional(),
   }),
 ]);
 

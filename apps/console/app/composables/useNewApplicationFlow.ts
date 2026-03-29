@@ -9,70 +9,80 @@ import appConfig from '~/app.config';
 const lambdaRuntimes = (appConfig as any).lambdaRuntimes as Array<{ label: string; value: string }>;
 const lambdaRuntimeDefault = lambdaRuntimes[0]?.value;
 
-export const STACK_DEFAULTS: {
-  STATIC: StaticServiceMetadata,
-  LAMBDA: LambdaServiceMetadata,
-  FARGATE: FargateServiceMetadata,
-} = {
+export const STACK_DEFAULTS = {
   STATIC: {
-    debug: false,
-    outputDir: 'public/',
-    errorPagePath: '',
-    redirects: [],
-    rewrites: [],
-    headers: [],
-    allowHeaders: [],
-    allowCookies: [],
-    allowQueryParams: [],
-    denyQueryParams: [],
-    buildProps: {
-      runtime: 'nodejs',
-      runtime_version: '24',
-      installcmd: 'npm install',
-      buildcmd: 'npm run build',
+    metadata: {
+      debug: false,
+      outputDir: 'public/',
+    },
+    cloudfront_metadata: {
+      errorPagePath: '',
+      redirects: [],
+      rewrites: [],
+      headers: [],
+      allowHeaders: [],
+      allowCookies: [],
+      allowQueryParams: [],
+      denyQueryParams: [],
+    },
+    pipeline_metadata: {
+      buildProps: {
+        runtime: 'nodejs',
+        runtime_version: '24',
+        installcmd: 'npm install',
+        buildcmd: 'npm run build',
+      },
     },
   },
   LAMBDA: {
-    debug: false,
-    buildProps: {
-      runtime: 'nodejs',
-      runtime_version: '22',
-      installcmd: 'npm install',
-      buildcmd: 'npm run build',
-      include: [],
-      exclude: [],
+    metadata: {
+      debug: false,
+      functionProps: {
+        runtime: lambdaRuntimeDefault,
+        architecture: 'x86',
+        memorySize: 1792,
+        timeout: 30,
+        keepWarm: true,
+        codeDir: 'dist',
+        handler: 'index.handler',
+      },
     },
-    functionProps: {
-      runtime: lambdaRuntimeDefault,
-      architecture: 'x86',
-      memorySize: 1792,
-      timeout: 30,
-      keepWarm: true,
-      codeDir: 'dist',
-      handler: 'index.handler',
+    pipeline_metadata: {
+      buildProps: {
+        runtime: 'nodejs',
+        runtime_version: '22',
+        installcmd: 'npm install',
+        buildcmd: 'npm run build',
+        include: [],
+        exclude: [],
+      },
     },
   },
   FARGATE: {
-    debug: false,
-    buildProps: {
-      buildSystem: 'Nixpacks',
-      runtime_version: '20',
-      installcmd: 'npm install',
-      buildcmd: 'npm run build',
-      startcmd: 'npm start',
-      include: [],
-      exclude: [],
+    metadata: {
+      debug: false,
+      serviceProps: {
+        desiredCount: 1,
+        cpu: 256,
+        memorySize: 512,
+        port: 3000,
+        dockerFile: 'Dockerfile',
+        architecture: 'x86',
+      },
     },
-    serviceProps: {
-      desiredCount: 1,
-      cpu: 256,
-      memorySize: 512,
-      port: 3000,
-      dockerFile: 'Dockerfile',
-      architecture: 'x86',
-    }
+    pipeline_metadata: {
+      buildProps: {
+        buildSystem: 'Nixpacks',
+        runtime_version: '20',
+        installcmd: 'npm install',
+        buildcmd: 'npm run build',
+        startcmd: 'npm start',
+        include: [],
+        exclude: [],
+      },
+    },
   },
-};
+} as const;
 
 type ValidStackType = keyof typeof STACK_DEFAULTS;
 
@@ -153,8 +163,12 @@ export const useNewApplicationFlow = () => {
   watch(selectedBranchName, (newBranchName) => {
     if (!newBranchName) return;
     const service = applicationSchema.value.environments?.[0]?.services?.[0];
-    if (service) {
-      service.branch = newBranchName;
+    if (service && service.pipeline_metadata) {
+      if (!service.pipeline_metadata.sourceProps) {
+        service.pipeline_metadata.sourceProps = { owner: '', repo: '', branchOrRef: newBranchName };
+      } else {
+        service.pipeline_metadata.sourceProps.branchOrRef = newBranchName;
+      }
     }
   });
 
@@ -233,62 +247,76 @@ export const useNewApplicationFlow = () => {
       name: name,
       display_name: repo,
       installation_id: installation_id,
-      owner,
-      repo,
-      branch: selectedBranchName.value || 'main',
       rootDir: rootDir,
       service_variables: [],
     };
 
-    const applyBuildSettings = <T extends { buildProps: any }>(metadata: T) => {
+    const applyBuildSettings = (buildProps: any) => {
       if (scanData?.buildSettings) {
-        metadata.buildProps = { ...metadata.buildProps, ...scanData.buildSettings };
+        return { ...buildProps, ...scanData.buildSettings };
       } else {
         scanError.value = 'A package.json was not found in the selected directory.';
       }
-      return metadata;
+      return buildProps;
     };
 
     const getStaticService = () => {
-      const metadata = applyBuildSettings({ ...STACK_DEFAULTS.STATIC });
+      const defaults = STACK_DEFAULTS.STATIC;
+      const buildProps = applyBuildSettings(defaults.pipeline_metadata.buildProps);
+      
       return {
         ...baseService,
         stack_type: 'STATIC' as const,
         stack_version: appConfig.stackVersion,
-        metadata,
+        metadata: { ...defaults.metadata },
+        cloudfront_metadata: { ...defaults.cloudfront_metadata },
+        pipeline_metadata: {
+          sourceProps: { owner, repo, branchOrRef: selectedBranchName.value || 'main' },
+          buildProps,
+        },
       };
     };
 
     const getLambdaService = () => {
-      const metadata = applyBuildSettings({ ...STACK_DEFAULTS.LAMBDA });
+      const defaults = STACK_DEFAULTS.LAMBDA;
+      const buildProps = applyBuildSettings(defaults.pipeline_metadata.buildProps);
+      const functionProps = { ...defaults.metadata.functionProps };
 
       if (scanData?.hasDockerfile) {
-        metadata.functionProps = {
-          ...metadata.functionProps,
-          dockerFile: 'Dockerfile',
-        };
+        functionProps.dockerFile = 'Dockerfile';
       }
 
       return {
         ...baseService,
         stack_type: 'LAMBDA' as const,
         stack_version: appConfig.stackVersion,
-        metadata,
+        metadata: { debug: defaults.metadata.debug, functionProps },
+        pipeline_metadata: {
+          sourceProps: { owner, repo, branchOrRef: selectedBranchName.value || 'main' },
+          buildProps,
+        },
       };
     };
 
     const getFargateService = () => {
-      const metadata = applyBuildSettings({ ...STACK_DEFAULTS.FARGATE });
+      const defaults = STACK_DEFAULTS.FARGATE;
+      let buildProps = { ...defaults.pipeline_metadata.buildProps };
 
       if (scanData?.hasDockerfile) {
-        metadata.buildProps.buildSystem = 'Custom Dockerfile';
+        buildProps.buildSystem = 'Custom Dockerfile';
       }
+      
+      buildProps = applyBuildSettings(buildProps);
 
       return {
         ...baseService,
         stack_type: 'FARGATE' as const,
         stack_version: appConfig.stackVersion,
-        metadata,
+        metadata: { ...defaults.metadata },
+        pipeline_metadata: {
+          sourceProps: { owner, repo, branchOrRef: selectedBranchName.value || 'main' },
+          buildProps,
+        },
       };
     };
 

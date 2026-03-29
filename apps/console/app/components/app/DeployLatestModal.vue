@@ -53,9 +53,9 @@ const { data: commits, pending, error } = useAsyncData(
   () => {
     if (!props.service) return Promise.resolve([])
     return $client.services.getCommits.query({
-      owner: props.service.owner as string,
-      repo: props.service.repo as string,
-      branch: props.service.branch as string,
+      owner: props.service.pipeline_metadata?.sourceProps?.owner as string,
+      repo: props.service.pipeline_metadata?.sourceProps?.repo as string,
+      branch: props.service.pipeline_metadata?.sourceProps?.branchOrRef as string,
       installation_id: props.service.installation_id as number
     })
   }, { immediate: true }

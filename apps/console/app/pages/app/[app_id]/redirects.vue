@@ -16,7 +16,7 @@
       </p>
     </template>
 
-    <UForm v-if="state" :schema="StaticServiceMetadataSchema" :state="state" class="space-y-8" ref="form" :validate-on="['blur']">
+    <UForm v-if="state" :schema="CloudFrontMetadataSchema" :state="state" class="space-y-8" ref="form" :validate-on="['blur']">
       <!-- REDIRECTS -->
       <div>
         <h3 class="text-md font-medium text-gray-900 dark:text-white">Redirects</h3>
@@ -78,7 +78,7 @@
 import { ref, watch } from 'vue';
 import { isEqual } from 'lodash-es';
 import type { Form } from '#ui/types';
-import { type StaticServiceMetadata, StaticServiceMetadataSchema } from '~~/server/validators/common';
+import { type CloudFrontMetadata, CloudFrontMetadataSchema } from '~~/server/validators/common';
 import { useNavigationGuard } from '~/composables/useNavigationGuard';
 
 definePageMeta({
@@ -90,26 +90,26 @@ const { $client } = useNuxtApp();
 const toast = useToast();
 const { isSaving, saveOnly, saveAndRebuild } = useSaveAndRebuild();
 
-const state = ref<StaticServiceMetadata | null>(null);
+const state = ref<CloudFrontMetadata | null>(null);
 const isDirty = ref(false);
-const form = ref<Form<StaticServiceMetadata> | null>(null);
+const form = ref<Form<CloudFrontMetadata> | null>(null);
 
 useNavigationGuard(isDirty);
 
 watch(service, (newVal) => {
   if (newVal && newVal.stack_type === 'STATIC') {
     const metadata = {
-      ...newVal.metadata,
-      redirects: newVal.metadata?.redirects || [],
-      rewrites: newVal.metadata?.rewrites || [],
+      ...newVal.cloudfront_metadata,
+      redirects: newVal.cloudfront_metadata?.redirects || [],
+      rewrites: newVal.cloudfront_metadata?.rewrites || [],
     };
     state.value = JSON.parse(JSON.stringify(metadata));
 
     watch(state, (newState) => {
       const originalMetadata = {
-        ...newVal.metadata,
-        redirects: newVal.metadata?.redirects || [],
-        rewrites: newVal.metadata?.rewrites || [],
+        ...newVal.cloudfront_metadata,
+        redirects: newVal.cloudfront_metadata?.redirects || [],
+        rewrites: newVal.cloudfront_metadata?.rewrites || [],
       };
       isDirty.value = !isEqual(originalMetadata, newState);
     }, { deep: true });
@@ -144,10 +144,9 @@ const saveMetadata = async () => {
   if (!service.value || !state.value || !form.value) return;
   
   await form.value.validate();
-  await $client.services.updateServiceMetadata.mutate({
+  await $client.services.updateServiceCloudfrontMetadata.mutate({
     service_id: service.value.id,
-    stack_type: 'STATIC',
-    metadata: state.value
+    cloudfront_metadata: state.value
   });
   isDirty.value = false;
 };

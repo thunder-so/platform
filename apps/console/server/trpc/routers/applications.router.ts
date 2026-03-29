@@ -103,11 +103,10 @@ export const applicationsRouter = router({
           stack_version: service.stack_version,
           installation_id: service.installation_id,
           environment_id: newEnvironment.id,
-          owner: service.owner,
-          repo: service.repo,
-          branch: service.branch,
           rootDir: service.rootDir ?? '/',
           metadata: service.metadata,
+          pipeline_metadata: service.pipeline_metadata,
+          cloudfront_metadata: service.cloudfront_metadata,
         }).returning();
 
         if (!newService) {

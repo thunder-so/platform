@@ -9,12 +9,6 @@
         <UInput v-model="configuration.functionProps.dockerFile" placeholder="Dockerfile" class="w-96" size="lg" />
       </UFormField>
 
-      <UFormField v-if="deploymentMode === 'Zip'" label="Install Command" description="Command to install dependencies." name="buildProps.installcmd" class="grid grid-cols-3 gap-4">
-        <UInput v-model="configuration.buildProps.installcmd" placeholder="npm install" class="w-96" size="lg" />
-      </UFormField>
-      <UFormField v-if="deploymentMode === 'Zip'" label="Build Command" description="Command to build your project." name="buildProps.buildcmd" class="grid grid-cols-3 gap-4">
-        <UInput v-model="configuration.buildProps.buildcmd" placeholder="npm run build" class="w-96" size="lg" />
-      </UFormField>
       <UFormField v-if="deploymentMode === 'Zip'" label="Runtime" description="Runtime for the function." name="functionProps.runtime" class="grid grid-cols-3 gap-4">
         <USelect v-model="configuration.functionProps.runtime" :items="lambdaRuntimes" class="w-96" size="lg" />
       </UFormField>
@@ -36,7 +30,7 @@
 
 <script setup lang="ts">
 import type { PropType } from 'vue';
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 import { z } from 'zod';
 import { LambdaServiceMetadataSchema } from '~~/server/validators/common';
 import appConfig from '~/app.config';
@@ -51,26 +45,7 @@ const lambdaRuntimes = (appConfig as any).lambdaRuntimes as Array<{ label: strin
 const lambdaRuntimeValues = lambdaRuntimes.map((r) => r.value);
 const deploymentMode = ref<'Container' | 'Zip'>(configuration.functionProps?.dockerFile ? 'Container' : 'Zip');
 if (!configuration.functionProps) configuration.functionProps = {} as any;
-if (!configuration.buildProps) configuration.buildProps = {} as any;
 if (!configuration.functionProps.runtime) configuration.functionProps.runtime = lambdaRuntimeValues[0];
-
-// Bidirectional sync between functionProps.runtime and buildProps.runtime_version
-watch(() => configuration.functionProps.runtime, (newRuntime) => {
-  if (newRuntime && configuration.buildProps) {
-    const version = newRuntime.replace('nodejs', '').replace('.x', '');
-    configuration.buildProps.runtime_version = version;
-  }
-});
-
-// Initial sync: if buildProps.runtime_version exists, sync to functionProps.runtime
-if (configuration.buildProps?.runtime_version) {
-  const matchingRuntime = lambdaRuntimeValues.find(runtime => 
-    runtime.replace('nodejs', '').replace('.x', '') === configuration.buildProps.runtime_version
-  );
-  if (matchingRuntime) {
-    configuration.functionProps.runtime = matchingRuntime;
-  }
-}
 
 const errors = computed(() => form.value?.errors || []);
 

@@ -17,7 +17,7 @@
       </p>
     </template>
 
-    <UForm v-if="state" :schema="StaticServiceMetadataSchema" :state="state" class="space-y-4" ref="form" :validate-on="['blur']">
+    <UForm v-if="state" :schema="CloudFrontMetadataSchema" :state="state" class="space-y-4" ref="form" :validate-on="['blur']">
       <div v-for="(header, index) in state.headers" :key="index" class="grid grid-cols-12 gap-x-2 items-start">
         <UFormField :name="`headers.${index}.path`" class="col-span-3">
           <UInput v-model="header.path" placeholder="Path Pattern (e.g., /*)" class="w-full" />
@@ -54,7 +54,7 @@
 import { ref, watch } from 'vue';
 import { isEqual } from 'lodash-es';
 import type { Form } from '#ui/types';
-import { type StaticServiceMetadata, StaticServiceMetadataSchema } from '~~/server/validators/common';
+import { type CloudFrontMetadata, CloudFrontMetadataSchema } from '~~/server/validators/common';
 import { useNavigationGuard } from '~/composables/useNavigationGuard';
 
 definePageMeta({
@@ -66,8 +66,8 @@ const { $client } = useNuxtApp();
 const toast = useToast();
 const { isSaving, saveOnly, saveAndRebuild } = useSaveAndRebuild();
 
-const form = ref<Form<StaticServiceMetadata> | null>(null);
-const state = ref<StaticServiceMetadata | null>(null);
+const form = ref<Form<CloudFrontMetadata> | null>(null);
+const state = ref<CloudFrontMetadata | null>(null);
 const isDirty = ref(false);
 
 useNavigationGuard(isDirty);
@@ -75,12 +75,12 @@ useNavigationGuard(isDirty);
 watch(service, (newVal) => {
   if (newVal && newVal.stack_type === 'STATIC') {
     // Ensure headers is an array
-    const metadata = { ...newVal.metadata, headers: newVal.metadata?.headers || [] };
+    const metadata = { ...newVal.cloudfront_metadata, headers: newVal.cloudfront_metadata?.headers || [] };
     state.value = JSON.parse(JSON.stringify(metadata));
 
     // Begin watching for changes only after state is initialized
     watch(state, (newState) => {
-      const originalMetadata = { ...newVal.metadata, headers: newVal.metadata?.headers || [] };
+      const originalMetadata = { ...newVal.cloudfront_metadata, headers: newVal.cloudfront_metadata?.headers || [] };
       isDirty.value = !isEqual(originalMetadata, newState);
     }, { deep: true });
   }
@@ -105,10 +105,9 @@ const saveHeaders = async () => {
   if (!service.value || !state.value || !form.value) return;
   
   await form.value.validate();
-  await $client.services.updateServiceMetadata.mutate({
+  await $client.services.updateServiceCloudfrontMetadata.mutate({
     service_id: service.value.id,
-    stack_type: 'STATIC',
-    metadata: state.value
+    cloudfront_metadata: state.value
   });
   isDirty.value = false;
 };
