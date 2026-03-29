@@ -57,6 +57,11 @@
             </div>
           </div>
           
+          <!-- Theme switcher -->
+          <div class="px-2 py-2 border-b border-default mb-2">
+            <ColorModeSwitcher />
+          </div>
+          
           <NuxtLink to="/profile" class="flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-muted rounded-md">
             <Icon name="tabler:user-hexagon" class="w-4 h-4" />
             Account Settings

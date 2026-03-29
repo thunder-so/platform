@@ -1,5 +1,5 @@
 <template>
-  <div class="text-white font-mono rounded-md h-full flex flex-col">
+  <div class="text-highlighted font-mono rounded-md h-full flex flex-col">
     <div ref="logsContainer" class="border border-muted rounded p-4 overflow-y-auto flex-grow">
       <div v-if="loading && logEvents.length === 0" class="flex items-center justify-center h-full">
         <p>Loading logs...</p>

@@ -186,7 +186,7 @@ onMounted(async () => {
 @reference "~/assets/css/main.css";
 
 .step {
-  @apply w-8 h-8 text-xs rounded-full flex items-center justify-center text-white mr-3 bg-muted;
+  @apply w-8 h-8 text-xs rounded-full flex items-center justify-center text-highlighted mr-3 bg-muted;
 }
 
 .step.active {

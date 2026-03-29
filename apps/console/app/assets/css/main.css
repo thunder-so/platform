@@ -5,21 +5,92 @@
   --font-sans: 'Inter', sans-serif;
 }
 
+/* Light theme (Anthropic/Claude brand colors) */
+:root {
+  --ui-bg: #FAF9F6;              /* Base: Anthropic Light */
+  --ui-bg-muted: #F3F1EA;        /* Muted: Subtle contrast for sections */
+  --ui-bg-accented: #EAE8DF;     /* Accented: For hover states, skeletons */
+  --ui-bg-elevated: #FFFFFF;     /* Elevated: For cards/modals to pop */
+  
+  --ui-border: #E1DFD1;          /* Visible borders */
+  --ui-border-accented: #B0AEA5; /* Mid Gray for focused borders */
+  
+  --ui-text: #141413;            /* Anthropic Dark */
+  --ui-text-muted: #6B6960;      /* Accessible secondary text */
+  --ui-text-highlighted: #000000;
+  
+  --ui-primary: #D97757;         /* Anthropic Orange (Primary Accent) */
+  --ui-secondary: #EAE8DF;
+  
+  --ui-success: #528B5E;
+  --ui-info: #6A9BCC;
+  --ui-warning: #C69026;
+  --ui-error: #B33939;
+
+  /* Map neutral shades to warm Claude tones for consistent utility classes */
+  --color-neutral-50: #F8F7F2;
+  --color-neutral-100: #F3F1EA;
+  --color-neutral-200: #EAE8DF;
+  --color-neutral-300: #E1DFD1;
+  --color-neutral-400: #B0AEA5;
+  --color-neutral-500: #6B6960;
+  --color-neutral-600: #4B4A44;
+  --color-neutral-700: #2A2A29;
+  --color-neutral-800: #1F1F1E;
+  --color-neutral-900: #141413;
+}
+
+/* Dark theme (Original colors) */
 .dark {
   --ui-bg: hsl(224 71% 4%);
+  --ui-bg-muted: hsl(224 71% 8%);
+  --ui-bg-accented: hsl(225, 74%, 9%);
+  --ui-bg-elevated: hsl(224 71% 15%);
+  
   --ui-border: hsl(216 34% 17%);
+  --ui-border-accented: hsl(216 34% 25%);
+  
+  --ui-text: #FFFFFF;
+  --ui-text-muted: hsl(216 10% 70%);
+  --ui-text-highlighted: #FFFFFF;
+  
   --ui-primary: hsl(210 40% 98%);
   --ui-secondary: #facc15;
+  
   --ui-success: var(--ui-color-success-400);
   --ui-info: hsla(276, 68%, 63%, 1.00);
   --ui-warning: var(--ui-color-warning-400);
   --ui-error: var(--ui-color-error-400);
+
+  /* Restore cool neutrals for dark mode (Slate-inspired) */
+  --color-neutral-50: #f8fafc;
+  --color-neutral-100: #f1f5f9;
+  --color-neutral-200: #e2e8f0;
+  --color-neutral-300: #cbd5e1;
+  --color-neutral-400: #94a3b8;
+  --color-neutral-500: #64748b;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1e293b;
+  --color-neutral-900: #0f172a;
+}
+
+@layer base {
+  :root {
+    color: var(--ui-text);
+    background-color: var(--ui-bg);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--ui-text-highlighted);
+    font-weight: 600;
+  }
 }
 
 .app-container {
   display: flex;
   height: 100vh;
-  color: #fff;
 }
 
 .sidebar {

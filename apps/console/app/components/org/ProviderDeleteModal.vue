@@ -8,7 +8,7 @@
         <UAlert icon="tabler:alert-triangle" color="warning" variant="outline" title="This provider is currently associated with one or more active applications and cannot be deleted." />
       </div>
       <div v-else>
-        <p class="text-sm text-muted">Are you sure you want to delete the provider <code class="text-white">{{ provider.alias }}</code>?</p>
+        <p class="text-sm text-muted">Are you sure you want to delete the provider <code class="text-highlighted font-semibold">{{ provider.alias }}</code>?</p>
         <p class="text-sm text-muted">This action cannot be undone.</p>
         <UFormField label="Enter delete to confirm" name="providerId" class="mt-4">
           <UInput v-model="confirmationInput" class="w-full" />

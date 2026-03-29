@@ -3,35 +3,6 @@
     <!-- <UCard>
       <ClientOnly><pre>{{ applicationSchema }}</pre></ClientOnly>
     </UCard> -->
-    <!-- <UCard>
-      <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-          <Icon name="tabler:brand-github" class="w-6 h-6 text-gray-700" />
-          <div>
-            <h3 class="text-md font-medium">{{ applicationSchema.display_name }}</h3>
-            <a 
-              :href="`https://github.com/${applicationSchema.environments?.[0]?.services?.[0]?.pipeline_metadata?.sourceProps?.owner}/${applicationSchema.environments?.[0]?.services?.[0]?.pipeline_metadata?.sourceProps?.repo}`"
-              target="_blank"
-              class="text-sm text-gray-600 hover:underline"
-            >
-              {{ applicationSchema.environments?.[0]?.services?.[0]?.pipeline_metadata?.sourceProps?.owner }}/{{ applicationSchema.environments?.[0]?.services?.[0]?.pipeline_metadata?.sourceProps?.repo }}
-            </a>
-          </div>
-        </div>
-        
-        <Icon name="tabler:arrow-right" class="w-5 h-5 text-gray-400" />
-        
-        <div class="flex items-center space-x-3">
-          <Icon name="tabler:brand-aws" class="w-6 h-6 text-orange-500" />
-          <div>
-            <h3 class="text-md font-medium">{{ applicationSchema.environments?.[0]?.provider?.alias }}</h3>
-            <p class="text-sm text-gray-600">
-              {{ applicationSchema.environments?.[0]?.provider?.account_id }} • {{ applicationSchema.environments?.[0]?.region }}
-            </p>
-          </div>
-        </div>
-      </div>
-    </UCard> -->
     <UCard>
       <template #header>
         <h1>AWS Account and Region</h1>
@@ -78,7 +49,7 @@
 
         <div v-if="!hasUat" class="space-y-4">
           <p class="text-sm text-muted-foreground">Authorization with GitHub involves granting permissions to Thunder to issue an access token on your behalf.</p> 
-          <p class="text-sm text-muted-foreground">The access token will be used by AWS CodePipeline to watch for changes in your Github repository via webhook. Find out more at our <NuxtLink class="text-white hover:underline" to="https://www.thunder.so/docs/aws">documentation</NuxtLink>.</p>
+          <p class="text-sm text-muted-foreground">The access token will be used by AWS CodePipeline to watch for changes in your Github repository via webhook. Find out more at our <NuxtLink class="text-highlighted hover:underline" to="https://www.thunder.so/docs/aws">documentation</NuxtLink>.</p>
           <UButton 
             size="lg"
             icon="tabler:brand-github"

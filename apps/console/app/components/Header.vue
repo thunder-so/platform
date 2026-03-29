@@ -138,6 +138,11 @@
                 <span class="text-xs text-muted truncate">{{ user?.email }}</span>
               </div>
             </div>
+
+            <!-- Theme switcher -->
+            <div class="px-2 py-2 border-b border-default mb-2">
+              <ColorModeSwitcher />
+            </div>
             
             <template v-for="item in userMenuItems" :key="item.label">
               <NuxtLink v-if="item.to" :to="item.to" @click="isUserPopoverOpen = false" class="flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-muted rounded-md">
@@ -164,6 +169,10 @@
           link: 'p-3'
         }"
       />
+      <div class="px-2 py-4 border-t border-default mt-auto">
+        <p class="text-xs font-medium text-muted mb-2 px-2 uppercase tracking-wider">Appearance</p>
+        <ColorModeSwitcher />
+      </div>
     </template>
   </UHeader> 
 </template>

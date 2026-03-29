@@ -4,7 +4,7 @@
     :ui="{ footer: 'justify-end' }"
   >
     <template #body>
-      <p class="text-sm text-muted">Are you sure you want to delete the domain <code class="text-white">{{ domain.domain }}</code>?</p>
+      <p class="text-sm text-muted">Are you sure you want to delete the domain <code class="text-highlighted font-semibold">{{ domain.domain }}</code>?</p>
       <p class="text-sm text-muted mt-2">This will soft-delete the domain record and may take a few moments to propagate.</p>
       <UFormField label="Enter `delete` to confirm" name="domainId" class="mt-4">
         <UInput v-model="confirmationInput" class="w-full" />

@@ -112,7 +112,7 @@
                 <NuxtLink 
                   :to="`https://github.com/${service?.pipeline_metadata?.sourceProps?.owner}/${service?.pipeline_metadata?.sourceProps?.repo}/tree/${service?.pipeline_metadata?.sourceProps?.branchOrRef}`" 
                   target="_blank" 
-                  class="inline-flex text-muted hover:text-white transition-colors"
+                  class="inline-flex text-muted hover:text-highlighted transition-colors"
                 >
                   <span class="flex items-center gap-1">
                     <Icon name="tabler:git-branch" class="w-4 h-4" />
@@ -125,7 +125,7 @@
                   <NuxtLink 
                     :to="`https://github.com/${service?.pipeline_metadata?.sourceProps?.owner}/${service?.pipeline_metadata?.sourceProps?.repo}/commit/${activity.sourceDetails?.revisionId}`" 
                     target="_blank" 
-                    class="inline-flex text-muted hover:text-white transition-colors"
+                    class="inline-flex text-muted hover:text-highlighted transition-colors"
                   >
                     <span class="flex items-center gap-1">
                       <Icon name="tabler:git-commit" class="w-4 h-4" />

@@ -5,7 +5,7 @@
     :ui="{ footer: 'justify-end' }"
   >
     <template #body>
-      <p class="text-sm text-muted">Are you sure you want to delete the workspace <code class="text-white">{{ org.name }}</code>?</p> 
+      <p class="text-sm text-muted">Are you sure you want to delete the workspace <code class="text-highlighted font-semibold">{{ org.name }}</code>?</p> 
       <p class="text-sm text-muted">This action cannot be undone.</p>
       <UFormField label="Enter `delete` to confirm" name="orgId" class="mt-4">
           <UInput v-model="confirmationInput" class="w-full" />

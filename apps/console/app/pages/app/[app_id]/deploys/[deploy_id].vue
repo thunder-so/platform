@@ -66,7 +66,7 @@
                   <NuxtLink 
                     :to="deployData.pipeline_metadata?.entityUrl" 
                     target="_blank" 
-                    class="inline-flex text-muted hover:text-white transition-colors"
+                    class="inline-flex text-muted hover:text-highlighted transition-colors"
                   >
                     <span class="flex items-center gap-1">
                       <Icon name="tabler:git-branch" class="w-4 h-4" />
@@ -78,7 +78,7 @@
                   <NuxtLink 
                     :to="deployData.pipeline_metadata?.revisionUrl" 
                     target="_blank" 
-                    class="inline-flex text-muted hover:text-white transition-colors"
+                    class="inline-flex text-muted hover:text-highlighted transition-colors"
                   >
                     <span class="flex items-center gap-1">
                       <Icon name="tabler:git-commit" class="w-4 h-4" />

@@ -45,7 +45,7 @@
           >
             <template #header="{ collapsed }">
               <div v-if="!collapsed" class="flex justify-between w-full px-1">
-                <span class="text-md font-bold text-foreground truncate">
+                <span class="text-md font-bold text-highlighted truncate">
                   {{ selectedOrganization?.name }}
                 </span>
                 <div>
@@ -115,11 +115,17 @@
           </template>
 
           <template #footer>
-            <div class="flex items-center gap-2">
-              <UAvatar :src="user?.user_metadata?.avatar_url" :alt="user?.user_metadata?.full_name" size="sm" />
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium truncate">{{ user?.user_metadata?.full_name }}</p>
-                <p class="text-xs text-muted truncate">{{ user?.email }}</p>
+            <div class="flex flex-col w-full gap-4">
+              <div class="flex items-center gap-2">
+                <UAvatar :src="user?.user_metadata?.avatar_url" :alt="user?.user_metadata?.full_name" size="sm" />
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium truncate">{{ user?.user_metadata?.full_name }}</p>
+                  <p class="text-xs text-muted truncate">{{ user?.email }}</p>
+                </div>
+              </div>
+              
+              <div class="pt-4 border-t border-default">
+                <ColorModeSwitcher />
               </div>
             </div>
           </template>

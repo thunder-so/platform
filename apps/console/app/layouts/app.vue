@@ -31,7 +31,7 @@
           >
             <template #header="{ collapsed }">
               <div v-if="!collapsed" class="flex items-center gap-2 px-1">
-                <span class="flex-1 text-md font-bold text-foreground truncate">
+                <span class="flex-1 text-md font-bold text-highlighted truncate">
                   {{ applicationSchema?.display_name }}
                 </span>
               </div>
@@ -70,7 +70,7 @@
                   {{ applicationSchema?.display_name }}
                 </NuxtLink>
                 <Icon name="tabler:chevron-right" class="w-3 h-3" />
-                <span class="text-foreground">{{ pageTitle }}</span>
+                <span class="text-highlighted">{{ pageTitle }}</span>
               </div>
             </div>
           </template>
@@ -89,16 +89,21 @@
           </template>
 
           <template #footer>
-            <UButton
-              :to="`/org/${applicationSchema?.organization_id}`"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              leading-icon="tabler:arrow-left"
-              block
-            >
-              Back to Org
-            </UButton>
+            <div class="flex flex-col w-full gap-4">
+              <UButton
+                :to="`/org/${applicationSchema?.organization_id}`"
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                leading-icon="tabler:arrow-left"
+                block
+              >
+                Back to Org
+              </UButton>
+              <div class="pt-4 border-t border-default">
+                <ColorModeSwitcher />
+              </div>
+            </div>
           </template>
         </UDashboardSidebar>
 
@@ -122,7 +127,7 @@
                       {{ applicationSchema?.display_name }}
                     </NuxtLink>
                     <Icon name="tabler:chevron-right" class="w-3 h-3" />
-                    <span class="text-foreground">{{ pageTitle }}</span>
+                    <span class="text-highlighted">{{ pageTitle }}</span>
                   </div>
                 </div>
               </template>
@@ -139,7 +144,7 @@
                   <div class="flex justify-between">
                     <div>
                       <div class="flex items-center gap-4 mb-4">
-                        <h1 class="text-xl tracking-tight text-zinc-100">{{ applicationSchema?.display_name }}</h1>
+                        <h1 class="text-xl tracking-tight text-highlighted">{{ applicationSchema?.display_name }}</h1>
                         <UBadge v-if="service?.stack_type === 'STATIC'" color="success" variant="subtle">STATIC</UBadge>
                         <UBadge v-if="service?.stack_type === 'LAMBDA'" color="secondary" variant="subtle">LAMBDA</UBadge>
                         <UBadge v-if="service?.stack_type === 'FARGATE'" color="info" variant="subtle">FARGATE</UBadge>
@@ -149,7 +154,7 @@
                           <NuxtLink 
                             :to="`https://github.com/${service?.pipeline_metadata?.sourceProps?.owner}/${service?.pipeline_metadata?.sourceProps?.repo}`" 
                             target="_blank" 
-                            class="text-muted hover:text-white transition-colors"
+                            class="text-muted hover:text-highlighted transition-colors"
                           >
                             <span class="flex items-center justify-center gap-1">
                               <Icon name="tabler:brand-github" class="w-4 h-4 mt-1" />
@@ -159,7 +164,7 @@
                           <NuxtLink 
                             :to="`https://github.com/${service?.pipeline_metadata?.sourceProps?.owner}/${service?.pipeline_metadata?.sourceProps?.repo}/tree/${service?.pipeline_metadata?.sourceProps?.branchOrRef}`" 
                             target="_blank" 
-                            class="text-muted hover:text-white transition-colors"
+                            class="text-muted hover:text-highlighted transition-colors"
                           >
                             <span class="flex items-center justify-center gap-1">
                               <Icon name="tabler:git-branch" class="w-4 h-4 mt-1" />
@@ -177,7 +182,7 @@
                           v-if="serviceUrl" 
                           :to="serviceUrl" 
                           target="_blank" 
-                          class="inline-block text-sm text-muted hover:text-white transition-colors"
+                          class="inline-block text-sm text-muted hover:text-highlighted transition-colors"
                         >
                           <span class="flex items-center gap-1">
                             <Icon name="tabler:link" class="w-4 h-4 mt-1 text-muted" />
