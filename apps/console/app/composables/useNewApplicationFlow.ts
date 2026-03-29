@@ -17,13 +17,13 @@ export const STACK_DEFAULTS = {
     },
     cloudfront_metadata: {
       errorPagePath: '',
-      redirects: [],
-      rewrites: [],
-      headers: [],
-      allowHeaders: [],
-      allowCookies: [],
-      allowQueryParams: [],
-      denyQueryParams: [],
+      redirects: [] as Array<{ value: string; name: string; path: string }>,
+      rewrites: [] as Array<{ value: string; name: string; path: string }>,
+      headers: [] as Array<{ value: string; name: string; path: string }>,
+      allowHeaders: [] as string[],
+      allowCookies: [] as string[],
+      allowQueryParams: [] as string[],
+      denyQueryParams: [] as string[],
     },
     pipeline_metadata: {
       buildProps: {
@@ -39,7 +39,7 @@ export const STACK_DEFAULTS = {
       debug: false,
       functionProps: {
         runtime: lambdaRuntimeDefault,
-        architecture: 'x86',
+        architecture: 'x86' as const,
         memorySize: 1792,
         timeout: 30,
         keepWarm: true,
@@ -53,8 +53,8 @@ export const STACK_DEFAULTS = {
         runtime_version: '22',
         installcmd: 'npm install',
         buildcmd: 'npm run build',
-        include: [],
-        exclude: [],
+        include: [] as string[],
+        exclude: [] as string[],
       },
     },
   },
@@ -67,22 +67,22 @@ export const STACK_DEFAULTS = {
         memorySize: 512,
         port: 3000,
         dockerFile: 'Dockerfile',
-        architecture: 'x86',
+        architecture: 'x86' as const,
       },
     },
     pipeline_metadata: {
       buildProps: {
-        buildSystem: 'Nixpacks',
+        buildSystem: 'Nixpacks' as const,
         runtime_version: '20',
         installcmd: 'npm install',
         buildcmd: 'npm run build',
         startcmd: 'npm start',
-        include: [],
-        exclude: [],
+        include: [] as string[],
+        exclude: [] as string[],
       },
     },
   },
-} as const;
+};
 
 type ValidStackType = keyof typeof STACK_DEFAULTS;
 
@@ -280,7 +280,7 @@ export const useNewApplicationFlow = () => {
     const getLambdaService = () => {
       const defaults = STACK_DEFAULTS.LAMBDA;
       const buildProps = applyBuildSettings(defaults.pipeline_metadata.buildProps);
-      const functionProps = { ...defaults.metadata.functionProps };
+      const functionProps: any = { ...defaults.metadata.functionProps };
 
       if (scanData?.hasDockerfile) {
         functionProps.dockerFile = 'Dockerfile';
@@ -300,7 +300,7 @@ export const useNewApplicationFlow = () => {
 
     const getFargateService = () => {
       const defaults = STACK_DEFAULTS.FARGATE;
-      let buildProps = { ...defaults.pipeline_metadata.buildProps };
+      let buildProps: any = { ...defaults.pipeline_metadata.buildProps };
 
       if (scanData?.hasDockerfile) {
         buildProps.buildSystem = 'Custom Dockerfile';
@@ -322,12 +322,12 @@ export const useNewApplicationFlow = () => {
 
     switch (stackType) {
       case 'LAMBDA':
-        return getLambdaService();
+        return getLambdaService() as unknown as ServiceInputSchema;
       case 'FARGATE':
-        return getFargateService();
+        return getFargateService() as unknown as ServiceInputSchema;
       case 'STATIC':
       default:
-        return getStaticService();
+        return getStaticService() as unknown as ServiceInputSchema;
     }
   };
 

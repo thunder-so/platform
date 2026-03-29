@@ -1,8 +1,8 @@
 <template>
   <div v-if="service">
-    <ServiceConfigStatic v-if="service.stack_type === 'STATIC'" ref="serviceForm" :configuration="service.metadata" />
-    <ServiceConfigLambda v-else-if="service.stack_type === 'LAMBDA'" ref="serviceForm" :configuration="service.metadata" />
-    <ServiceConfigFargate v-else-if="service.stack_type === 'FARGATE'" ref="serviceForm" :configuration="service.metadata" />
+    <ServiceConfigStatic v-if="service.stack_type === 'STATIC'" ref="serviceForm" :service="service" />
+    <ServiceConfigLambda v-else-if="service.stack_type === 'LAMBDA'" ref="serviceForm" :service="service" />
+    <ServiceConfigFargate v-else-if="service.stack_type === 'FARGATE'" ref="serviceForm" :service="service" />
   </div>
 </template>
 

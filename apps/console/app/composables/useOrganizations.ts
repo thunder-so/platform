@@ -59,7 +59,7 @@ export const useOrganizations = () => {
               display_name,
               stack_type,
               stack_version,
-              rootDir:root_dir,
+              root_dir,
               metadata,
               pipeline_metadata,
               cloudfront_metadata,
@@ -77,9 +77,20 @@ export const useOrganizations = () => {
 
       if (error) throw error
 
+      const mappedData = (data || []).map(app => ({
+        ...app,
+        environments: app.environments.map(env => ({
+          ...env,
+          services: env.services.map((svc: any) => ({
+            ...svc,
+            rootDir: svc.root_dir
+          }))
+        }))
+      }));
+
       applicationsByOrganization.value = {
         ...applicationsByOrganization.value,
-        [orgId]: (data || []) as ApplicationDisplaySchema[]
+        [orgId]: mappedData as ApplicationDisplaySchema[]
       }
 
       return applicationsByOrganization.value[orgId]
