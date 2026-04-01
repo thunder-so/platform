@@ -5,7 +5,7 @@
     "": {
       "name": "@thunderso/platform",
       "devDependencies": {
-        "@thunder-so/thunder": "github:thunder-so/thunder#v1.1.0",
+        "@thunder-so/thunder": "github:thunder-so/thunder#v1.3.1",
         "supabase": "^2.62.5",
         "turbo": "^2.6.1",
       },
@@ -1114,7 +1114,7 @@
 
     "@tanstack/vue-virtual": ["@tanstack/vue-virtual@3.13.12", "", { "dependencies": { "@tanstack/virtual-core": "3.13.12" }, "peerDependencies": { "vue": "^2.7.0 || ^3.0.0" } }, "sha512-vhF7kEU9EXWXh+HdAwKJ2m3xaOnTTmgcdXcF2pim8g4GvI7eRrk2YRuV5nUlZnd/NbCIX4/Ja2OZu5EjJL06Ww=="],
 
-    "@thunder-so/thunder": ["@thunder-so/thunder@github:thunder-so/thunder#a8536f0", { "dependencies": { "aws-cdk-lib": "2.221.0", "chalk": "^5.4.0", "commander": "^13.0.0", "constructs": "^10.4.2", "fs-extra": "^11.3.2", "inquirer": "^12.3.0", "ora": "^8.2.0", "shelljs": "^0.10.0", "source-map-support": "^0.5.21", "yaml": "^2.8.1" }, "bin": { "th": "cli/th.mjs", "th-init": "cli/th-init.mjs", "th-deploy": "cli/th-deploy.mjs", "th-destroy": "cli/th-destroy.mjs" } }, "thunder-so-thunder-a8536f0"],
+    "@thunder-so/thunder": ["@thunder-so/thunder@github:thunder-so/thunder#6a8ac17", { "dependencies": { "aws-cdk-lib": "2.221.0", "chalk": "^5.4.0", "commander": "^13.0.0", "constructs": "^10.4.2", "fs-extra": "^11.3.2", "inquirer": "^12.3.0", "ora": "^8.2.0", "shelljs": "^0.10.0", "source-map-support": "^0.5.21", "yaml": "^2.8.1" }, "bin": { "th": "cli/th.mjs" } }, "thunder-so-thunder-6a8ac17"],
 
     "@trpc/client": ["@trpc/client@11.7.1", "", { "peerDependencies": { "@trpc/server": "11.7.1", "typescript": ">=5.7.2" } }, "sha512-uOnAjElKI892/U6aQMcBHYs3x7mme3Cvv1F87ytBL56rBvs7+DyK7r43zgaXKf13+GtPEI6ex5xjVUfyDW8XcQ=="],
 

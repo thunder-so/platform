@@ -1,4 +1,5 @@
-import { Cdk, Nuxt, type NuxtProps } from "@thunder-so/thunder";
+// import { Cdk, Nuxt, type NuxtProps } from "@thunder-so/thunder";
+import { Cdk, Nuxt, type NuxtProps } from "../../../../thunder/";
 
 const nuxtApp: NuxtProps = {
   env: {
@@ -59,8 +60,26 @@ const nuxtApp: NuxtProps = {
   allowHeaders: ['authorization', 'content-type'],
 };
 
-new Nuxt(
-    new Cdk.App(),
-    `${nuxtApp.application}-${nuxtApp.service}-${nuxtApp.environment}-stack`,
-    nuxtApp
+const stack = new Nuxt(
+  new Cdk.App(),
+  `${nuxtApp.application}-${nuxtApp.service}-${nuxtApp.environment}-stack`,
+  nuxtApp
 );
+
+stack.lambdaRole.addToPrincipalPolicy(new Cdk.aws_iam.PolicyStatement({
+  sid: 'AssumeRoleOnCustomerAccount',
+  actions: ['sts:AssumeRole'],
+  resources: ['arn:aws:iam::*:role/thunder-*'],
+}));
+
+stack.lambdaRole.addToPrincipalPolicy(new Cdk.aws_iam.PolicyStatement({
+  sid: 'ReadLogsOnCustomerAccount',
+  actions: ['logs:GetLogEvents', 'logs:DescribeLogStreams', 'logs:DescribeLogGroups'],
+  resources: ['arn:aws:logs:*:*:log-group:*'],
+}));
+
+stack.lambdaRole.addToPrincipalPolicy(new Cdk.aws_iam.PolicyStatement({
+  sid: 'SendSQSMessage',
+  actions: ['sqs:SendMessage'],
+  resources: ['arn:aws:sqs:us-east-1:047719662375:RunnerQueue-sandbox.fifo'],
+}));
