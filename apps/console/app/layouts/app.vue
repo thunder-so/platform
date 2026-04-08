@@ -145,8 +145,8 @@
                     <div>
                       <div class="flex items-center gap-4 mb-4">
                         <h1 class="text-xl tracking-tight text-highlighted">{{ applicationSchema?.display_name }}</h1>
-                        <UBadge v-if="service?.stack_type === 'STATIC'" color="success" variant="subtle">STATIC</UBadge>
-                        <UBadge v-if="service?.stack_type === 'LAMBDA'" color="secondary" variant="subtle">LAMBDA</UBadge>
+                        <UBadge v-if="service?.stack_type === 'STATIC'" color="secondary" variant="subtle">STATIC</UBadge>
+                        <UBadge v-if="service?.stack_type === 'LAMBDA'" color="success" variant="subtle">LAMBDA</UBadge>
                         <UBadge v-if="service?.stack_type === 'FARGATE'" color="info" variant="subtle">FARGATE</UBadge>
                       </div>
                       <div class="flex items-center gap-6">

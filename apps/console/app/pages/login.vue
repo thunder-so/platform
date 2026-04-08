@@ -30,8 +30,15 @@
       <div>
         <p class="text-sm text-muted-foreground mt-4">
           By signing up, you agree to our
-          <NuxtLink to="https://thunder.so/terms" class="text-primary hover:underline">Terms of Service</NuxtLink>.
+          <NuxtLink to="https://www.thunder.so/legal/terms" class="text-primary hover:underline">Terms of Service</NuxtLink>.
         </p>
+      </div>
+
+      <div class="mt-4">
+        <NuxtLink to="https://www.thunder.so" class="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1">
+          <Icon name="i-heroicons-arrow-left" class="h-4 w-4" />
+          Back to website
+        </NuxtLink>
       </div>
     </div>
   </div>

@@ -130,9 +130,9 @@ const columns = [
     header: 'Type',
     cell: ({ row }: any) => {
       if (row.original.metadata.target_type === 'Organization') {
-        return h(UBadge, { color: 'primary', variant: 'subtle' }, () => 'ORGANIZATION')
+        return h(UBadge, { color: 'info', variant: 'subtle' }, () => 'ORGANIZATION')
       } else if (row.original.metadata.target_type === 'User') {
-        return h(UBadge, { color: 'secondary', variant: 'subtle' }, () => 'USER')
+        return h(UBadge, { color: 'primary', variant: 'subtle' }, () => 'USER')
       }
     }
   },

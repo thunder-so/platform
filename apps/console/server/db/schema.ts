@@ -12,7 +12,6 @@ export const pricingTypeEnum = pgEnum('PRICING_TYPE', ['one_time', 'recurring'])
 export const pricingPlanIntervalEnum = pgEnum('PRICING_PLAN_INTERVAL', ['month', 'year']);
 export const subscriptionStatusEnum = pgEnum('SUBSCRIPTION_STATUS', ['trialing', 'active', 'canceled', 'incomplete', 'incomplete_expired', 'past_due', 'unpaid', 'paused']);
 export const variableTypeEnum = pgEnum('VARIABLE_TYPE', ['build', 'runtime']);
-export const buildSystemEnum = pgEnum('BUILD_SYSTEM', ['Nixpacks', 'Buildpacks', 'Custom Dockerfile']);
 export const notificationTypeEnum = pgEnum('NOTIFICATION_TYPE', ['APP_BUILD_SUCCESS', 'APP_BUILD_FAILURE', 'APP_DEPLOY_SUCCESS', 'APP_DEPLOY_FAILURE']);
 export const notificationChannelEnum = pgEnum('NOTIFICATION_CHANNEL', ['EMAIL', 'SLACK', 'DISCORD', 'IN_APP']);
 

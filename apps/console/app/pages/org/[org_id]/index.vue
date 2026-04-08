@@ -95,9 +95,9 @@ const columns = [
     header: 'Type',
     cell: ({ row }: any) => {
       if (row.getValue('stack_type') === 'STATIC') {
-        return h(UBadge, { color: 'success', variant: 'subtle' }, () => 'STATIC')
+        return h(UBadge, { color: 'secondary', variant: 'subtle' }, () => 'STATIC')
       } else if (row.getValue('stack_type') === 'LAMBDA') {
-        return h(UBadge, { color: 'secondary', variant: 'subtle' }, () => 'LAMBDA')
+        return h(UBadge, { color: 'success', variant: 'subtle' }, () => 'LAMBDA')
       } else if (row.getValue('stack_type') === 'FARGATE') {
         return h(UBadge, { color: 'info', variant: 'subtle' }, () => 'FARGATE')
       }

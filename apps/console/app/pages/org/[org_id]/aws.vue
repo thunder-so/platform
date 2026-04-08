@@ -216,7 +216,7 @@ const columns = [
       if (row.original.stack_name) {
         return h(UBadge, { color: 'success', variant: 'subtle' }, () => 'CLOUDFORMATION')
       } else if (row.original.access_key_id) {
-        return h(UBadge, { color: 'secondary', variant: 'subtle' }, () => 'ACCESS KEY')
+        return h(UBadge, { color: 'info', variant: 'subtle' }, () => 'ACCESS KEY')
       }
     }
   },
