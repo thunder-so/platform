@@ -59,14 +59,7 @@ async function handleInstallationEvent(payload: any) {
 
     switch (action) {
         case 'created': {
-            const { error } = await supabase
-                .from('installations')
-                .upsert({
-                    installation_id: installationId,
-                    metadata: installation,
-                });
-            if (error) throw error;
-            console.log(`✅ Successfully created installation: ${installationId}`)
+            console.log(`⚠️ Skipping 'created' event - handled by OAuth flow: ${installationId}`)
             break;
         }
         case 'deleted': {
