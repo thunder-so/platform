@@ -216,6 +216,61 @@ export const handler: SQSHandler = async (event) => {
       if (!['STATIC', 'LAMBDA', 'FARGATE'].includes(stackType)) {
         throw new Error(`Invalid stack type: ${stackType}. Must be STATIC, LAMBDA, or FARGATE`);
       }
+
+      const metadata = props?.metadata;
+      if (!metadata) {
+        throw new Error('Missing metadata in request body');
+      }
+
+      if (!metadata.application || !metadata.service || !metadata.environment) {
+        throw new Error('Missing required metadata fields: application, service, environment');
+      }
+
+      if (!metadata.env?.account || !metadata.env?.region) {
+        throw new Error('Missing required env fields: account, region');
+      }
+
+      if (!metadata.rootDir) {
+        throw new Error('Missing required metadata field: rootDir');
+      }
+
+      switch (stackType) {
+        case 'STATIC':
+          if (!metadata.outputDir) {
+            throw new Error('STATIC requires outputDir in metadata');
+          }
+          break;
+        case 'LAMBDA':
+          // buildSystem is Console-only, not in library types - cast to any
+          const lambdaBuildSystem = (metadata as any).buildProps?.buildSystem;
+          const hasDockerFile = metadata.functionProps?.dockerFile;
+          const hasZipConfig = metadata.functionProps?.runtime && metadata.functionProps?.codeDir && metadata.functionProps?.handler;
+          if (lambdaBuildSystem === 'Container' && !hasDockerFile) {
+            throw new Error('LAMBDA Container mode requires functionProps.dockerFile');
+          }
+          if (lambdaBuildSystem === 'Zip' && !hasZipConfig) {
+            throw new Error('LAMBDA Zip mode requires functionProps.runtime, codeDir, and handler');
+          }
+          if (!lambdaBuildSystem && !hasDockerFile && !hasZipConfig) {
+            throw new Error('LAMBDA requires buildProps.buildSystem (Zip/Container) or functionProps');
+          }
+          break;
+        case 'FARGATE':
+          // buildSystem is Console-only, not in library types - cast to any
+          const buildSystem = (metadata as any).buildProps?.buildSystem;
+          const hasServiceDockerFile = metadata.serviceProps?.dockerFile;
+          if (buildSystem === 'Dockerfile' && !hasServiceDockerFile) {
+            throw new Error('FARGATE with Dockerfile requires serviceProps.dockerFile');
+          }
+          if (buildSystem === 'Nixpacks' && !(metadata as any).buildProps) {
+            throw new Error('FARGATE with Nixpacks requires buildProps with buildSystem');
+          }
+          if (!buildSystem && !hasServiceDockerFile) {
+            throw new Error('FARGATE requires either buildProps.buildSystem or serviceProps.dockerFile');
+          }
+          break;
+      }
+
       console.log('Stack type:', stackType);
 
       let credentials;

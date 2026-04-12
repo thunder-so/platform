@@ -74,23 +74,24 @@ export const StaticBuildPropsSchema = z.object({
 });
 
 export const LambdaBuildPropsSchema = z.object({
-  runtime: z.string().min(1, 'Runtime is required.'),
+  buildSystem: z.enum(['Zip', 'Container']),
+  runtime: z.string().optional(),
   runtime_version: z.string().optional(),
   installcmd: z.string().optional(),
   buildcmd: z.string().optional(),
   include: z.array(z.string()).optional(),
   exclude: z.array(z.string()).optional(),
-});
+}).describe('Lambda build configuration (Zip or Container mode)');
 
 export const FargateBuildPropsSchema = z.object({
-  buildSystem: z.enum(['Nixpacks', 'Custom Dockerfile']),
+  buildSystem: z.enum(['Nixpacks', 'Dockerfile']),
   runtime_version: z.string().optional(),
   installcmd: z.string().optional(),
   buildcmd: z.string().optional(),
   startcmd: z.string().optional(),
   include: z.array(z.string()).optional(),
   exclude: z.array(z.string()).optional(),
-});
+}).describe('Fargate Nixpacks mode configuration (ignored when buildSystem is Dockerfile)');
 
 export const RedirectsSchema = z.array(
   z.object({ 

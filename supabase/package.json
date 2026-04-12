@@ -13,7 +13,6 @@
     "deploy:sandbox:resend-audience-webhook": "supabase functions deploy resend-audience-webhook --project-ref $SANDBOX_SUPABASE_PROJECT_ID"
   },
   "dependencies": {
-    "@supabase/supabase-js": "2.86.0",
     "@octokit/webhooks": "14.1.3",
     "react": "18.2.0",
     "react-email": "2.1.0",

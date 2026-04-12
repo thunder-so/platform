@@ -278,10 +278,18 @@ export class PlatformLibrary {
           }
           break;
         case 'LAMBDA':
-          context.metadata.functionProps = { ...context.metadata.functionProps, variables: runtimeVars };
+          if (context.metadata.functionProps) {
+            context.metadata.functionProps = { ...context.metadata.functionProps, variables: runtimeVars };
+          } else {
+            context.metadata.functionProps = { variables: runtimeVars };
+          }
           break;
         case 'FARGATE':
-          context.metadata.serviceProps = { ...context.metadata.serviceProps, variables: runtimeVars };
+          if (context.metadata.serviceProps) {
+            context.metadata.serviceProps = { ...context.metadata.serviceProps, variables: runtimeVars };
+          } else {
+            context.metadata.serviceProps = { variables: runtimeVars };
+          }
           break;
       }
     }

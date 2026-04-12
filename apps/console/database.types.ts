@@ -1002,7 +1002,7 @@ export type Database = {
         | "FAULT"
         | "TIMED_OUT"
         | "STOPPED"
-      BUILD_SYSTEM: "Nixpacks" | "Buildpacks" | "Custom Dockerfile"
+      BUILD_SYSTEM: "Nixpacks" | "Buildpacks" | "Dockerfile"
       NOTIFICATION_CHANNEL: "EMAIL" | "SLACK" | "DISCORD" | "IN_APP"
       NOTIFICATION_TYPE:
         | "APP_BUILD_SUCCESS"
@@ -1168,7 +1168,7 @@ export const Constants = {
         "TIMED_OUT",
         "STOPPED",
       ],
-      BUILD_SYSTEM: ["Nixpacks", "Buildpacks", "Custom Dockerfile"],
+      BUILD_SYSTEM: ["Nixpacks", "Buildpacks", "Dockerfile"],
       NOTIFICATION_CHANNEL: ["EMAIL", "SLACK", "DISCORD", "IN_APP"],
       NOTIFICATION_TYPE: [
         "APP_BUILD_SUCCESS",

@@ -5,7 +5,8 @@
     "": {
       "name": "@thunderso/platform",
       "devDependencies": {
-        "@thunder-so/thunder": "github:thunder-so/thunder#v1.3.1",
+        "@supabase/supabase-js": "2.86.0",
+        "@thunder-so/thunder": "github:thunder-so/thunder#v1.4.7",
         "supabase": "^2.62.5",
         "turbo": "^2.6.1",
       },
@@ -72,7 +73,6 @@
         "@aws-sdk/client-codebuild": "3.936.0",
         "@aws-sdk/client-codepipeline": "3.936.0",
         "@aws-sdk/client-sts": "3.936.0",
-        "@supabase/supabase-js": "2.86.0",
         "aws-cloudformation-custom-resource": "5.0.0",
         "aws-lambda": "^1.0.7",
         "constructs": "10.4.2",
@@ -107,7 +107,6 @@
         "@octokit/webhooks": "14.1.3",
         "@react-email/components": "0.0.15",
         "@react-email/render": "0.0.12",
-        "@supabase/supabase-js": "2.86.0",
         "react": "18.2.0",
         "react-email": "2.1.0",
       },
@@ -1114,7 +1113,7 @@
 
     "@tanstack/vue-virtual": ["@tanstack/vue-virtual@3.13.12", "", { "dependencies": { "@tanstack/virtual-core": "3.13.12" }, "peerDependencies": { "vue": "^2.7.0 || ^3.0.0" } }, "sha512-vhF7kEU9EXWXh+HdAwKJ2m3xaOnTTmgcdXcF2pim8g4GvI7eRrk2YRuV5nUlZnd/NbCIX4/Ja2OZu5EjJL06Ww=="],
 
-    "@thunder-so/thunder": ["@thunder-so/thunder@github:thunder-so/thunder#6a8ac17", { "dependencies": { "aws-cdk-lib": "2.221.0", "chalk": "^5.4.0", "commander": "^13.0.0", "constructs": "^10.4.2", "fs-extra": "^11.3.2", "inquirer": "^12.3.0", "ora": "^8.2.0", "shelljs": "^0.10.0", "source-map-support": "^0.5.21", "yaml": "^2.8.1" }, "bin": { "th": "cli/th.mjs" } }, "thunder-so-thunder-6a8ac17"],
+    "@thunder-so/thunder": ["@thunder-so/thunder@github:thunder-so/thunder#902dc83", { "dependencies": { "aws-cdk-lib": "2.221.0", "chalk": "^5.4.0", "commander": "^13.0.0", "constructs": "^10.4.2", "fs-extra": "^11.3.2", "inquirer": "^12.3.0", "ora": "^8.2.0", "shelljs": "^0.10.0", "source-map-support": "^0.5.21", "yaml": "^2.8.1" }, "bin": { "th": "cli/th.mjs" } }, "thunder-so-thunder-902dc83", "sha512-dTEi62LOzp7hPCHjSU9pxkcQpi469su4v4A+EBzmFk6Hu8Ct3xILPva7ioBscy5Sdrm57saoOU+gkAxm/NzLKw=="],
 
     "@trpc/client": ["@trpc/client@11.7.1", "", { "peerDependencies": { "@trpc/server": "11.7.1", "typescript": ">=5.7.2" } }, "sha512-uOnAjElKI892/U6aQMcBHYs3x7mme3Cvv1F87ytBL56rBvs7+DyK7r43zgaXKf13+GtPEI6ex5xjVUfyDW8XcQ=="],
 

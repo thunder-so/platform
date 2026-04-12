@@ -1,10 +1,10 @@
 <template>
   <ClientOnly>
   <UForm ref="form" v-if="service && service.stack_type === 'FARGATE'" :state="service" :validate-on="['input']" class="space-y-6">
-      <UFormField label="Build System" description="Select a custom Dockerfile or use a build system to autogenerate." name="pipeline_metadata.buildProps.buildSystem" class="grid grid-cols-3 gap-4">
-        <USelect v-model="(service.pipeline_metadata!.buildProps as any).buildSystem" :items="['Nixpacks', 'Custom Dockerfile']" class="w-96" size="lg" />
+      <UFormField label="Build System" description="Select a Dockerfile or use a build system to autogenerate." name="pipeline_metadata.buildProps.buildSystem" class="grid grid-cols-3 gap-4">
+        <USelect v-model="(service.pipeline_metadata!.buildProps as any).buildSystem" :items="['Nixpacks', 'Dockerfile']" class="w-96" size="lg" />
       </UFormField>
-      <UFormField v-if="(service.pipeline_metadata!.buildProps as any).buildSystem === 'Custom Dockerfile'" label="Docker File" description="The path to your Dockerfile." name="metadata.serviceProps.dockerFile" class="grid grid-cols-3 gap-4">
+      <UFormField v-if="(service.pipeline_metadata!.buildProps as any).buildSystem === 'Dockerfile'" label="Docker File" description="The path to your Dockerfile." name="metadata.serviceProps.dockerFile" class="grid grid-cols-3 gap-4">
         <UInput v-model="(service.metadata as any).serviceProps.dockerFile" placeholder="Dockerfile" class="w-96" size="lg" />
       </UFormField>
       <UFormField v-if="(service.pipeline_metadata!.buildProps as any).buildSystem === 'Nixpacks'" label="Install Command" description="This is the script that installs the dependencies in your package.json file." name="pipeline_metadata.buildProps.installcmd" class="grid grid-cols-3 gap-4">

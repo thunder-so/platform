@@ -27,7 +27,7 @@ Additionally, remove the top-level `owner`, `repo`, and `branch` columns from th
     "installcmd": "string",
     "buildcmd": "string",
     "startcmd": "string",
-    "buildSystem": "Nixpacks | Custom Dockerfile",
+    "buildSystem": "Nixpacks | Dockerfile",
     "include": [],
     "exclude": []
   }

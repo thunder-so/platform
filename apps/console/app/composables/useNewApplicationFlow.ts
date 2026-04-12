@@ -303,7 +303,7 @@ export const useNewApplicationFlow = () => {
       let buildProps: any = { ...defaults.pipeline_metadata.buildProps };
 
       if (scanData?.hasDockerfile) {
-        buildProps.buildSystem = 'Custom Dockerfile';
+        buildProps.buildSystem = 'Dockerfile';
       }
       
       buildProps = applyBuildSettings(buildProps);
