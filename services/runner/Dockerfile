@@ -20,8 +20,11 @@ RUN apk add --no-cache \
 RUN apk add --no-cache \
     docker-cli \
     docker-cli-buildx \
-    aws-cli \
+    py3-pip \
     fnm
+
+# Install aws-cli via pip (compatible with Python 3.12)
+RUN pip3 install --no-cache-dir awscli --break-system-packages
 
 # Enable BuildKit by default
 ENV DOCKER_BUILDKIT=1
