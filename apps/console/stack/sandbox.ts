@@ -1,5 +1,5 @@
-// import { Cdk, Nuxt, type NuxtProps } from "@thunder-so/thunder";
-import { Cdk, Nuxt, type NuxtProps } from "../../../../thunder/";
+import { Cdk, Nuxt, type NuxtProps } from "@thunder-so/thunder";
+// import { Cdk, Nuxt, type NuxtProps } from "../../../../thunder/";
 
 const nuxtApp: NuxtProps = {
   env: {

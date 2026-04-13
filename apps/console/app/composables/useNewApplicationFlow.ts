@@ -66,7 +66,8 @@ export const STACK_DEFAULTS = {
         cpu: 256,
         memorySize: 512,
         port: 3000,
-        dockerFile: 'Dockerfile',
+        // dockerFile is NOT set by default - it's set only when scanData.hasDockerfile is true
+        // This ensures strict mode: Nixpacks mode has no dockerFile, Dockerfile mode has it
         architecture: 'x86' as const,
       },
     },
@@ -279,12 +280,21 @@ export const useNewApplicationFlow = () => {
 
     const getLambdaService = () => {
       const defaults = STACK_DEFAULTS.LAMBDA;
-      const buildProps = applyBuildSettings(defaults.pipeline_metadata.buildProps);
+      const buildProps: any = { ...defaults.pipeline_metadata.buildProps };
       const functionProps: any = { ...defaults.metadata.functionProps };
 
+      // Strict mode: dockerFile and buildSystem must be synchronized
       if (scanData?.hasDockerfile) {
+        // Dockerfile detected: set Container mode and dockerFile
         functionProps.dockerFile = 'Dockerfile';
+        buildProps.buildSystem = 'Container';
+      } else {
+        // No Dockerfile: Zip mode, ensure no dockerFile
+        delete functionProps.dockerFile;
+        buildProps.buildSystem = 'Zip';
       }
+
+      const finalBuildProps = applyBuildSettings(buildProps);
 
       return {
         ...baseService,
@@ -293,7 +303,7 @@ export const useNewApplicationFlow = () => {
         metadata: { debug: defaults.metadata.debug, functionProps },
         pipeline_metadata: {
           sourceProps: { owner, repo, branchOrRef: selectedBranchName.value || 'main' },
-          buildProps,
+          buildProps: finalBuildProps,
         },
       };
     };
@@ -301,18 +311,28 @@ export const useNewApplicationFlow = () => {
     const getFargateService = () => {
       const defaults = STACK_DEFAULTS.FARGATE;
       let buildProps: any = { ...defaults.pipeline_metadata.buildProps };
+      const metadata: any = { ...defaults.metadata };
+      const serviceProps: any = { ...defaults.metadata.serviceProps };
 
+      // Strict mode: dockerFile and buildSystem must be synchronized
       if (scanData?.hasDockerfile) {
+        // Dockerfile detected: set Dockerfile mode and dockerFile
         buildProps.buildSystem = 'Dockerfile';
+        serviceProps.dockerFile = 'Dockerfile';
+      } else {
+        // No Dockerfile: Nixpacks mode, ensure no dockerFile
+        buildProps.buildSystem = 'Nixpacks';
+        delete serviceProps.dockerFile;
       }
-      
+
       buildProps = applyBuildSettings(buildProps);
+      metadata.serviceProps = serviceProps;
 
       return {
         ...baseService,
         stack_type: 'FARGATE' as const,
         stack_version: appConfig.stackVersion,
-        metadata: { ...defaults.metadata },
+        metadata,
         pipeline_metadata: {
           sourceProps: { owner, repo, branchOrRef: selectedBranchName.value || 'main' },
           buildProps,

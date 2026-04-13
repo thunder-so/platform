@@ -91,7 +91,7 @@ export const FargateBuildPropsSchema = z.object({
   startcmd: z.string().optional(),
   include: z.array(z.string()).optional(),
   exclude: z.array(z.string()).optional(),
-}).describe('Fargate Nixpacks mode configuration (ignored when buildSystem is Dockerfile)');
+}).describe('Fargate build configuration (Nixpacks or Dockerfile mode)');
 
 export const RedirectsSchema = z.array(
   z.object({ 
@@ -199,7 +199,7 @@ export const LambdaServiceMetadataSchema = z.object({
 export type LambdaServiceMetadata = z.infer<typeof LambdaServiceMetadataSchema>;
 
 export const FargateServicePropsSchema = z.object({
-  dockerFile: z.string(),
+  dockerFile: z.string().optional(),
   desiredCount: z.number(),
   cpu: z.number(),
   memorySize: z.number(),

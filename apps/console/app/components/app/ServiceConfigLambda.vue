@@ -35,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import type { ServiceSchema } from '~~/server/validators/app';
 import appConfig from '~/app.config';
 
@@ -53,6 +53,30 @@ if (props.service.stack_type === 'LAMBDA' && !(props.service.metadata as any).fu
 const deploymentMode = ref<'Container' | 'Zip'>(
   props.service.stack_type === 'LAMBDA' && (props.service.metadata as any).functionProps?.dockerFile ? 'Container' : 'Zip'
 );
+
+// Watch deployment mode changes and sync dockerFile to schema
+watch(deploymentMode, (newMode) => {
+  if (props.service.stack_type !== 'LAMBDA') return;
+  
+  const functionProps = (props.service.metadata as any).functionProps;
+  const buildProps = (props.service.pipeline_metadata as any)?.buildProps;
+  
+  if (newMode === 'Container') {
+    // Container mode: set dockerFile (default to 'Dockerfile' if not set)
+    functionProps.dockerFile = functionProps.dockerFile || 'Dockerfile';
+    // Set buildSystem for consistency
+    if (buildProps) {
+      buildProps.buildSystem = 'Container';
+    }
+  } else {
+    // Zip mode: clear dockerFile to ensure strict mode detection
+    delete functionProps.dockerFile;
+    // Set buildSystem for consistency
+    if (buildProps) {
+      buildProps.buildSystem = 'Zip';
+    }
+  }
+}, { immediate: true });
 
 const errors = computed(() => form.value?.errors || []);
 

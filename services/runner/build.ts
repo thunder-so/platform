@@ -245,28 +245,48 @@ export const handler: SQSHandler = async (event) => {
           const lambdaBuildSystem = (metadata as any).buildProps?.buildSystem;
           const hasDockerFile = metadata.functionProps?.dockerFile;
           const hasZipConfig = metadata.functionProps?.runtime && metadata.functionProps?.codeDir && metadata.functionProps?.handler;
-          if (lambdaBuildSystem === 'Container' && !hasDockerFile) {
-            throw new Error('LAMBDA Container mode requires functionProps.dockerFile');
-          }
-          if (lambdaBuildSystem === 'Zip' && !hasZipConfig) {
-            throw new Error('LAMBDA Zip mode requires functionProps.runtime, codeDir, and handler');
-          }
-          if (!lambdaBuildSystem && !hasDockerFile && !hasZipConfig) {
-            throw new Error('LAMBDA requires buildProps.buildSystem (Zip/Container) or functionProps');
+          
+          // Strict mode validation: buildSystem is the source of truth
+          if (lambdaBuildSystem === 'Container') {
+            if (!hasDockerFile) {
+              throw new Error('LAMBDA Container mode requires functionProps.dockerFile');
+            }
+          } else if (lambdaBuildSystem === 'Zip') {
+            if (hasDockerFile) {
+              throw new Error('LAMBDA Zip mode cannot have functionProps.dockerFile set (buildSystem and dockerFile must be consistent)');
+            }
+            if (!hasZipConfig) {
+              throw new Error('LAMBDA Zip mode requires functionProps.runtime, codeDir, and handler');
+            }
+          } else {
+            // No buildSystem set - fall back to dockerFile presence for backwards compatibility
+            if (!hasDockerFile && !hasZipConfig) {
+              throw new Error('LAMBDA requires buildProps.buildSystem (Zip/Container) or functionProps configuration');
+            }
           }
           break;
         case 'FARGATE':
           // buildSystem is Console-only, not in library types - cast to any
           const buildSystem = (metadata as any).buildProps?.buildSystem;
           const hasServiceDockerFile = metadata.serviceProps?.dockerFile;
-          if (buildSystem === 'Dockerfile' && !hasServiceDockerFile) {
-            throw new Error('FARGATE with Dockerfile requires serviceProps.dockerFile');
-          }
-          if (buildSystem === 'Nixpacks' && !(metadata as any).buildProps) {
-            throw new Error('FARGATE with Nixpacks requires buildProps with buildSystem');
-          }
-          if (!buildSystem && !hasServiceDockerFile) {
-            throw new Error('FARGATE requires either buildProps.buildSystem or serviceProps.dockerFile');
+          
+          // Strict mode validation: buildSystem is the source of truth
+          if (buildSystem === 'Dockerfile') {
+            if (!hasServiceDockerFile) {
+              throw new Error('FARGATE Dockerfile mode requires serviceProps.dockerFile');
+            }
+          } else if (buildSystem === 'Nixpacks') {
+            if (hasServiceDockerFile) {
+              throw new Error('FARGATE Nixpacks mode cannot have serviceProps.dockerFile set (buildSystem and dockerFile must be consistent)');
+            }
+            if (!(metadata as any).buildProps) {
+              throw new Error('FARGATE Nixpacks requires buildProps');
+            }
+          } else {
+            // No buildSystem set - fall back to dockerFile presence for backwards compatibility
+            if (!hasServiceDockerFile && !(metadata as any).buildProps) {
+              throw new Error('FARGATE requires buildProps.buildSystem (Nixpacks/Dockerfile) or serviceProps.dockerFile');
+            }
           }
           break;
       }

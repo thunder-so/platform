@@ -53,6 +53,21 @@ watch(() => props.service.stack_type === 'FARGATE' ? (props.service.metadata as 
   }
 });
 
+// Watch buildSystem changes and sync dockerFile to schema
+watch(() => (props.service.pipeline_metadata?.buildProps as any)?.buildSystem, (newBuildSystem) => {
+  if (props.service.stack_type !== 'FARGATE') return;
+
+  const serviceProps = (props.service.metadata as any).serviceProps;
+
+  if (newBuildSystem === 'Dockerfile') {
+    // Dockerfile mode: set dockerFile (default to 'Dockerfile' if not set)
+    serviceProps.dockerFile = serviceProps.dockerFile || 'Dockerfile';
+  } else {
+    // Nixpacks mode: clear dockerFile to ensure strict mode detection
+    delete serviceProps.dockerFile;
+  }
+}, { immediate: true });
+
 const form = ref();
 const errors = computed(() => form.value?.errors || []);
 
