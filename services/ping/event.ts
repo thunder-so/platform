@@ -226,7 +226,7 @@ export const handler = async (event: CodePipelineEvent, context: Context) => {
             channel: 'EMAIL',
             metadata: {
               application_id: environment.application.id,
-              application_name: service.name,
+              application_name: environment.application.display_name,
               repository: `${service.owner}/${service.repo}`,
               branch: service.branch,
               commit_sha: sourceMetadata.revisionId || 'unknown',
@@ -318,7 +318,7 @@ export const handler = async (event: CodePipelineEvent, context: Context) => {
             channel: 'EMAIL',
             metadata: {
               application_id: environment.application.id,
-              application_name: service.name,
+              application_name: environment.application.display_name,
               application_url: service.resources?.CloudFrontDistributionUrl || service.resources?.ApiGatewayUrl || service.resources?.LoadBalancerDNS,
               domain: service.resources?.CloudFrontDistributionUrl?.replace('https://', ''),
               repository: `${service.owner}/${service.repo}`,
