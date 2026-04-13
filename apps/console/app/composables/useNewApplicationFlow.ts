@@ -252,9 +252,10 @@ export const useNewApplicationFlow = () => {
       service_variables: [],
     };
 
-    const applyBuildSettings = (buildProps: any) => {
+    const applyBuildSettings = (buildProps: any, stackType: 'STATIC' | 'LAMBDA' | 'FARGATE' = 'STATIC') => {
       if (scanData?.buildSettings) {
-        return { ...buildProps, ...scanData.buildSettings };
+        const { startcmd, ...filteredSettings } = scanData.buildSettings;
+        return { ...buildProps, ...filteredSettings };
       } else {
         scanError.value = 'A package.json was not found in the selected directory.';
       }
@@ -263,7 +264,7 @@ export const useNewApplicationFlow = () => {
 
     const getStaticService = () => {
       const defaults = STACK_DEFAULTS.STATIC;
-      const buildProps = applyBuildSettings(defaults.pipeline_metadata.buildProps);
+      const buildProps = applyBuildSettings(defaults.pipeline_metadata.buildProps, 'STATIC');
       
       return {
         ...baseService,
@@ -294,7 +295,7 @@ export const useNewApplicationFlow = () => {
         buildProps.buildSystem = 'Zip';
       }
 
-      const finalBuildProps = applyBuildSettings(buildProps);
+      const finalBuildProps = applyBuildSettings(buildProps, 'LAMBDA');
 
       return {
         ...baseService,
@@ -325,7 +326,7 @@ export const useNewApplicationFlow = () => {
         delete serviceProps.dockerFile;
       }
 
-      buildProps = applyBuildSettings(buildProps);
+      buildProps = applyBuildSettings(buildProps, 'FARGATE');
       metadata.serviceProps = serviceProps;
 
       return {
