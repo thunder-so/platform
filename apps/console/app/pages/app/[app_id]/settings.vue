@@ -241,14 +241,17 @@ onMounted(() => {
 const saveServiceMetadata = async () => {
   if (!localServiceConfig.value?.metadata) return;
   
-  const { stack_type, id } = localServiceConfig.value;
+  const { stack_type, id, pipeline_metadata } = localServiceConfig.value;
   const { $posthog } = useNuxtApp();
   
-  await $client.services.updateServiceMetadata.mutate({
+  await $client.services.updateServiceConfig.mutate({
     service_id: id,
     stack_type,
     metadata: localServiceConfig.value.metadata,
+    pipeline_metadata: pipeline_metadata,
   });
+  
+  originalServiceConfig.value = JSON.parse(JSON.stringify(localServiceConfig.value));
   
   $posthog().capture('app_settings_updated', {
     service_id: id,

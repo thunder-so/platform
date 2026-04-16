@@ -278,6 +278,59 @@ export const servicesRouter = router({
       return updatedService;
     }),
 
+  updateServiceConfig: protectedProcedure
+    .input(
+      z.object({
+        service_id: z.string(),
+        stack_type: z.enum(['STATIC', 'LAMBDA', 'FARGATE']),
+        metadata: z.any(),
+        pipeline_metadata: z.any().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { service_id, stack_type, metadata, pipeline_metadata } = input;
+
+      let validationSchema;
+      switch (stack_type) {
+        case 'STATIC':
+          validationSchema = StaticServiceMetadataSchema;
+          break;
+        case 'LAMBDA':
+          validationSchema = LambdaServiceMetadataSchema;
+          break;
+        case 'FARGATE':
+          validationSchema = FargateServiceMetadataSchema;
+          break;
+      }
+
+      const parsedMetadata = validationSchema.parse(metadata);
+
+      const updateData: any = { metadata: parsedMetadata, updated_at: new Date() };
+      
+      if (pipeline_metadata) {
+        const service = await db.query.services.findFirst({ where: eq(services.id, service_id) });
+        if (!service) throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found.' });
+        
+        const existingPipeline = (service.pipeline_metadata as any) || {};
+        updateData.pipeline_metadata = {
+          ...existingPipeline,
+          ...pipeline_metadata,
+        };
+      }
+
+      const [updatedService] = await db
+        .update(services)
+        .set(updateData)
+        .where(eq(services.id, service_id))
+        .returning();
+
+      if (!updatedService) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found.' });
+      }
+
+      return updatedService;
+    }),
+
   updateServiceMetadata: protectedProcedure
     .input(
       z.object({
