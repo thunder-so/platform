@@ -148,6 +148,8 @@ const notificationTypes = [
 ];
 
 const localServiceConfig = ref<ServiceSchema | null>(null);
+const originalServiceConfig = ref<ServiceSchema | null>(null);
+const initialized = ref(false);
 const { isSaving, saveOnly, saveAndRebuild } = useSaveAndRebuild();
 const isChanged = ref(false);
 const isAppSaving = ref(false);
@@ -187,9 +189,12 @@ const fetchBranches = async () => {
   }
 };
 
-watch(service, async (newService) => {
-  if (newService) {
+watch(service, async (newService, oldService) => {
+  if (newService && (!oldService || oldService.id !== newService.id)) {
     localServiceConfig.value = JSON.parse(JSON.stringify(newService));
+    originalServiceConfig.value = JSON.parse(JSON.stringify(newService));
+    isChanged.value = false;
+    initialized.value = true;
     if (newService.pipeline_metadata?.sourceProps?.branchOrRef) {
       selectedBranch.value = newService.pipeline_metadata.sourceProps.branchOrRef;
     }
@@ -209,9 +214,12 @@ watch(() => applicationSchema.value?.display_name, (newName) => {
 });
 
 watch(localServiceConfig, (newConfig) => {
-  if (service.value && newConfig) {
-    isChanged.value = !isEqual(service.value, newConfig);
-  }
+  if (!initialized.value || !originalServiceConfig.value || !newConfig) return;
+  const originalMeta = JSON.stringify(originalServiceConfig.value?.metadata);
+  const currentMeta = JSON.stringify(newConfig?.metadata);
+  const originalPipelineMeta = JSON.stringify(originalServiceConfig.value?.pipeline_metadata);
+  const currentPipelineMeta = JSON.stringify(newConfig?.pipeline_metadata);
+  isChanged.value = originalMeta !== currentMeta || originalPipelineMeta !== currentPipelineMeta;
 }, { deep: true });
 
 watch(selectedBranch, (newBranch) => {
