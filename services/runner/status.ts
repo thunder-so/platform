@@ -41,14 +41,20 @@ interface CodeBuildStateChangeEvent {
   };
 }
 
+type SourceProps = {
+  owner?: string;
+  repo?: string;
+  branchOrRef?: string;
+};
+
 type BuildContext = {
   service: {
     id: string;
     name: string;
-    owner: string;
-    repo: string;
-    branch: string;
     environment_id: string;
+    pipeline_metadata?: {
+      sourceProps?: SourceProps;
+    };
     environment: {
       id: string;
       name: string;
@@ -235,11 +241,13 @@ async function sendNotification(
   const { environment } = service;
   const { application, provider } = environment;
 
+  const sourceProps = service.pipeline_metadata?.sourceProps;
+
   const baseMetadata = {
     application_id: application.id,
     application_name: application.display_name,
-    repository: `${service.owner}/${service.repo}`,
-    branch: service.branch,
+    repository: `${sourceProps?.owner || ''}/${sourceProps?.repo || ''}`,
+    branch: sourceProps?.branchOrRef || '',
     build_id: buildId,
     account_id: provider.account_id,
     region: environment.region

@@ -123,6 +123,7 @@ export const handler = async (event: CodePipelineEvent, context: Context) => {
 
     const environment = service.environment;
     const provider = environment.provider;
+    const sourceProps = service.pipeline_metadata?.sourceProps;
 
     const credentials = await getAwsCredentials(provider, environment.application.organization_id);
   
@@ -227,8 +228,8 @@ export const handler = async (event: CodePipelineEvent, context: Context) => {
             metadata: {
               application_id: environment.application.id,
               application_name: environment.application.display_name,
-              repository: `${service.owner}/${service.repo}`,
-              branch: service.branch,
+              repository: `${sourceProps?.owner || ''}/${sourceProps?.repo || ''}`,
+              branch: sourceProps?.branchOrRef || '',
               commit_sha: sourceMetadata.revisionId || 'unknown',
               commit_message: sourceMetadata.revisionSummary || 'Deploy failed',
               deploy_id: event.detail["execution-id"],
@@ -321,8 +322,8 @@ export const handler = async (event: CodePipelineEvent, context: Context) => {
               application_name: environment.application.display_name,
               application_url: service.resources?.CloudFrontDistributionUrl || service.resources?.ApiGatewayUrl || service.resources?.LoadBalancerDNS,
               domain: service.resources?.CloudFrontDistributionUrl?.replace('https://', ''),
-              repository: `${service.owner}/${service.repo}`,
-              branch: service.branch,
+              repository: `${sourceProps?.owner || ''}/${sourceProps?.repo || ''}`,
+              branch: sourceProps?.branchOrRef || '',
               commit_sha: sourceMetadata.revisionId || 'unknown',
               commit_message: sourceMetadata.revisionSummary || 'Deploy completed successfully',
               deploy_id: event.detail["execution-id"],
@@ -330,7 +331,7 @@ export const handler = async (event: CodePipelineEvent, context: Context) => {
               region: environment.region
             }
           });
- 
+
         break;
       default:
         console.error(`Unknown event type: ${event}`);

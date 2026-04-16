@@ -97,13 +97,13 @@ Deno.serve(async (req) => {
 function getSubject(type: string, metadata: any): string {
   switch (type) {
     case 'APP_BUILD_SUCCESS':
-      return `✅ Build successful for ${metadata.application_name}`;
+      return `✅ Build successful: ${metadata.application_name}`;
     case 'APP_BUILD_FAILURE':
-      return `❌ Build failed for ${metadata.application_name}`;
+      return `❌ Build failed: ${metadata.application_name}`;
     case 'APP_DEPLOY_SUCCESS':
-      return `🚀 Deploy successful for ${metadata.application_name}`;
+      return `🚀 Deploy successful: ${metadata.application_name}`;
     case 'APP_DEPLOY_FAILURE':
-      return `💥 Deploy failed for ${metadata.application_name}`;
+      return `💥 Deploy failed: ${metadata.application_name}`;
     case 'TEAM_INVITE':
       return `You're invited to join ${metadata.organization_name} on Thunder`;
     default:
