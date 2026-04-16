@@ -19,7 +19,7 @@ import {
 const baseServiceSchema = z.object({
   id: z.string(),
   name: z.string().regex(NAME_REGEX, NAME_ERROR_MESSAGE),
-  display_name: z.string().min(1, 'Display name is required'),
+  stack_name: z.string().min(1, 'Stack name is required'),
   stack_type: z.enum(['STATIC', 'LAMBDA', 'FARGATE']),
   stack_version: z.string(),
   rootDir: z.string().default('/'),

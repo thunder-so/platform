@@ -251,7 +251,7 @@ export const userAccessTokensRelations = relations(userAccessTokens, ({ one }) =
 export const services = pgTable('services', {
   id: cuid2('id').setLength(32).defaultRandom().primaryKey(),
   name: text('name').notNull(),
-  display_name: text('display_name').notNull(),
+  stack_name: text('stack_name').notNull(),
   stack_type: stackTypeEnum('stack_type').default('STATIC').notNull(),
   stack_version: text('stack_version').notNull(),
   rootDir: text('root_dir').default('/'),

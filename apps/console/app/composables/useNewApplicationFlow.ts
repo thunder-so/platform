@@ -6,6 +6,26 @@ import type { ServiceInputSchema, ApplicationInputSchema } from '~~/server/valid
 import type { Provider, Branch, UserAccessToken } from '~~/server/db/schema';
 import appConfig from '~/app.config';
 
+function sanitize(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+export function getResourceIdPrefix(
+  application: string,
+  service: string,
+  environment: string,
+): string {
+  const sApp = sanitize(application).substring(0, 7);
+  const sService = sanitize(service).substring(0, 7);
+  const sEnv = sanitize(environment).substring(0, 7);
+
+  return `${sApp}-${sService}-${sEnv}`.substring(0, 23).replace(/-$/, '');
+}
+
 const lambdaRuntimes = (appConfig as any).lambdaRuntimes as Array<{ label: string; value: string }>;
 const lambdaRuntimeDefault = lambdaRuntimes[0]?.value;
 
@@ -241,12 +261,15 @@ export const useNewApplicationFlow = () => {
     repo: string,
     installation_id: number,
     scanData: any,
-    rootDir: string
+    rootDir: string,
+    applicationName: string,
+    environmentName: string
   ): Promise<ServiceInputSchema> => {
-    const name = Math.random().toString(36).substring(2, 9).toLowerCase();
+    const serviceName = Math.random().toString(36).substring(2, 9).toLowerCase();
+    const stackName = `${getResourceIdPrefix(applicationName, serviceName, environmentName)}-stack`;
     const baseService = {
-      name: name,
-      display_name: repo,
+      name: serviceName,
+      stack_name: stackName,
       installation_id: installation_id,
       rootDir: rootDir,
       service_variables: [],
@@ -387,12 +410,15 @@ export const useNewApplicationFlow = () => {
             selectedProviderId.value = initialProvider.id;
         }
 
+        const appName = repo.replace(/[-_]/g, '').substring(0, 7).toLowerCase();
+        const envName = Math.random().toString(36).substring(2, 9).toLowerCase();
+        
         applicationSchema.value = {
-          name: repo.replace(/[-_]/g, '').substring(0, 7).toLowerCase(),
+          name: appName,
           display_name: repo,
           environments: [
             {
-              name: Math.random().toString(36).substring(2, 9).toLowerCase(),
+              name: envName,
               display_name: 'preview',
               region: initialProvider?.region || 'us-east-1',
               services: [],

@@ -19,7 +19,7 @@ import {
  */
 const serviceInputBaseSchema = z.object({
   name: z.string().regex(NAME_REGEX, NAME_ERROR_MESSAGE),
-  display_name: z.string().min(1, 'Display name is required'),
+  stack_name: z.string().min(1, 'Stack name is required'),
   stack_version: z.string(),
   installation_id: z.number().nullable(),
   rootDir: z.string().default('/'),

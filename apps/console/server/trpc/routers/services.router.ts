@@ -238,7 +238,7 @@ export const servicesRouter = router({
     .input(
       z.object({
         service_id: z.string(),
-        display_name: z.string().optional(),
+        stack_name: z.string().optional(),
         rootDir: z.string().optional(),
         branchOrRef: z.string().optional(),
       })

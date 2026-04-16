@@ -80,7 +80,9 @@ const fetchAndSetService = async () => {
       props.repoInfo.repo,
       props.repoInfo.installation_id,
       scanData.value,
-      props.selectedRootDir
+      props.selectedRootDir,
+      props.applicationSchema.name ?? '',
+      props.applicationSchema.environments?.[0]?.name ?? ''
     );
 
     emit('update:service', serviceSchema);

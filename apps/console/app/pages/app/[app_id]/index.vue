@@ -399,7 +399,7 @@ const upgradeStack = async () => {
     upgrading.value = true;
     await $client.services.upgradeStack.mutate({
       service_id: service.value.id,
-      stack_version: latestStackVersion.value
+      stack_version: latestStackVersion.value as string
     });
     
     // Refresh application data to show updated version
@@ -471,7 +471,7 @@ const transformBuildToActivityItem = (build: Build): BuildActivity => ({
   timestamp_start: build.build_start ? build.build_start : build.created_at,
   timestamp_end: build.build_end,
   status: (build.build_status as string) || null,
-  message: `Build ${String(build.build_status || '').toLowerCase()} for service ${service.value?.display_name || 'N/A'}`,
+  message: `Build ${String(build.build_status || '').toLowerCase()} for service ${service.value?.stack_name || 'N/A'}`,
   logAvailable: !!build.build_log,
   logId: build.id,
 });
@@ -482,7 +482,7 @@ const transformEventToActivityItem = (event: Event): EventActivity => ({
   timestamp_start: event.pipeline_start ? event.pipeline_start : event.created_at,
   timestamp_end: event.pipeline_end,
   status: (event.pipeline_state as string) || null,
-  message: `Pipeline ${String(event.pipeline_state || '').toLowerCase()} for service ${service.value?.display_name || 'N/A'}`,
+  message: `Pipeline ${String(event.pipeline_state || '').toLowerCase()} for service ${service.value?.stack_name || 'N/A'}`,
   logAvailable: !!event.pipeline_log,
   logId: event.pipeline_execution_id,
   sourceDetails: event.pipeline_metadata as EventActivity['sourceDetails'],

@@ -98,7 +98,7 @@ export const applicationsRouter = router({
 
         const [newService] = await tx.insert(services).values({
           name: service.name,
-          display_name: service.display_name,
+          stack_name: service.stack_name,
           stack_type: service.stack_type,
           stack_version: service.stack_version,
           installation_id: service.installation_id,

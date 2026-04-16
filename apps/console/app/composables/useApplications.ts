@@ -45,7 +45,7 @@ export const useApplications = () => {
             services (
               id,
               name,
-              display_name,
+              stack_name,
               stack_type,
               stack_version,
               rootDir:root_dir,
