@@ -271,11 +271,19 @@ const saveBranchOnly = async () => {
   try {
     await saveOnly(async () => {
       if (!service.value?.id || !selectedBranch.value) return;
-      await $client.services.updateService.mutate({
+      
+      await $client.services.updateServiceSourceProps.mutate({
         service_id: service.value.id,
         branchOrRef: selectedBranch.value,
-        rootDir: selectedRootDir.value,
       });
+      
+      if (selectedRootDir.value !== (service.value.rootDir ?? '/')) {
+        await $client.services.updateService.mutate({
+          service_id: service.value.id,
+          rootDir: selectedRootDir.value,
+        });
+      }
+      
       $posthog().capture('branch_changed', {
         service_id: service.value.id,
         new_branch: selectedBranch.value,
@@ -294,11 +302,19 @@ const saveBranchAndRebuild = async () => {
   try {
     await saveAndRebuild(async () => {
       if (!service.value?.id || !selectedBranch.value) return;
-      await $client.services.updateService.mutate({
+      
+      await $client.services.updateServiceSourceProps.mutate({
         service_id: service.value.id,
         branchOrRef: selectedBranch.value,
-        rootDir: selectedRootDir.value,
       });
+      
+      if (selectedRootDir.value !== (service.value.rootDir ?? '/')) {
+        await $client.services.updateService.mutate({
+          service_id: service.value.id,
+          rootDir: selectedRootDir.value,
+        });
+      }
+      
       $posthog().capture('branch_changed', {
         service_id: service.value.id,
         new_branch: selectedBranch.value,

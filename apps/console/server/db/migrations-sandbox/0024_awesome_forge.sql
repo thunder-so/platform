@@ -1,0 +1,1 @@
+ALTER TABLE "services" RENAME COLUMN "display_name" TO "stack_name";

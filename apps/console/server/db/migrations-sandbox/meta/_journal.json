@@ -169,6 +169,13 @@
       "when": 1775993737251,
       "tag": "0023_clammy_vengeance",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1776349600435,
+      "tag": "0024_awesome_forge",
+      "breakpoints": true
     }
   ]
 }
