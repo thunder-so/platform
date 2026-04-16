@@ -219,10 +219,10 @@
                             <div class="p-2">
                               <ul class="space-y-1">
                                 <li>
-                                  <UButton class="w-full" variant="ghost" label="Deploy latest commit" @click="() => { openDeployLatestModal(); isDeployPopoverOpen = false }" />
+                                  <UButton class="w-full" color="neutral" variant="ghost" label="Deploy latest commit" @click="() => { openDeployLatestModal(); isDeployPopoverOpen = false }" />
                                 </li>
                                 <li>
-                                  <UButton class="w-full" variant="ghost" label="Deploy specific commit" @click="() => { openDeployCommitModal(); isDeployPopoverOpen = false }" />
+                                  <UButton class="w-full" color="neutral" variant="ghost" label="Deploy specific commit" @click="() => { openDeployCommitModal(); isDeployPopoverOpen = false }" />
                                 </li>
                               </ul>
                             </div>

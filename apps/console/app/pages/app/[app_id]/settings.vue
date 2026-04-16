@@ -38,25 +38,17 @@
       </template>
       <AppServiceConfiguration :service="localServiceConfig" ref="serviceConfigForm" />
       <template #footer>
-        <div class="flex justify-start gap-2">
-          <UButton
-            size="lg"
+        <div class="flex justify-start">
+          <MultiButton
+            color="primary"
             :loading="isSaving"
             :disabled="!isChanged || hasValidationErrors"
-            @click="() => saveAndRebuild(() => saveServiceMetadata(), 'Service settings saved.')"
-          >
-            Save and Rebuild
-          </UButton>
-          <UButton
-            size="lg"
-            :loading="isSaving"
-            :disabled="!isChanged || hasValidationErrors"
-            @click="() => saveOnly(() => saveServiceMetadata(), 'Service settings saved.')"
-            color="neutral"
-            variant="outline"
-          >
-            Save
-          </UButton>
+            label="Save"
+            :options="[
+              { label: 'Save', action: () => saveOnly(() => saveServiceMetadata(), 'Service settings saved.') },
+              { label: 'Save and Rebuild', action: () => saveAndRebuild(() => saveServiceMetadata(), 'Service settings saved.') }
+            ]"
+          />
         </div>
       </template>
     </UCard>
@@ -77,25 +69,17 @@
         </UFormField>
       </UForm>
       <template #footer>
-        <div class="flex justify-start gap-2">
-          <UButton
-            size="lg"
+        <div class="flex justify-start">
+          <MultiButton
+            color="primary"
             :loading="isBranchSaving"
             :disabled="!isBranchChanged"
-            @click="saveBranchAndRebuild"
-          >
-            Save and Rebuild
-          </UButton>
-          <UButton
-            size="lg"
-            :loading="isBranchSaving"
-            :disabled="!isBranchChanged"
-            @click="saveBranchOnly"
-            color="neutral"
-            variant="outline"
-          >
-            Save
-          </UButton>
+            label="Save"
+            :options="[
+              { label: 'Save', action: saveBranchOnly },
+              { label: 'Save and Rebuild', action: saveBranchAndRebuild }
+            ]"
+          />
         </div>
       </template>
     </UCard>
@@ -120,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import { AppApplicationDeleteModal } from '#components'
+import { AppApplicationDeleteModal, MultiButton } from '#components'
 import { ref, computed, watch, onMounted } from 'vue';
 import AppServiceConfiguration from '~/components/app/ServiceConfiguration.vue';
 import type { ServiceSchema } from '~~/server/validators/app';
