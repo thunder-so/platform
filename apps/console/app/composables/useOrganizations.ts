@@ -12,7 +12,7 @@ export type ApplicationDisplaySchema = {
     services: {
       id: string;
       name: string;
-      display_name: string;
+      stack_name: string;
       stack_type: string;
       stack_version: string;
       rootDir: string;
@@ -56,7 +56,7 @@ export const useOrganizations = () => {
             services (
               id,
               name,
-              display_name,
+              stack_name,
               stack_type,
               stack_version,
               root_dir,
