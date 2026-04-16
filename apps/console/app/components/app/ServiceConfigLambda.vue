@@ -55,28 +55,25 @@ const deploymentMode = ref<'Container' | 'Zip'>(
 );
 
 // Watch deployment mode changes and sync dockerFile to schema
-watch(deploymentMode, (newMode) => {
+watch(deploymentMode, (newMode, oldMode) => {
+  if (oldMode === undefined) return; // Skip initial watch
   if (props.service.stack_type !== 'LAMBDA') return;
   
   const functionProps = (props.service.metadata as any).functionProps;
   const buildProps = (props.service.pipeline_metadata as any)?.buildProps;
   
   if (newMode === 'Container') {
-    // Container mode: set dockerFile (default to 'Dockerfile' if not set)
     functionProps.dockerFile = functionProps.dockerFile || 'Dockerfile';
-    // Set buildSystem for consistency
     if (buildProps) {
       buildProps.buildSystem = 'Container';
     }
   } else {
-    // Zip mode: clear dockerFile to ensure strict mode detection
     delete functionProps.dockerFile;
-    // Set buildSystem for consistency
     if (buildProps) {
       buildProps.buildSystem = 'Zip';
     }
   }
-}, { immediate: true });
+});
 
 const errors = computed(() => form.value?.errors || []);
 
