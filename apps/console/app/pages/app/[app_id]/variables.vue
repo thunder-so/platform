@@ -37,14 +37,16 @@
       </UForm>
 
       <template #footer>
-        <div class="flex gap-2">
-          <UButton :loading="localSaving" :disabled="!isDirty" @click="() => saveAndRebuild(() => saveVariablesData(), 'Variables saved.')">
-            Save and Rebuild
-          </UButton>
-          <UButton :loading="localSaving" :disabled="!isDirty" @click="() => saveOnly(() => saveVariablesData(), 'Variables saved.')" color="neutral" variant="outline">
-            Save
-          </UButton>
-        </div>
+        <MultiButton
+          color="primary"
+          :loading="localSaving"
+          :disabled="!isDirty"
+          label="Save"
+          :options="[
+            { label: 'Save', action: () => saveOnly(() => saveVariablesData(), 'Variables saved.') },
+            { label: 'Save and Rebuild', action: () => saveAndRebuild(() => saveVariablesData(), 'Variables saved.') }
+          ]"
+        />
       </template>
     </UCard>
   </div>
@@ -57,7 +59,7 @@ import { isEqual } from 'lodash-es';
 import { z } from 'zod';
 import { envVarSchema } from '~~/server/validators/common';
 import type { Form } from '#ui/types';
-import { AppVariableDeleteModal } from '#components';
+import { AppVariableDeleteModal, MultiButton } from '#components';
 import { useNavigationGuard } from '~/composables/useNavigationGuard';
 
 definePageMeta({

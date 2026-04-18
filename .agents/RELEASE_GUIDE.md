@@ -69,9 +69,9 @@ cd services && bun run deploy:sandbox:runner
 cd services && bun run deploy:sandbox:ping
 
 # Functions (assuming SUPABASE_PROJECT_ID is set in your local .env)
-npx supabase functions deploy notification-webhook --project-ref $SUPABASE_PROJECT_ID
-npx supabase functions deploy github-webhook --project-ref $SUPABASE_PROJECT_ID
-npx supabase functions deploy polar-webhook --project-ref $SUPABASE_PROJECT_ID
+npx supabase functions deploy notification-webhook  --no-verify-jwt --project-ref $SUPABASE_PROJECT_ID
+npx supabase functions deploy github-webhook  --no-verify-jwt --project-ref $SUPABASE_PROJECT_ID
+npx supabase functions deploy polar-webhook  --no-verify-jwt --project-ref $SUPABASE_PROJECT_ID
 npx supabase functions deploy resend-audience-webhook --no-verify-jwt
 ```
 

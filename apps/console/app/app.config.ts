@@ -61,7 +61,7 @@ export default defineAppConfig({
 
   // @thunder-so/thunder library
   stackTypes: ['STATIC', 'LAMBDA', 'FARGATE'],
-  stackVersion: "1.4.6",
+  stackVersion: "1.4.7",
 
   // Fargate options
   fargate: {

@@ -38,14 +38,16 @@
       </UButton>
     </UForm>
     <template #footer>
-      <div class="flex gap-2">
-        <UButton type="submit" :loading="isSaving" :disabled="!isDirty" @click="() => saveAndRebuild(() => saveHeaders(), 'Headers updated.')">
-          Save and Rebuild
-        </UButton>
-        <UButton type="submit" :loading="isSaving" :disabled="!isDirty" @click="() => saveOnly(() => saveHeaders(), 'Headers updated.')" color="neutral" variant="outline">
-          Save
-        </UButton>
-      </div>
+      <MultiButton
+        color="primary"
+        :loading="isSaving"
+        :disabled="!isDirty"
+        label="Save"
+        :options="[
+          { label: 'Save', action: () => saveOnly(() => saveHeaders(), 'Headers updated.') },
+          { label: 'Save and Rebuild', action: () => saveAndRebuild(() => saveHeaders(), 'Headers updated.') }
+        ]"
+      />
     </template>
   </UCard>
 </template>
@@ -55,6 +57,7 @@ import { ref, watch } from 'vue';
 import { isEqual } from 'lodash-es';
 import type { Form } from '#ui/types';
 import { type CloudFrontMetadata, CloudFrontMetadataSchema } from '~~/server/validators/common';
+import { MultiButton } from '#components';
 import { useNavigationGuard } from '~/composables/useNavigationGuard';
 
 definePageMeta({
