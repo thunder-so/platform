@@ -36,6 +36,7 @@ definePageMeta({
   layout: 'blank',
 });
 
+const user = useSupabaseUser();
 const { $client } = useNuxtApp();
 const router = useRouter();
 const toast = useToast();
@@ -68,7 +69,8 @@ const createOrganization = async () => {
   $posthog().capture('org_create_started', {
     plan_type: isFreePlan ? 'free' : 'paid',
     plan_id: selectedPlan.value,
-    org_name: orgName.value
+    org_name: orgName.value,
+    user_email: user.value?.email
   });
 
   try {
@@ -80,7 +82,8 @@ const createOrganization = async () => {
     $posthog().capture('org_created', {
       org_id: newOrg.id,
       plan_type: isFreePlan ? 'free' : 'paid',
-      plan_id: selectedPlan.value
+      plan_id: selectedPlan.value,
+      user_email: user.value?.email
     });
 
     if (isFreePlan) {
@@ -96,7 +99,8 @@ const createOrganization = async () => {
       // For paid products, redirect to checkout
       $posthog().capture('checkout_initiated', {
         org_id: newOrg.id,
-        plan_id: selectedPlan.value
+        plan_id: selectedPlan.value,
+        user_email: user.value?.email
       });
       window.location.href = newOrg.checkoutUrl!;
     }
@@ -104,7 +108,8 @@ const createOrganization = async () => {
     console.error('Error creating organization:', e);
     $posthog().capture('org_create_failed', {
       error: (e as Error).message,
-      plan_id: selectedPlan.value
+      plan_id: selectedPlan.value,
+      user_email: user.value?.email
     });
     error.value = { message: (e as Error).message };
   } finally {

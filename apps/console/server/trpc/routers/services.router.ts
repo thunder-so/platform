@@ -43,7 +43,7 @@ export const servicesRouter = router({
         nextToken: z.string().optional(),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       if (!input.build_log) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Build log not available.' });
       }
@@ -55,7 +55,8 @@ export const servicesRouter = router({
       }
 
       try {
-        const platform = new PlatformLibrary();
+        const userOpts = ctx?.user ? { userId: ctx.user.sub, email: ctx.user.email as string } : undefined;
+        const platform = new PlatformLibrary(userOpts);
         const logs = await platform.getCloudWatchLogs(logGroupName, logStreamName, input.nextToken);
         return { 
           ...logs
@@ -77,7 +78,8 @@ export const servicesRouter = router({
         nextToken: z.string().optional(),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      const userOpts = ctx?.user ? { distinctId: ctx.user.sub, email: ctx.user.email as string } : undefined;
       const { pipeline_log, provider } = input;
 
       if (!pipeline_log) {
@@ -100,7 +102,8 @@ export const servicesRouter = router({
           logGroupName, 
           logStreamName, 
           input.nextToken, 
-          input.region
+          input.region,
+          ctx?.user ? { userId: ctx.user.sub, email: ctx.user.email as string } : undefined
         );
         
         trackServerEvent('cloudwatch_logs_fetched', {
@@ -108,7 +111,7 @@ export const servicesRouter = router({
           log_stream: logStreamName,
           region: input.region,
           log_type: 'deploy'
-        });
+        }, userOpts);
         
         return { 
           ...logs
@@ -118,7 +121,7 @@ export const servicesRouter = router({
           service: 'cloudwatch',
           operation: 'getDeployLogs',
           error: error instanceof Error ? error.message : 'Unknown error'
-        });
+        }, userOpts);
         throw new TRPCError({ 
           code: 'INTERNAL_SERVER_ERROR', 
           message: error instanceof Error ? error.message : 'Failed to fetch logs'
@@ -135,7 +138,8 @@ export const servicesRouter = router({
         endTime: z.number().optional(),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      const userOpts = ctx?.user ? { distinctId: ctx.user.sub, email: ctx.user.email as string } : undefined;
       const service = await db.query.services.findFirst({
         where: eq(services.id, input.service_id),
         with: {
@@ -167,21 +171,22 @@ export const servicesRouter = router({
         logGroupName = `/aws/lambda/${resourceIdPrefix}-container-function`;
       }
 
-      const logs = await getCloudWatchLogsFromGroup(
-        environment.provider as ProviderSchema, 
-        logGroupName, 
-        input.nextToken, 
-        input.startTime, 
-        input.endTime, 
-        environment.region as string
-      );
+        const logs = await getCloudWatchLogsFromGroup(
+          environment.provider as ProviderSchema, 
+          logGroupName, 
+          input.nextToken, 
+          input.startTime, 
+          input.endTime, 
+          environment.region as string,
+          ctx?.user ? { userId: ctx.user.sub, email: ctx.user.email as string } : undefined
+        );
       
       trackServerEvent('cloudwatch_logs_fetched', {
         log_group: logGroupName,
         service_id: input.service_id,
         stack_type: service.stack_type,
         log_type: 'runtime'
-      });
+      }, userOpts);
       
       return { 
         ...logs
@@ -211,7 +216,8 @@ export const servicesRouter = router({
         sha: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const userOpts = ctx?.user ? { distinctId: ctx.user.sub, email: ctx.user.email as string } : undefined;
       const { providerId, serviceId, sha } = input;
       const service = await db.query.services.findFirst({
         where: eq(services.id, serviceId),
@@ -221,7 +227,8 @@ export const servicesRouter = router({
         providerId, 
         serviceId, 
         sha, 
-        service?.environment?.region as string
+        service?.environment?.region as string,
+        ctx?.user ? { userId: ctx.user.sub, email: ctx.user.email as string } : undefined
       );
       
       trackServerEvent('pipeline_triggered_manual', {
@@ -229,7 +236,7 @@ export const servicesRouter = router({
         service_id: serviceId,
         sha: sha || 'latest',
         region: service?.environment?.region
-      });
+      }, userOpts);
       
       return result;
     }),
@@ -464,25 +471,27 @@ export const servicesRouter = router({
 
   lookupRoute53: protectedProcedure
     .input(z.object({ provider_id: z.string(), domain: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      const userOpts = ctx?.user ? { distinctId: ctx.user.sub, email: ctx.user.email as string } : undefined;
       const { provider_id, domain } = input;
       const provider = await db.query.providers.findFirst({ where: eq(providers.id, provider_id) });
       if (!provider) throw new TRPCError({ code: 'NOT_FOUND', message: 'Provider not found.' });
 
-      const result = await lookupHostedZoneAndCerts(provider as any, domain);
+      const result = await lookupHostedZoneAndCerts(provider as any, domain, ctx?.user ? { userId: ctx.user.sub, email: ctx.user.email as string } : undefined);
       
       trackServerEvent('route53_lookup_performed', {
         provider_id: provider_id,
         domain: domain,
         found_hosted_zone: !!result.hosted_zone_id
-      });
+      }, userOpts);
       
       return result;
     }),
 
   verifyDomain: protectedProcedure
     .input(z.object({ domain: z.string(), expectedCname: z.string().optional(), expectedTxt: z.string().optional(), service_id: z.string().optional() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const userOpts = ctx?.user ? { distinctId: ctx.user.sub, email: ctx.user.email as string } : undefined;
       const { domain, expectedCname, expectedTxt, service_id } = input;
       const result = await verifyDomainDns(domain, expectedCname, expectedTxt);
 
@@ -491,7 +500,7 @@ export const servicesRouter = router({
         service_id: service_id,
         verified: result.verified,
         method: result.method
-      });
+      }, userOpts);
 
       if (result.verified && service_id) {
         await db.update(domains).set({ verified: true, verified_at: new Date(), verification_method: result.method, verification_meta: result }).where(eq(domains.service_id, service_id));
@@ -507,7 +516,7 @@ export const servicesRouter = router({
         stack_version: z.string(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { service_id, stack_version } = input;
       
       const [updatedService] = await db
@@ -521,7 +530,7 @@ export const servicesRouter = router({
       }
 
       // Trigger a new build with the updated stack version
-      const platformLib = new PlatformLibrary();
+      const platformLib = ctx?.user ? new PlatformLibrary({ userId: ctx.user.sub, email: ctx.user.email as string }) : new PlatformLibrary();
       await platformLib.triggerBuild(updatedService.id);
 
       return updatedService;
@@ -533,8 +542,8 @@ export const servicesRouter = router({
         service_id: z.string(),
       })
     )
-    .mutation(async ({ input }) => {
-      const platformLib = new PlatformLibrary();
+    .mutation(async ({ input, ctx }) => {
+      const platformLib = ctx?.user ? new PlatformLibrary({ userId: ctx.user.sub, email: ctx.user.email as string }) : new PlatformLibrary();
       const build = await platformLib.triggerBuild(input.service_id);
       return build;
     }),

@@ -19,6 +19,8 @@ export const providersRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const { user } = ctx;
+      const userOpts = { distinctId: user.sub, email: user.email as string };
       const { organizationId, alias, accessKeyId, secretAccessKey } = input;
 
       // Check free plan limits
@@ -65,19 +67,19 @@ export const providersRouter = router({
 
       let callerIdentity;
       try {
-        callerIdentity = await ProviderLibrary.getCallerIdentity(tempProvider);
+        callerIdentity = await ProviderLibrary.getCallerIdentity(tempProvider, { userId: user.sub, email: user.email as string });
         
         trackServerEvent('aws_credentials_validated', {
           org_id: organizationId,
           account_id: callerIdentity.Account,
           method: 'access_key'
-        });
+        }, userOpts);
       } catch (error: any) {
         trackServerEvent('aws_credentials_validation_failed', {
           org_id: organizationId,
           method: 'access_key',
           error: error.message
-        });
+        }, userOpts);
         throw error;
       }
 
@@ -94,7 +96,7 @@ export const providersRouter = router({
           trackServerEvent('secret_storage_failure', {
             org_id: organizationId,
             error: 'vault.create_secret returned false or unexpected value'
-          });
+          }, userOpts);
           console.error('Error storing secret in vault: vault.create_secret returned false or an unexpected value');
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
@@ -103,7 +105,7 @@ export const providersRouter = router({
         }
 
         // Create SSM Secure Parameter
-        const platform = new PlatformLibrary();
+        const platform = new PlatformLibrary({ userId: user.sub, email: user.email as string });
         const ssmParamName = `/thunder/${organizationId}/${accessKeyId}/secretAccessKey`;
         await platform.createSsmSecureParameter(ssmParamName, secretAccessKey);
 
@@ -126,7 +128,7 @@ export const providersRouter = router({
             operation: 'provider_create',
             org_id: organizationId,
             error: 'Drizzle insert returned no data'
-          });
+          }, userOpts);
           console.error('Error inserting provider: Drizzle insert returned no data');
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
@@ -139,7 +141,7 @@ export const providersRouter = router({
           org_id: organizationId,
           account_id: data.account_id,
           method: 'access_key'
-        });
+        }, userOpts);
 
         return data;
       } catch (error) {
@@ -147,7 +149,7 @@ export const providersRouter = router({
           org_id: organizationId,
           method: 'access_key',
           error: error instanceof Error ? error.message : 'Unknown error'
-        });
+        }, userOpts);
         console.error('Error in addManualProvider:', error);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
@@ -162,7 +164,9 @@ export const providersRouter = router({
         providerId: z.string(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const { user } = ctx;
+      const userOpts = { distinctId: user.sub, email: user.email as string };
       const { providerId } = input;
 
       try {
@@ -183,14 +187,14 @@ export const providersRouter = router({
 
         trackServerEvent('aws_provider_deleted_server', {
           provider_id: data.id
-        });
+        }, userOpts);
 
         return data;
       } catch (error) {
         trackServerEvent('aws_provider_deletion_failed', {
           provider_id: providerId,
           error: error instanceof Error ? error.message : 'Unknown error'
-        });
+        }, userOpts);
         console.error('Error in deleteProvider:', error);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',

@@ -48,14 +48,22 @@ export class PlatformLibrary {
   private assumedCreds?: { accessKeyId: string; secretAccessKey: string; sessionToken?: string; expiration?: Date };
   private readonly logger: Logger;
   private readonly usesCrossAccount: boolean;
+  private readonly userId?: string;
+  private readonly userEmail?: string;
 
-  constructor() {
+  constructor(options?: { userId?: string; email?: string }) {
     this.logger = {
       error: (message: string, context?: any) => console.error(`[ERROR] ${message}`, context ? { context } : ''),
       info: (message: string, context?: any) => console.log(`[INFO] ${message}`, context ? { context } : ''),
       warn: (message: string, context?: any) => console.warn(`[WARN] ${message}`, context ? { context } : ''),
     };
     this.usesCrossAccount = !!process.env.RUNNER_ASSUME_ROLE_ARN;
+    this.userId = options?.userId;
+    this.userEmail = options?.email;
+  }
+
+  private get trackOpts() {
+    return this.userId ? { distinctId: this.userId, email: this.userEmail } : undefined;
   }
 
   private async getCredentials() {
@@ -81,7 +89,7 @@ export class PlatformLibrary {
     
     trackServerEvent('cross_account_role_assumed', {
       role_arn: process.env.RUNNER_ASSUME_ROLE_ARN
-    });
+    }, this.trackOpts);
     
     // Reset clients to use new credentials
     this.clients = {};
@@ -120,7 +128,7 @@ export class PlatformLibrary {
         log_group: logGroupName,
         log_stream: logStreamName,
         events_count: response.events?.length || 0
-      });
+      }, this.trackOpts);
       
       return {
         events: response.events || [],
@@ -131,7 +139,7 @@ export class PlatformLibrary {
         service: 'cloudwatch',
         operation: 'getLogEvents',
         error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      }, this.trackOpts);
       console.error('Error fetching logs from CloudWatch:', error);
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
@@ -161,7 +169,7 @@ export class PlatformLibrary {
         message_group_id: messageGroupId,
         stack_type: messageAttributes?.stackType?.StringValue,
         event_id: messageAttributes?.eventId?.StringValue
-      });
+      }, this.trackOpts);
       
       this.logger.info('SQS message sent successfully', { messageGroupId });
     } catch (error) {
@@ -169,7 +177,7 @@ export class PlatformLibrary {
         service: 'sqs',
         operation: 'sendMessage',
         error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      }, this.trackOpts);
       this.logger.error('Failed to send SQS message', { messageGroupId, error: error instanceof Error ? error.message : 'Unknown error' });
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
@@ -205,14 +213,14 @@ export class PlatformLibrary {
       trackServerEvent('aws_secret_created', {
         parameter_name: name,
         parameter_type: 'SecureString'
-      });
+      }, this.trackOpts);
       
       this.logger.info('SSM parameter created successfully', { parameterName: name });
     } catch (error) {
       trackServerEvent('secret_storage_failure', {
         parameter_name: name,
         error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      }, this.trackOpts);
       this.logger.error('Failed to create SSM parameter', { parameterName: name });
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
@@ -379,7 +387,7 @@ export class PlatformLibrary {
         stack_type: serviceData.stack_type,
         command: 'delete',
         event_id: eventId
-      });
+      }, this.trackOpts);
 
     } else {
       // Create build record
@@ -404,7 +412,7 @@ export class PlatformLibrary {
         stack_type: serviceData.stack_type,
         command: 'build',
         event_id: eventId
-      });
+      }, this.trackOpts);
     }
 
     // Validate environment configuration

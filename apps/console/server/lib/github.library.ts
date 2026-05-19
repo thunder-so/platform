@@ -15,6 +15,17 @@ export default class GithubLibrary {
     private privateKey = this.base64decode(process.env.GH_PRIVATE_KEY);
     private clientId = process.env.GH_CLIENT_ID;
     private clientSecret = process.env.GH_CLIENT_SECRET;
+    private userId?: string;
+    private userEmail?: string;
+
+    constructor(options?: { userId?: string; email?: string }) {
+      this.userId = options?.userId;
+      this.userEmail = options?.email;
+    }
+
+    private get trackOpts() {
+      return this.userId ? { distinctId: this.userId, email: this.userEmail } : undefined;
+    }
 
     private base64decode(key: string | undefined): string {
         if (!key) return '';
@@ -50,7 +61,7 @@ export default class GithubLibrary {
         trackServerEvent('github_installation_validated', {
           installation_id,
           account_type: (metadata.data.account && 'type' in metadata.data.account) ? metadata.data.account.type : 'unknown'
-        });
+        }, this.trackOpts);
 
         return metadata?.data;
       } catch (error) {
@@ -58,7 +69,7 @@ export default class GithubLibrary {
           operation: 'getInstallationMetadata',
           installation_id,
           error: error instanceof Error ? error.message : 'Unknown error'
-        });
+        }, this.trackOpts);
         throw error;
       }
     }
@@ -102,7 +113,7 @@ export default class GithubLibrary {
         trackServerEvent('github_repositories_loaded', {
           installation_count: installation_ids.length,
           total_repositories: results.reduce((sum, { repositories }) => sum + repositories.length, 0)
-        });
+        }, this.trackOpts);
         
         return repositoriesMap;
       } 
@@ -111,7 +122,7 @@ export default class GithubLibrary {
           operation: 'getRepositories',
           installation_count: installation_ids.length,
           error: error instanceof Error ? error.message : 'Unknown error'
-        });
+        }, this.trackOpts);
         throw error as Error;
       }
     }
@@ -203,7 +214,7 @@ export default class GithubLibrary {
         branch,
         installation_id,
         commits_count: commitsResponse.data.length
-      });
+      }, this.trackOpts);
       
       return commitsResponse.data;
     }
@@ -254,7 +265,7 @@ export default class GithubLibrary {
         branch,
         installation_id,
         directory_count: directories.length
-      });
+      }, this.trackOpts);
 
       return directories;
     }
@@ -289,7 +300,7 @@ export default class GithubLibrary {
             repo,
             path,
             installation_id
-          });
+          }, this.trackOpts);
           
           return content;
         }
@@ -304,7 +315,7 @@ export default class GithubLibrary {
           repo,
           path,
           error: error.message
-        });
+        }, this.trackOpts);
         throw error;
       }
     }
@@ -372,9 +383,9 @@ export default class GithubLibrary {
               throw new Error(data.error);
           }
           
-          trackServerEvent('github_token_exchanged', {
+           trackServerEvent('github_token_exchanged', {
             success: true
-          });
+          }, this.trackOpts);
           
           return {
               access_token: data.access_token
@@ -384,7 +395,7 @@ export default class GithubLibrary {
           trackServerEvent('github_api_failure', {
             operation: 'exchangeCodeForUserToken',
             error: error instanceof Error ? error.message : 'Unknown error'
-          });
+          }, this.trackOpts);
           throw error;
       }
     }

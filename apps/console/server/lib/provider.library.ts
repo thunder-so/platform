@@ -82,7 +82,7 @@ async function getAwsClient<TClient>(
     return new clientConstructor({ credentials, region });
 }
 
-export async function getCallerIdentity(provider: ManualProvider) {
+export async function getCallerIdentity(provider: ManualProvider, options?: { userId?: string; email?: string }) {
     try {
         const stsClient = await getAwsClient(STSClient, provider);
         const callerIdentity = await stsClient.send(new GetCallerIdentityCommand({}));
@@ -90,7 +90,7 @@ export async function getCallerIdentity(provider: ManualProvider) {
         trackServerEvent('aws_sts_identity_validated', {
             account_id: callerIdentity.Account,
             user_id: callerIdentity.UserId
-        });
+        }, options?.userId ? { distinctId: options.userId, email: options.email } : undefined);
         
         return callerIdentity;
     } catch (error: any) {
@@ -98,7 +98,7 @@ export async function getCallerIdentity(provider: ManualProvider) {
             service: 'sts',
             operation: 'getCallerIdentity',
             error: error.message
-        });
+        }, options?.userId ? { distinctId: options.userId, email: options.email } : undefined);
         
         if (error.name === 'InvalidClientTokenId' || error.name === 'SignatureDoesNotMatch') {
             throw new TRPCError({
@@ -131,7 +131,7 @@ export async function getCallerIdentity(provider: ManualProvider) {
 //     }
 // }
 
-export async function createOrUpdateSecret(provider: ProviderSchema, name: string, secretString: string, description: string, region?: string): Promise<string> {
+export async function createOrUpdateSecret(provider: ProviderSchema, name: string, secretString: string, description: string, region?: string, options?: { userId?: string; email?: string }): Promise<string> {
     const secretsManagerClient = await getAwsClient(SecretsManagerClient, provider, region);
     try {
         const response = await secretsManagerClient.send(new CreateSecretCommand({
@@ -144,7 +144,7 @@ export async function createOrUpdateSecret(provider: ProviderSchema, name: strin
             secret_name: name,
             secret_arn: response.ARN,
             region: region
-        });
+        }, options?.userId ? { distinctId: options.userId, email: options.email } : undefined);
         
         return response.ARN || '';
     } catch (error: any) {
@@ -159,7 +159,7 @@ export async function createOrUpdateSecret(provider: ProviderSchema, name: strin
                 secret_name: name,
                 secret_arn: response.ARN,
                 region: region
-            });
+            }, options?.userId ? { distinctId: options.userId, email: options.email } : undefined);
             
             return response.ARN || '';
         } else {
@@ -167,7 +167,7 @@ export async function createOrUpdateSecret(provider: ProviderSchema, name: strin
                 service: 'secrets-manager',
                 operation: 'createOrUpdateSecret',
                 error: error.message
-            });
+            }, options?.userId ? { distinctId: options.userId, email: options.email } : undefined);
             console.error('Error creating or updating secret:', error);
             throw new TRPCError({
                 code: 'INTERNAL_SERVER_ERROR',
@@ -177,7 +177,7 @@ export async function createOrUpdateSecret(provider: ProviderSchema, name: strin
     }
 }
 
-export async function triggerPipeline(providerId: string, serviceId: string, sha?: string, region?: string) {
+export async function triggerPipeline(providerId: string, serviceId: string, sha?: string, region?: string, options?: { userId?: string; email?: string }) {
   const provider = await db.query.providers.findFirst({
     where: eq(providers.id, providerId),
   });
@@ -217,7 +217,7 @@ export async function triggerPipeline(providerId: string, serviceId: string, sha
       execution_id: response.pipelineExecutionId,
       service_id: serviceId,
       sha: sha
-    });
+    }, options?.userId ? { distinctId: options.userId, email: options.email } : undefined);
 
     console.log('Pipeline triggered successfully:', response.pipelineExecutionId);
     return response.pipelineExecutionId;
@@ -227,7 +227,7 @@ export async function triggerPipeline(providerId: string, serviceId: string, sha
       operation: 'triggerPipeline',
       pipeline_name: pipelineName,
       error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    }, options?.userId ? { distinctId: options.userId, email: options.email } : undefined);
     console.error('Error triggering pipeline:', error);
     throw new TRPCError({
       code: 'INTERNAL_SERVER_ERROR',
@@ -236,7 +236,7 @@ export async function triggerPipeline(providerId: string, serviceId: string, sha
   }
 }
 
-export async function getCloudWatchLogs(provider: ProviderSchema, logGroupName: string, logStreamName: string, nextToken?: string, region?: string) {
+export async function getCloudWatchLogs(provider: ProviderSchema, logGroupName: string, logStreamName: string, nextToken?: string, region?: string, options?: { userId?: string; email?: string }) {
     const cloudWatchLogsClient = await getAwsClient(CloudWatchLogsClient, provider, region);
 
     try {
@@ -257,7 +257,7 @@ export async function getCloudWatchLogs(provider: ProviderSchema, logGroupName: 
             operation: 'getLogEvents',
             log_group: logGroupName,
             error: error instanceof Error ? error.message : 'Unknown error'
-        });
+        }, options?.userId ? { distinctId: options.userId, email: options.email } : undefined);
         console.error('Error fetching logs from CloudWatch:', error);
         throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
@@ -266,7 +266,7 @@ export async function getCloudWatchLogs(provider: ProviderSchema, logGroupName: 
     }
 }
 
-export async function getCloudWatchLogsFromGroup(provider: ProviderSchema, logGroupName: string, nextToken?: string, startTime?: number, endTime?: number, region?: string) {
+export async function getCloudWatchLogsFromGroup(provider: ProviderSchema, logGroupName: string, nextToken?: string, startTime?: number, endTime?: number, region?: string, options?: { userId?: string; email?: string }) {
     const cloudWatchLogsClient = await getAwsClient(CloudWatchLogsClient, provider, region);
 
     try {
@@ -288,7 +288,7 @@ export async function getCloudWatchLogsFromGroup(provider: ProviderSchema, logGr
             operation: 'filterLogEvents',
             log_group: logGroupName,
             error: error instanceof Error ? error.message : 'Unknown error'
-        });
+        }, options?.userId ? { distinctId: options.userId, email: options.email } : undefined);
         console.error('Error fetching logs from CloudWatch log group:', error);
         throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
@@ -298,7 +298,7 @@ export async function getCloudWatchLogsFromGroup(provider: ProviderSchema, logGr
 }
 
 // Lookup hosted zone ID and ACM certificates for a domain using the provider credentials
-export async function lookupHostedZoneAndCerts(provider: ProviderSchema | ManualProvider, domain: string) {
+export async function lookupHostedZoneAndCerts(provider: ProviderSchema | ManualProvider, domain: string, options?: { userId?: string; email?: string }) {
     try {
         const route53 = await getAwsClient(Route53Client, provider);
         const acm = await getAwsClient(ACMClient, provider);
@@ -323,7 +323,7 @@ export async function lookupHostedZoneAndCerts(provider: ProviderSchema | Manual
             domain: domain,
             hosted_zone_found: !!hosted_zone_id,
             certificates_found: certs.length
-        });
+        }, options?.userId ? { distinctId: options.userId, email: options.email } : undefined);
 
         return { hosted_zone_id, certificates: certs };
     } catch (error) {
@@ -332,7 +332,7 @@ export async function lookupHostedZoneAndCerts(provider: ProviderSchema | Manual
             operation: 'lookupHostedZoneAndCerts',
             domain: domain,
             error: error instanceof Error ? error.message : 'Unknown error'
-        });
+        }, options?.userId ? { distinctId: options.userId, email: options.email } : undefined);
         console.error('Error in lookupHostedZoneAndCerts:', error);
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to lookup hosted zone or certificates.' });
     }

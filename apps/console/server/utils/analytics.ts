@@ -1,21 +1,51 @@
 import { PostHog } from 'posthog-node';
 
-export const trackServerEvent = async (event: string, properties: any = {}) => {
+let posthogInstance: PostHog | null = null;
+let posthogUnconfigured = false;
+
+function getPostHog(): PostHog | null {
+  if (posthogInstance) return posthogInstance;
+  if (posthogUnconfigured) return null;
+
   try {
     const runtimeConfig = useRuntimeConfig();
-    const posthog = new PostHog(
-      runtimeConfig.public.posthogPublicKey as string,
-      { host: runtimeConfig.public.posthogHost as string }
-    );
-    
+    const apiKey = runtimeConfig.public.posthogPublicKey as string;
+    const host = runtimeConfig.public.posthogHost as string;
+
+    if (!apiKey || !host) {
+      posthogUnconfigured = true;
+      return null;
+    }
+
+    posthogInstance = new PostHog(apiKey, { host });
+    return posthogInstance;
+  } catch {
+    posthogUnconfigured = true;
+    return null;
+  }
+}
+
+export const trackServerEvent = async (
+  event: string,
+  properties: any = {},
+  options?: { distinctId?: string; email?: string; name?: string }
+) => {
+  const posthog = getPostHog();
+  if (!posthog) return;
+
+  try {
+    const distinctId = options?.distinctId || 'server';
+
     posthog.capture({
-      distinctId: 'server',
+      distinctId,
       event,
-      properties
+      properties: {
+        ...properties,
+        ...(options?.email ? { user_email: options.email } : {}),
+      }
     });
-    
+
     await posthog.flush();
-    await posthog.shutdown();
   } catch (e) {
     // Silently fail analytics
   }

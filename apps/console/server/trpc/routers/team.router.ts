@@ -35,6 +35,7 @@ export const teamRouter = router({
     .input(z.object({ organizationId: z.string(), email: z.string().email() }))
     .mutation(async ({ ctx, input }) => {
       const { user } = ctx;
+      const userOpts = { distinctId: user.sub, email: user.email as string };
 
       // Fetch organization
       const [organization] = await db.select().from(organizations).where(eq(organizations.id, input.organizationId));
@@ -81,7 +82,7 @@ export const teamRouter = router({
           plan_type: 'free',
           current_members: Number(memberCount[0]?.count || 0),
           limit: 1
-        });
+        }, userOpts);
         
         if (Number(memberCount[0]?.count || 0) >= 1) {
           throw new TRPCError({
@@ -109,7 +110,7 @@ export const teamRouter = router({
             subscription_id: subscription.id,
             available_seats: seatsList.availableSeats,
             total_seats: seatsList.totalSeats
-          });
+          }, userOpts);
           
           if (seatsList.availableSeats <= 0) {
             throw new TRPCError({
@@ -122,7 +123,7 @@ export const teamRouter = router({
             operation: 'seat_availability_check',
             subscription_id: subscription.id,
             error: polarError instanceof Error ? polarError.message : 'Unknown error'
-          });
+          }, userOpts);
           console.error('Failed to check seat availability:', polarError);
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
@@ -141,13 +142,13 @@ export const teamRouter = router({
             org_id: input.organizationId,
             subscription_id: subscription.id,
             email: input.email
-          });
+          }, userOpts);
         } catch (polarError) {
           trackServerEvent('polar_api_failure', {
             operation: 'seat_assignment',
             subscription_id: subscription.id,
             error: polarError instanceof Error ? polarError.message : 'Unknown error'
-          });
+          }, userOpts);
           console.error('Polar seat assignment failed:', polarError);
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
@@ -246,6 +247,7 @@ export const teamRouter = router({
     .input(z.object({ organizationId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const { user } = ctx
+      const userOpts = { distinctId: user.sub, email: user.email as string }
       const [membership] = await db
         .select()
         .from(memberships)
@@ -286,13 +288,13 @@ export const teamRouter = router({
             org_id: input.organizationId,
             subscription_id: subscription.id,
             user_id: user.sub
-          });
+          }, userOpts);
         } catch (polarError) {
           trackServerEvent('polar_api_failure', {
             operation: 'seat_claim',
             subscription_id: subscription.id,
             error: polarError instanceof Error ? polarError.message : 'Unknown error'
-          });
+          }, userOpts);
           console.error('Polar seat claim failed:', polarError);
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
@@ -436,6 +438,7 @@ export const teamRouter = router({
     .input(z.object({ organizationId: z.string(), additionalSeats: z.number().min(1) }))
     .mutation(async ({ ctx, input }) => {
       const { user } = ctx;
+      const userOpts = { distinctId: user.sub, email: user.email as string };
       const { private: { polarAccessToken, polarServer } } = useRuntimeConfig();
 
       const subscription = await db.query.subscriptions.findFirst({
@@ -487,7 +490,7 @@ export const teamRouter = router({
           old_seat_count: seatsList.totalSeats,
           new_seat_count: newSeatCount,
           additional_seats: input.additionalSeats
-        });
+        }, userOpts);
         
         return { success: true };
       } catch (polarError) {
@@ -495,7 +498,7 @@ export const teamRouter = router({
           operation: 'seat_update',
           subscription_id: subscription.id,
           error: polarError instanceof Error ? polarError.message : 'Unknown error'
-        });
+        }, userOpts);
         console.error('Polar seat update failed:', polarError);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',

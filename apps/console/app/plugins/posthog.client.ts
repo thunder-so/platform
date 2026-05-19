@@ -20,6 +20,12 @@ export default defineNuxtPlugin(() => {
   // Listen for analytics consent changes
   watch(() => cookieConsent.preferences.value?.analytics, (hasConsent) => {
     if (hasConsent) {
+      if (user.value) {
+        $posthog().identify(user.value.sub, {
+          email: user.value.email,
+          name: user.value.user_metadata?.name || user.value.user_metadata?.full_name,
+        })
+      }
       $posthog().opt_in_capturing()
     } else {
       $posthog().opt_out_capturing()

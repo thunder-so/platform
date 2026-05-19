@@ -27,6 +27,8 @@ export const applicationsRouter = router({
       organization_id: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const { user } = ctx
+      const userOpts = { distinctId: user.sub, email: user.email as string }
       const { name, display_name, environments: inputEnvironments } = input;
 
       const { newApplicationId, newServiceId } = await db.transaction(async (tx) => {
@@ -83,14 +85,15 @@ export const applicationsRouter = router({
           secretName,
           decryptedToken,
           `GitHub UAT for app ${newApplication.name} in env ${newEnvironment.name}`,
-          env.region
+          env.region,
+          { userId: user.sub, email: user.email as string }
         );
         
         trackServerEvent('aws_secret_created', {
           secret_name: secretName,
           app_id: newApplication.id,
           env_id: newEnvironment.id
-        });
+        }, userOpts);
 
         await tx.update(userAccessTokens)
           .set({ environment_id: newEnvironment.id, resource: accessTokenSecretArn })
@@ -128,12 +131,12 @@ export const applicationsRouter = router({
           app_id: newApplication.id,
           service_id: newService.id,
           stack_type: service.stack_type
-        });
+        }, userOpts);
         
         return { newApplicationId: newApplication.id, newServiceId: newService.id };
       });
 
-      const platform = new PlatformLibrary();
+      const platform = new PlatformLibrary({ userId: user.sub, email: user.email as string });
       await platform.triggerBuild(newServiceId);
 
       return { newApplicationId };
@@ -145,10 +148,12 @@ export const applicationsRouter = router({
       service_id: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const { user } = ctx
+      const userOpts = { distinctId: user.sub, email: user.email as string }
       const { application_id, service_id } = input;
 
       try {
-        const platform = new PlatformLibrary();
+        const platform = new PlatformLibrary({ userId: user.sub, email: user.email as string });
         await platform.triggerBuild(service_id, 'delete');
       } catch (err) {
         console.error('Failed to trigger delete build:', err);
@@ -164,11 +169,11 @@ export const applicationsRouter = router({
           await tx.update(applications).set({ deleted_at: new Date() }).where(eq(applications.id, application_id));
         });
       } catch (updateErr) {
-        trackServerEvent('database_transaction_failed', {
-          operation: 'application_delete',
-          app_id: application_id,
-          error: updateErr instanceof Error ? updateErr.message : 'Unknown error'
-        });
+          trackServerEvent('database_transaction_failed', {
+            operation: 'application_delete',
+            app_id: application_id,
+            error: updateErr instanceof Error ? updateErr.message : 'Unknown error'
+          }, userOpts);
         console.error('Failed to soft-delete resources after delete request:', updateErr);
         return { success: false, message: 'Failed to delete database record.' };
       }

@@ -32,6 +32,8 @@ export const organizationsRouter = router({
       let checkoutUrl: string | null = null
       let newOrg
 
+      const userOpts = { distinctId: user.sub, email: user.email as string };
+
       try {
         const result = await db.transaction(async (tx) => {
           // 1. Create organization and membership
@@ -68,7 +70,7 @@ export const organizationsRouter = router({
               customer_id: newCustomer.id,
               user_id: user.sub,
               org_id: org.id
-            });
+            }, userOpts);
             
             const [newCustomerRecord] = await tx.insert(customers).values({
               user_id: user.sub,
@@ -99,6 +101,12 @@ export const organizationsRouter = router({
         newOrg = result.newOrg
         const { customer, product } = result
 
+        trackServerEvent('org_created', {
+          org_id: newOrg.id,
+          plan_id: planId,
+          user_id: user.sub,
+        }, userOpts);
+
         const primary = product.metadata.prices[0];
         const isFree = !!primary && (primary as any).amount_type === 'free';
         const isOneTime = !!primary && (primary as any).type === 'one_time';
@@ -119,7 +127,7 @@ export const organizationsRouter = router({
             product_id: planId,
             org_id: newOrg.id,
             plan_type: 'free'
-          });
+          }, userOpts);
 
           // Set pending to false for free plans
           await db.update(organizations).set({ pending: false }).where(eq(organizations.id, newOrg.id))
@@ -127,7 +135,7 @@ export const organizationsRouter = router({
           trackServerEvent('org_auto_activated', {
             org_id: newOrg.id,
             activation_method: 'free_plan_subscription'
-          });
+          }, userOpts);
           
         } else {
           // Create checkout for paid or one-time paid plans
@@ -154,7 +162,7 @@ export const organizationsRouter = router({
         trackServerEvent('polar_api_failure', {
           operation: 'organization_create',
           error: polarError instanceof Error ? polarError.message : 'Unknown Polar error'
-        });
+        }, userOpts);
         console.error('Polar operation failed:', polarError)
         const errorMessage = polarError instanceof Error ? polarError.message : 'Unknown Polar error'
         throw new TRPCError({
@@ -189,6 +197,7 @@ export const organizationsRouter = router({
     .query(async ({ ctx, input }) => {
       const { checkoutId } = input
       const { user } = ctx
+      const userOpts = { distinctId: user.sub, email: user.email as string }
       const {
         private: { polarAccessToken, polarServer },
       } = useRuntimeConfig()
@@ -229,7 +238,7 @@ export const organizationsRouter = router({
           org_id: organizationId,
           is_new_org: isNewOrg,
           is_seat_based: isSeatBased
-        });
+        }, userOpts);
         
         // Set pending to false after successful checkout
         await db.update(organizations).set({ pending: false }).where(eq(organizations.id, organizationId))
@@ -237,7 +246,7 @@ export const organizationsRouter = router({
         trackServerEvent('org_activated', {
           org_id: organizationId,
           activation_method: 'checkout_verification'
-        });
+        }, userOpts);
         
         return { organizationId }
       } catch (error) {
@@ -245,7 +254,7 @@ export const organizationsRouter = router({
           operation: 'checkout_verification',
           checkout_id: checkoutId,
           error: error instanceof Error ? error.message : 'Unknown error'
-        });
+        }, userOpts);
         console.error('Failed to retrieve checkout session:', error)
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
