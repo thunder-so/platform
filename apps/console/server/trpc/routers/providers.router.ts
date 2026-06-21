@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { publicProcedure, protectedProcedure, router } from '../init';
 import { TRPCError } from '@trpc/server';
 import { db } from '../../db/db';
-import { providers, subscriptions, orders } from '../../db/schema';
+import { providers, subscriptions } from '../../db/schema';
 import { sql, eq, and, or, isNull } from 'drizzle-orm';
 import * as ProviderLibrary from '../../lib/provider.library';
 import { PlatformLibrary } from '../../lib/platform.library';
@@ -23,7 +23,7 @@ export const providersRouter = router({
       const userOpts = { distinctId: user.sub, email: user.email as string };
       const { organizationId, alias, accessKeyId, secretAccessKey } = input;
 
-      // Check free plan limits
+      // Check for active/trialing subscription to allow adding providers
       const subscription = await db.query.subscriptions.findFirst({
         where: and(
           eq(subscriptions.organization_id, organizationId),
@@ -31,20 +31,11 @@ export const providersRouter = router({
         )
       });
 
-      if (subscription && (subscription.metadata as any)?.prices?.[0]?.amount_type === 'free') {
-        const providerCount = await db.select({ count: sql`count(*)` })
-          .from(providers)
-          .where(and(
-            eq(providers.organization_id, organizationId),
-            isNull(providers.deleted_at)
-          ));
-        
-        if (Number(providerCount[0]?.count || 0) >= 1) {
-          throw new TRPCError({
-            code: 'PRECONDITION_FAILED',
-            message: 'Free plan is limited to 1 AWS account. Upgrade to add more AWS accounts.',
-          });
-        }
+      if (!subscription) {
+        throw new TRPCError({
+          code: 'PRECONDITION_FAILED',
+          message: 'An active Pro subscription is required to add AWS accounts.',
+        });
       }
 
       const tempProvider = {

@@ -2,38 +2,16 @@
   <div>
     <div class="flex justify-between items-center mb-4">
       <div></div>
-      <UButton 
-        color="neutral" 
-        variant="outline" 
-        size="lg" 
-        :icon="limitReached ? 'tabler:lock' : 'tabler:user-plus'"
-        label="Invite Member" 
-        @click="openInviteModal" 
-        :disabled="limitReached"
+      <UButton
+        color="neutral"
+        variant="outline"
+        size="lg"
+        icon="tabler:user-plus"
+        label="Invite Member"
+        @click="openInviteModal"
       />
     </div>
 
-    <UAlert
-      v-if="limitReached && !isLifetime && !seatUsage.isSeatBased"
-      icon="tabler:info-circle"
-      color="info"
-      variant="soft"
-      :title="isFree ? 'Upgrade to add more team members' : 'No available seats'"
-      :description="'The free plan is limited to 1 member. Upgrade your plan to add more.'"
-      class="mb-4"
-      :actions="[{ label: 'Upgrade', color: 'primary', to: `/org/${orgId}/billing` }]"
-    />
-
-    <UAlert
-      v-if="seatUsage.isSeatBased && !isLifetime"
-      icon="tabler:users"
-      :color="limitReached ? 'warning' : 'info'"
-      variant="soft"
-      :title="`${seatUsage.used} seats used / ${seatUsage.total} seats total`"
-      :description="isTrialing ? 'Seat purchases available after trial period.' : (limitReached ? 'All seats are in use. Purchase more seats to invite members.' : 'You can invite more team members.')"
-      class="mb-4"
-      :actions="isTrialing ? [] : [{ label: 'Buy more seats', color: 'primary', to: `/org/${orgId}/billing` }]"
-    />
     <div v-if="loading">
       <div class="flex flex-col gap-4 mt-7">
         <div v-for="i in 3" :key="i" class="space-y-4">
@@ -59,14 +37,13 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, h } from 'vue';
 import { useMemberships } from '~/composables/useMemberships';
-import { usePolar } from '~/composables/usePolar';
 
 definePageMeta({
   layout: 'org',
 });
 
 const supabase = useSupabaseClient();
-const { selectedOrganization, currentPlan } = useMemberships();
+const { selectedOrganization } = useMemberships();
 const { $client } = useNuxtApp();
 const overlay = useOverlay();
 const toast = useToast()
@@ -77,18 +54,12 @@ const UAvatar = resolveComponent('UAvatar');
 const UBadge = resolveComponent('UBadge');
 const orgId = selectedOrganization?.value?.id as string;
 
-const { isFree: isFreeFn, isOneTime, seatUsage, fetchSeatUsage, limitReached, isTrialing: isTrialingFn } = usePolar();
-
-const isFree = computed(() => isFreeFn(currentPlan.value as any));
-const isLifetime = computed(() => isOneTime(currentPlan.value as any));
-const isTrialing = computed(() => isTrialingFn(currentPlan.value as any));
-
 const members = ref<any[]>([]);
 const loading = ref(true);
 const error = ref<{ message: string } | null>(null);
 
 const columns = [
-  {
+  {    
     accessorKey: 'user.avatar_url',
     header: 'Member',
     cell: ({ row }: any) => {
@@ -182,9 +153,6 @@ function getDropdownActions(member: any) {
 }
 
 onMounted(async () => {
-  if (selectedOrganization.value?.id) {
-    await fetchSeatUsage(selectedOrganization.value.id);
-  }
   fetchMembers();
 });
 
@@ -195,7 +163,6 @@ const openInviteModal = async () => {
   const result = await modal.open().result;
   if (result) {
     await fetchMembers();
-    await fetchSeatUsage(orgId);
   }
 };
 

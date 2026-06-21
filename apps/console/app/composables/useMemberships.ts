@@ -1,4 +1,4 @@
-import type { Organization, Membership, Subscription, Order, ProductMetadata, Price } from '~~/server/db/schema';
+import type { Organization, Membership, Subscription, ProductMetadata, Price } from '~~/server/db/schema';
 import { usePolar } from '~/composables/usePolar';
 import { computed } from 'vue';
 
@@ -8,7 +8,6 @@ type OrganizationWithMetadata = {
   pending: boolean;
   orgPending: boolean;
   subscriptions: Subscription[];
-  orders: Order[];
 };
 
 export const useMemberships = () => {
@@ -38,8 +37,7 @@ export const useMemberships = () => {
         .select(`id, pending,
           organizations (
             id, name, pending,
-            subscriptions (id, status, metadata, current_period_start, current_period_end, cancel_at_period_end, created),
-            orders (id, metadata, created_at)
+            subscriptions (id, status, metadata, current_period_start, current_period_end, cancel_at_period_end, created)
           )
         `)
         .eq('user_id', user.value.sub)
@@ -55,7 +53,6 @@ export const useMemberships = () => {
         subscriptions: (membership.organizations.subscriptions || [])
           .filter((sub: any) => sub.status !== 'canceled')
           .sort((a: any, b: any) => new Date(b.created || 0).getTime() - new Date(a.created || 0).getTime()),
-        orders: membership.organizations.orders || []
       })).filter((org: any) => !org.orgPending) || [];
 
       memberships.value = flattened;
@@ -122,7 +119,7 @@ export const useMemberships = () => {
   const { products } = usePolar();
   const currentPlan = computed(() => {
     const org = selectedOrganization.value;
-    if (!org) return products.value.find(p => p.id === 'free');
+    if (!org) return undefined;
     
     const activeSub = org.subscriptions
       ?.filter(sub => sub.status !== 'canceled')
@@ -140,20 +137,7 @@ export const useMemberships = () => {
       }
     }
     
-    const order = org.orders?.[0];
-    if (order?.metadata) {
-      const metadata = order.metadata as { product: ProductMetadata; price: Price };
-      if (metadata.product) {
-        return {
-          id: metadata.product.id,
-          name: metadata.product.name,
-          description: metadata.product.description ?? null,
-          metadata: { price: metadata.price }
-        };
-      }
-    }
-    
-    return products.value.find(p => p.id === 'free');
+    return undefined;
   });
 
   const hasAccessToOrg = (orgId: string): 'member' | 'invitee' | 'no-access' => {

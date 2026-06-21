@@ -5,49 +5,24 @@
         v-for="plan in plans"
         :key="plan.id"
         class="flex-1 flex flex-col border border-muted rounded-none p-4"
-        :class="{ 'border-success': selectedPlan === plan.id }"
+        :class="{ 'border-primary': selectedPlan === plan.id }"
       >
         <template #header>
           <h2 class="text-md">{{ plan.name }}</h2>
           <p class="text-sm text-muted">{{ plan.description }}</p>
         </template>
-        
-        <div class="h-42">
-          <div class="text-2xl my-2">
-            <div v-if="isFree(plan)">
-              <ul class="feature-list">
-                <li>1 AWS account</li>
-                <li>Unlimited apps</li>
-              </ul>
-              <span>{{ priceDisplay(plan).label }}</span>
-              <span class="block text-sm text-muted">Free for life</span>
-            </div>
-            <div v-else-if="isSeatBased(plan)">
-              <ul class="feature-list">
-                <li>Unlimited AWS accounts</li>
-                <li>Unlimited apps</li>
-                <li>Priority support</li>
-              </ul>
-              <span>{{ priceDisplay(plan).label }}</span>
-              <span class="block text-sm text-muted">per seat per {{ getPrimaryPrice(plan?.metadata)?.recurring_interval }}</span>
-            </div>
-            <div v-else-if="isOneTime(plan)">
-              <ul class="feature-list">
-                <li>Unlimited AWS accounts</li>
-                <li>Unlimited team members</li>
-                <li>Priority support for life</li>
-              </ul>
-              <span>{{ priceDisplay(plan).label }}</span>
-              <span class="block text-sm text-muted">one-time payment</span>
-              <p>
-                <span class="text-xs text-muted italic">Available only during beta</span>
-              </p>
-            </div>
 
-            <p v-if="plan?.metadata.trial_interval_count && plan?.metadata.trial_interval">
-              <span class="text-xs text-muted italic">{{ plan?.metadata.trial_interval_count }} {{ plan?.metadata.trial_interval }} free trial</span>
-            </p>
-          </div>
+        <div class="min-h-42">
+          <ul class="feature-list">
+            <li>Unlimited AWS accounts</li>
+            <li>Unlimited apps</li>
+            <li>Unlimited team members</li>
+            <li>Priority support</li>
+          </ul>
+          <span class="text-2xl">{{ priceDisplay(plan).label }}</span>
+          <p v-if="plan?.metadata?.trial_interval_count && plan?.metadata?.trial_interval" class="mt-2">
+            <span class="text-xs text-muted italic">{{ plan.metadata.trial_interval_count }}-{{ plan.metadata.trial_interval }} free trial</span>
+          </p>
         </div>
 
         <template #footer>
@@ -66,30 +41,18 @@
       </UCard>
     </div>
   </fieldset>
-  <!-- <div>
-    <p class="text-sm text-muted">View <a href="https://thunder.so/pricing" target="_blank">pricing details</a>.</p>
-  </div> -->
 </template>
 
 <script setup lang="ts">
 import type { Product } from '~~/server/db/schema';
 import { usePolar } from '~/composables/usePolar';
 
-const { isFree, isSeatBased, isOneTime, priceDisplay, getPrimaryPrice, getSeatPrice } = usePolar();
+const { priceDisplay } = usePolar();
 
 const props = defineProps({
-  plans: {
-    type: Array as () => readonly Product[],
-    required: true,
-  },
-  selectedPlan: {
-    type: String,
-    default: null,
-  },
-  disableSelection: {
-    type: Boolean,
-    default: false,
-  }
+  plans: { type: Array as () => readonly Product[], required: true },
+  selectedPlan: { type: String, default: null },
+  disableSelection: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['update:selectedPlan']);

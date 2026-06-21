@@ -195,8 +195,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const user = useSupabaseUser();
 const supabase = useSupabaseClient();
-const { memberships, selectedOrganization, currentPlan } = useMemberships()
-const { isFree, getPrimaryPrice } = usePolar();
+const { memberships, selectedOrganization } = useMemberships()
 
 const isMobileMenuOpen = ref(false);
 
@@ -208,20 +207,11 @@ function selectOrganization(org: any) {
 const isOrgPopoverOpen = ref(false)
 
 const isProOrg = (org: any) => {
-  const activeSub = org.subscriptions
-    ?.filter((sub: any) => sub.status !== 'canceled')
-    ?.sort((a: any, b: any) => new Date(b.created || 0).getTime() - new Date(a.created || 0).getTime())
-    ?.[0];
-  
-  const isProSub = !!activeSub && getPrimaryPrice(activeSub?.metadata)?.amount_type !== 'free';
-
-  const recentOrder = org.orders
-    ?.sort((a: any, b: any) => new Date(b.created_at || b.created || 0).getTime() - new Date(a.created_at || a.created || 0).getTime())
-    ?.[0];
-
-  const isProOrder = !!recentOrder && getPrimaryPrice(recentOrder?.metadata)?.amount_type !== 'free';
-
-  return isProSub || isProOrder || false;
+  return org.subscriptions?.some((sub: any) => {
+    if (sub.status !== 'active' && sub.status !== 'trialing') return false;
+    const prices: any[] = sub.metadata?.product?.prices ?? [];
+    return prices.some((p: any) => p.amount_type === 'fixed' && p.price_amount > 0);
+  }) ?? false;
 }
 
 const organizationItems = computed(() => {

@@ -13,7 +13,7 @@
           <div class="text-sm text-muted">Loading products...</div>
         </div>
       </div>
-      
+
       <PricingTable v-else :plans="products as any" :selectedPlan="selectedPlan" @update:selectedPlan="selectedPlan = $event" />
 
       <UAlert v-if="error" color="error" variant="soft" :title="error.message" />
@@ -21,7 +21,7 @@
 
     <template #footer>
       <UButton @click="createOrganization" :loading="loading" :disabled="!orgName.trim()" size="lg">
-        {{ products.find(p => p.id === selectedPlan)?.metadata?.prices?.[0]?.amount_type === 'free' ? 'Create workspace' : 'Continue to payment' }}
+        Continue to payment
       </UButton>
     </template>
   </UCard>
@@ -43,14 +43,13 @@ const toast = useToast();
 const { refreshMemberships, setSelectedOrganization } = useMemberships();
 
 const orgName = ref<string>('');
-const { products, isLoading: productsLoading, fetchProducts, isFree } = usePolar();
+const { products, isLoading: productsLoading, fetchProducts } = usePolar();
 const selectedPlan = ref<string | undefined>(undefined);
 const loading = ref(false);
 const error = ref<{ message: string } | null>(null);
 
 fetchProducts().then(() => {
-  const freePlan = products.value.find(p => isFree(p as any));
-  selectedPlan.value = freePlan?.id;
+  selectedPlan.value = products.value[0]?.id;
 });
 
 const createOrganization = async () => {
@@ -62,15 +61,11 @@ const createOrganization = async () => {
   loading.value = true;
   error.value = null;
 
-  const selected = products.value.find(p => p.id === selectedPlan.value);
-  const isFreePlan = isFree(selected as any);
-
   const { $posthog } = useNuxtApp();
   $posthog().capture('org_create_started', {
-    plan_type: isFreePlan ? 'free' : 'paid',
     plan_id: selectedPlan.value,
     org_name: orgName.value,
-    user_email: user.value?.email
+    user_email: user.value?.email,
   });
 
   try {
@@ -81,35 +76,23 @@ const createOrganization = async () => {
 
     $posthog().capture('org_created', {
       org_id: newOrg.id,
-      plan_type: isFreePlan ? 'free' : 'paid',
       plan_id: selectedPlan.value,
-      user_email: user.value?.email
+      user_email: user.value?.email,
     });
 
-    if (isFreePlan) {
-      // For free products, direct redirect to dashboard
-      await refreshMemberships();
-      
-      // Explicitly set the new organization as selected
-      setSelectedOrganization(newOrg.id);
-      
-      toast.add({ title: 'Workspace created successfully', color: 'success' });
-      await router.push(`/org/${newOrg.id}`);
-    } else {
-      // For paid products, redirect to checkout
-      $posthog().capture('checkout_initiated', {
-        org_id: newOrg.id,
-        plan_id: selectedPlan.value,
-        user_email: user.value?.email
-      });
-      window.location.href = newOrg.checkoutUrl!;
-    }
+    $posthog().capture('checkout_initiated', {
+      org_id: newOrg.id,
+      plan_id: selectedPlan.value,
+      user_email: user.value?.email,
+    });
+
+    window.location.href = newOrg.checkoutUrl!;
   } catch (e) {
     console.error('Error creating organization:', e);
     $posthog().capture('org_create_failed', {
       error: (e as Error).message,
       plan_id: selectedPlan.value,
-      user_email: user.value?.email
+      user_email: user.value?.email,
     });
     error.value = { message: (e as Error).message };
   } finally {

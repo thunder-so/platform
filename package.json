@@ -15,7 +15,7 @@
     "turbo": "^2.6.1",
     "supabase": "^2.62.5",
     "@supabase/supabase-js": "2.86.0",
-    "@thunder-so/thunder": "github:thunder-so/thunder#v1.4.7"
+    "@thunder-so/thunder": "github:thunder-so/thunder#v1.4.8"
   },
   "workspaces": [
     "apps/*",

@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { protectedProcedure, router } from '../init'
 import { db } from '../../db/db'
-import { organizations, memberships, subscriptions, customers, products, applications, orders, type Customer, type Product, type Subscription } from '../../db/schema'
+import { organizations, memberships, subscriptions, customers, products, applications, type Customer, type Product, type Subscription } from '../../db/schema'
 import { Polar } from '@polar-sh/sdk'
 import { TRPCError } from '@trpc/server'
 import { eq, and, isNull } from 'drizzle-orm'
@@ -107,57 +107,16 @@ export const organizationsRouter = router({
           user_id: user.sub,
         }, userOpts);
 
-        const primary = product.metadata.prices[0];
-        const isFree = !!primary && (primary as any).amount_type === 'free';
-        const isOneTime = !!primary && (primary as any).type === 'one_time';
-
-        if (isFree && !isOneTime) {
-          // Create subscription directly for recurring free plans
-          await polar.subscriptions.create({
-            customerId: customer.polar_customer_id,
-            productId: planId,
-            metadata: {
-              user_id: user.sub,
-              organization_id: newOrg.id,
-            },
-          })
-
-          trackServerEvent('polar_subscription_auto_created', {
-            customer_id: customer.polar_customer_id,
-            product_id: planId,
-            org_id: newOrg.id,
-            plan_type: 'free'
-          }, userOpts);
-
-          // Set pending to false for free plans
-          await db.update(organizations).set({ pending: false }).where(eq(organizations.id, newOrg.id))
-
-          trackServerEvent('org_auto_activated', {
-            org_id: newOrg.id,
-            activation_method: 'free_plan_subscription'
-          }, userOpts);
-          
-        } else {
-          // Create checkout for paid or one-time paid plans
-          const checkoutData: any = {
-            products: [planId],
-            successUrl: `${siteUrl}${polarCheckoutSuccessUrl}`,
-            customerEmail: user.email,
-            metadata: {
-              user_id: user.sub,
-              organization_id: newOrg.id,
-            },
-          }
-
-          // Only add seats for seat-based plans
-          const isSeatBased = !!primary && (primary as any).amount_type === 'seat_based'
-          if (isSeatBased) {
-            checkoutData.seats = 3
-          }
-
-          const checkout = await polar.checkouts.create(checkoutData)
-          checkoutUrl = checkout.url
-        }
+        const checkout = await polar.checkouts.create({
+          products: [planId],
+          successUrl: `${siteUrl}${polarCheckoutSuccessUrl}`,
+          customerEmail: user.email,
+          metadata: {
+            user_id: user.sub,
+            organization_id: newOrg.id,
+          },
+        });
+        checkoutUrl = checkout.url;
       } catch (polarError) {
         trackServerEvent('polar_api_failure', {
           operation: 'organization_create',
@@ -218,26 +177,9 @@ export const organizationsRouter = router({
           })
         }
 
-        // Assign seat only for new org creation (not plan switching)
-        const isNewOrg = !checkout.metadata?.plan_change
-        const isSeatBased = checkout.productPrice?.amountType === 'seat_based'
-        
-        if (isNewOrg && isSeatBased) {
-          try {
-            const seat = await polar.customerSeats.assignSeat({
-              checkoutId: checkoutId,
-              customerId: checkout.customerId,
-            })
-          } catch (seatError) {
-            console.error('Seat assignment failed:', seatError)
-          }
-        }
-
         trackServerEvent('checkout_session_verified', {
           checkout_id: checkoutId,
           org_id: organizationId,
-          is_new_org: isNewOrg,
-          is_seat_based: isSeatBased
         }, userOpts);
         
         // Set pending to false after successful checkout
@@ -268,12 +210,11 @@ export const organizationsRouter = router({
       z.object({
         organizationId: z.string(),
         productId: z.string(),
-        seats: z.number().optional(),
         plan_change: z.boolean().optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const { organizationId, productId, seats, plan_change } = input;
+      const { organizationId, productId, plan_change } = input;
       const { user } = ctx;
       const {
         public: { siteUrl },
@@ -286,7 +227,7 @@ export const organizationsRouter = router({
       });
 
       try {
-        const checkoutData: any = {
+        const checkout = await polar.checkouts.create({
           products: [productId],
           successUrl: `${siteUrl}${polarCheckoutSuccessUrl}`,
           customerEmail: user.email,
@@ -295,11 +236,7 @@ export const organizationsRouter = router({
             organization_id: organizationId,
             plan_change: plan_change ?? true,
           },
-        };
-        if (seats) {
-          checkoutData.seats = seats;
-        }
-        const checkout = await polar.checkouts.create(checkoutData);
+        });
         return { checkoutUrl: checkout.url };
       } catch (polarError) {
         console.error('Polar checkout creation failed:', polarError);
@@ -399,49 +336,6 @@ export const organizationsRouter = router({
       return { success: true }
     }),
 
-  switchToFreePlan: protectedProcedure
-    .input(
-      z.object({
-        organizationId: z.string(),
-        productId: z.string(),
-      }),
-    )
-    .mutation(async ({ input, ctx }) => {
-      const { organizationId, productId } = input;
-      const { user } = ctx;
-      const {
-        private: { polarAccessToken, polarServer },
-      } = useRuntimeConfig();
-
-      const polar = new Polar({
-        accessToken: polarAccessToken,
-        server: polarServer as 'sandbox' | 'production',
-      });
-
-      const customer = await db.query.customers.findFirst({
-        where: eq(customers.organization_id, organizationId),
-      });
-
-      if (!customer) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Customer not found.',
-        });
-      }
-
-      await polar.subscriptions.create({
-        customerId: customer.polar_customer_id,
-        productId: productId,
-        metadata: {
-          user_id: user.sub,
-          organization_id: organizationId,
-          plan_change: true,
-        },
-      });
-
-      return { success: true };
-    }),
-
   getUserMemberships: protectedProcedure
     .query(async ({ ctx }) => {
       const { user } = ctx;
@@ -451,9 +345,7 @@ export const organizationsRouter = router({
           organization: {
             with: {
               subscriptions: {
-                where: and(
-                  eq(subscriptions.status, 'active'),
-                ),
+                where: (s, { or, eq }) => or(eq(s.status, 'active'), eq(s.status, 'trialing')),
               },
             },
           },
@@ -462,7 +354,7 @@ export const organizationsRouter = router({
 
       return userMemberships.map((m) => ({
         ...m.organization,
-        subscription: (m.organization.subscriptions as Subscription[]).length > 0 ? 'Pro' : 'Free',
+        subscription: (m.organization.subscriptions as Subscription[]).length > 0 ? 'Pro' : null,
       }));
     }),
 })

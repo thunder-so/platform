@@ -7,23 +7,12 @@
           color="neutral"
           variant="outline"
           size="lg"
-          :trailing-icon="isFree ? 'tabler:lock' : 'tabler:chevron-down'"
+          trailing-icon="tabler:chevron-down"
           label="Add New"
-          :disabled="isFree"
         />
       </UDropdownMenu>
     </div>
 
-    <UAlert
-      v-if="isFree && limitReached"
-      icon="tabler:info-circle"
-      color="info"
-      variant="soft"
-      title="Upgrade to add more AWS Accounts"
-      description="The free plan is limited to 1 AWS Account. Upgrade your plan to add more."
-      class="mb-4"
-      :actions="[{ label: 'Upgrade', color: 'primary', to: `/org/${orgId}/billing` }]"
-    />
 
     <div v-if="loading">
       <div class="flex flex-col gap-4 mt-7">
@@ -66,15 +55,13 @@ import type { TableColumn, DropdownMenuItem } from '@nuxt/ui';
 import type { Provider } from '~~/server/db/schema';
 import { OrgProviderCreateStackModal, OrgProviderCreateCredentialsModal } from '#components';
 import { computed } from 'vue';
-import { usePolar } from '~/composables/usePolar';
 
 definePageMeta({
   layout: 'org'
 })
 
 const supabase = useSupabaseClient()
-const { selectedOrganization, currentPlan } = useMemberships()
-const { isFree: isFreeFn } = usePolar();
+const { selectedOrganization } = useMemberships()
 const { $client } = useNuxtApp()
 const toast = useToast()
 const overlay = useOverlay()
@@ -83,8 +70,6 @@ const providers = ref<Provider[]>([])
 const loading = ref(true)
 const error = ref<{ message: string } | null>(null);
 const orgId = selectedOrganization.value?.id as string;
-const limitReached = computed(() => providers.value.length >= 1);
-const isFree = computed(() => isFreeFn(currentPlan.value as any));
 
 const UBadge = resolveComponent('UBadge')
 const UDropdownMenu = resolveComponent('UDropdownMenu')

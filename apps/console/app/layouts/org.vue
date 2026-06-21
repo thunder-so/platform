@@ -161,8 +161,7 @@ import type { NavigationMenuItem } from '@nuxt/ui'
 import { any } from 'zod/v4-mini';
 
 const route = useRoute();
-const { setSelectedOrganization, selectedOrganization, hasAccessToOrg, getPendingInvite, refreshMemberships, isLoading, currentPlan } = useMemberships();
-const { isFree, getPrimaryPrice } = usePolar();
+const { setSelectedOrganization, selectedOrganization, hasAccessToOrg, getPendingInvite, refreshMemberships, isLoading } = useMemberships();
 const { $client } = useNuxtApp();
 const toast = useToast();
 const user = useSupabaseUser();
@@ -170,21 +169,11 @@ const user = useSupabaseUser();
 const isPro = computed(() => {
   const org = selectedOrganization.value;
   if (!org) return false;
-
-  const activeSub = org.subscriptions
-    ?.filter((sub: any) => sub.status !== 'canceled')
-    ?.sort((a: any, b: any) => new Date(b.created || 0).getTime() - new Date(a.created || 0).getTime())
-    ?.[0];
-  
-  const isProSub = !!activeSub && getPrimaryPrice(activeSub?.metadata as any)?.amount_type !== 'free';
-
-  const recentOrder = org.orders
-    ?.sort((a: any, b: any) => new Date(b.created_at || b.created || 0).getTime() - new Date(a.created_at || a.created || 0).getTime())
-    ?.[0];
-
-  const isProOrder = !!recentOrder && getPrimaryPrice(recentOrder?.metadata as any)?.amount_type !== 'free';
-
-  return isProSub || isProOrder || false;
+  return org.subscriptions?.some((sub: any) => {
+    if (sub.status !== 'active' && sub.status !== 'trialing') return false;
+    const prices: any[] = sub.metadata?.product?.prices ?? [];
+    return prices.some((p: any) => p.amount_type === 'fixed' && p.price_amount > 0);
+  }) ?? false;
 });
 
 // Page title based on current route
